@@ -5,7 +5,7 @@ on:
     branches:
       - main
 jobs:
-  test-and-publish:
+  javadoc:
     runs-on: ubuntu-latest
     strategy:
       matrix:
