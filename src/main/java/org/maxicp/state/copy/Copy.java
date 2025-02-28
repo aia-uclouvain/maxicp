@@ -14,6 +14,7 @@ import org.maxicp.state.Storage;
  * Implementation of {@link State} with copy strategy
  * @see Copier
  * @see StateManager#makeStateRef(Object)
+ * @param <T> the type of the value wrapped in this state
  */
 public class Copy<T> implements Storage, State<T> {
 

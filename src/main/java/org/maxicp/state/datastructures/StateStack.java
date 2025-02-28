@@ -14,6 +14,7 @@ import java.util.ArrayList;
  * Generic Stack that can be saved and restored through
  * the {@link StateManager#saveState()} / {@link StateManager#restoreState()}
  * methods.
+ * @param <E> the type of the elements in the stack
  */
 public class StateStack<E> {
 

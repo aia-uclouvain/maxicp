@@ -12,8 +12,8 @@ import java.util.function.Function;
 
 /**
  * Gives the end or an {@link IntervalVar} or a given value if the interval is not present
- * @param interval
- * @param value
+ * @param interval the interval
+ * @param value the default value if the interval is absent
  */
 public record IntervalEndOrValue(IntervalVar interval, int value) implements SymbolicIntExpression {
 

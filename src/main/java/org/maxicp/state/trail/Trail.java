@@ -14,6 +14,7 @@ import org.maxicp.state.StateManager;
  * Implementation of {@link State} with trail strategy
  * @see Trailer
  * @see StateManager#makeStateRef(Object)
+ * @param <T> the type of the value wrapped in this state
  */
 public class Trail<T> implements State<T> {
 

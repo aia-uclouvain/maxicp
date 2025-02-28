@@ -12,6 +12,7 @@ package org.maxicp.state;
  * methods.
  *
  * @see StateManager#makeStateRef(Object)  for the creation.
+ * @param <T> the type of the value wrapped in this state
  */
 public interface State<T> {
 

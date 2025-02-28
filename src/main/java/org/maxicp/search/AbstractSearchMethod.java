@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 
 /**
  * An abstract search method, implementing all the needed parts, but the search method itself.
+ * @param <T> the type of the branching
  */
 public abstract class AbstractSearchMethod<T> implements SearchMethod {
     protected Supplier<T[]> branching;

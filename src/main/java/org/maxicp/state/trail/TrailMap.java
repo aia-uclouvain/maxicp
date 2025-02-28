@@ -20,6 +20,8 @@ import java.util.Set;
  * Implementation of {@link StateMap} with trail strategy
  * @see Trailer
  * @see StateManager#makeStateMap()
+ * @param <K> the type of the keys
+ * @param <V> the type of the values
  */
 public class TrailMap<K, V> implements StateMap<K, V> {
 

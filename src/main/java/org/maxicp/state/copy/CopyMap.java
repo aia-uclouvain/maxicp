@@ -16,6 +16,8 @@ import java.util.*;
  * Implementation of {@link StateMap} with copy strategy
  * @see Copier
  * @see StateManager#makeStateMap()
+ * @param <K> the type of the keys
+ * @param <V> the type of the values
  */
 public class CopyMap<K, V> implements Storage, StateMap<K, V> {
 

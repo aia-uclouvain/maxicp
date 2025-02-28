@@ -11,6 +11,8 @@ import org.maxicp.util.exception.InconsistencyException;
 
 
 /**
+ * Domain Consistency Filtering for AtLeastNValue constraint.
+ *
  * @author Pierre Schaus pschaus@gmail.com
  */
 public class AtLeastNValueDC extends AbstractCPConstraint {

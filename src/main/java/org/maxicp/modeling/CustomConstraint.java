@@ -6,6 +6,8 @@ import org.maxicp.modeling.concrete.ConcreteModel;
 /**
  * This class should be used to implement custom constraints.
  * It is responsible for instantiating a constraint into a constraint understandable by a given ConcreteModel
+ * @param <C> type of concrete model
+ * @param <P> type of concrete constraint
  */
 public interface CustomConstraint<C extends ConcreteModel, P extends ConcreteConstraint<C>> extends Constraint {
 

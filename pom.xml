@@ -126,7 +126,11 @@
                 <configuration>
                     <reportOutputDirectory>${project.reporting.outputDirectory}</reportOutputDirectory>
                     <destDir>javadoc</destDir>
-                    <source>21</source>
+                    <source>${maven.compiler.source}</source>
+                    <additionalOptions>
+                        <additionalOption>-Xdoclint:none</additionalOption>
+                        <additionalOption>-quiet</additionalOption>
+                    </additionalOptions>
                 </configuration>
             </plugin>
         </plugins>
