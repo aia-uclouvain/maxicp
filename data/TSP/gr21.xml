@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<travellingSalesmanProblemInstance>
+
+  <name>gr21</name>
+
+  <source>TSPLIB</source>
+
+  <description>21-city problem (Groetschel)</description>
+
+  <doublePrecision>15</doublePrecision>
+
+  <ignoredDigits>5</ignoredDigits>
+
+  <graph>
+    <vertex>
+      <edge cost="5.100000000000000e+02">1</edge>
+      <edge cost="6.350000000000000e+02">2</edge>
+      <edge cost="9.100000000000000e+01">3</edge>
+      <edge cost="3.850000000000000e+02">4</edge>
+      <edge cost="1.550000000000000e+02">5</edge>
+      <edge cost="1.100000000000000e+02">6</edge>
+      <edge cost="1.300000000000000e+02">7</edge>
+      <edge cost="4.900000000000000e+02">8</edge>
+      <edge cost="3.700000000000000e+02">9</edge>
+      <edge cost="1.550000000000000e+02">10</edge>
+      <edge cost="6.800000000000000e+01">11</edge>
+      <edge cost="6.100000000000000e+02">12</edge>
+      <edge cost="6.550000000000000e+02">13</edge>
+      <edge cost="4.800000000000000e+02">14</edge>
+      <edge cost="2.650000000000000e+02">15</edge>
+      <edge cost="2.550000000000000e+02">16</edge>
+      <edge cost="4.500000000000000e+02">17</edge>
+      <edge cost="1.700000000000000e+02">18</edge>
+      <edge cost="2.400000000000000e+02">19</edge>
+      <edge cost="3.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="5.100000000000000e+02">0</edge>
+      <edge cost="3.550000000000000e+02">2</edge>
+      <edge cost="4.150000000000000e+02">3</edge>
+      <edge cost="5.850000000000000e+02">4</edge>
+      <edge cost="4.750000000000000e+02">5</edge>
+      <edge cost="4.800000000000000e+02">6</edge>
+      <edge cost="5.000000000000000e+02">7</edge>
+      <edge cost="6.050000000000000e+02">8</edge>
+      <edge cost="3.200000000000000e+02">9</edge>
+      <edge cost="3.800000000000000e+02">10</edge>
+      <edge cost="4.400000000000000e+02">11</edge>
+      <edge cost="3.600000000000000e+02">12</edge>
+      <edge cost="2.350000000000000e+02">13</edge>
+      <edge cost="8.100000000000000e+01">14</edge>
+      <edge cost="4.800000000000000e+02">15</edge>
+      <edge cost="4.400000000000000e+02">16</edge>
+      <edge cost="2.700000000000000e+02">17</edge>
+      <edge cost="4.450000000000000e+02">18</edge>
+      <edge cost="2.900000000000000e+02">19</edge>
+      <edge cost="1.400000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="6.350000000000000e+02">0</edge>
+      <edge cost="3.550000000000000e+02">1</edge>
+      <edge cost="6.050000000000000e+02">3</edge>
+      <edge cost="3.900000000000000e+02">4</edge>
+      <edge cost="4.950000000000000e+02">5</edge>
+      <edge cost="5.700000000000000e+02">6</edge>
+      <edge cost="5.400000000000000e+02">7</edge>
+      <edge cost="2.950000000000000e+02">8</edge>
+      <edge cost="7.000000000000000e+02">9</edge>
+      <edge cost="6.400000000000000e+02">10</edge>
+      <edge cost="5.750000000000000e+02">11</edge>
+      <edge cost="7.050000000000000e+02">12</edge>
+      <edge cost="5.850000000000000e+02">13</edge>
+      <edge cost="4.350000000000000e+02">14</edge>
+      <edge cost="4.200000000000000e+02">15</edge>
+      <edge cost="7.550000000000000e+02">16</edge>
+      <edge cost="6.250000000000000e+02">17</edge>
+      <edge cost="7.500000000000000e+02">18</edge>
+      <edge cost="5.900000000000000e+02">19</edge>
+      <edge cost="4.950000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="9.100000000000000e+01">0</edge>
+      <edge cost="4.150000000000000e+02">1</edge>
+      <edge cost="6.050000000000000e+02">2</edge>
+      <edge cost="3.500000000000000e+02">4</edge>
+      <edge cost="1.200000000000000e+02">5</edge>
+      <edge cost="7.800000000000000e+01">6</edge>
+      <edge cost="9.700000000000000e+01">7</edge>
+      <edge cost="4.600000000000000e+02">8</edge>
+      <edge cost="2.800000000000000e+02">9</edge>
+      <edge cost="6.300000000000000e+01">10</edge>
+      <edge cost="2.700000000000000e+01">11</edge>
+      <edge cost="5.200000000000000e+02">12</edge>
+      <edge cost="5.550000000000000e+02">13</edge>
+      <edge cost="3.800000000000000e+02">14</edge>
+      <edge cost="2.350000000000000e+02">15</edge>
+      <edge cost="2.350000000000000e+02">16</edge>
+      <edge cost="3.450000000000000e+02">17</edge>
+      <edge cost="1.600000000000000e+02">18</edge>
+      <edge cost="1.400000000000000e+02">19</edge>
+      <edge cost="2.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="3.850000000000000e+02">0</edge>
+      <edge cost="5.850000000000000e+02">1</edge>
+      <edge cost="3.900000000000000e+02">2</edge>
+      <edge cost="3.500000000000000e+02">3</edge>
+      <edge cost="2.400000000000000e+02">5</edge>
+      <edge cost="3.200000000000000e+02">6</edge>
+      <edge cost="2.850000000000000e+02">7</edge>
+      <edge cost="1.200000000000000e+02">8</edge>
+      <edge cost="5.900000000000000e+02">9</edge>
+      <edge cost="4.300000000000000e+02">10</edge>
+      <edge cost="3.200000000000000e+02">11</edge>
+      <edge cost="8.350000000000000e+02">12</edge>
+      <edge cost="7.500000000000000e+02">13</edge>
+      <edge cost="5.750000000000000e+02">14</edge>
+      <edge cost="1.250000000000000e+02">15</edge>
+      <edge cost="6.500000000000000e+02">16</edge>
+      <edge cost="6.600000000000000e+02">17</edge>
+      <edge cost="4.950000000000000e+02">18</edge>
+      <edge cost="4.800000000000000e+02">19</edge>
+      <edge cost="4.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="1.550000000000000e+02">0</edge>
+      <edge cost="4.750000000000000e+02">1</edge>
+      <edge cost="4.950000000000000e+02">2</edge>
+      <edge cost="1.200000000000000e+02">3</edge>
+      <edge cost="2.400000000000000e+02">4</edge>
+      <edge cost="9.600000000000000e+01">6</edge>
+      <edge cost="3.600000000000000e+01">7</edge>
+      <edge cost="3.500000000000000e+02">8</edge>
+      <edge cost="3.650000000000000e+02">9</edge>
+      <edge cost="2.000000000000000e+02">10</edge>
+      <edge cost="9.100000000000000e+01">11</edge>
+      <edge cost="6.050000000000000e+02">12</edge>
+      <edge cost="6.150000000000000e+02">13</edge>
+      <edge cost="4.400000000000000e+02">14</edge>
+      <edge cost="1.250000000000000e+02">15</edge>
+      <edge cost="3.700000000000000e+02">16</edge>
+      <edge cost="4.300000000000000e+02">17</edge>
+      <edge cost="2.650000000000000e+02">18</edge>
+      <edge cost="2.550000000000000e+02">19</edge>
+      <edge cost="3.400000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="1.100000000000000e+02">0</edge>
+      <edge cost="4.800000000000000e+02">1</edge>
+      <edge cost="5.700000000000000e+02">2</edge>
+      <edge cost="7.800000000000000e+01">3</edge>
+      <edge cost="3.200000000000000e+02">4</edge>
+      <edge cost="9.600000000000000e+01">5</edge>
+      <edge cost="2.900000000000000e+01">7</edge>
+      <edge cost="4.250000000000000e+02">8</edge>
+      <edge cost="3.500000000000000e+02">9</edge>
+      <edge cost="1.600000000000000e+02">10</edge>
+      <edge cost="4.800000000000000e+01">11</edge>
+      <edge cost="5.900000000000000e+02">12</edge>
+      <edge cost="6.250000000000000e+02">13</edge>
+      <edge cost="4.550000000000000e+02">14</edge>
+      <edge cost="2.000000000000000e+02">15</edge>
+      <edge cost="3.200000000000000e+02">16</edge>
+      <edge cost="4.200000000000000e+02">17</edge>
+      <edge cost="2.200000000000000e+02">18</edge>
+      <edge cost="2.050000000000000e+02">19</edge>
+      <edge cost="3.500000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="1.300000000000000e+02">0</edge>
+      <edge cost="5.000000000000000e+02">1</edge>
+      <edge cost="5.400000000000000e+02">2</edge>
+      <edge cost="9.700000000000000e+01">3</edge>
+      <edge cost="2.850000000000000e+02">4</edge>
+      <edge cost="3.600000000000000e+01">5</edge>
+      <edge cost="2.900000000000000e+01">6</edge>
+      <edge cost="3.900000000000000e+02">8</edge>
+      <edge cost="3.700000000000000e+02">9</edge>
+      <edge cost="1.750000000000000e+02">10</edge>
+      <edge cost="6.700000000000000e+01">11</edge>
+      <edge cost="6.100000000000000e+02">12</edge>
+      <edge cost="6.450000000000000e+02">13</edge>
+      <edge cost="4.650000000000000e+02">14</edge>
+      <edge cost="1.650000000000000e+02">15</edge>
+      <edge cost="3.500000000000000e+02">16</edge>
+      <edge cost="4.400000000000000e+02">17</edge>
+      <edge cost="2.400000000000000e+02">18</edge>
+      <edge cost="2.200000000000000e+02">19</edge>
+      <edge cost="3.700000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="4.900000000000000e+02">0</edge>
+      <edge cost="6.050000000000000e+02">1</edge>
+      <edge cost="2.950000000000000e+02">2</edge>
+      <edge cost="4.600000000000000e+02">3</edge>
+      <edge cost="1.200000000000000e+02">4</edge>
+      <edge cost="3.500000000000000e+02">5</edge>
+      <edge cost="4.250000000000000e+02">6</edge>
+      <edge cost="3.900000000000000e+02">7</edge>
+      <edge cost="6.250000000000000e+02">9</edge>
+      <edge cost="5.350000000000000e+02">10</edge>
+      <edge cost="4.300000000000000e+02">11</edge>
+      <edge cost="8.650000000000000e+02">12</edge>
+      <edge cost="7.750000000000000e+02">13</edge>
+      <edge cost="6.000000000000000e+02">14</edge>
+      <edge cost="2.300000000000000e+02">15</edge>
+      <edge cost="6.800000000000000e+02">16</edge>
+      <edge cost="6.900000000000000e+02">17</edge>
+      <edge cost="6.000000000000000e+02">18</edge>
+      <edge cost="5.150000000000000e+02">19</edge>
+      <edge cost="5.050000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="3.700000000000000e+02">0</edge>
+      <edge cost="3.200000000000000e+02">1</edge>
+      <edge cost="7.000000000000000e+02">2</edge>
+      <edge cost="2.800000000000000e+02">3</edge>
+      <edge cost="5.900000000000000e+02">4</edge>
+      <edge cost="3.650000000000000e+02">5</edge>
+      <edge cost="3.500000000000000e+02">6</edge>
+      <edge cost="3.700000000000000e+02">7</edge>
+      <edge cost="6.250000000000000e+02">8</edge>
+      <edge cost="2.400000000000000e+02">10</edge>
+      <edge cost="3.000000000000000e+02">11</edge>
+      <edge cost="2.500000000000000e+02">12</edge>
+      <edge cost="2.850000000000000e+02">13</edge>
+      <edge cost="2.450000000000000e+02">14</edge>
+      <edge cost="4.750000000000000e+02">15</edge>
+      <edge cost="1.500000000000000e+02">16</edge>
+      <edge cost="7.700000000000000e+01">17</edge>
+      <edge cost="2.350000000000000e+02">18</edge>
+      <edge cost="1.500000000000000e+02">19</edge>
+      <edge cost="1.850000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="1.550000000000000e+02">0</edge>
+      <edge cost="3.800000000000000e+02">1</edge>
+      <edge cost="6.400000000000000e+02">2</edge>
+      <edge cost="6.300000000000000e+01">3</edge>
+      <edge cost="4.300000000000000e+02">4</edge>
+      <edge cost="2.000000000000000e+02">5</edge>
+      <edge cost="1.600000000000000e+02">6</edge>
+      <edge cost="1.750000000000000e+02">7</edge>
+      <edge cost="5.350000000000000e+02">8</edge>
+      <edge cost="2.400000000000000e+02">9</edge>
+      <edge cost="9.000000000000000e+01">11</edge>
+      <edge cost="4.800000000000000e+02">12</edge>
+      <edge cost="5.150000000000000e+02">13</edge>
+      <edge cost="3.450000000000000e+02">14</edge>
+      <edge cost="3.100000000000000e+02">15</edge>
+      <edge cost="1.750000000000000e+02">16</edge>
+      <edge cost="3.100000000000000e+02">17</edge>
+      <edge cost="1.250000000000000e+02">18</edge>
+      <edge cost="1.000000000000000e+02">19</edge>
+      <edge cost="2.400000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="6.800000000000000e+01">0</edge>
+      <edge cost="4.400000000000000e+02">1</edge>
+      <edge cost="5.750000000000000e+02">2</edge>
+      <edge cost="2.700000000000000e+01">3</edge>
+      <edge cost="3.200000000000000e+02">4</edge>
+      <edge cost="9.100000000000000e+01">5</edge>
+      <edge cost="4.800000000000000e+01">6</edge>
+      <edge cost="6.700000000000000e+01">7</edge>
+      <edge cost="4.300000000000000e+02">8</edge>
+      <edge cost="3.000000000000000e+02">9</edge>
+      <edge cost="9.000000000000000e+01">10</edge>
+      <edge cost="5.450000000000000e+02">12</edge>
+      <edge cost="5.850000000000000e+02">13</edge>
+      <edge cost="4.150000000000000e+02">14</edge>
+      <edge cost="2.050000000000000e+02">15</edge>
+      <edge cost="2.650000000000000e+02">16</edge>
+      <edge cost="3.800000000000000e+02">17</edge>
+      <edge cost="1.700000000000000e+02">18</edge>
+      <edge cost="1.700000000000000e+02">19</edge>
+      <edge cost="3.100000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="6.100000000000000e+02">0</edge>
+      <edge cost="3.600000000000000e+02">1</edge>
+      <edge cost="7.050000000000000e+02">2</edge>
+      <edge cost="5.200000000000000e+02">3</edge>
+      <edge cost="8.350000000000000e+02">4</edge>
+      <edge cost="6.050000000000000e+02">5</edge>
+      <edge cost="5.900000000000000e+02">6</edge>
+      <edge cost="6.100000000000000e+02">7</edge>
+      <edge cost="8.650000000000000e+02">8</edge>
+      <edge cost="2.500000000000000e+02">9</edge>
+      <edge cost="4.800000000000000e+02">10</edge>
+      <edge cost="5.450000000000000e+02">11</edge>
+      <edge cost="1.900000000000000e+02">13</edge>
+      <edge cost="2.950000000000000e+02">14</edge>
+      <edge cost="7.150000000000000e+02">15</edge>
+      <edge cost="4.000000000000000e+02">16</edge>
+      <edge cost="1.800000000000000e+02">17</edge>
+      <edge cost="4.850000000000000e+02">18</edge>
+      <edge cost="3.900000000000000e+02">19</edge>
+      <edge cost="3.450000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="6.550000000000000e+02">0</edge>
+      <edge cost="2.350000000000000e+02">1</edge>
+      <edge cost="5.850000000000000e+02">2</edge>
+      <edge cost="5.550000000000000e+02">3</edge>
+      <edge cost="7.500000000000000e+02">4</edge>
+      <edge cost="6.150000000000000e+02">5</edge>
+      <edge cost="6.250000000000000e+02">6</edge>
+      <edge cost="6.450000000000000e+02">7</edge>
+      <edge cost="7.750000000000000e+02">8</edge>
+      <edge cost="2.850000000000000e+02">9</edge>
+      <edge cost="5.150000000000000e+02">10</edge>
+      <edge cost="5.850000000000000e+02">11</edge>
+      <edge cost="1.900000000000000e+02">12</edge>
+      <edge cost="1.700000000000000e+02">14</edge>
+      <edge cost="6.500000000000000e+02">15</edge>
+      <edge cost="4.350000000000000e+02">16</edge>
+      <edge cost="2.150000000000000e+02">17</edge>
+      <edge cost="5.250000000000000e+02">18</edge>
+      <edge cost="4.250000000000000e+02">19</edge>
+      <edge cost="2.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="4.800000000000000e+02">0</edge>
+      <edge cost="8.100000000000000e+01">1</edge>
+      <edge cost="4.350000000000000e+02">2</edge>
+      <edge cost="3.800000000000000e+02">3</edge>
+      <edge cost="5.750000000000000e+02">4</edge>
+      <edge cost="4.400000000000000e+02">5</edge>
+      <edge cost="4.550000000000000e+02">6</edge>
+      <edge cost="4.650000000000000e+02">7</edge>
+      <edge cost="6.000000000000000e+02">8</edge>
+      <edge cost="2.450000000000000e+02">9</edge>
+      <edge cost="3.450000000000000e+02">10</edge>
+      <edge cost="4.150000000000000e+02">11</edge>
+      <edge cost="2.950000000000000e+02">12</edge>
+      <edge cost="1.700000000000000e+02">13</edge>
+      <edge cost="4.750000000000000e+02">15</edge>
+      <edge cost="3.850000000000000e+02">16</edge>
+      <edge cost="1.900000000000000e+02">17</edge>
+      <edge cost="4.050000000000000e+02">18</edge>
+      <edge cost="2.550000000000000e+02">19</edge>
+      <edge cost="1.050000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="2.650000000000000e+02">0</edge>
+      <edge cost="4.800000000000000e+02">1</edge>
+      <edge cost="4.200000000000000e+02">2</edge>
+      <edge cost="2.350000000000000e+02">3</edge>
+      <edge cost="1.250000000000000e+02">4</edge>
+      <edge cost="1.250000000000000e+02">5</edge>
+      <edge cost="2.000000000000000e+02">6</edge>
+      <edge cost="1.650000000000000e+02">7</edge>
+      <edge cost="2.300000000000000e+02">8</edge>
+      <edge cost="4.750000000000000e+02">9</edge>
+      <edge cost="3.100000000000000e+02">10</edge>
+      <edge cost="2.050000000000000e+02">11</edge>
+      <edge cost="7.150000000000000e+02">12</edge>
+      <edge cost="6.500000000000000e+02">13</edge>
+      <edge cost="4.750000000000000e+02">14</edge>
+      <edge cost="4.850000000000000e+02">16</edge>
+      <edge cost="5.450000000000000e+02">17</edge>
+      <edge cost="3.750000000000000e+02">18</edge>
+      <edge cost="3.950000000000000e+02">19</edge>
+      <edge cost="3.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="2.550000000000000e+02">0</edge>
+      <edge cost="4.400000000000000e+02">1</edge>
+      <edge cost="7.550000000000000e+02">2</edge>
+      <edge cost="2.350000000000000e+02">3</edge>
+      <edge cost="6.500000000000000e+02">4</edge>
+      <edge cost="3.700000000000000e+02">5</edge>
+      <edge cost="3.200000000000000e+02">6</edge>
+      <edge cost="3.500000000000000e+02">7</edge>
+      <edge cost="6.800000000000000e+02">8</edge>
+      <edge cost="1.500000000000000e+02">9</edge>
+      <edge cost="1.750000000000000e+02">10</edge>
+      <edge cost="2.650000000000000e+02">11</edge>
+      <edge cost="4.000000000000000e+02">12</edge>
+      <edge cost="4.350000000000000e+02">13</edge>
+      <edge cost="3.850000000000000e+02">14</edge>
+      <edge cost="4.850000000000000e+02">15</edge>
+      <edge cost="2.250000000000000e+02">17</edge>
+      <edge cost="8.700000000000000e+01">18</edge>
+      <edge cost="2.050000000000000e+02">19</edge>
+      <edge cost="2.800000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="4.500000000000000e+02">0</edge>
+      <edge cost="2.700000000000000e+02">1</edge>
+      <edge cost="6.250000000000000e+02">2</edge>
+      <edge cost="3.450000000000000e+02">3</edge>
+      <edge cost="6.600000000000000e+02">4</edge>
+      <edge cost="4.300000000000000e+02">5</edge>
+      <edge cost="4.200000000000000e+02">6</edge>
+      <edge cost="4.400000000000000e+02">7</edge>
+      <edge cost="6.900000000000000e+02">8</edge>
+      <edge cost="7.700000000000000e+01">9</edge>
+      <edge cost="3.100000000000000e+02">10</edge>
+      <edge cost="3.800000000000000e+02">11</edge>
+      <edge cost="1.800000000000000e+02">12</edge>
+      <edge cost="2.150000000000000e+02">13</edge>
+      <edge cost="1.900000000000000e+02">14</edge>
+      <edge cost="5.450000000000000e+02">15</edge>
+      <edge cost="2.250000000000000e+02">16</edge>
+      <edge cost="3.150000000000000e+02">18</edge>
+      <edge cost="2.200000000000000e+02">19</edge>
+      <edge cost="1.650000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="1.700000000000000e+02">0</edge>
+      <edge cost="4.450000000000000e+02">1</edge>
+      <edge cost="7.500000000000000e+02">2</edge>
+      <edge cost="1.600000000000000e+02">3</edge>
+      <edge cost="4.950000000000000e+02">4</edge>
+      <edge cost="2.650000000000000e+02">5</edge>
+      <edge cost="2.200000000000000e+02">6</edge>
+      <edge cost="2.400000000000000e+02">7</edge>
+      <edge cost="6.000000000000000e+02">8</edge>
+      <edge cost="2.350000000000000e+02">9</edge>
+      <edge cost="1.250000000000000e+02">10</edge>
+      <edge cost="1.700000000000000e+02">11</edge>
+      <edge cost="4.850000000000000e+02">12</edge>
+      <edge cost="5.250000000000000e+02">13</edge>
+      <edge cost="4.050000000000000e+02">14</edge>
+      <edge cost="3.750000000000000e+02">15</edge>
+      <edge cost="8.700000000000000e+01">16</edge>
+      <edge cost="3.150000000000000e+02">17</edge>
+      <edge cost="1.550000000000000e+02">19</edge>
+      <edge cost="3.050000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="2.400000000000000e+02">0</edge>
+      <edge cost="2.900000000000000e+02">1</edge>
+      <edge cost="5.900000000000000e+02">2</edge>
+      <edge cost="1.400000000000000e+02">3</edge>
+      <edge cost="4.800000000000000e+02">4</edge>
+      <edge cost="2.550000000000000e+02">5</edge>
+      <edge cost="2.050000000000000e+02">6</edge>
+      <edge cost="2.200000000000000e+02">7</edge>
+      <edge cost="5.150000000000000e+02">8</edge>
+      <edge cost="1.500000000000000e+02">9</edge>
+      <edge cost="1.000000000000000e+02">10</edge>
+      <edge cost="1.700000000000000e+02">11</edge>
+      <edge cost="3.900000000000000e+02">12</edge>
+      <edge cost="4.250000000000000e+02">13</edge>
+      <edge cost="2.550000000000000e+02">14</edge>
+      <edge cost="3.950000000000000e+02">15</edge>
+      <edge cost="2.050000000000000e+02">16</edge>
+      <edge cost="2.200000000000000e+02">17</edge>
+      <edge cost="1.550000000000000e+02">18</edge>
+      <edge cost="1.500000000000000e+02">20</edge>
+    </vertex>
+    <vertex>
+      <edge cost="3.800000000000000e+02">0</edge>
+      <edge cost="1.400000000000000e+02">1</edge>
+      <edge cost="4.950000000000000e+02">2</edge>
+      <edge cost="2.800000000000000e+02">3</edge>
+      <edge cost="4.800000000000000e+02">4</edge>
+      <edge cost="3.400000000000000e+02">5</edge>
+      <edge cost="3.500000000000000e+02">6</edge>
+      <edge cost="3.700000000000000e+02">7</edge>
+      <edge cost="5.050000000000000e+02">8</edge>
+      <edge cost="1.850000000000000e+02">9</edge>
+      <edge cost="2.400000000000000e+02">10</edge>
+      <edge cost="3.100000000000000e+02">11</edge>
+      <edge cost="3.450000000000000e+02">12</edge>
+      <edge cost="2.800000000000000e+02">13</edge>
+      <edge cost="1.050000000000000e+02">14</edge>
+      <edge cost="3.800000000000000e+02">15</edge>
+      <edge cost="2.800000000000000e+02">16</edge>
+      <edge cost="1.650000000000000e+02">17</edge>
+      <edge cost="3.050000000000000e+02">18</edge>
+      <edge cost="1.500000000000000e+02">19</edge>
+    </vertex>
+  </graph>
+
+</travellingSalesmanProblemInstance>
