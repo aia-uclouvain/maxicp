@@ -18,6 +18,8 @@ jobs:
           python-version: 3.8
       - name: Step2 - Install python dependencies
         run: |
+          pwd
+          ls
           cd userguide
           # python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
