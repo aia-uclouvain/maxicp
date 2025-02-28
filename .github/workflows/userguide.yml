@@ -27,6 +27,8 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Step3 - Build user guide
         run: |
+          pwd
+          ls -lah
           make html
           mv build/html /tmp/.
       - uses: actions/checkout@v3
