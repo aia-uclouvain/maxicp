@@ -1,0 +1,46 @@
+name: Javadoc
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        maven: ['3.8.5']
+        java: [ '21' ]
+    steps:
+      - name: Step1 - Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Step2 - Install python dependencies
+        run: |
+          cd userguide
+          # python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Step3 - Build user guide
+        run: |
+          make html
+          mv build/html /tmp/.
+      - uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+      - name: Step4 - add html
+        run: |
+          git config --local user.email "github-actions@users.noreply.github.com"
+          git config --local user.name "github-actions"
+          if [ -z "$(ls -A .)" ]; then
+            git rm -r *
+          fi
+          cp -r /tmp/html/* .
+          touch .nojekyll
+          git add -A
+          git commit -m "update userguide"
+      - name: Step5 - Push changes to gh-page branch
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}

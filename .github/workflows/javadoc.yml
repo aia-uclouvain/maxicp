@@ -34,7 +34,7 @@ jobs:
           if [ -z "$(ls -A .)" ]; then
             git rm -r *
           fi
-          cp -r /tmp/javadoc/* .
+          cp -r /tmp/javadoc .
           touch .nojekyll
           git add -A
           git commit -m "update javadoc"
