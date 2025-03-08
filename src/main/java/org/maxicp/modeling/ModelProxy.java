@@ -12,6 +12,7 @@ import java.util.function.Supplier;
  * Maintains the current model and proxies calls to it.
  */
 public interface ModelProxy {
+
     Model getModel();
 
     default boolean isSymbolic() {
@@ -40,9 +41,17 @@ public interface ModelProxy {
         };
     }
 
-    default void add(Constraint c) {add(c, true);};
-    default void add(BoolExpression c) { add(c, true); };
-    default void fixpoint() {add(NoOpConstraint.noOp, true);}
+    default void add(Constraint c) {
+        add(c, true);
+    }
+
+    default void add(BoolExpression c) {
+        add(c, true);
+    }
+
+    default void fixpoint() {
+        add(NoOpConstraint.noOp, true);
+    }
 
     /**
      * Shortcut for baseModel.getModel().add(c, enforceFixPoint);

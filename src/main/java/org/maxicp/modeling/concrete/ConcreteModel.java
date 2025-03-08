@@ -21,12 +21,17 @@ import org.maxicp.state.StateManaged;
 import java.util.function.Supplier;
 
 public interface ConcreteModel extends Model, StateManaged {
+
     ConcreteIntVar getConcreteVar(IntExpression expr);
+
     ConcreteBoolVar getConcreteVar(BoolExpression expr);
+
     ConcreteSeqVar getConcreteVar(SeqExpression expr);
+
     ConcreteIntervalVar getConcreteVar(IntervalExpression expr);
 
     default void add(Constraint c) { add(c, true); }
+
     void add(Constraint c, boolean enforceFixPoint);
 
     /**
@@ -46,6 +51,7 @@ public interface ConcreteModel extends Model, StateManaged {
      * @param enforceFixPoint
      */
     void jumpToChild(SymbolicModel m, boolean enforceFixPoint);
+
     default void jumpToChild(SymbolicModel m) { jumpToChild(m, true); }
 
     Objective createObjective(org.maxicp.modeling.symbolic.Objective obj);

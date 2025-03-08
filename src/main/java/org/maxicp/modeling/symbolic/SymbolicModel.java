@@ -30,7 +30,6 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
         return modelProxy;
     }
 
-
     public static SymbolicModel emptyModel(ModelProxy modelProxy) {
         return new SymbolicModel(null, null, modelProxy);
     }
@@ -42,6 +41,7 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     public SymbolicModel add(Constraint c) {
         return new SymbolicModel(c, this, modelProxy);
     }
+
     public Objective minimize(Expression expr) {
         return switch (expr) {
             case IntExpression iexpr -> new Minimization(iexpr);
@@ -68,6 +68,7 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     }
 
     private static class ConstraintIterator implements Iterator<Constraint> {
+
         private SymbolicModel cur;
 
         public ConstraintIterator(SymbolicModel start) {

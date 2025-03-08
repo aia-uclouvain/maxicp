@@ -4,21 +4,37 @@ import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 
 public interface SymbolicSeqVar extends SeqVar, SymbolicVar {
+
     int defaultStart();
+
     int defaultEnd();
+
     int defaultNNode();
+
     int defaultFillNode(int[] dest, SeqStatus status);
+
     int defaultNNode(SeqStatus status);
+
     boolean defaultIsNode(int node, SeqStatus status);
+
     int defaultMemberAfter(int node);
+
     int defaultMemberBefore(int node);
+
     int defaultFillPred(int node, int[] dest, SeqStatus status);
+
     int defaultNPred(int node);
+
     int defaultFillSucc(int node, int[] dest, SeqStatus status);
+
     int defaultNSucc(int node);
+
     int defaultFillInsert(int node, int[] dest);
+
     int defaultNInsert(int node);
+
     boolean defaultHasEdge(int from, int to);
+
     boolean defaultHasInsert(int prev, int node);
 
     default int defaultFillPred(int node, int[] dest) {

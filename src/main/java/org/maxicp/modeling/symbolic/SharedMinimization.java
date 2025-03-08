@@ -6,6 +6,7 @@ import org.maxicp.modeling.algebra.integer.IntExpression;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SharedMinimization implements Objective {
+
     public final IntExpression expr;
     public final AtomicInteger bound;
 

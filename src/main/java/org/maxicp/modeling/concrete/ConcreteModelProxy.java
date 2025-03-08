@@ -19,6 +19,7 @@ import java.util.function.Supplier;
  */
 public class ConcreteModelProxy implements ConcreteModel {
     private final ConcreteModel model;
+
     public ConcreteModelProxy(ConcreteModel model) {
         this.model = model;
     }

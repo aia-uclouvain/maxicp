@@ -8,6 +8,7 @@ import org.maxicp.modeling.ModelProxy;
  * Use this class only when you explicitly want to avoid a ModelDispatcher, which is thread-safe.
  */
 public class BasicModelProxy implements ModelProxy {
+
     private Model model;
 
     public BasicModelProxy() {

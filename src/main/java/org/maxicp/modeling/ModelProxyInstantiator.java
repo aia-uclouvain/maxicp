@@ -10,6 +10,7 @@ import java.util.function.Supplier;
  * Maintains the current model and proxies calls to it.
  */
 public interface ModelProxyInstantiator extends ModelProxy {
+
     interface ModelInstantiator<T extends ConcreteModel> {
         T instantiate(Model m);
     }
