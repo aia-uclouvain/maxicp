@@ -24,9 +24,9 @@ public class NotEqualTest extends CPSolverTest {
 
         CPIntVar x = CPFactory.makeIntVar(cp, 10);
         CPIntVar y = CPFactory.makeIntVar(cp, 10);
-        cp.post(CPFactory.notEqual(x, y));
+        cp.post(CPFactory.neq(x, y));
 
-        cp.post(CPFactory.equal(x, 6));
+        cp.post(CPFactory.eq(x, 6));
 
         assertFalse(y.contains(6));
         assertEquals(9, y.size());

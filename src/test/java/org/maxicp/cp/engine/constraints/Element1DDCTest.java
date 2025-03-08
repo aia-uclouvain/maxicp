@@ -9,7 +9,6 @@ package org.maxicp.cp.engine.constraints;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
@@ -156,12 +155,12 @@ public class Element1DDCTest extends CPSolverTest {
             if (!y.isFixed() && (z.isFixed() || rand.nextBoolean())) {
                 //select a random y
                 int val = possibleY[rand.nextInt(possibleY.length)];
-                return branch(() -> cp.post(CPFactory.equal(y, val)),
-                        () -> cp.post(CPFactory.notEqual(y, val)));
+                return branch(() -> cp.post(CPFactory.eq(y, val)),
+                        () -> cp.post(CPFactory.neq(y, val)));
             } else {
                 int val = possibleZ[rand.nextInt(possibleZ.length)];
-                return branch(() -> cp.post(CPFactory.equal(z, val)),
-                        () -> cp.post(CPFactory.notEqual(z, val)));
+                return branch(() -> cp.post(CPFactory.eq(z, val)),
+                        () -> cp.post(CPFactory.neq(z, val)));
             }
         };
 

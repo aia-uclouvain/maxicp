@@ -48,7 +48,7 @@ public class CumulativeDecompTest extends CPSolverTest {
         int[] r = new int[]{1, 1};
 
         cp.post(new CumulativeDecomposition(s, d, r, 1));
-        cp.post(CPFactory.equal(s[0], 0));
+        cp.post(CPFactory.eq(s[0], 0));
 
         assertEquals(5, s[1].min());
     }
@@ -62,7 +62,7 @@ public class CumulativeDecompTest extends CPSolverTest {
 
         cp.post(new CumulativeDecomposition(s, d, r, 1));
 
-        cp.post(CPFactory.equal(s[0], 5));
+        cp.post(CPFactory.eq(s[0], 5));
 
         assertEquals(0, s[1].max());
     }

@@ -5,12 +5,13 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 
-import static org.maxicp.cp.CPFactory.lessOrEqual;
+import static org.maxicp.cp.CPFactory.le;
 import static org.maxicp.cp.CPFactory.plus;
 
 /**
@@ -36,8 +37,8 @@ public class IsLessOrEqualVar extends AbstractCPConstraint {
         this.b = b;
         this.x = x;
         this.y = y;
-        lEqC = lessOrEqual(x, y);
-        grC = lessOrEqual(plus(y, 1), x);
+        lEqC = CPFactory.le(x, y);
+        grC = CPFactory.le(plus(y, 1), x);
     }
 
     @Override

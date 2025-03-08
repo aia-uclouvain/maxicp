@@ -10,7 +10,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -36,7 +35,7 @@ class MulTest extends CPSolverTest {
 
         cp.getStateManager().saveState();
 
-        cp.post(CPFactory.equal(b,1));
+        cp.post(CPFactory.eq(b,1));
         y.removeAbove(-2);
         cp.fixPoint();
         assertEquals(-5, y.min());

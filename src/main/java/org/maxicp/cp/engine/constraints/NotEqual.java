@@ -24,7 +24,7 @@ public class NotEqual extends AbstractCPConstraint {
      * @param x the left member
      * @param y the right memer
      * @param v the offset value on y
-     * @see CPFactory#notEqual(CPIntVar, CPIntVar, int)
+     * @see CPFactory#neq(CPIntVar, CPIntVar, int)
      */
     public NotEqual(CPIntVar x, CPIntVar y, int v) { // x != y + v
         this(x, v == 0 ? y : plus(y, v));
@@ -36,7 +36,7 @@ public class NotEqual extends AbstractCPConstraint {
      *
      * @param x the left member
      * @param y the right memer
-     * @see CPFactory#notEqual(CPIntVar, CPIntVar)
+     * @see CPFactory#neq(CPIntVar, CPIntVar)
      */
     public NotEqual(CPIntVar x, CPIntVar y) { // x != y
         super(x.getSolver());

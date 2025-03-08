@@ -39,7 +39,7 @@ public class TSPBoundImpact {
             if (x.contains(v)) {
                 x.getSolver().getStateManager().saveState();
                 try {
-                    x.getSolver().post(equal(x,v));
+                    x.getSolver().post(eq(x,v));
                     if ((obj.min()) < best) {
                         val = v;
                         best = obj.min();
@@ -87,8 +87,8 @@ public class TSPBoundImpact {
             else {
                 int v = boundImpactValueSelector(xs,totalDist);// now the first solution should have objective 2561
                 //int v = xs.min(); // the first solution should have objective 4722
-                return branch(() -> cp.post(equal(xs, v)),
-                        () -> cp.post(notEqual(xs, v)));
+                return branch(() -> cp.post(eq(xs, v)),
+                        () -> cp.post(neq(xs, v)));
             }
         });
 

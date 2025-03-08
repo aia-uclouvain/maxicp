@@ -33,9 +33,9 @@ public class OrTest extends CPSolverTest {
             assertFalse(xi.isFixed());
         }
 
-        cp.post(CPFactory.equal(x[1], 0));
-        cp.post(CPFactory.equal(x[2], 0));
-        cp.post(CPFactory.equal(x[3], 0));
+        cp.post(CPFactory.eq(x[1], 0));
+        cp.post(CPFactory.eq(x[2], 0));
+        cp.post(CPFactory.eq(x[3], 0));
         assertTrue(x[0].isTrue());
     }
 

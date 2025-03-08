@@ -75,11 +75,11 @@ public class Sorted extends AbstractCPConstraint {
         for (int i = 0; i < n; i++) {
             int i_ = i;
             // number of x_k's <= y_i is at least i-1
-            CPIntVar [] b1 = CPFactory.makeIntVarArray(n, k-> CPFactory.isLessOrEqual(x[k],y[i_]));
-            getSolver().post(CPFactory.largerOrEqual(CPFactory.sum(b1),i-1));
+            CPIntVar [] b1 = CPFactory.makeIntVarArray(n, k-> CPFactory.isLe(x[k],y[i_]));
+            getSolver().post(CPFactory.ge(CPFactory.sum(b1),i-1));
             // number of x_k's >= y_i is at least n-i
-            CPIntVar [] b2 = CPFactory.makeIntVarArray(n, k-> CPFactory.isLargerOrEqual(x[k],y[i_]));
-            getSolver().post(CPFactory.largerOrEqual(CPFactory.sum(b2),n-i));
+            CPIntVar [] b2 = CPFactory.makeIntVarArray(n, k-> CPFactory.isGe(x[k],y[i_]));
+            getSolver().post(CPFactory.ge(CPFactory.sum(b2),n-i));
         }
 
         for (int i = 0; i < n; i++) {

@@ -74,8 +74,8 @@ public class QAPPaper {
                 else {
                     CPIntVar xi = x[idx];
                     int v = xi.min();
-                    Runnable left = () -> cp.post(CPFactory.equal(xi, v));
-                    Runnable right = () -> cp.post(CPFactory.notEqual(xi, v));
+                    Runnable left = () -> cp.post(CPFactory.eq(xi, v));
+                    Runnable right = () -> cp.post(CPFactory.neq(xi, v));
                     return new Runnable[]{left, right};
                 }
             }

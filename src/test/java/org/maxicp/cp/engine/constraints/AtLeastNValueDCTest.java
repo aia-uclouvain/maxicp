@@ -31,9 +31,9 @@ public class AtLeastNValueDCTest extends CPSolverTest {
         CPIntVar[] Xs = CPFactory.makeIntVarArray(cp, n, 0, 3);
         CPIntVar y = CPFactory.makeIntVar(cp, 2, 5);
 
-        cp.post(CPFactory.equal(Xs[0],0));
-        cp.post(CPFactory.equal(Xs[1],0));
-        cp.post(CPFactory.equal(Xs[2],0));
+        cp.post(CPFactory.eq(Xs[0],0));
+        cp.post(CPFactory.eq(Xs[1],0));
+        cp.post(CPFactory.eq(Xs[2],0));
         cp.post(new AtLeastNValueDC(Xs, y));
 
         assertFalse(Xs[3].contains(0));

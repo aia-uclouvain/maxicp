@@ -8,6 +8,7 @@ package org.maxicp;
 import org.maxicp.cp.modeling.ModelProxyWithCP;
 import org.maxicp.modeling.*;
 import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.modeling.symbolic.*;
 import org.maxicp.search.BestFirstSearch;
@@ -69,8 +70,8 @@ public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelPr
         return out;
     }
 
-    public IntVar[] intVarArray(int n, Function<Integer, IntVar> body) {
-        IntVar[] t = new IntVar[n];
+    public IntExpression[] intVarArray(int n, Function<Integer, IntExpression> body) {
+        IntExpression[] t = new IntVar[n];
         for (int i = 0; i < n; i++)
             t[i] = body.apply(i);
         return t;

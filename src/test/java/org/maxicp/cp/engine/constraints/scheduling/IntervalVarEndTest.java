@@ -58,7 +58,7 @@ class IntervalVarEndTest extends CPSolverTest {
 
         cp.post(new IntervalVarEnd(interval, end));
 
-        cp.post(CPFactory.equal(end, 5));
+        cp.post(CPFactory.eq(end, 5));
 
         assertEquals(5, interval.endMax());
         assertEquals(3, interval.startMin());

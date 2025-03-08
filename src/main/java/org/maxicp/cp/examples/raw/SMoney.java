@@ -43,13 +43,13 @@ public class SMoney {
         CPIntVar[] carry = CPFactory.makeIntVarArray(cp, 4, 0, 1);
 
         cp.post(CPFactory.allDifferent(values));
-        cp.post(CPFactory.notEqual(values[S.val], 0));
-        cp.post(CPFactory.notEqual(values[M.val], 0));
-        cp.post(CPFactory.equal(values[M.val], carry[3]));
-        cp.post(CPFactory.equal(CPFactory.sum(carry[2], values[S.val], values[M.val], CPFactory.minus(values[O.val]), CPFactory.mul(carry[3], -10)), 0));
-        cp.post(CPFactory.equal(CPFactory.sum(carry[1], values[E.val], values[O.val], CPFactory.minus(values[N.val]), CPFactory.mul(carry[2], -10)), 0));
-        cp.post(CPFactory.equal(CPFactory.sum(carry[0], values[N.val], values[R.val], CPFactory.minus(values[E.val]), CPFactory.mul(carry[1], -10)), 0));
-        cp.post(CPFactory.equal(CPFactory.sum(values[D.val], values[E.val], CPFactory.minus(values[Y.val]), CPFactory.mul(carry[0], -10)), 0));
+        cp.post(CPFactory.neq(values[S.val], 0));
+        cp.post(CPFactory.neq(values[M.val], 0));
+        cp.post(CPFactory.eq(values[M.val], carry[3]));
+        cp.post(CPFactory.eq(CPFactory.sum(carry[2], values[S.val], values[M.val], CPFactory.minus(values[O.val]), CPFactory.mul(carry[3], -10)), 0));
+        cp.post(CPFactory.eq(CPFactory.sum(carry[1], values[E.val], values[O.val], CPFactory.minus(values[N.val]), CPFactory.mul(carry[2], -10)), 0));
+        cp.post(CPFactory.eq(CPFactory.sum(carry[0], values[N.val], values[R.val], CPFactory.minus(values[E.val]), CPFactory.mul(carry[1], -10)), 0));
+        cp.post(CPFactory.eq(CPFactory.sum(values[D.val], values[E.val], CPFactory.minus(values[Y.val]), CPFactory.mul(carry[0], -10)), 0));
 
 
         DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(values));

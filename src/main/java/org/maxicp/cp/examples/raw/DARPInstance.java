@@ -636,14 +636,14 @@ public class DARPInstance {
                     // constraints over the max ride time
                     try {
                         CPIntVar val = sum(servingTime[i + nRequests], minus(plus(servingTime[i], serviceDuration[i])));
-                        cp.post(lessOrEqual(val, maxRideTime));
+                        cp.post(le(val, maxRideTime));
                     } catch (InconsistencyException e) {
                         //System.err.println("failed to post constraint when initializing the instance (maxRideTime constraint)");
                         throw e;
                     }
                     // pickup and drop are serviced by the same vehicle
                     try {
-                        cp.post(equal(servingVehicle[i + nRequests], servingVehicle[i]));
+                        cp.post(eq(servingVehicle[i + nRequests], servingVehicle[i]));
                     } catch (InconsistencyException e) {
                         //System.err.println("failed to post constraint when initializing the instance (pickup and drop served by same vehicle)");
                         throw e;
@@ -652,7 +652,7 @@ public class DARPInstance {
                     int servingDuration = stops[i].servingDuration;
                     int timeToDelivery = distance(stops[i], stops[i+nRequests]);
                     try {
-                        cp.post(lessOrEqual(plus(servingTime[i], servingDuration + timeToDelivery),
+                        cp.post(le(plus(servingTime[i], servingDuration + timeToDelivery),
                                 servingTime[i + nRequests]));
                     } catch (InconsistencyException e) {
                         //System.err.println("failed to post constraint when initializing the instance (pickup before drop)");
@@ -668,14 +668,14 @@ public class DARPInstance {
                     int pred = begin;
                     for (int node : route) {
                         try {
-                            cp.post(equal(servingVehicle[node], vehicle));
+                            cp.post(eq(servingVehicle[node], vehicle));
                         } catch (InconsistencyException e) {
                             //System.err.println("failed to set the vehicle for node "+ node);
                             throw e;
                         }
                         int dist = distance(stops[pred], stops[node]) + stops[pred].servingDuration;
                         try {
-                            cp.post(lessOrEqual(plus(servingTime[pred], dist), servingTime[node]));
+                            cp.post(le(plus(servingTime[pred], dist), servingTime[node]));
                         } catch (InconsistencyException e) {
                             //System.err.println("failed to insert node "+ node + " because of time violation");
                             throw e;
@@ -689,8 +689,8 @@ public class DARPInstance {
                     }
                     int dist = distance(stops[pred], stops[end]) + stops[pred].servingDuration;
                     try {
-                        cp.post(lessOrEqual(plus(servingTime[pred], dist) , servingTime[end]));
-                        cp.post(lessOrEqual(sum(servingTime[end], minus(servingTime[begin])), timeHorizon));
+                        cp.post(le(plus(servingTime[pred], dist) , servingTime[end]));
+                        cp.post(le(sum(servingTime[end], minus(servingTime[begin])), timeHorizon));
                     } catch (InconsistencyException e) {
                         //System.err.println("failed to complete the route after insert of the last node for vehicle"+ vehicle);
                         throw e;

@@ -13,7 +13,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
 /**
  * Reified equality constraint
- * @see CPFactory#isEqual(CPIntVar, int)
+ * @see CPFactory#isEq(CPIntVar, int)
  */
 public class IsEqual extends AbstractCPConstraint { // b <=> x == v
 
@@ -28,7 +28,7 @@ public class IsEqual extends AbstractCPConstraint { // b <=> x == v
      * @param v the constant
      * @param b the boolean variable that is set to true
      *          if and only if x takes the value v
-     * @see CPFactory#isEqual(CPIntVar, int)
+     * @see CPFactory#isEq(CPIntVar, int)
      */
     public IsEqual(CPBoolVar b, CPIntVar x, int v) {
         super(b.getSolver());

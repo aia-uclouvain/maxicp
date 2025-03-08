@@ -26,7 +26,7 @@ public class IsEqualTest extends CPSolverTest {
     public void test1(CPSolver cp) {
         CPIntVar x = CPFactory.makeIntVar(cp, -4, 7);
 
-        CPBoolVar b = CPFactory.isEqual(x, -2);
+        CPBoolVar b = CPFactory.isEq(x, -2);
 
         DFSearch search = CPFactory.makeDfs(cp, firstFail(x));
 
@@ -44,15 +44,15 @@ public class IsEqualTest extends CPSolverTest {
     public void test2(CPSolver cp) {
         CPIntVar x = CPFactory.makeIntVar(cp, -4, 7);
 
-        CPBoolVar b = CPFactory.isEqual(x, -2);
+        CPBoolVar b = CPFactory.isEq(x, -2);
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 1));
+        cp.post(CPFactory.eq(b, 1));
         assertEquals(-2, x.min());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 0));
+        cp.post(CPFactory.eq(b, 0));
         assertFalse(x.contains(-2));
         cp.getStateManager().restoreState();
     }
@@ -61,7 +61,7 @@ public class IsEqualTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void test3(CPSolver cp) {
         CPIntVar x = CPFactory.makeIntVar(cp, -4, 7);
-        cp.post(CPFactory.equal(x, -2));
+        cp.post(CPFactory.eq(x, -2));
 
         CPBoolVar b = CPFactory.makeBoolVar(cp);
         cp.post(new IsEqual(b, x, -2));
@@ -79,13 +79,13 @@ public class IsEqualTest extends CPSolverTest {
         CPBoolVar b = CPFactory.makeBoolVar(cp);
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 1));
+        cp.post(CPFactory.eq(b, 1));
         cp.post(new IsEqual(b, x, -2));
         assertEquals(-2, x.min());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 0));
+        cp.post(CPFactory.eq(b, 0));
         cp.post(new IsEqual(b, x, -2));
         assertFalse(x.contains(-2));
         cp.getStateManager().restoreState();

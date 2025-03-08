@@ -41,7 +41,7 @@ public class AllDifferentFWCTest extends CPSolverTest {
 
         try {
             cp.post(new AllDifferentFWC(x));
-            cp.post(equal(x[0], 0));
+            cp.post(eq(x[0], 0));
             for (int i = 1; i < x.length; i++) {
                 assertEquals(4, x[i].size());
                 assertEquals(1, x[i].min());
@@ -74,9 +74,9 @@ public class AllDifferentFWCTest extends CPSolverTest {
         CPIntVar[] x = makeIntVarArray(cp, 5, 5);
         cp.post(new AllDifferentFWC(x));
 
-        cp.post(equal(x[2], 3));
+        cp.post(eq(x[2], 3));
         try {
-            cp.post(equal(x[1], 3));
+            cp.post(eq(x[1], 3));
             fail();
         } catch (InconsistencyException e) {
 
@@ -93,11 +93,11 @@ public class AllDifferentFWCTest extends CPSolverTest {
         cp.post(new AllDifferentFWC(x));
 
         try {
-            cp.post(equal(x[1], 2));
-            cp.post(equal(x[2], 4));
+            cp.post(eq(x[1], 2));
+            cp.post(eq(x[2], 4));
 
-            cp.post(equal(x[6], 1));
-            cp.post(equal(x[3], 1));
+            cp.post(eq(x[6], 1));
+            cp.post(eq(x[3], 1));
             fail();
         } catch (InconsistencyException e) {
 
@@ -137,8 +137,8 @@ public class AllDifferentFWCTest extends CPSolverTest {
             }
             // assign the variable to a value
             int v = xs.min();
-            return branch(() -> cp.post(equal(xs, v)),
-                    () -> cp.post(notEqual(xs, v)));
+            return branch(() -> cp.post(eq(xs, v)),
+                    () -> cp.post(neq(xs, v)));
         });
 
         SearchStatistics stats = search.solve();

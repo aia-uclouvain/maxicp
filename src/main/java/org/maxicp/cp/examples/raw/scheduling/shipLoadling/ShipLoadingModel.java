@@ -87,7 +87,7 @@ public class ShipLoadingModel {
         }
 
         // Resource constraint:
-        cp.post(lessOrEqual(resource, capacityResource));
+        cp.post(le(resource, capacityResource));
 
         // Objective
         CPIntVar mksp = maximum(ends);

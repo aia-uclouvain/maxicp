@@ -15,7 +15,6 @@ import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -145,7 +144,7 @@ public class JobShopOrder {
 
             CPIntVar makespan = makespan(lasts);
 
-            cp.post(CPFactory.equal(makespan,117));
+            cp.post(CPFactory.eq(makespan,117));
 
             //Objective obj = cp.minimize(makespan);
 

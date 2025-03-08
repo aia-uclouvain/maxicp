@@ -54,9 +54,9 @@ class AtLeastNValueFWCTest extends CPSolverTest {
         CPIntVar[] Xs = CPFactory.makeIntVarArray(cp, n, 0, 3);
         CPIntVar y = CPFactory.makeIntVar(cp, 2, 5);
 
-        cp.post(CPFactory.equal(Xs[0],0));
-        cp.post(CPFactory.equal(Xs[1],0));
-        cp.post(CPFactory.equal(Xs[2],0));
+        cp.post(CPFactory.eq(Xs[0],0));
+        cp.post(CPFactory.eq(Xs[1],0));
+        cp.post(CPFactory.eq(Xs[2],0));
         cp.post(new AtLeastNValueFWC(Xs, y));
 
         assertFalse(Xs[3].contains(0));
@@ -74,9 +74,9 @@ class AtLeastNValueFWCTest extends CPSolverTest {
         CPIntVar[] Xs = CPFactory.makeIntVarArray(cp, n, 1, 4);
         CPIntVar y = CPFactory.makeIntVar(cp, 3, 4);
 
-        cp.post(CPFactory.equal(Xs[0],1));
-        cp.post(CPFactory.equal(Xs[1],1));
-        cp.post(CPFactory.equal(Xs[2],2));
+        cp.post(CPFactory.eq(Xs[0],1));
+        cp.post(CPFactory.eq(Xs[1],1));
+        cp.post(CPFactory.eq(Xs[2],2));
         cp.post(new AtLeastNValueFWC(Xs, y));
 
 
@@ -95,9 +95,9 @@ class AtLeastNValueFWCTest extends CPSolverTest {
 
         cp.post(new AtLeastNValueFWC(x, y));
 
-        cp.post(equal(x[2], 3));
+        cp.post(eq(x[2], 3));
         try {
-            cp.post(equal(x[1], 3));
+            cp.post(eq(x[1], 3));
             fail();
         } catch (InconsistencyException e) {
 
@@ -115,9 +115,9 @@ class AtLeastNValueFWCTest extends CPSolverTest {
 
         assertEquals(5, y.max());
 
-        cp.post(equal(x[2], 3));
+        cp.post(eq(x[2], 3));
         try {
-            cp.post(equal(x[1], 3));
+            cp.post(eq(x[1], 3));
             fail();
         } catch (InconsistencyException e) {
 

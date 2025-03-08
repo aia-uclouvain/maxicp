@@ -36,7 +36,7 @@ public class MagicSerie {
 
         for (int i = 0; i < n; i++) {
             final int fi = i;
-            cp.post(sum(CPFactory.makeIntVarArray(n, j -> isEqual(s[j], fi)), s[i]));
+            cp.post(sum(CPFactory.makeIntVarArray(n, j -> isEq(s[j], fi)), s[i]));
         }
         cp.post(sum(s, n));
         cp.post(sum(CPFactory.makeIntVarArray(n, i -> mul(s[i], i)), n));
@@ -50,8 +50,8 @@ public class MagicSerie {
             if (sv == null) return EMPTY;
             else {
                 int v = sv.min();
-                return branch(() -> cp.post(equal(sv, v)),
-                        () -> cp.post(notEqual(sv, v)));
+                return branch(() -> cp.post(eq(sv, v)),
+                        () -> cp.post(neq(sv, v)));
             }
         });
 

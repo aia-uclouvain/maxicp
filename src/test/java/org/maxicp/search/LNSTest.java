@@ -7,7 +7,6 @@ import org.maxicp.cp.engine.constraints.Circuit;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.state.StateManager;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,7 +73,7 @@ public class LNSTest extends CPSolverTest {
                         for (int j = 0; j < n; j++) {
                             if (rand.nextInt(100) < 70) {
                                 // after the solveSubjectTo those constraints are removed
-                                cp.post(equal(succ[j], xBest[j]));
+                                cp.post(eq(succ[j], xBest[j]));
                             }
                         }
                     }

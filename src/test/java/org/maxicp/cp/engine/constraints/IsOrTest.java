@@ -34,32 +34,32 @@ public class IsOrTest extends CPSolverTest {
         }
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(x[1], 0));
-        cp.post(CPFactory.equal(x[2], 0));
-        cp.post(CPFactory.equal(x[3], 0));
+        cp.post(CPFactory.eq(x[1], 0));
+        cp.post(CPFactory.eq(x[2], 0));
+        cp.post(CPFactory.eq(x[3], 0));
         assertFalse(b.isFixed());
-        cp.post(CPFactory.equal(x[0], 0));
+        cp.post(CPFactory.eq(x[0], 0));
         assertTrue(b.isFalse());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(x[1], 0));
-        cp.post(CPFactory.equal(x[2], 1));
+        cp.post(CPFactory.eq(x[1], 0));
+        cp.post(CPFactory.eq(x[2], 1));
         assertTrue(b.isTrue());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 1));
-        cp.post(CPFactory.equal(x[1], 0));
-        cp.post(CPFactory.equal(x[2], 0));
+        cp.post(CPFactory.eq(b, 1));
+        cp.post(CPFactory.eq(x[1], 0));
+        cp.post(CPFactory.eq(x[2], 0));
         assertFalse(x[0].isFixed());
-        cp.post(CPFactory.equal(x[3], 0));
+        cp.post(CPFactory.eq(x[3], 0));
         assertTrue(x[0].isTrue());
         cp.getStateManager().restoreState();
 
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 0));
+        cp.post(CPFactory.eq(b, 0));
         assertTrue(x[0].isFalse());
         assertTrue(x[1].isFalse());
         assertTrue(x[2].isFalse());

@@ -9,7 +9,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.modeling.Factory;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.state.State;
@@ -66,7 +65,7 @@ public class DeltaCPIntVarTest extends CPSolverTest {
             }
         });
 
-        cp.post(CPFactory.lessOrEqual(x,4));
+        cp.post(CPFactory.le(x,4));
         assertTrue(propag[0]);
 
     }
@@ -130,8 +129,8 @@ public class DeltaCPIntVarTest extends CPSolverTest {
             if (x.isFixed()) return EMPTY;
             else {
                 final int v = x.min()+(x.max()-x.min())/2;
-                return branch(() -> cp.post(CPFactory.lessOrEqual(x, v)),
-                        () -> cp.post(CPFactory.largerOrEqual(x, v+1)));
+                return branch(() -> cp.post(CPFactory.le(x, v)),
+                        () -> cp.post(CPFactory.ge(x, v+1)));
             }
         });
         SearchStatistics stats = dfs.solve();
@@ -165,7 +164,7 @@ public class DeltaCPIntVarTest extends CPSolverTest {
             }
         });
 
-        cp.post(CPFactory.lessOrEqual(x,7));
+        cp.post(CPFactory.le(x,7));
 
     }
 

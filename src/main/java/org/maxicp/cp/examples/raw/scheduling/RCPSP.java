@@ -84,7 +84,7 @@ public class RCPSP {
         }
 
         for (int r = 0; r < nResources; r++) {
-            cp.post(lessOrEqual(resources[r], capa[r]));
+            cp.post(le(resources[r], capa[r]));
         }
 
         for (int i = 0; i < nActivities; i++) {
@@ -99,7 +99,7 @@ public class RCPSP {
         Objective obj = cp.minimize(makespan);
 
         Supplier<Runnable[]> fixMakespan = () -> makespan.isFixed() ? EMPTY : new Runnable[]{() -> {
-            cp.post(CPFactory.equal(makespan, makespan.min()));
+            cp.post(CPFactory.eq(makespan, makespan.min()));
         }};
 
         DFSearch dfs = CPFactory.makeDfs(cp, and(setTimes(tasks, i -> i), fixMakespan));

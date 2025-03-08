@@ -43,9 +43,9 @@ import java.util.stream.Stream;
  *  IntVar[] q = Factory.makeIntVarArray(cp, n, n);
  *  for (int i = 0; i < n; i++)
  *    for (int j = i + 1; j < n; j++) {
- *      cp.post(Factory.notEqual(q[i], q[j]));
- *      cp.post(Factory.notEqual(q[i], q[j], j - i));
- *      cp.post(Factory.notEqual(q[i], q[j], i - j));
+ *      cp.post(Factory.neq(q[i], q[j]));
+ *      cp.post(Factory.neqs(q[i], q[j], j - i));
+ *      cp.post(Factory.neq(q[i], q[j], i - j));
  *    }
  *  search.onSolution(() ->
  *    System.out.println("solution:" + Arrays.toString(q))
@@ -344,8 +344,8 @@ public final class CPFactory {
      *        return return EMPTY;
      *     } else {
      *        int v = qi.min();
-     *        Procedure left = () -> equal(qi, v); // left branch
-     *        Procedure right = () -> notEqual(qi, v); // right branch
+     *        Procedure left = () -> eq(qi, v); // left branch
+     *        Procedure right = () -> neq(qi, v); // right branch
      *        return branch(left, right);
      *     }
      * });
@@ -561,7 +561,7 @@ public final class CPFactory {
      * @param v the value that must be assigned to x
      * @return a constraint so that {@code x = v}
      */
-    public static CPConstraint equal(CPIntVar x, int v) {
+    public static CPConstraint eq(CPIntVar x, int v) {
         return new AbstractCPConstraint(x.getSolver()) {
             @Override
             public void post() {
@@ -578,7 +578,7 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x = y}
      */
-    public static CPConstraint equal(CPIntVar x, CPIntVar y) {
+    public static CPConstraint eq(CPIntVar x, CPIntVar y) {
         return new Equal(x, y);
     }
 
@@ -590,7 +590,7 @@ public final class CPFactory {
      * @param v the value that must be different from x
      * @return a constraint so that {@code x != y}
      */
-    public static CPConstraint notEqual(CPIntVar x, int v) {
+    public static CPConstraint neq(CPIntVar x, int v) {
         return new AbstractCPConstraint(x.getSolver()) {
             @Override
             public void post() {
@@ -607,7 +607,7 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x != y}
      */
-    public static CPConstraint notEqual(CPIntVar x, CPIntVar y) {
+    public static CPConstraint neq(CPIntVar x, CPIntVar y) {
         return new NotEqual(x, y);
     }
 
@@ -621,7 +621,7 @@ public final class CPFactory {
      * @param c a constant
      * @return a constraint so that {@code x != y+c}
      */
-    public static CPConstraint notEqual(CPIntVar x, CPIntVar y, int c) {
+    public static CPConstraint neq(CPIntVar x, CPIntVar y, int c) {
         return new NotEqual(x, y, c);
     }
 
@@ -633,7 +633,7 @@ public final class CPFactory {
      * @param v the value that must be the upper bound on x
      * @return a constraint so that {@code x <= v}
      */
-    public static CPConstraint lessOrEqual(CPIntVar x, int v) {
+    public static CPConstraint le(CPIntVar x, int v) {
         return new AbstractCPConstraint(x.getSolver()) {
             @Override
             public void post() {
@@ -650,7 +650,7 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x <= y}
      */
-    public static CPConstraint lessOrEqual(CPIntVar x, CPIntVar y) {
+    public static CPConstraint le(CPIntVar x, CPIntVar y) {
         return new LessOrEqual(x, y);
     }
 
@@ -662,8 +662,8 @@ public final class CPFactory {
      * @param v the value that must be the upper bound on x
      * @return a constraint so that {@code x < v}
      */
-    public static CPConstraint less(CPIntVar x, int v) {
-        return lessOrEqual(x, v - 1);
+    public static CPConstraint lt(CPIntVar x, int v) {
+        return le(x, v - 1);
     }
 
     /**
@@ -674,8 +674,8 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x < y}
      */
-    public static CPConstraint less(CPIntVar x, CPIntVar y) {
-        return lessOrEqual(x, minus(y, 1));
+    public static CPConstraint lt(CPIntVar x, CPIntVar y) {
+        return le(x, minus(y, 1));
     }
 
     /**
@@ -686,7 +686,7 @@ public final class CPFactory {
      * @param v the value that must be the lower bound on x
      * @return a constraint so that {@code x >= v}
      */
-    public static CPConstraint largerOrEqual(CPIntVar x, int v) {
+    public static CPConstraint ge(CPIntVar x, int v) {
         return new AbstractCPConstraint(x.getSolver()) {
             @Override
             public void post() {
@@ -703,8 +703,8 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x >= y}
      */
-    public static CPConstraint largerOrEqual(CPIntVar x, CPIntVar y) {
-        return lessOrEqual(y, x);
+    public static CPConstraint ge(CPIntVar x, CPIntVar y) {
+        return le(y, x);
     }
 
     /**
@@ -715,8 +715,8 @@ public final class CPFactory {
      * @param v the value that must be the lower bound on x
      * @return a constraint so that {@code x > v}
      */
-    public static CPConstraint larger(CPIntVar x, int v) {
-        return largerOrEqual(x, v + 1);
+    public static CPConstraint gt(CPIntVar x, int v) {
+        return ge(x, v + 1);
     }
 
     /**
@@ -727,8 +727,8 @@ public final class CPFactory {
      * @param y a variable
      * @return a constraint so that {@code x > y}
      */
-    public static CPConstraint larger(CPIntVar x, CPIntVar y) {
-        return largerOrEqual(x, plus(y, 1));
+    public static CPConstraint gt(CPIntVar x, CPIntVar y) {
+        return ge(x, plus(y, 1));
     }
 
     // ********************
@@ -746,7 +746,7 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if x takes the value c
      * @see IsEqual
      */
-    public static CPBoolVar isEqual(CPIntVar x, final int c) {
+    public static CPBoolVar isEq(CPIntVar x, final int c) {
         CPSolver cp = x.getSolver();
         CPBoolVar b = makeBoolVar(cp);
         cp.post(new IsEqual(b, x, c), false);
@@ -764,7 +764,7 @@ public final class CPFactory {
      * @return boolean variable that is set to true if and only if x == y
      * @see IsEqualVar
      */
-    public static CPBoolVar isEqual(CPIntVar x, CPIntVar y) {
+    public static CPBoolVar isEq(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
         CPBoolVar b = makeBoolVar(cp);
         cp.post(new IsEqualVar(b, x, y), false);
@@ -779,8 +779,8 @@ public final class CPFactory {
      * @param c the constant
      * @return a boolean variable that is true if and only if x don't take the value c
      */
-    public static CPBoolVar isNotEqual(CPIntVar x, final int c) {
-        return not(isEqual(x, c));
+    public static CPBoolVar isNeq(CPIntVar x, final int c) {
+        return not(isEq(x, c));
     }
 
     /**
@@ -791,8 +791,8 @@ public final class CPFactory {
      * @param y second variable
      * @return boolean variable that is set to true if and only if x != y
      */
-    public static CPBoolVar isNotEqual(CPIntVar x, CPIntVar y) {
-        return not(isEqual(x, y));
+    public static CPBoolVar isNeq(CPIntVar x, CPIntVar y) {
+        return not(isEq(x, y));
     }
 
     /**
@@ -806,7 +806,7 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value less or equal to c
      */
-    public static CPBoolVar isLessOrEqual(CPIntVar x, final int c) {
+    public static CPBoolVar isLe(CPIntVar x, final int c) {
         CPSolver cp = x.getSolver();
         CPBoolVar b = makeBoolVar(cp);
         cp.post(new IsLessOrEqual(b, x, c), false);
@@ -824,7 +824,7 @@ public final class CPFactory {
      * @return boolean variable value that will be set to true if
      * {@code x <= y}, false otherwise
      */
-    public static CPBoolVar isLessOrEqual(CPIntVar x, CPIntVar y) {
+    public static CPBoolVar isLe(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
         CPBoolVar b = makeBoolVar(cp);
         cp.post(new IsLessOrEqualVar(b, x, y), false);
@@ -842,8 +842,8 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value less than c
      */
-    public static CPBoolVar isLess(CPIntVar x, final int c) {
-        return isLessOrEqual(x, c - 1);
+    public static CPBoolVar isLt(CPIntVar x, final int c) {
+        return isLe(x, c - 1);
     }
 
     /**
@@ -857,8 +857,8 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value less than y
      */
-    public static CPBoolVar isLess(CPIntVar x, CPIntVar y) {
-        return isLessOrEqual(x, minus(y, 1));
+    public static CPBoolVar isLt(CPIntVar x, CPIntVar y) {
+        return isLe(x, minus(y, 1));
     }
 
     /**
@@ -872,8 +872,8 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value larger or equal to c
      */
-    public static CPBoolVar isLargerOrEqual(CPIntVar x, final int c) {
-        return isLessOrEqual(minus(x), -c);
+    public static CPBoolVar isGe(CPIntVar x, final int c) {
+        return isLe(minus(x), -c);
     }
 
     /**
@@ -887,8 +887,8 @@ public final class CPFactory {
      * @return boolean variable value that will be set to true if
      * {@code x >= y}, false otherwise
      */
-    public static CPBoolVar isLargerOrEqual(CPIntVar x, CPIntVar y) {
-        return isLessOrEqual(y, x);
+    public static CPBoolVar isGe(CPIntVar x, CPIntVar y) {
+        return isLe(y, x);
     }
 
     /**
@@ -902,8 +902,8 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value larger than c
      */
-    public static CPBoolVar isLarger(CPIntVar x, final int c) {
-        return isLargerOrEqual(x, c + 1);
+    public static CPBoolVar isGt(CPIntVar x, final int c) {
+        return isGe(x, c + 1);
     }
 
     /**
@@ -917,8 +917,8 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if
      * x takes a value larger than y
      */
-    public static CPBoolVar isLarger(CPIntVar x, CPIntVar y) {
-        return isLargerOrEqual(x, plus(y, 1));
+    public static CPBoolVar isGt(CPIntVar x, CPIntVar y) {
+        return isGe(x, plus(y, 1));
     }
 
     // ********************
@@ -956,7 +956,7 @@ public final class CPFactory {
      */
     public static CPConstraint implies(CPBoolVar b1, CPBoolVar b2) {
         CPIntVar notB1 = CPFactory.plus(CPFactory.minus(b1), 1);
-        return CPFactory.largerOrEqual(CPFactory.sum(notB1, b2), 1);
+        return CPFactory.ge(CPFactory.sum(notB1, b2), 1);
     }
 
     // TODO implies b -> cst (as in choco!)
@@ -1984,7 +1984,7 @@ public final class CPFactory {
      * @param maxValue an int value
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
-    public static CPConstraint lessOrEqual(CPCumulFunction fun, int maxValue) {
+    public static CPConstraint le(CPCumulFunction fun, int maxValue) {
         List<Activity> activities = fun.flatten(true);
 
         if (activities.isEmpty()) {

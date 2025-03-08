@@ -6,7 +6,6 @@
 
 package org.maxicp.cp.examples.raw;
 
-import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.AllDifferentDC;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -39,24 +38,24 @@ public class TSPTW {
         cp.post(new AllDifferentDC(Arrays.copyOf(x,instance.n)));
 
         // the time starts at 0 in the depot (i.e. node 0)
-        cp.post(equal(arrival[0],0));
-        cp.post(equal(x[0], 0));
+        cp.post(eq(arrival[0],0));
+        cp.post(eq(x[0], 0));
 
         // the last node is the depot
-        cp.post(equal(x[instance.n], 0));
+        cp.post(eq(x[instance.n], 0));
 
 
         for (int i = 0; i < instance.n+1; i++) {
             CPIntVar earliest = element(instance.earliest,x[i]); // earliest[i] = instance.earliest[x[i]]
             CPIntVar latest = element(instance.latest, x[i]); // latest[i] = instance.latest[x[i]]
-            cp.post(lessOrEqual(arrival[i],latest)); // arrival[i] <= latest[i]
-            cp.post(lessOrEqual(earliest,arrival[i])); // earliest[i] <= arrival[i]
+            cp.post(le(arrival[i],latest)); // arrival[i] <= latest[i]
+            cp.post(le(earliest,arrival[i])); // earliest[i] <= arrival[i]
         }
 
         for (int i = 0; i < instance.n; i++) {
             transition[i] = element(instance.distMatrix,x[i],x[i+1]); // transition time between x[i] and x[i+1]
             CPIntVar arrivalPlusTransition = sum(arrival[i], transition[i]); // arrivalPlusTransition[i] = arrival[i] + transition[i]
-            cp.post(lessOrEqual(arrivalPlusTransition,arrival[i+1])); // arrivalPlusTransition[i] <= arrival[i+1]
+            cp.post(le(arrivalPlusTransition,arrival[i+1])); // arrivalPlusTransition[i] <= arrival[i+1]
         }
 
         CPIntVar distance = sum(transition);

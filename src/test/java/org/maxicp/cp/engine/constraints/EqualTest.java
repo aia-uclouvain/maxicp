@@ -38,7 +38,7 @@ public class EqualTest extends CPSolverTest {
         CPIntVar x = CPFactory.makeIntVar(cp,0,10);
         CPIntVar y = CPFactory.makeIntVar(cp,0,10);
 
-        cp.post(CPFactory.equal(x,y));
+        cp.post(CPFactory.eq(x,y));
 
         x.removeAbove(7);
         cp.fixPoint();
@@ -65,11 +65,11 @@ public class EqualTest extends CPSolverTest {
         CPIntVar x = CPFactory.makeIntVar(cp,Integer.MAX_VALUE-20,Integer.MAX_VALUE-1);
         CPIntVar y = CPFactory.makeIntVar(cp,Integer.MAX_VALUE-10,Integer.MAX_VALUE-1);
 
-        cp.post(CPFactory.notEqual(x,Integer.MAX_VALUE-5));
+        cp.post(CPFactory.neq(x,Integer.MAX_VALUE-5));
 
-        cp.post(CPFactory.equal(x,y));
+        cp.post(CPFactory.eq(x,y));
 
-        cp.post(CPFactory.equal(x,Integer.MAX_VALUE-1));
+        cp.post(CPFactory.eq(x,Integer.MAX_VALUE-1));
 
         assertEquals(y.min(), Integer.MAX_VALUE-1);
 

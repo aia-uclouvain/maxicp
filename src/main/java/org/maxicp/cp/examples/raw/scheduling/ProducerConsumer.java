@@ -101,7 +101,7 @@ public class ProducerConsumer {
         }
 
         for (int i = 0; i < nRenewableResources; i++) {
-            cp.post(lessOrEqual(renewableResource[i], capRenewableResource[i]));
+            cp.post(le(renewableResource[i], capRenewableResource[i]));
         }
 
         for (int i = 0; i < nReservoirResources; i++) {

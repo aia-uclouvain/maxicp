@@ -223,7 +223,7 @@ public class SumTest extends CPSolverTest {
         CPIntVar x2 = makeIVar(cp, -463872432, -463872429);
         CPIntVar x3 = makeIVar(cp, -463872435, -463872434, -463872432, -463872431, -463872430, -463872429);
         CPIntVar x4 = makeIVar(cp, -463872437, -463872436, -463872435, -463872432, -463872431, -463872430, -463872429);
-        assertThrowsExactly(IntOverFlowException.class, () -> cp.post(CPFactory.lessOrEqual(CPFactory.sum(x0, x1, x2, x3, x4), 0)));
+        assertThrowsExactly(IntOverFlowException.class, () -> cp.post(CPFactory.le(CPFactory.sum(x0, x1, x2, x3, x4), 0)));
     }
 
 

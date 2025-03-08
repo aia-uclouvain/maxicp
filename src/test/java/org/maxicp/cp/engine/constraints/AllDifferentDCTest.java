@@ -30,7 +30,7 @@ public class AllDifferentDCTest extends CPSolverTest {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 5, 5);
 
         cp.post(new AllDifferentDC(x));
-        cp.post(CPFactory.equal(x[0], 0));
+        cp.post(CPFactory.eq(x[0], 0));
         for (int i = 1; i < x.length; i++) {
             assertEquals(4, x[i].size());
             assertEquals(1, x[i].min());
@@ -120,10 +120,10 @@ public class AllDifferentDCTest extends CPSolverTest {
                 int v = xs.min();
                 return branch(
                         () -> {
-                            cp.post(CPFactory.equal(xs, v));
+                            cp.post(CPFactory.eq(xs, v));
                         },
                         () -> {
-                            cp.post(CPFactory.notEqual(xs, v));
+                            cp.post(CPFactory.neq(xs, v));
                         });
             }
         });

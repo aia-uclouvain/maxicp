@@ -24,7 +24,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
 /**
  * Reified equality constraint
- * @see CPFactory#isEqual(CPIntVar, CPIntVar)
+ * @see CPFactory#isEq(CPIntVar, CPIntVar)
  */
 public class IsEqualVar extends AbstractCPConstraint { // b <=> x == y
 
@@ -47,8 +47,8 @@ public class IsEqualVar extends AbstractCPConstraint { // b <=> x == y
         this.b = b;
         this.x = x;
         this.y = y;
-        isEq = CPFactory.equal(x, y);
-        isNotEq = CPFactory.notEqual(x, y);
+        isEq = CPFactory.eq(x, y);
+        isNotEq = CPFactory.neq(x, y);
     }
 
     @Override

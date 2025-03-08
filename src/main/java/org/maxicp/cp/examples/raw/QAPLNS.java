@@ -104,7 +104,7 @@ public class QAPLNS {
                         for (int j = 0; j < n; j++) {
                             if (rand.nextInt(100) < 5) {
                                 // after the solveSubjectTo those constraints are removed
-                                cp.post(equal(x[j], xBest[j]));
+                                cp.post(eq(x[j], xBest[j]));
                             }
                         }
                     }

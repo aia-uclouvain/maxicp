@@ -45,7 +45,7 @@ class NonOverlapBinaryTest extends CPSolverTest {
         cp.post(binary);
         CPIntVar before = binary.before;
 
-        cp.post(CPFactory.equal(before, 0)); // second activity before the first one
+        cp.post(CPFactory.eq(before, 0)); // second activity before the first one
 
         assertEquals(5, intervals[0].startMin());
     }
@@ -97,7 +97,7 @@ class NonOverlapBinaryTest extends CPSolverTest {
         }
 
         Supplier<Runnable[]> fixMakespan = () -> makespan.isFixed() ? EMPTY : new Runnable[]{() -> {
-            cp.post(CPFactory.equal(makespan, makespan.min()));
+            cp.post(CPFactory.eq(makespan, makespan.min()));
         }};
 
         DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(precedences.toArray(new CPBoolVar[0])), fixMakespan));

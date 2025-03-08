@@ -5,7 +5,6 @@
 package org.maxicp.cp.engine.constraints;
 
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.utils.ThetaTree;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
@@ -72,7 +71,7 @@ public class BinPacking extends AbstractCPConstraint {
         for (int j = 0; j < load.length; j++) {
             CPBoolVar [] b = new CPBoolVar[x.length];
             for (int i = 0; i < x.length; i++) {
-                b[i] = CPFactory.isEqual(x[i], j);
+                b[i] = CPFactory.isEq(x[i], j);
             }
             getSolver().post(new BinaryKnapsack(b, w, load[j]));
         }

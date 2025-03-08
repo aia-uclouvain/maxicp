@@ -105,7 +105,7 @@ public final class Factory {
     public static IntExpression min(IntExpression... x) { return new Min(x); }
 
     // ********************
-    // Comparison constraints (=, !=, <=, <, >=, >)
+    // Comon constraints (=, !=, <=, <, >=, >)
     // ********************
 
     static public BoolExpression eq(IntExpression a, int b) {

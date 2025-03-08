@@ -26,7 +26,7 @@ public class AllDifferentTest extends CPSolverTest {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 5, 5);
 
         cp.post(CPFactory.allDifferent(x));
-        cp.post(CPFactory.equal(x[0], 0));
+        cp.post(CPFactory.eq(x[0], 0));
         for (int i = 1; i < x.length; i++) {
             assertEquals(4, x[i].size());
             assertEquals(1, x[i].min());

@@ -27,7 +27,7 @@ public class IsLessOrEqual extends AbstractCPConstraint { // b <=> x <= v
      *         x takes a value less or equal to v
      * @param x the variable
      * @param v the constant
-     * @see CPFactory#isLessOrEqual(CPIntVar, int)
+     * @see CPFactory#isLe(CPIntVar, int)
      */
     public IsLessOrEqual(CPBoolVar b, CPIntVar x, int v) {
         super(b.getSolver());

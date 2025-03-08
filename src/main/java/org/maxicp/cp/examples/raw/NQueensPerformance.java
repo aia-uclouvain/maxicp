@@ -24,9 +24,9 @@ public class NQueensPerformance {
 
         for (int i = 0; i < n; i++)
             for (int j = i + 1; j < n; j++) {
-                cp.post(notEqual(q[i], q[j]));
-                cp.post(notEqual(plus(q[i], j - i), q[j]));
-                cp.post(notEqual(minus(q[i], j - i), q[j]));
+                cp.post(neq(q[i], q[j]));
+                cp.post(neq(plus(q[i], j - i), q[j]));
+                cp.post(neq(minus(q[i], j - i), q[j]));
             }
 
 
@@ -42,7 +42,7 @@ public class NQueensPerformance {
             else {
                 int v = qs.min();
                 //return branch(() -> equal(qs, v), () -> notEqual(qs, v));
-                return branch(() -> cp.post(equal(qs, v)), () -> cp.post(notEqual(qs, v)));
+                return branch(() -> cp.post(eq(qs, v)), () -> cp.post(neq(qs, v)));
             }
         });
 

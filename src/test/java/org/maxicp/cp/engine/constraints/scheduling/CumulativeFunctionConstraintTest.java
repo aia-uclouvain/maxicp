@@ -46,7 +46,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
             profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[i], h, h));
         }
 
-        cp.post(lessOrEqual(profile, 10));
+        cp.post(le(profile, 10));
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
@@ -77,14 +77,14 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         }
 
         // at least n-1 activities are present
-        cp.post(CPFactory.largerOrEqual(CPFactory.sum(present), n - 1));
+        cp.post(CPFactory.ge(CPFactory.sum(present), n - 1));
 
         CPCumulFunction profile = new CPFlatCumulFunction();
         for (int i = 0; i < n; i++) {
             profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[i], h, h));
         }
 
-        cp.post(lessOrEqual(profile, C));
+        cp.post(le(profile, C));
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
@@ -117,7 +117,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
             profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[i], hmin, hmax));
         }
 
-        cp.post(lessOrEqual(profile, C));
+        cp.post(le(profile, C));
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
@@ -159,14 +159,14 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
             profileConsumer = CPFactory.plus(profileConsumer, pulse(intervals[i], hConsumer));
         }
 
-        cp.post(lessOrEqual(profileConsumer, cConsumer));
+        cp.post(le(profileConsumer, cConsumer));
 
         // producer
         for (int i = n; i < 2 * n; i++) {
             profileAll = minus(profileAll, new CPPulseCumulFunction(intervals[i], hProducer, hProducer));
         }
 
-        cp.post(lessOrEqual(profileAll, cGlobal));
+        cp.post(le(profileAll, cGlobal));
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(2 * n, i -> startOr(intervals[i], 0));
 
@@ -203,7 +203,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
             profile = CPFactory.plus(profile, pulse(intervals[i], 5));
         }
 
-        cp.post(lessOrEqual(profile, 5));
+        cp.post(le(profile, 5));
 
         // producer
         for (int i = n; i < 2 * n; i++) {
@@ -214,7 +214,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] heights = CPFactory.makeIntVarArray(2 * n, i -> profile_.heightAtStart(intervals[i]));
 
-        cp.post(lessOrEqual(profile, C));
+        cp.post(le(profile, C));
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(2 * n, i -> startOr(intervals[i], 0));
 

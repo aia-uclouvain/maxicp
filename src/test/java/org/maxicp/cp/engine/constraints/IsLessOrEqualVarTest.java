@@ -53,12 +53,12 @@ public class IsLessOrEqualVarTest extends CPSolverTest {
         cp.post(new IsLessOrEqualVar(b, x, y));
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 1));
+        cp.post(CPFactory.eq(b, 1));
         assertEquals(3, x.max());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 0));
+        cp.post(CPFactory.eq(b, 0));
         assertEquals(-3, x.min());
         cp.getStateManager().restoreState();
     }
@@ -68,7 +68,7 @@ public class IsLessOrEqualVarTest extends CPSolverTest {
     public void test3(CPSolver cp) {
         CPIntVar x = CPFactory.makeIntVar(cp, -4, 7);
         CPIntVar y = CPFactory.makeIntVar(cp, 0, 7);
-        cp.post(CPFactory.equal(x, -2));
+        cp.post(CPFactory.eq(x, -2));
 
         CPBoolVar b = CPFactory.makeBoolVar(cp);
         cp.post(new IsLessOrEqualVar(b, x, y));
@@ -82,13 +82,13 @@ public class IsLessOrEqualVarTest extends CPSolverTest {
         CPBoolVar b = CPFactory.makeBoolVar(cp);
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 1));
+        cp.post(CPFactory.eq(b, 1));
         cp.post(new IsLessOrEqual(b, x, -2));
         assertEquals(-2, x.max());
         cp.getStateManager().restoreState();
 
         cp.getStateManager().saveState();
-        cp.post(CPFactory.equal(b, 0));
+        cp.post(CPFactory.eq(b, 0));
         cp.post(new IsLessOrEqual(b, x, -2));
         assertEquals(-1, x.min());
         cp.getStateManager().restoreState();

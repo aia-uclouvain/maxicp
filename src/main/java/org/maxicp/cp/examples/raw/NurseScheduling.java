@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.DFSearch.*;
 
 /**
  * Nurse scheduling problem.
@@ -73,8 +72,8 @@ public class NurseScheduling {
                     if (schedule[service][shift].isFixed()) continue;
                     final CPIntVar nurse = schedule[service][shift];
                     final int n = nurse.min();
-                    return Searches.branch(() -> cp.post(equal(nurse, n)),
-                            () -> cp.post(notEqual(nurse, n)));
+                    return Searches.branch(() -> cp.post(eq(nurse, n)),
+                            () -> cp.post(neq(nurse, n)));
                 }
             }
             return Searches.EMPTY;

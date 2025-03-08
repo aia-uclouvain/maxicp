@@ -27,7 +27,7 @@ public class MiniCPTest extends CPSolverTest {
 
 
         SearchStatistics stats1 = dfs.solveSubjectTo(l -> false, () -> {
-            cp.post(CPFactory.equal(x[0], 0));
+            cp.post(CPFactory.eq(x[0], 0));
         });
 
         assertEquals(4, stats1.numberOfSolutions());
@@ -52,8 +52,8 @@ public class MiniCPTest extends CPSolverTest {
             final int i = sel;
             if (i == -1)
                 return EMPTY;
-            else return branch(() -> cp.post(CPFactory.equal(values[i], 0)),
-                    () -> cp.post(CPFactory.equal(values[i], 1)));
+            else return branch(() -> cp.post(CPFactory.eq(values[i], 0)),
+                    () -> cp.post(CPFactory.eq(values[i], 1)));
         });
 
 

@@ -16,8 +16,6 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -88,8 +86,8 @@ public class CardinalityMinFWCTest extends CPSolverTest {
 
         for (int i = 0; i < 4; i++) {
             int v = i;
-            cp.post(CPFactory.equal(count[i], CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEqual(x[j], v)))));
-            cp.post(CPFactory.largerOrEqual(count[i], minCard[v]));
+            cp.post(CPFactory.eq(count[i], CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEq(x[j], v)))));
+            cp.post(CPFactory.ge(count[i], minCard[v]));
         }
 
         search = CPFactory.makeDfs(cp, Searches.staticOrder(x));

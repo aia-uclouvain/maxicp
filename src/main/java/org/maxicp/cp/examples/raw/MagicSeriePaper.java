@@ -27,7 +27,7 @@ public class MagicSeriePaper {
 
         for (int i = 0; i < n; i++) {
             final int fi = i;
-            cp.post(CPFactory.sum(CPFactory.makeIntVarArray(n, j -> CPFactory.isEqual(s[j], fi)), s[i]));
+            cp.post(CPFactory.sum(CPFactory.makeIntVarArray(n, j -> CPFactory.isEq(s[j], fi)), s[i]));
         }
         cp.post(CPFactory.sum(s, n));
         cp.post(CPFactory.sum(CPFactory.makeIntVarArray(n, i -> CPFactory.mul(s[i], i)), n));
@@ -44,8 +44,8 @@ public class MagicSeriePaper {
             else {
                 CPIntVar si = s[idx];
                 int v = si.min();
-                Runnable left = () -> cp.post(CPFactory.equal(si, v));
-                Runnable right = () -> cp.post(CPFactory.notEqual(si, v));
+                Runnable left = () -> cp.post(CPFactory.eq(si, v));
+                Runnable right = () -> cp.post(CPFactory.neq(si, v));
                 return new Runnable[]{left, right};
             }                
         });

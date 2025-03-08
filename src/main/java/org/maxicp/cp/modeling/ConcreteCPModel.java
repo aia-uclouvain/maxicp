@@ -160,14 +160,14 @@ public class ConcreteCPModel implements ConcreteModel {
             case IntervalStatus s -> getCPVar(s.intervalVar).status();
             case BoolVarImpl bv -> CPFactory.makeBoolVar(solver, bv.contains(0), bv.contains(1));
             case Not e -> CPFactory.not(getCPVar(e.a()));
-            case Eq e -> CPFactory.isEqual(getCPVar(e.a()), getCPVar(e.b()));
-            case NotEq e -> CPFactory.not(CPFactory.isEqual(getCPVar(e.a()), getCPVar(e.b())));
-            case LessOrEq e -> CPFactory.isLessOrEqual(getCPVar(e.a()), getCPVar(e.b()));
-            case GreaterOrEq e -> CPFactory.isLargerOrEqual(getCPVar(e.a()), getCPVar(e.b()));
+            case Eq e -> CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b()));
+            case NotEq e -> CPFactory.not(CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b())));
+            case LessOrEq e -> CPFactory.isLe(getCPVar(e.a()), getCPVar(e.b()));
+            case GreaterOrEq e -> CPFactory.isGe(getCPVar(e.a()), getCPVar(e.b()));
             case And e -> {
                 CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());
                 post(new org.maxicp.cp.engine.constraints.Sum(e.exprs().stream().map(x -> getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));
-                yield CPFactory.isEqual(s, e.exprs().size());
+                yield CPFactory.isEq(s, e.exprs().size());
             }
             case Or or -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
@@ -654,7 +654,7 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -> {
                 CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());
-                solver.post(CPFactory.lessOrEqual(cpExpression, lessOrEqual.limit()));
+                solver.post(CPFactory.le(cpExpression, lessOrEqual.limit()));
             }
             case org.maxicp.modeling.constraints.scheduling.Alternative alternative -> {
                 solver.post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()), getCPVar(alternative.n())));

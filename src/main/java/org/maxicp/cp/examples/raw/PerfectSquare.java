@@ -71,7 +71,7 @@ public class PerfectSquare {
                     // logical and
                     CPIntVar conditions = CPFactory.makeIntVar(cp, 0, 2);
                     cp.post(new Sum(new CPIntVar[]{isEndAfterTick, isStartBeforeTick}, conditions));
-                    CPBoolVar squarePlacedOnTick = CPFactory.isEqual(conditions, 2);
+                    CPBoolVar squarePlacedOnTick = CPFactory.isEq(conditions, 2);
                     heightOnTick[i] = CPFactory.mul(squarePlacedOnTick, length);
                 }
                 cp.post(CPFactory.sum(heightOnTick, side));

@@ -96,7 +96,7 @@ public class DARP {
         CPIntVar[] load = makeIntVarArray(cp, 2*n+1,vehicleCapacity+1);
 
         // departure time from the depot =  0
-        cp.post(equal(time[0],0));
+        cp.post(eq(time[0],0));
 
         // visit time update
         for (int i = 1; i < 2*n+1; i++) {
@@ -104,25 +104,25 @@ public class DARP {
             CPIntVar tPredi = elementVar(time,pred[i]);
             CPIntVar posPredi = element(positionIdx,pred[i]);
             CPIntVar tt = element(transitions[positionIdx[i]],posPredi);
-            cp.post(equal(time[i],sum(tPredi,tt)));
+            cp.post(eq(time[i],sum(tPredi,tt)));
         }
 
         // initial load of the vehicle = 0
-        cp.post(equal(load[0],0));
+        cp.post(eq(load[0],0));
 
 
         // load update after a pickup (+1)
         for (int i = 1; i <= n; i++) {
             // load[i] = load[[pred[i]] + 1
             CPIntVar loadPred = elementVar(load, pred[i]);
-            cp.post(equal(load[i], plus(loadPred, 1)));
+            cp.post(eq(load[i], plus(loadPred, 1)));
         }
 
         // load update after a delivery (-1)
         for (int i = n+1; i <= 2*n; i++) {
             // load[i] = load[[pred[i]] - 1
             CPIntVar loadPred = elementVar(load, pred[i]);
-            cp.post(equal(load[i], plus(loadPred, -1)));
+            cp.post(eq(load[i], plus(loadPred, -1)));
         }
 
 
@@ -131,15 +131,15 @@ public class DARP {
         // channeling between pred and succ vectors
         for (int i = 0; i < succ.length; i++) {
             // succ[pred[i]] == i
-            cp.post(equal(elementVar(succ,pred[i]),i));
+            cp.post(eq(elementVar(succ,pred[i]),i));
         }
 
         // precedence between pickup and delivery + deadlines
         for (int i = 0; i < n; i++) {
             // pickup before delivery)
-            cp.post(lessOrEqual(time[i+1],time[n+i+1]));
+            cp.post(le(time[i+1],time[n+i+1]));
             // delivery before the deadline
-            cp.post(lessOrEqual(time[n+i+1],requests[i][2]));
+            cp.post(le(time[n+i+1],requests[i][2]));
         }
 
 

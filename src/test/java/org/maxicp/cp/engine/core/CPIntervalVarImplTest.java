@@ -11,9 +11,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.CPBoolVar;
-import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.cp.engine.core.CPSolver;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -119,13 +116,13 @@ public class CPIntervalVarImplTest extends CPSolverTest {
         cp.getStateManager().saveState();
 
         // if the status is true then the interval is present
-        cp.post(CPFactory.equal(status,1));
+        cp.post(CPFactory.eq(status,1));
         assertTrue(interval.isPresent());
 
         cp.getStateManager().restoreState();
         cp.getStateManager().saveState();
 
-        cp.post(CPFactory.equal(status, 0));
+        cp.post(CPFactory.eq(status, 0));
         assertTrue(interval.isAbsent());
 
         cp.getStateManager().restoreState();

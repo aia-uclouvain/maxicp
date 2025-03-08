@@ -46,9 +46,9 @@ public class AbsoluteTest extends CPSolverTest {
         CPIntVar x = CPFactory.makeIntVar(cp, -5, 5);
         CPIntVar y = CPFactory.makeIntVar(cp, -10, 10);
 
-        cp.post(CPFactory.notEqual(x, 0));
-        cp.post(CPFactory.notEqual(x, 5));
-        cp.post(CPFactory.notEqual(x, -5));
+        cp.post(CPFactory.neq(x, 0));
+        cp.post(CPFactory.neq(x, 5));
+        cp.post(CPFactory.neq(x, -5));
 
         cp.post(new Absolute(x, y));
 
@@ -94,13 +94,13 @@ public class AbsoluteTest extends CPSolverTest {
         assertEquals(7, x.max());
         assertEquals(-5, x.min());
 
-        cp.post(CPFactory.notEqual(y, 0));
+        cp.post(CPFactory.neq(y, 0));
 
-        cp.post(CPFactory.lessOrEqual(x,4));
+        cp.post(CPFactory.le(x,4));
 
         assertEquals(5, y.max());
 
-        cp.post(CPFactory.lessOrEqual(x,-2));
+        cp.post(CPFactory.le(x,-2));
 
         assertEquals(2, y.min());
 

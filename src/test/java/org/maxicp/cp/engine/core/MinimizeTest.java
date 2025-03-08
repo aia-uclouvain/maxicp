@@ -33,7 +33,7 @@ public class MinimizeTest extends CPSolverTest {
                 return EMPTY;
             } else {
                 final int v = x.max();
-                return branch(() -> cp.post(equal(x, v)), () -> cp.post(notEqual(x, v)));
+                return branch(() -> cp.post(eq(x, v)), () -> cp.post(neq(x, v)));
             }
         });
 
@@ -59,7 +59,7 @@ public class MinimizeTest extends CPSolverTest {
                 return EMPTY;
             } else {
                 final int v = x.max();
-                return branch(() -> cp.post(equal(x, v)), () -> cp.post(notEqual(x, v)));
+                return branch(() -> cp.post(eq(x, v)), () -> cp.post(neq(x, v)));
             }
         });
 

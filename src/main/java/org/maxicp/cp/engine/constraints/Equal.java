@@ -19,7 +19,7 @@ public class Equal extends AbstractCPConstraint {
      *
      * @param x the left member
      * @param y the right memer
-     * @see CPFactory#equal(CPIntVar, CPIntVar)
+     * @see CPFactory#eq(CPIntVar, CPIntVar)
      */
     public Equal(CPIntVar x, CPIntVar y) { // x == y
         super(x.getSolver());

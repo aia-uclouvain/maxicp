@@ -146,7 +146,7 @@ public class MagicSquareVOLNS {
                 // relaxation
                 for (int j = 0; j < n * n; ++j) {
                     if (random.nextDouble() > relaxValue) {
-                        cp.post(equal(xFlat[j], xFlatSol[j]));
+                        cp.post(eq(xFlat[j], xFlatSol[j]));
                     }
                 }
             });

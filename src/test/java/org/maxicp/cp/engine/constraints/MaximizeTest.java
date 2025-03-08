@@ -32,8 +32,8 @@ public class MaximizeTest extends CPSolverTest {
                 return EMPTY;
             else {
                 int v = y.min();
-                return branch(() -> cp.post(CPFactory.equal(y, v)),
-                        () -> cp.post(CPFactory.notEqual(y, v)));
+                return branch(() -> cp.post(CPFactory.eq(y, v)),
+                        () -> cp.post(CPFactory.neq(y, v)));
             }
         });
         Objective obj = cp.maximize(y);

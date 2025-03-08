@@ -641,21 +641,21 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 0));
-        cp.post(equal(ends[0], 2));
-        cp.post(equal(heights[0], -1));
+        cp.post(eq(starts[0], 0));
+        cp.post(eq(ends[0], 2));
+        cp.post(eq(heights[0], -1));
 
-        cp.post(equal(starts[1], 0));
-        cp.post(equal(ends[1], 1));
-        cp.post(equal(heights[1], 0));
+        cp.post(eq(starts[1], 0));
+        cp.post(eq(ends[1], 1));
+        cp.post(eq(heights[1], 0));
 
-        cp.post(equal(starts[2], 0));
-        cp.post(equal(ends[2], 3));
-        cp.post(equal(heights[2], 3));
+        cp.post(eq(starts[2], 0));
+        cp.post(eq(ends[2], 3));
+        cp.post(eq(heights[2], 3));
         // should not fail
     }
 
@@ -685,17 +685,17 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 0));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 0));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[1], 0));
-        cp.post(equal(ends[1], 1));
-        cp.post(equal(heights[1], 1));
+        cp.post(eq(starts[1], 0));
+        cp.post(eq(ends[1], 1));
+        cp.post(eq(heights[1], 1));
 
-        cp.post(equal(starts[2], 0));
-        cp.post(equal(ends[2], 4));
-        cp.post(equal(heights[2], 2));
+        cp.post(eq(starts[2], 0));
+        cp.post(eq(ends[2], 4));
+        cp.post(eq(heights[2], 2));
         // should not fail
     }
 
@@ -724,17 +724,17 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 0));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 0));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 0));
-        cp.post(equal(ends[0], 4));
-        cp.post(equal(heights[0], 3));
+        cp.post(eq(starts[0], 0));
+        cp.post(eq(ends[0], 4));
+        cp.post(eq(heights[0], 3));
 
-        cp.post(equal(starts[2], 2));
-        cp.post(equal(ends[2], 4));
-        cp.post(equal(heights[2], -1));
+        cp.post(eq(starts[2], 2));
+        cp.post(eq(ends[2], 4));
+        cp.post(eq(heights[2], -1));
         // should not fail
     }
 
@@ -763,21 +763,21 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 1));
-        cp.post(equal(ends[0], 4));
-        cp.post(equal(heights[0], 1));
+        cp.post(eq(starts[0], 1));
+        cp.post(eq(ends[0], 4));
+        cp.post(eq(heights[0], 1));
 
-        cp.post(equal(starts[1], 3));
-        cp.post(equal(ends[1], 4));
-        cp.post(equal(heights[1], 1));
+        cp.post(eq(starts[1], 3));
+        cp.post(eq(ends[1], 4));
+        cp.post(eq(heights[1], 1));
 
-        cp.post(equal(starts[2], 1));
-        cp.post(equal(ends[2], 3));
-        cp.post(equal(heights[2], 1));
+        cp.post(eq(starts[2], 1));
+        cp.post(eq(ends[2], 3));
+        cp.post(eq(heights[2], 1));
         // should not fail
     }
 
@@ -806,19 +806,19 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 1));
-        cp.post(equal(ends[0], 4));
-        cp.post(equal(heights[0], 1));
+        cp.post(eq(starts[0], 1));
+        cp.post(eq(ends[0], 4));
+        cp.post(eq(heights[0], 1));
 
-        cp.post(equal(starts[1], 1));
-        cp.post(equal(ends[1], 3));
-        cp.post(equal(heights[1], 1));
+        cp.post(eq(starts[1], 1));
+        cp.post(eq(ends[1], 3));
+        cp.post(eq(heights[1], 1));
 
-        assertThrowsExactly(InconsistencyException.class, () -> cp.post(equal(starts[2], 0)));
+        assertThrowsExactly(InconsistencyException.class, () -> cp.post(eq(starts[2], 0)));
         // should fail
     }
 
@@ -847,21 +847,21 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 2));
-        cp.post(equal(ends[0], 4));
-        cp.post(equal(heights[0], 3));
+        cp.post(eq(starts[0], 2));
+        cp.post(eq(ends[0], 4));
+        cp.post(eq(heights[0], 3));
 
-        cp.post(equal(starts[1], 3));
-        cp.post(equal(ends[1], 4));
-        cp.post(equal(heights[1], -2));
+        cp.post(eq(starts[1], 3));
+        cp.post(eq(ends[1], 4));
+        cp.post(eq(heights[1], -2));
 
-        cp.post(equal(starts[2], 3));
-        cp.post(equal(ends[2], 4));
-        cp.post(equal(heights[2], 1));
+        cp.post(eq(starts[2], 3));
+        cp.post(eq(ends[2], 4));
+        cp.post(eq(heights[2], 1));
         // should not fail
     }
 
@@ -890,21 +890,21 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2, 3));
 
-        cp.post(equal(present[0], 1));
-        cp.post(equal(present[1], 1));
-        cp.post(equal(present[2], 1));
+        cp.post(eq(present[0], 1));
+        cp.post(eq(present[1], 1));
+        cp.post(eq(present[2], 1));
 
-        cp.post(equal(starts[0], 0));
-        cp.post(equal(ends[0], 2));
-        cp.post(equal(heights[0], 2));
+        cp.post(eq(starts[0], 0));
+        cp.post(eq(ends[0], 2));
+        cp.post(eq(heights[0], 2));
 
-        cp.post(equal(starts[1], 3));
-        cp.post(equal(ends[1], 4));
-        cp.post(equal(heights[1], 1));
+        cp.post(eq(starts[1], 3));
+        cp.post(eq(ends[1], 4));
+        cp.post(eq(heights[1], 1));
 
-        cp.post(equal(starts[2], 3));
-        cp.post(equal(ends[2], 4));
-        cp.post(equal(heights[2], 1));
+        cp.post(eq(starts[2], 3));
+        cp.post(eq(ends[2], 4));
+        cp.post(eq(heights[2], 1));
         // should not fail
     }
 
@@ -931,7 +931,7 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
         }
 
         cp.post(new GeneralizedCumulativeConstraint(activities, 2));
-        cp.post(equal(starts[0], 0));
+        cp.post(eq(starts[0], 0));
 
         assertTrue(activities[1].isFixed());
         assertEquals(5, starts[1].min());
@@ -1001,7 +1001,7 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
                 for (int i = 0; i < n; i++) {
                     final int idx = i;
                     if (!present[i].isFixed()) {
-                        return branch(() -> cp.post(equal(present[idx], 0)), () -> cp.post(equal(present[idx], 1)));
+                        return branch(() -> cp.post(eq(present[idx], 0)), () -> cp.post(eq(present[idx], 1)));
                     }
                 }
                 for (int i = 0; i < n; i++) {
@@ -1078,10 +1078,10 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
         int min = var.min();
         if (var.isFixed()) return EMPTY;
         Runnable left = () -> {
-            var.getSolver().post(equal(var, min));
+            var.getSolver().post(eq(var, min));
         };
         Runnable right = () -> {
-            var.getSolver().post(notEqual(var, min));
+            var.getSolver().post(neq(var, min));
         };
         return new Runnable[]{left,right};
     }

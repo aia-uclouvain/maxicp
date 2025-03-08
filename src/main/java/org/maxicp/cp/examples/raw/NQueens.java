@@ -30,10 +30,10 @@ public class NQueens {
 
         for (int i = 0; i < n; i++)
             for (int j = i + 1; j < n; j++) {
-                cp.post(CPFactory.notEqual(q[i], q[j]));
+                cp.post(CPFactory.neq(q[i], q[j]));
 
-                cp.post(CPFactory.notEqual(q[i], q[j], j - i));
-                cp.post(CPFactory.notEqual(q[i], q[j], i - j));
+                cp.post(CPFactory.neq(q[i], q[j], j - i));
+                cp.post(CPFactory.neq(q[i], q[j], i - j));
                 // alternative modeling using views
                 // cp.post(notEqual(plus(q[i], j - i), q[j]));
                 // cp.post(notEqual(minus(q[i], j - i), q[j]));
@@ -54,8 +54,8 @@ public class NQueens {
             else {
                 CPIntVar qi = q[idx];
                 int v = qi.min();
-                Runnable left = () -> cp.post(CPFactory.equal(qi, v));
-                Runnable right = () -> cp.post(CPFactory.notEqual(qi, v));
+                Runnable left = () -> cp.post(CPFactory.eq(qi, v));
+                Runnable right = () -> cp.post(CPFactory.neq(qi, v));
                 return new Runnable[]{left, right};
             }
         });
