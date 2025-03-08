@@ -71,6 +71,7 @@ public class QAPLNS {
                 ind++;
             }
         }
+
         CPIntVar totCost = sum(weightedDist);
         Objective obj = cp.minimize(totCost);
 

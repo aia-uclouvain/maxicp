@@ -11,6 +11,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import static org.maxicp.cp.CPFactory.*;
 
 import java.util.Arrays;
 
@@ -24,23 +25,15 @@ import static org.maxicp.search.Searches.EMPTY;
 public class NQueens {
     public static void main(String[] args) {
         int n = 8;
-        CPSolver cp = CPFactory.makeSolver(false);
+
+        CPSolver cp = CPFactory.makeSolver();
         CPIntVar[] q = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] qL = CPFactory.makeIntVarArray(n, i -> minus(q[i],i));
+        CPIntVar[] qR = CPFactory.makeIntVarArray(n, i -> plus(q[i],i));
 
-
-        for (int i = 0; i < n; i++)
-            for (int j = i + 1; j < n; j++) {
-                cp.post(CPFactory.neq(q[i], q[j]));
-
-                cp.post(CPFactory.neq(q[i], q[j], j - i));
-                cp.post(CPFactory.neq(q[i], q[j], i - j));
-                // alternative modeling using views
-                // cp.post(notEqual(plus(q[i], j - i), q[j]));
-                // cp.post(notEqual(minus(q[i], j - i), q[j]));
-
-            }
-
-
+        cp.post(allDifferent(q));
+        cp.post(allDifferent(qL));
+        cp.post(allDifferent(qR));
 
         DFSearch search = CPFactory.makeDfs(cp, () -> {
             int idx = -1; // index of the first variable that is not fixed

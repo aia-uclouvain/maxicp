@@ -10,6 +10,7 @@ import org.maxicp.ModelDispatcher;
 
 import static org.maxicp.modeling.Factory.*;
 import org.maxicp.modeling.IntVar;
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.constraints.AllDifferent;
 import org.maxicp.modeling.constraints.Table;
 import org.maxicp.search.SearchMethod;
@@ -31,7 +32,7 @@ import static org.maxicp.search.Searches.firstFail;
  */
 public class Eternity {
 
-    public static IntVar[] flatten(IntVar[][] x) {
+    public static IntVar[] flatten(IntExpression[][] x) {
         return Arrays.stream(x).flatMap(Arrays::stream).toArray(IntVar[]::new);
     }
 
@@ -88,11 +89,11 @@ public class Eternity {
         //   |         |
 
 
-        IntVar[][] id = new IntVar[n][m]; // id
-        IntVar[][] u = new IntVar[n][m];  // up
-        IntVar[][] r = new IntVar[n][m];  // right
-        IntVar[][] d = new IntVar[n][m];  // down
-        IntVar[][] l = new IntVar[n][m];  // left
+        IntExpression[][] id = new IntExpression[n][m]; // id
+        IntExpression[][] u = new IntExpression[n][m];  // up
+        IntExpression[][] r = new IntExpression[n][m];  // right
+        IntExpression[][] d = new IntExpression[n][m];  // down
+        IntExpression[][] l = new IntExpression[n][m];  // left
 
         for (int i = 0; i < n; i++) {
             u[i] = baseModel.intVarArray(m, j -> baseModel.intVar(0, max));
@@ -116,12 +117,12 @@ public class Eternity {
         }
 
         // Constraint1: all the pieces placed are different
-        baseModel.add(new AllDifferent(flatten(id)));
+        baseModel.add(allDifferent(flatten(id)));
 
         // Constraint2: all the pieces placed are valid ones i.e. one of the given mxn pieces possibly rotated
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                baseModel.add(new Table(new IntVar[]{id[i][j], u[i][j], r[i][j], d[i][j], l[i][j]}, table));
+                baseModel.add(new Table(new IntExpression[]{id[i][j], u[i][j], r[i][j], d[i][j], l[i][j]}, table));
             }
         }
 
@@ -158,7 +159,7 @@ public class Eternity {
     }
 
 
-    public static void prettyPrint(IntVar [][] u, IntVar [][] l, IntVar [][] r, IntVar [][] d) {
+    public static void prettyPrint(IntExpression [][] u, IntExpression [][] l, IntExpression [][] r, IntExpression [][] d) {
         for (int i = 0; i < u.length; i++) {
             String line = "   ";
             for (int j = 0; j < u[i].length; j++) {
