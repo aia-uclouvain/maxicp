@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
@@ -22,7 +23,9 @@ public class FlexibleJobShop {
 
     /**
      * Example taken from
-     * {@literal  Chen, H., Ihlow, J., & Lehmann, C. (1999, May). A genetic algorithm for flexible job-shop scheduling. In Proceedings 1999 IEEE International Conference on Robotics and Automation (Cat. No. 99CH36288C) (Vol. 2, pp. 1120-1125). Ieee.}
+     * {@literal  Chen, H., Ihlow, J., & Lehmann, C. (1999, May).
+     * A genetic algorithm for flexible job-shop scheduling.
+     * In Proceedings 1999 IEEE International Conference on Robotics and Automation (Cat. No. 99CH36288C) (Vol. 2, pp. 1120-1125). Ieee.}
      */
     public static void main(String[] args) {
         int nJobs = 2;
@@ -44,55 +47,62 @@ public class FlexibleJobShop {
                 {7, 5, 3},
         };
 
-        ModelDispatcher baseModel = Factory.makeModelDispatcher();
-        List<IntervalVar>[] taskOnMachine = new List[nMachines];
-        for (int i = 0; i < nMachines; i++) {
-            taskOnMachine[i] = new ArrayList<>();
+        ModelDispatcher model = makeModelDispatcher();
+        List<IntervalVar>[] tasksOnMachine = new List[nMachines];
+        for (int m = 0; m < nMachines; m++) {
+            tasksOnMachine[m] = new ArrayList<>();
         }
-        IntervalVar[] tasks = new IntervalVar[nTasks];
-        List<IntervalVar>[] taskCandidates = new List[nTasks];
+
+        IntervalVar[] tasks = new IntervalVar[nTasks]; // the effective tasks
+        List<IntervalVar>[] alternativeTasks = new List[nTasks]; // possible alternative tasks for each task
+        List<IntExpression> status = new ArrayList<>(); // presence of the optional tasks
         // create the tasks
-        for (int task = 0 ; task < nTasks ; task++) {
-            taskCandidates[task] = new ArrayList<>();
-            for (int machine = 0 ; machine < nMachines ; machine++) {
-                if (duration[task][machine] != -1) {
-                    IntervalVar possibleOperation = baseModel.intervalVar(duration[task][machine]);
-                    taskOnMachine[machine].add(possibleOperation);
-                    taskCandidates[task].add(possibleOperation);
+        for (int t = 0 ; t < nTasks ; t++) {
+            alternativeTasks[t] = new ArrayList<>();
+            for (int m = 0 ; m < nMachines ; m++) {
+                if (duration[t][m] != -1) {
+                    IntervalVar possibleOperation = model.intervalVar(duration[t][m]);
+                    tasksOnMachine[m].add(possibleOperation);
+                    alternativeTasks[t].add(possibleOperation);
+                    status.add(possibleOperation.status());
                 }
             }
-            // effective real task, which must be present
-            tasks[task] = baseModel.intervalVar(true);
-            // effective real task is one alternative among the ones that are present
-            baseModel.add(Factory.alternative(tasks[task], taskCandidates[task].toArray(IntervalVar[]::new)));
+            // effective real t, which must be present
+            tasks[t] = model.intervalVar(true);
+            // effective real t is one alternative among the ones that are present
+            model.add(alternative(tasks[t], alternativeTasks[t].toArray(IntervalVar[]::new)));
         }
         // no overlap on any machine
-        for (int machine = 0 ; machine < nMachines ; machine++) {
-            baseModel.add(noOverlap(taskOnMachine[machine].toArray(IntervalVar[]::new)));
+        for (int m = 0 ; m < nMachines ; m++) {
+            model.add(noOverlap(tasksOnMachine[m].toArray(IntervalVar[]::new)));
         }
+
+        List<IntExpression> jobEndTimes = new ArrayList<>();
         // precedences within tasks in a job
-        for (int job = 0 ; job < nJobs ; job++) {
-            for (int task = 0 ; task < jobs[job].length - 1 ; task++) {
-                int taskA = jobs[job][task];
-                int taskB = jobs[job][task + 1];
-                baseModel.add(Factory.endBeforeStart(tasks[taskA], tasks[taskB]));
+        for (int j = 0 ; j < nJobs ; j++) {
+            for (int t = 0 ; t < jobs[j].length - 1 ; t++) {
+                int taskA = jobs[j][t];
+                int taskB = jobs[j][t + 1];
+                model.add(endBeforeStart(tasks[taskA], tasks[taskB]));
+                if (t == jobs[j].length - 2) {
+                    jobEndTimes.add(endOr(tasks[taskB], 0)); // end of the last task of the job
+                }
             }
         }
-        IntExpression makespan = max(Arrays.stream(jobs).map(op -> tasks[op[op.length - 1]]).map(task -> endOr(task, 0)).toArray(IntExpression[]::new));
+
+        IntExpression makespan = max(jobEndTimes.toArray(IntExpression[]::new));
         Objective minimizeMakespan = minimize(makespan);
 
-        // first step: assign the presence of the intervals to the machines
-        IntExpression[] allPresences = Arrays.stream(taskCandidates).flatMap(list -> list.stream())
-                .map(IntervalVar::status).toArray(IntExpression[]::new);
-        baseModel.runCP((cp) -> {
-            Supplier<Runnable[]> assignToMachine = firstFail(allPresences);
+        model.runCP((cp) -> {
+            // first step: assign the presence of the intervals to the machines
+            Supplier<Runnable[]> assignToMachine = staticOrder(status.toArray(IntExpression[]::new));
             // second step: once the present intervals are chosen, fix the time
             Supplier<Runnable[]> setTimes = setTimes(tasks);
             // third step: fix the makespan once the times are fixed
             Supplier<Runnable[]> fixMakespan = () -> {
                 if (makespan.isFixed())
                     return EMPTY;
-                return branch(() -> makespan.getModelProxy().add(eq(makespan,makespan.min())));
+                return branch(() -> model.add(eq(makespan,makespan.min())));
             };
             DFSearch search = cp.dfSearch(and(assignToMachine, setTimes, fixMakespan));
             // print each solution found

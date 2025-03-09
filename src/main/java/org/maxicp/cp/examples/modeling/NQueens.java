@@ -23,6 +23,8 @@ import static org.maxicp.search.Searches.*;
 
 import org.maxicp.util.TimeIt;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -47,12 +49,12 @@ public class NQueens {
         ModelDispatcher model = makeModelDispatcher();
 
         IntVar[] q = model.intVarArray(n, n);
-        IntExpression[] qLeftDiagonal = model.intVarArray(n,i -> q[i].plus(i));
-        IntExpression[] qRightDiagonal = model.intVarArray(n,i -> q[i].minus(i));
+        IntExpression[] qL = model.intVarArray(n,i -> q[i].plus(i));
+        IntExpression[] qR = model.intVarArray(n,i -> q[i].minus(i));
 
         model.add(allDifferent(q));
-        model.add(allDifferent(qLeftDiagonal));
-        model.add(allDifferent(qRightDiagonal));
+        model.add(allDifferent(qL));
+        model.add(allDifferent(qR));
 
         Supplier<Runnable[]> branching = () -> {
             IntExpression qs = selectMin(q,
@@ -66,7 +68,6 @@ public class NQueens {
             }
         };
 
-
         // Solve with standard Search
         System.out.println("--- SIMPLE SOLVING");
         long time = TimeIt.run(() -> {
@@ -76,7 +77,6 @@ public class NQueens {
             });
         });
         System.out.println("Time taken for simple resolution: " + (time/1000000000.));
-
 
         // Solve with Embarassingly Parallel Search (EPS)
         System.out.println("--- EPS (DFS for decomposition)");

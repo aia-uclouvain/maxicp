@@ -160,6 +160,12 @@ public final class Searches {
         };
     }
 
+
+    /**
+     * It selects the first not fixed variable that minimizes the heuristic function.
+     * @param xs the variable array to fix
+     * @return a static branching strategy
+     */
     public static Supplier<Runnable[]> staticOrder(IntExpression... xs) {
         HashMap<IntExpression,Integer> index = new HashMap<>();
         for (int i = 0; i < xs.length; i++) {
