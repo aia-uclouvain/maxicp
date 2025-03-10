@@ -73,30 +73,54 @@ jobs:
 
       - name: Generate the badge SVG using Shields.io
         run: |
-          COVERAGE=${{ env.coverage }}
-          COLOR=$( 
-            if [ "$COVERAGE" -gt 90 ]; then echo "green"; 
-            elif [ "$COVERAGE" -gt 80 ]; then echo "yellowgreen"; 
-            elif [ "$COVERAGE" -gt 70 ]; then echo "yellow"; 
-            elif [ "$COVERAGE" -gt 60 ]; then echo "orange"; 
-            else echo "red"; fi 
-          )
+          # Ensure COVERAGE is extracted and is a valid number
+          COVERAGE="${{ env.coverage }}"
           
+          # Debugging: Print coverage value
+          echo "Extracted Coverage: $COVERAGE"
+          
+          # Validate that COVERAGE is a number
+          if [[ ! "$COVERAGE" =~ ^[0-9]+$ ]]; then
+            echo "Error: COVERAGE is not a valid number ('$COVERAGE'). Defaulting to 0."
+            COVERAGE="0"
+          fi
+          
+          # Assign color based on coverage percentage
+          if [ "$COVERAGE" -gt 90 ]; then COLOR="green"
+          elif [ "$COVERAGE" -gt 80 ]; then COLOR="yellowgreen"
+          elif [ "$COVERAGE" -gt 70 ]; then COLOR="yellow"
+          elif [ "$COVERAGE" -gt 60 ]; then COLOR="orange"
+          else COLOR="red"
+          fi
+          
+          # Debugging: Print the final values
+          echo "Final Coverage: $COVERAGE%"
+          echo "Badge Color: $COLOR"
+          
+          # Ensure the badge directory exists
           mkdir -p badges/${{ steps.extract_branch.outputs.branch }}
+          
+          # Download and save the badge
           curl -o badges/${{ steps.extract_branch.outputs.branch }}/badge.svg \
-            "https://img.shields.io/badge/Test%20coverage-$COVERAGE%25-$COLOR.svg"
+            "https://img.shields.io/badge/Test%20Coverage-$COVERAGE%25-$COLOR.svg"
 
 
-      - name: Commit & push badge
+      - name: Commit and Push Badge
         run: |
           cd badges
+          ls -lah  # Debugging step to confirm files exist
+          
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add "${{ env.branch }}/badge.svg"
-          git commit -m "Add/Update badge" || echo "No changes to commit"
-
-      - name: Push badge commit
-        run: |
-         cd badges
-         git push origin badges
+          
+          # Ensure the badge file exists before adding it
+          if [ -f "${{ env.branch }}/badge.svg" ]; then
+            git add "${{ env.branch }}/badge.svg"
+            git commit -m "Add/Update badge" || echo "No changes to commit"
+          
+            # Push only if there were actual changes
+            git push origin badges
+          else
+            echo "Badge file not found! Skipping commit and push."
+          fi
 
