@@ -3,12 +3,19 @@
 ![Javadoc](https://github.com/aia-uclouvain/maxicp/actions/workflows/javadoc.yml/badge.svg)
 ![Userguide](https://github.com/aia-uclouvain/maxicp/actions/workflows/userguide.yml/badge.svg)
 ![Coverage](https://raw.githubusercontent.com/aia-uclouvain/maxicp/refs/heads/gh-pages/badges/coverbadge.svg)
-<!-- ![Test coverage](https://raw.githubusercontent.com/<username>/<repository>/badges/badges/<branch>/badge.svg) -->
 
-# MaxiCP
+**MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver.
 
-**MaxiCP** is a Java-based project that provides a powerful Constraint Programming (CP) solver. 
-It includes both raw and high-level modeling APIs for users to define and solve constraint satisfaction problems efficiently.
+It is an extended version of the ['wwww.minicp.org'](https://www.minicp.org) a lightweight, 
+open-source CP solver mostly used for teaching constraint programming.
+
+The key features of MaxiCP compared to MiniCP are:
+- **Improved performances** (support for delta-based propagation, more efficient data structures, etc.). 
+- **Symbolic modeling layer** also enabling search declaration.
+- **Support for Embarrasingly Parallel Search**.
+- **More global constraints** (e.g., bin-packing, gcc, etc.).
+- **Sequence variables with optional visits** for modeling complex vehicle routing and insertion based search heuristics, including LNS.
+- **Conditional task interval variables** including support for modeling with cumulative function expressions for scheduling problem.
 
 ## Examples
 
@@ -33,10 +40,10 @@ We recommend using **IntelliJ IDEA** to develop and run the MaxiCP project.
 1. **Clone the Repository**:
    Open a terminal and run the following command to clone the repository:
    ```bash
-   git clone https://github.com/<user>/maxicp.git
+   git clone https://github.com/aia-uclouvain/maxicp.git
     ```
 
-2. **Clone the Repository**:
+2. **Open project in IDEA**:
    Launch IntelliJ IDEA.
    Select File > Open and navigate to the maxicp folder you cloned. 
    Open the `pom.xml` file.
