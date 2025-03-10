@@ -86,9 +86,7 @@ jobs:
           git commit -m "Add/Update badge" || echo "No changes to commit"
 
       - name: Push badge commit
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: badges
-          directory: badges
+        run: |
+         cd badges
+         git push origin badges
 
