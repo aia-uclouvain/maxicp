@@ -61,14 +61,7 @@ jobs:
           echo "display=0%" >> $GITHUB_ENV
           echo "coverage=0" >> $GITHUB_ENV
           fi
-
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v3  # Updated from v1 to v3
-        with:
-          ref: gh-pages
-
-      - name: Create badges directory if necessary
-        run: mkdir -p badges/${{ env.branch }}
+          
 
       - name: Generate the badge SVG using Shields.io
         run: |
@@ -96,16 +89,30 @@ jobs:
           echo "Final Coverage: $COVERAGE%"
           echo "Badge Color: $COLOR"
           
-          # Ensure the badge directory exists
-          mkdir -p badges/${{ steps.extract_branch.outputs.branch }}
-          
           # Download and save the badge
-          curl -o badges/${{ steps.extract_branch.outputs.branch }}/coverbadge.svg \
+          curl -o coverbadge.svg \
             "https://img.shields.io/badge/Test%20Coverage-$COVERAGE%25-$COLOR.svg"
+          
+          mv coverbadge.svg /tmp/.
+          
 
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v3  # Updated from v1 to v3
+        with:
+          ref: gh-pages
 
       - name: Commit and Push Badge
         run: |
+          
+          if [ ! -d "badges" ]; then
+            mkdir badges
+            echo "badges created."
+          else
+            echo "badges already exists."
+          fi
+          
+          mv /tmp/coverbadge.svg badges/.
+          
           cd badges
           ls -lah  # Debugging step to confirm files exist
           
@@ -113,8 +120,8 @@ jobs:
           git config --local user.name "GitHub Action"
           
           # Ensure the badge file exists before adding it
-          if [ -f "${{ env.branch }}/coverbadge.svg" ]; then
-            git add "${{ env.branch }}/coverbadge.svg"
+          if [ -f "coverbadge.svg" ]; then
+            git add coverbadge.svg
             git commit -m "Add/Update badge" || echo "No changes to commit"
           
             # Push only if there were actual changes
