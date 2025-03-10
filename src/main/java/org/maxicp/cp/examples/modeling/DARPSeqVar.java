@@ -25,16 +25,15 @@ import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.io.InputReader;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.Factory.makeModelDispatcher;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
-import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.*;
 
 /**
  * Model for the Dial-A-Ride Problem (DARP) using sequence variables.
@@ -99,15 +98,16 @@ public class DARPSeqVar {
                 DARPNode from = i < nRequest * 2 ? nodes[i] : depot;
                 for (int j = 0; j < n; ++j) {
                     DARPNode to = j < nRequest * 2 ? nodes[j] : depot;
-                    distMatrix[i][j] = from.distance(to);
+                    distMatrix[i][j] = from.distanceCeil(to);
                 }
             }
         }
 
         public record DARPNode(double x, double y, int duration, int load, int twStart, int twEnd) {
 
-            public int distance(DARPNode o) {
-                return (int) Math.round(Math.sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y)) * Instance.scaling);
+            public int distanceCeil(DARPNode o) {
+                // ceil distance is useful to enforce triangular inequality
+                return (int) Math.ceil(Math.sqrt((x - o.x) * (x - o.x) + (y - o.y) * (y - o.y)) * Instance.scaling);
             }
 
             public boolean isPickup() {
@@ -198,57 +198,23 @@ public class DARPSeqVar {
         }
 
         // ===================== custom search =====================
+        // custom search, inserting the node with the fewest insertions at the place with the smallest distance increase
 
-        int[] insertions = new int[instance.nRequest * 2];
-
-        // used to sort the branches to apply
-        Runnable[] branches = new Runnable[n * instance.nVehicle * 2];
-        Integer[] heuristicVal = new Integer[n * instance.nVehicle * 2];
-        Integer[] branchingRange = new Integer[n * instance.nVehicle * 2];
-
-        // custom search, that inserts the pickup and deliveries as a pair
-
+        // all nodes that must be considered
+        int[] nodes = IntStream.range(0, instance.nRequest * 2).toArray();
+        // generate branches for a node, sorted by smallest distance detour cost
+        Function<Integer, Runnable[]> branchGenerator = branchesInsertingNode(routes, instance.distMatrix).get();
+        // the actual branching
         Supplier<Runnable[]> branching = () -> {
-            // if all routes are fixed, terminates
-            if (Arrays.stream(routes).allMatch(SeqVar::isFixed))
-                return EMPTY;
-            // selects the node that can be inserted at the fewest locations
-            int bestNode = 0;
-            int minInsert = Integer.MAX_VALUE;
-            for (int node = 0; node < instance.nRequest * 2; node++) {
-                int nInsert = 0;
-                boolean required = false;
-                for (SeqVar route : routes) {
-                    // min number of insert for the node
-                    nInsert += route.nInsert(node);
-                    required = required || route.isNode(node, REQUIRED);
-                }
-                if (!required)// required nodes have a lower value, and are thus considered first
-                    nInsert *= 10000;
-                if (nInsert < minInsert && nInsert > 0) { // nInsert > 0 allows to skip nodes already inserted
-                    minInsert = nInsert;
-                    bestNode = node;
-                }
+            // select the node with the fewest number of insertions
+            OptionalInt nodeToInsert = nodeSelector(routes, nodes, (seqvar, node) -> seqvar.nInsert(node));
+            if (nodeToInsert.isEmpty()) {
+                return EMPTY; // no node to insert -> solution found
+            } else {
+                int node = nodeToInsert.getAsInt();
+                // generate all branches inserting the node, trying first the ones with the smallest detour cost
+                return branchGenerator.apply(node);
             }
-            // insert the node at every feasible insertion across all vehicles
-            int node = bestNode;
-            int branch = 0;
-            for (SeqVar route : routes) {
-                int nInsert = route.fillInsert(node, insertions);
-                for (int j = 0; j < nInsert; j++) {
-                    int pred = insertions[j]; // predecessor for the node
-                    branchingRange[branch] = branch;
-                    heuristicVal[branch] = detourCost(route, instance.distMatrix, pred, node);
-                    branches[branch++] = () -> model.add(insert(route, pred, node));
-                }
-            }
-            int nBranches = branch;
-            Runnable[] branchesSorted = new Runnable[nBranches];
-            // sort by smallest detour cost
-            Arrays.sort(branchingRange, 0, nBranches, Comparator.comparing(j -> heuristicVal[j]));
-            for (branch = 0; branch < nBranches; branch++)
-                branchesSorted[branch] = branches[branchingRange[branch]];
-            return branchesSorted;
         };
 
         // ===================== solve the problem =====================
