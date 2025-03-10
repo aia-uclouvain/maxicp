@@ -607,7 +607,7 @@ public class ConcreteCPModel implements ConcreteModel {
                 solver.post(new org.maxicp.cp.engine.constraints.seqvar.Exclude(getCPVar(exclude.seqVar()), exclude.node()));
             }
             case Distance distance -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar), getCPVar(distance.distance), distance.distanceMatrix));
+                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar), distance.distanceMatrix, getCPVar(distance.distance)));
             }
             case TransitionTimes transitionTimes -> {
                 CPIntVar[] time = Arrays.stream(transitionTimes.time).map(this::getCPVar).toArray(CPIntVar[]::new);

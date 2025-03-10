@@ -19,7 +19,7 @@ public class Distance extends AbstractCPConstraint {
     private final int[][] dist;
     private final CPIntVar totalDist;
 
-    public Distance(CPSeqVar seqVar, CPIntVar totalDist, int[][] dist) {
+    public Distance(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar.getSolver());
         this.seqVar  = seqVar;
         this.dist = dist;

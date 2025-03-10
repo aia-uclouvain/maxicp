@@ -34,21 +34,21 @@ public class TSPSeqVar {
         int distanceUpperBound = n * Arrays.max(distance);
 
         // create a model of the problem
-        ModelDispatcher baseModel = Factory.makeModelDispatcher();
+        ModelDispatcher model = Factory.makeModelDispatcher();
         // route performed by the salesman
-        SeqVar route = baseModel.seqVar(nNodes, start, end);
+        SeqVar route = model.seqVar(nNodes, start, end);
         // distance in the problem
-        IntVar totalDistance = baseModel.intVar(0, distanceUpperBound);
+        IntVar totalDistance = model.intVar(0, distanceUpperBound);
 
         // each city must be visited
         for (int city = 0 ; city < nNodes ; city++)
-            baseModel.add(require(route, city));
+            model.add(require(route, city));
         // links the distance with the sequence through the distance matrix
-        baseModel.add(distance(route, distance, totalDistance));
+        model.add(distance(route, distance, totalDistance));
         // objective consists in minimizing the total distance traveled
         Objective minimizeDistance = minimize(totalDistance);
 
-        ConcreteCPModel cp = baseModel.cpInstantiate(); // instantiate the previously symbolic model as a CP solver
+        ConcreteCPModel cp = model.cpInstantiate(); // instantiate the previously symbolic model as a CP solver
         DFSearch search = cp.dfSearch(Searches.firstFail(route));
         // print each solution found
         search.onSolution(() -> {

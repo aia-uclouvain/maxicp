@@ -77,7 +77,7 @@ public class CVRPTWSequence {
             // visits of nodes must be done within time windows, and transitions are retrieved within a distance matrix
             cp.post(new TransitionTimes(vehicles[v], time, distMatrix, duration));
             // captures the traveled distance
-            cp.post(new Distance(vehicles[v], distance[v], distMatrix));
+            cp.post(new Distance(vehicles[v], distMatrix, distance[v]));
         }
         // sum all distances into one variable
         cp.post(new Sum(distance, sumDistance));

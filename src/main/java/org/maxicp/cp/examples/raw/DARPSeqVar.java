@@ -32,7 +32,7 @@ import static org.maxicp.search.Searches.EMPTY;
 /**
  * Dial-A-Ride problem
  */
-public class DARPSequence {
+public class DARPSeqVar {
 
     static class Instance {
 
@@ -152,7 +152,7 @@ public class DARPSequence {
             // a vehicle has a limited capacity when visiting pickups and drops
             cp.post(new Cumulative(routes[v], pickups, drops, load, instance.capacity));
             // maximum distance
-            cp.post(new Distance(routes[v], distance[v], instance.distMatrix));
+            cp.post(new Distance(routes[v], instance.distMatrix, distance[v]));
         }
         // max ride time constraint
         for (int i = 0; i < instance.nRequest; i++) {

@@ -57,11 +57,11 @@ public class RCPSP {
         // -------------------------------------------
 
         // The Model
-        ModelDispatcher baseModel = Factory.makeModelDispatcher();
-        IntervalVar[] tasks = baseModel.intervalVarArray(nActivities);
+        ModelDispatcher model = Factory.makeModelDispatcher();
+        IntervalVar[] tasks = model.intervalVarArray(nActivities);
         for (int i = 0; i < nActivities; i++) {
-            baseModel.add(length(tasks[i], duration[i]));
-            baseModel.add(present(tasks[i]));
+            model.add(length(tasks[i], duration[i]));
+            model.add(present(tasks[i]));
         }
 
         CumulFunction[] resources = new CumulFunction[nResources];
@@ -77,25 +77,25 @@ public class RCPSP {
         }
 
         for (int r = 0; r < nResources; r++) {
-            baseModel.add(lessOrEqual(resources[r], capa[r]));
+            model.add(lessOrEqual(resources[r], capa[r]));
         }
 
         for (int i = 0; i < nActivities; i++) {
             for (int k : successors[i]) {
                 // activity i must precede activity k
-                baseModel.add(endBeforeStart(tasks[i], tasks[k]));
+                model.add(endBeforeStart(tasks[i], tasks[k]));
             }
         }
 
         IntExpression makespan = max(Arrays.stream(tasks).map(task -> endOr(task, 0)).toArray(IntExpression[]::new));
         Objective obj = minimize(makespan);
 
-        baseModel.runCP((cp) -> {
+        model.runCP((cp) -> {
 
             Supplier<Runnable[]> fixMakespan = () -> {
                 if (makespan.isFixed())
                     return EMPTY;
-                return branch(() -> baseModel.add(eq(makespan, makespan.min())));
+                return branch(() -> model.add(eq(makespan, makespan.min())));
             };
 
             Supplier<Runnable[]> branching = and(setTimes(tasks), fixMakespan);
