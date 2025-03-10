@@ -39,13 +39,25 @@ jobs:
       - name: Generate test coverage
         id: coverage
         run: |
+          echo "compiling"
           mvn compile
+          echo "testing"
           mvn test
+          echo "jacoco reporting"
           mvn jacoco:report
-          display=$(sed -nE 's/^.*<td>Total<([^>]+>){4}([^<]*).*$/\2/p' target/site/jacoco/index.html')
-          echo "display=$display" >> $GITHUB_ENV    # with "%"
-          coverage=${display%"%"}
+          echo "extract coverage value"
+          
+          # Ensure the Jacoco report file exists before processing
+          if [ -f target/site/jacoco/index.html ]; then
+          display=$(grep -oP '(?<=<td>Total</td><td class="bar">).*?(?=%</td>)' target/site/jacoco/index.html | head -1)
+          echo "display=$display%" >> $GITHUB_ENV    # with "%"
+          coverage=${display}
           echo "coverage=$coverage" >> $GITHUB_ENV  # without "%"
+          else
+          echo "Jacoco report not found, setting coverage to 0"
+          echo "display=0%" >> $GITHUB_ENV
+          echo "coverage=0" >> $GITHUB_ENV
+          fi
 
       - name: Extract branch name
         id: extract_branch
