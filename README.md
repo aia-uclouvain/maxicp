@@ -1,6 +1,7 @@
 
 
-![Doc](https://github.com/aia-uclouvain/maxicp/actions/workflows/publish.yml/badge.svg)
+![Javadoc](https://github.com/aia-uclouvain/maxicp/actions/workflows/javadoc.yml/badge.svg)
+![Userguide](https://github.com/aia-uclouvain/maxicp/actions/workflows/userguide.yml/badge.svg)
 ![Coverage](https://github.com/aia-uclouvain/maxicp/actions/workflows/test.yml/badge.svg)
 <!-- ![Test coverage](https://raw.githubusercontent.com/<username>/<repository>/badges/badges/<branch>/badge.svg) -->
 
