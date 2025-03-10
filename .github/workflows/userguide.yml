@@ -45,7 +45,7 @@ jobs:
           cp -r /tmp/html/* .
           touch .nojekyll
           git add -A
-          git commit -m "update userguide"
+          git commit -m "update userguide" || echo "No changes to commit"
       - name: Step5 - Push changes to gh-page branch
         uses: ad-m/github-push-action@master
         with:

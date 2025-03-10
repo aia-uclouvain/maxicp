@@ -60,22 +60,21 @@ jobs:
       - name: Create badges directory if necessary
         run: mkdir -p badges/${{ env.branch }}
 
-      - name: Generate the badge SVG
-        uses: emibcn/badge-action@v2.0.3
-        with:
-          label: 'Test coverage'
-          status: ${{ env.display }}
-          color: ${{
-            steps.coverage.outputs.coverage > 90 && 'green'              ||
-            steps.coverage.outputs.coverage > 80 && 'yellow,green'       ||
-            steps.coverage.outputs.coverage > 70 && 'yellow'             ||
-            steps.coverage.outputs.coverage > 60 && 'orange,yellow'      ||
-            steps.coverage.outputs.coverage > 50 && 'orange'             ||
-            steps.coverage.outputs.coverage > 40 && 'red,orange'         ||
-            steps.coverage.outputs.coverage > 30 && 'red,red,orange'     ||
-            steps.coverage.outputs.coverage > 20 && 'red,red,red,orange' ||
-            'red' }}
-          path: badges/${{ steps.extract_branch.outputs.branch }}/badge.svg
+      - name: Generate the badge SVG using Shields.io
+        run: |
+          COVERAGE=${{ env.coverage }}
+          COLOR=$( 
+            if [ "$COVERAGE" -gt 90 ]; then echo "green"; 
+            elif [ "$COVERAGE" -gt 80 ]; then echo "yellowgreen"; 
+            elif [ "$COVERAGE" -gt 70 ]; then echo "yellow"; 
+            elif [ "$COVERAGE" -gt 60 ]; then echo "orange"; 
+            else echo "red"; fi 
+          )
+          
+          mkdir -p badges/${{ steps.extract_branch.outputs.branch }}
+          curl -o badges/${{ steps.extract_branch.outputs.branch }}/badge.svg \
+            "https://img.shields.io/badge/Test%20coverage-$COVERAGE%25-$COLOR.svg"
+
 
       - name: Commit & push badge
         run: |
