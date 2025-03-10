@@ -61,7 +61,7 @@ jobs:
         run: mkdir -p badges/${{ env.branch }}
 
       - name: Generate the badge SVG
-        uses: emibcn/badge-action@v2.0.2
+        uses: emibcn/badge-action@v2.0.3
         with:
           label: 'Test coverage'
           status: ${{ env.display }}
