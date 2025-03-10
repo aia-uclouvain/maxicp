@@ -4,30 +4,52 @@ on:
   push:
     branches:
       - main
+
 jobs:
   javadoc:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         maven: ['3.8.5']
-        java: [ '21' ]
+        java: ['21']
     steps:
-      - name: Step - Setup Maven Action
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-${{ matrix.java }}-
+
+      - name: Setup Maven
         uses: s4u/setup-maven-action@v1.2.1
         with:
           java-version: ${{ matrix.java }}
           maven-version: ${{ matrix.maven }}
-      - name: Step - Build and test with Maven
+
+      - name: Build and test with Maven
         run: mvn verify
 
-      - name: Step - Create javadoc
+      - name: Generate Javadoc
         run: |
           mvn javadoc:javadoc
           mv target/site/javadoc/ /tmp/.
-      - uses: actions/checkout@v3
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v3
         with:
           ref: gh-pages
-      - name: Step - add new javadoc
+
+      - name: Add new Javadoc
         run: |
           git config --local user.email "github-actions@users.noreply.github.com"
           git config --local user.name "github-actions"
@@ -37,8 +59,9 @@ jobs:
           cp -r /tmp/javadoc .
           touch .nojekyll
           git add -A
-          git commit -m "update javadoc"
-      - name: Step - Push changes to gh-page branch
+          git commit -m "update javadoc" || echo "No changes to commit"
+
+      - name: Push changes to gh-pages branch
         uses: ad-m/github-push-action@master
         with:
           branch: gh-pages
