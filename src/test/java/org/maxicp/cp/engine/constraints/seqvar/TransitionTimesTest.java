@@ -286,7 +286,7 @@ public class TransitionTimesTest extends CPSolverTest {
             }
         }
         CPIntVar totalDist = CPFactory.makeIntVar(cp, 0, 35);
-        cp.post(new Distance(seqVar, totalDist, dist));
+        cp.post(new Distance(seqVar, dist, totalDist));
         cp.post(new TransitionTimes(seqVar, time, dist));
         cp.post(new AbstractCPConstraint(cp) {
             @Override
