@@ -4,47 +4,67 @@ on:
   push:
     branches:
       - main
+
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         maven: ['3.8.5']
-        java: [ '21' ]
+        java: ['21']
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Updated from v1 to v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3  # Updated to v3
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-${{ matrix.java }}-
+
       - name: Setup Maven
         uses: s4u/setup-maven-action@v1.2.1
         with:
           java-version: ${{ matrix.java }}
           maven-version: ${{ matrix.maven }}
-      - name: Generate coverage
+
+      - name: Generate test coverage
         id: coverage
         run: |
           mvn compile
           mvn test
           mvn jacoco:report
-          display=`sed -nE 's/^.*<td>Total<([^>]+>){4}([^<]*).*$/\2/p' target/site/jacoco/index.html`
-          echo "display=$display" >> $GITHUB_OUTPUT    # with the "%"
+          display=$(sed -nE 's/^.*<td>Total<([^>]+>){4}([^<]*).*$/\2/p' target/site/jacoco/index.html')
+          echo "display=$display" >> $GITHUB_ENV    # with "%"
           coverage=${display%"%"}
-          echo "coverage=$coverage" >> $GITHUB_OUTPUT  # without "%", treated as a number
+          echo "coverage=$coverage" >> $GITHUB_ENV  # without "%"
+
       - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
-      - uses: actions/checkout@v1
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Checkout badges branch
+        uses: actions/checkout@v3  # Updated from v1 to v3
         with:
           ref: badges
           path: badges
-      - name: Create badges dir if necessary
-        env:
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
-        run: mkdir -p badges/${BRANCH}
-      # Use the output from the coverage step
-      - name: Generate the badge SVG image
+
+      - name: Create badges directory if necessary
+        run: mkdir -p badges/${{ env.branch }}
+
+      - name: Generate the badge SVG
         uses: emibcn/badge-action@v2.0.2
         with:
           label: 'Test coverage'
-          status: ${{ steps.coverage.outputs.display }}
+          status: ${{ env.display }}
           color: ${{
             steps.coverage.outputs.coverage > 90 && 'green'              ||
             steps.coverage.outputs.coverage > 80 && 'yellow,green'       ||
@@ -56,17 +76,15 @@ jobs:
             steps.coverage.outputs.coverage > 20 && 'red,red,red,orange' ||
             'red' }}
           path: badges/${{ steps.extract_branch.outputs.branch }}/badge.svg
+
       - name: Commit & push badge
-        env:
-          BRANCH: ${{ steps.extract_branch.outputs.branch }}
         run: |
-          pushd badges
-              git config --local user.email "action@github.com"
-              git config --local user.name "GitHub Action"
-              git add "${BRANCH}/badge.svg"
-              # Will give error if badge did not changed
-              git commit -m "Add/Update badge" || true
-          popd
+          cd badges
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "${{ env.branch }}/badge.svg"
+          git commit -m "Add/Update badge" || echo "No changes to commit"
+
       - name: Push badge commit
         uses: ad-m/github-push-action@master
         with:
@@ -74,4 +92,3 @@ jobs:
           branch: badges
           directory: badges
 
-          
