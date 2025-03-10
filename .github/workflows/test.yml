@@ -47,12 +47,11 @@ jobs:
           mvn jacoco:report
           echo "extract coverage value"
           
-          # Ensure the Jacoco report file exists before processing
+          # Ensure the JaCoCo report file exists before processing
           if [ -f target/site/jacoco/index.html ]; then
-          display=$(grep -oP '(?<=<td>Total</td><td class="bar">).*?(?=%</td>)' target/site/jacoco/index.html | head -1)
-          echo "display=$display%" >> $GITHUB_ENV    # with "%"
-          coverage=${display}
-          echo "coverage=$coverage" >> $GITHUB_ENV  # without "%"
+          COVERAGE=$(grep -oP '(?<=<td>Total</td><td class="ctr2">)[0-9]+' target/site/jacoco/index.html | head -1)
+          echo "display=$COVERAGE%" >> $GITHUB_ENV    # with "%"
+          echo "coverage=$COVERAGE" >> $GITHUB_ENV    # without "%"
           else
           echo "Jacoco report not found, setting coverage to 0"
           echo "display=0%" >> $GITHUB_ENV
