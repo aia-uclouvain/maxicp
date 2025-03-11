@@ -4,13 +4,10 @@ org.maxicp.cp.engine
 org.maxicp.cp.engine.constraints
 org.maxicp.cp.engine.constraints.scheduling
 org.maxicp.cp.engine.constraints.seqvar
-org.maxicp.cp.engine.constraints.utils
 org.maxicp.cp.engine.core
+org.maxicp.cp.examples
 org.maxicp.cp.examples.modeling
 org.maxicp.cp.examples.raw
-org.maxicp.cp.examples.raw.scheduling
-org.maxicp.cp.examples.raw.scheduling.shipLoadling
-org.maxicp.cp.examples.utils
 org.maxicp.cp.modeling
 org.maxicp.modeling
 org.maxicp.modeling.algebra
