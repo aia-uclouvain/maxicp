@@ -4,12 +4,13 @@
 ![Userguide](https://github.com/aia-uclouvain/maxicp/actions/workflows/userguide.yml/badge.svg)
 ![Coverage](https://raw.githubusercontent.com/aia-uclouvain/maxicp/refs/heads/gh-pages/badges/coverbadge.svg)
 
-**MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver.
+**MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
+for solving scheduling and vehicle routing problems.
 
-It is an extended version of the ['wwww.minicp.org'](https://www.minicp.org) a lightweight, 
+It is an extended version of the [MiniCP](https://www.minicp.org), a lightweight, 
 open-source CP solver mostly used for teaching constraint programming.
 
-The key features of MaxiCP compared to MiniCP are:
+The key features of MaxiCP are:
 - **Improved performances** (support for delta-based propagation, more efficient data structures, etc.). 
 - **Symbolic modeling layer** also enabling search declaration.
 - **Support for Embarrasingly Parallel Search**.
@@ -22,14 +23,20 @@ The key features of MaxiCP compared to MiniCP are:
 The project contains two sets of example models located in different packages:
 
 - **Raw Implementation Examples**:
-    - Located in: [`org.maxicp.cp.examples.raw`](https://github.com/<user>/maxicp/tree/master/src/main/java/org/maxicp/cp/examples/raw)
+    - Located in: [`org.maxicp.cp.examples.raw`](https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/raw)
     - These examples demonstrate how to use MaxiCP's **raw implementation objects** directly, giving you full control over the CP solver internals.
 
 - **Modeling API Examples**:
-    - Located in: [`org.maxicp.cp.examples.modeling`](https://github.com/<user>/maxicp/tree/master/src/main/java/org/maxicp/cp/examples/modeling)
+    - Located in: [`org.maxicp.cp.examples.modeling`](https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/modeling)
     - These examples use the **high-level modeling API**, which is then instantiated into raw API objects. This abstraction allows for a simpler and more expressive way to define constraint problems, while still leveraging the underlying raw API for solving.
 
-## Getting Started with MaxiCP
+## Javadoc
+
+[`Javadoc API`](https://aia-uclouvain.github.io/maxicp/javadoc/)
+
+## Website and documentation
+
+[`www.maxicp.org`](www.maxicp.org)
 
 ### Recommended IDE: IntelliJ IDEA
 

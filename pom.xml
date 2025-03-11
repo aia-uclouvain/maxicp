@@ -11,11 +11,11 @@
     <packaging>jar</packaging>
     <version>0.0.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Constraint Programming Library</description>
+    <description>MaxiCP: A Constraint Programming Solver for Scheduling and Vehicle Routing</description>
     <url>https://pschaus.github.io/maxicp/</url>
     <organization>
-        <name>Laurent Michel, Pierre Schaus, Pascal Van Hentenryck, Guillaume Derval</name>
-        <url>https://pschaus.github.io/maxicp/</url>
+        <name>Pierre Schaus, Guillaume Derval, Augustin Delecluse, Laurent Michel, Pascal Van Hentenryck</name>
+        <url>https://github.com/aia-uclouvain/maxicp</url>
     </organization>
 
     <licenses>
@@ -27,7 +27,7 @@
 
     <developers>
         <developer>
-            <name>Pierre Schaus</name>
+            <name>Pierre Schaus (pschaus)</name>
             <email>pierre.schaus@uclouvain.be</email>
             <organization>UCLouvain / ICTEAM / INGI</organization>
             <organizationUrl></organizationUrl>

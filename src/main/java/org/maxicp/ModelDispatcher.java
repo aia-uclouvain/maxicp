@@ -71,7 +71,7 @@ public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelPr
     }
 
     public IntExpression[] intVarArray(int n, Function<Integer, IntExpression> body) {
-        IntExpression[] t = new IntVar[n];
+        IntExpression[] t = new IntExpression[n];
         for (int i = 0; i < n; i++)
             t[i] = body.apply(i);
         return t;
