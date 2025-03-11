@@ -9,16 +9,10 @@ Documentation
 .. toctree::
         :maxdepth: 2
 
-        learning_maxicp/part_1
+        learning_maxicp/nqueens
+        learning_maxicp/allmodels
+        learning_maxicp/architecture
 
-
-
-
-
-MiniCP Website
-===============
-
-To understand the MaxiCP architecture, you can learn `MiniCP <minicp.org>`_ from which MaxiCP is derived.
 
 
 

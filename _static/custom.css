@@ -1,0 +1,71 @@
+/* Change primary theme color */
+body {
+    background-color: #ffffff; /* White background */
+}
+
+div.document {
+    color: #333;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #d32f2f; /* Dark Red */
+}
+
+a {
+    color: #d32f2f; /* Red links */
+}
+
+a:hover {
+    color: #ff5252; /* Lighter red on hover */
+}
+
+.wy-side-nav, .wy-nav-top {
+    background-color: #b71c1c; /* Deep Red Sidebar */
+}
+
+/* Change the header and footer color */
+.wy-side-nav, .wy-nav-top {
+    background-color: #b71c1c !important;  /* Deep Red */
+}
+
+/* Change the footer color */
+.wy-nav-bottom {
+    background-color: #b71c1c !important;
+}
+
+/* Change the sidebar "Next topic" and "Quick search" button colors */
+.wy-menu-vertical header, .wy-menu-vertical a {
+    background-color: #d32f2f !important; /* Medium Red */
+}
+
+/* Change the text color for better contrast */
+.wy-side-nav a, .wy-nav-top a, .wy-nav-bottom a {
+    color: white !important;
+}
+
+/* Optional: Remove the blue borders */
+.wy-side-nav, .wy-nav-top, .wy-nav-bottom {
+    border: none !important;
+}
+
+
+/* Force the related navigation bar to be dark red */
+div.related ul {
+    background-color: #881624 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    border-top: 1px solid #ddd !important;
+    border-bottom: 1px solid #ddd !important;
+}
+
+/* Make the sidebar headers dark red */
+div.sphinxsidebar h3, div.sphinxsidebar h4 {
+    margin: 1em 0 0.5em 0;
+    font-size: 1em;
+    padding: 0.1em 0 0.1em 0.5em;
+    color: white !important;  /* Keep text readable */
+    border: 1px solid #881624 !important;
+    background-color: #881624 !important;
+}
+
+

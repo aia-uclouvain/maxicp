@@ -4,20 +4,16 @@
    :linenothreshold: 4
 
 
-####################################################
-MaxiCP: A Constraint Programming Solver
-####################################################
+############################################################################
+MaxiCP: A CP Solver for Scheduling and Vehicle Routing
+############################################################################
 
 .. toctree::
    :maxdepth: 2
 
    intro
    maxicp
-   about
 	
-
-
-
 
 .. Indices and tables
 .. ==================
