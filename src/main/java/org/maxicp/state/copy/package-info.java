@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Copier strategy for state restoration
  */
-package org.maxicp.state;
+package org.maxicp.state.copy;

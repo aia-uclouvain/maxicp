@@ -7,6 +7,7 @@ package org.maxicp.cp.engine.constraints.utils;
 
 
 import org.junit.jupiter.api.Test;
+import org.maxicp.cp.engine.constraints.scheduling.ThetaTree;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

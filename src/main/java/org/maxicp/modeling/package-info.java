@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Symbolic Modeling API
  */
-package org.maxicp.state;
+package org.maxicp.modeling;

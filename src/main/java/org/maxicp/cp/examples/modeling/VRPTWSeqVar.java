@@ -1,7 +1,6 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
-import org.maxicp.cp.examples.utils.TSPTWInstance;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.SeqVar;
@@ -11,6 +10,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Searches;
 import org.maxicp.util.Arrays;
 import org.maxicp.util.DistanceMatrix;
+import org.maxicp.util.io.InputReader;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -18,7 +18,6 @@ import java.util.stream.IntStream;
 import static org.maxicp.modeling.Factory.*;
 
 public class VRPTWSeqVar {
-
 
     public static void main(String[] args) {
         int nVehicles = 3;
@@ -88,6 +87,54 @@ public class VRPTWSeqVar {
             search.optimize(minimizeDistance);; // actually solve the problem
         });
 
+    }
+
+    static class TSPTWInstance {
+
+        public final int n;
+        public final int[][] distMatrix;
+        public final int[] earliest, latest;
+        public int horizon = Integer.MIN_VALUE;
+
+        public TSPTWInstance(String file) {
+            InputReader reader = new InputReader(file);
+            n = reader.getInt();
+            distMatrix = new int[n][n];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    distMatrix[i][j] = reader.getInt();
+                }
+            }
+            earliest = new int[n];
+            latest = new int[n];
+
+            for (int i = 0; i < n; i++) {
+                earliest[i] = reader.getInt();
+                latest[i] = reader.getInt();
+                horizon = Math.max(horizon, latest[i] + 1);
+            }
+        }
+
+        private TSPTWInstance(int[][] distMatrix, int[] E, int[] L) {
+            n = E.length;
+            this.earliest = E;
+            this.latest = L;
+            this.distMatrix = distMatrix;
+            for (int i = 0; i < n; i++) {
+                horizon = Math.max(horizon, L[i] + 1);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Instance{" +
+                    "n=" + n + "\n" +
+                    ", distMatrix=" + java.util.Arrays.deepToString(distMatrix) + "\n" +
+                    ", E=" + java.util.Arrays.toString(earliest) + "\n" +
+                    ", L=" + java.util.Arrays.toString(latest) + "\n" +
+                    ", horizon=" + horizon +
+                    '}';
+        }
     }
 
 }

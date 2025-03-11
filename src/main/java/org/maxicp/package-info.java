@@ -4,6 +4,6 @@
  */
 
 /**
- * Utility tools for IO, Algo, Exceptions
+ * Root package of MaxiCP
  */
 package org.maxicp;

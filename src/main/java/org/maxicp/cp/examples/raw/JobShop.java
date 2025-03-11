@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw.scheduling;
+package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
@@ -17,12 +17,9 @@ import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.modeling.algebra.bool.Eq;
-import org.maxicp.modeling.algebra.bool.NotEq;
-import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.io.*;
@@ -30,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 /**
  * The JobShop Problem.

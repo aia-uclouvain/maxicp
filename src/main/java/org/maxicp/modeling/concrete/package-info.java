@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Concrete modeling API
  */
-package org.maxicp.state;
+package org.maxicp.modeling.concrete;

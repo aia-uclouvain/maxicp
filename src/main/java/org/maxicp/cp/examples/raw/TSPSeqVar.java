@@ -15,6 +15,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
+import org.maxicp.util.io.InputReader;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -24,6 +25,7 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
@@ -179,4 +181,6 @@ public class TSPSeqVar {
         System.out.printf("elapsed - total: %.3f%n", elapsedSeconds);
         System.out.println(stats);
     }
+
 }
+

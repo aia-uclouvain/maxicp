@@ -3,7 +3,7 @@
  * Copyright (c)  2023 UCLouvain
  */
 
-package org.maxicp.cp.engine.constraints.utils;
+package org.maxicp.cp.engine.constraints.scheduling;
 
 /**
  * Data Structure described in

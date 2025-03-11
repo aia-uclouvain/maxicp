@@ -4,6 +4,6 @@
  */
 
 /**
- * Provides utility tools and objects (file reading, exceptions, etc)
+ * Provides utility tools and objects (file reading, exceptions, some data-structures, etc.)
  */
 package org.maxicp.util;

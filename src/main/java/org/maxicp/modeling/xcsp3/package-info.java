@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Implementation of XCSP3 API using MaxiCP
  */
-package org.maxicp.state;
+package org.maxicp.modeling.xcsp3;

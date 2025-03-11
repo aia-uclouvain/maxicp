@@ -4,6 +4,6 @@
  */
 
 /**
- * Constraints
+ * Constraints implementation (propagators)
  */
 package org.maxicp.cp.engine.constraints;

@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Symbolic constraints
  */
-package org.maxicp.state;
+package org.maxicp.modeling.constraints;

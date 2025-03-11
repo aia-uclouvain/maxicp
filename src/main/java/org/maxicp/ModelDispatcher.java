@@ -22,6 +22,9 @@ import java.util.function.Supplier;
 
 import static org.maxicp.Constants.HORIZON;
 
+/**
+ * A class that allows to create symbolic models
+ */
 public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelProxyInstantiator, ModelProxy {
     private Model initialModel;
     private ThreadLocal<Model> currentModel;

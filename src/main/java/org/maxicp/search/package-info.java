@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management
+ * Search API
  */
 package org.maxicp.search;

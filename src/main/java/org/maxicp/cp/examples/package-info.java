@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Examples of models
  */
-package org.maxicp.state;
+package org.maxicp.cp.examples;

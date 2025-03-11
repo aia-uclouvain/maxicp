@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw.scheduling;
+package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.LessOrEqual;

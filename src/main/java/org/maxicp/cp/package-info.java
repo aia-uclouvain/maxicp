@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Constraint Programming Solver Implementation
  */
-package org.maxicp.state;
+package org.maxicp.cp;

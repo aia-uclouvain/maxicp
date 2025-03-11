@@ -4,6 +4,6 @@
  */
 
 /**
- * State Management (trailer, copier, etc.)
+ * Some useful algorithms
  */
-package org.maxicp.state;
+package org.maxicp.util.algo;

@@ -6,8 +6,6 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
-import org.maxicp.cp.engine.constraints.utils.ThetaTree;
-
 import java.util.Arrays;
 import java.util.Comparator;
 

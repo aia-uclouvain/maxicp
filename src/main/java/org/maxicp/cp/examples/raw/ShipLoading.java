@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw.scheduling.shipLoadling;
+package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
@@ -15,8 +15,10 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.and;
@@ -27,7 +29,8 @@ import static org.maxicp.search.Searches.firstFail;
  *
  * @author Roger Kameugne
  */
-public class ShipLoadingModel {
+public class ShipLoading {
+
     int nbTasks;
     int nbResources;
     int capacityResource;
@@ -42,7 +45,8 @@ public class ShipLoadingModel {
     int[] startSolution;
     int[] endSolution;
     int[] heightSolution;
-    public ShipLoadingModel(ShipLoadingInstance data) throws Exception {
+
+    public ShipLoading(ShipLoadingInstance data) throws Exception {
         // Data:
         nbTasks = data.nbTasks;
         nbResources = data.nbResources;
@@ -90,8 +94,8 @@ public class ShipLoadingModel {
         cp.post(le(resource, capacityResource));
 
         // Objective
-        CPIntVar mksp = maximum(ends);
-        Objective obj = cp.minimize(mksp);
+        CPIntVar makespan = maximum(ends);
+        Objective obj = cp.minimize(makespan);
 
         // Search:
         DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(starts), firstFail(ends)));
@@ -101,7 +105,7 @@ public class ShipLoadingModel {
         endSolution = new int[nbTasks];
         heightSolution = new int[nbTasks];
         dfs.onSolution(() -> {
-            makespan = mksp.min();
+            this.makespan = makespan.min();
             for (int i = 0; i < nbTasks; i++) {
                 startSolution[i] = starts[i].min();
                 endSolution[i] = ends[i].min();
@@ -133,7 +137,49 @@ public class ShipLoadingModel {
 
     public static void main(String[] args) throws Exception{
         ShipLoadingInstance data = new ShipLoadingInstance(args[0]);
-        ShipLoadingModel sample = new ShipLoadingModel(data);
-        sample.printSolution();
+        ShipLoading sl = new ShipLoading(data);
+        sl.printSolution();
+    }
+}
+
+/**
+ * Ship Loading Problem instance.
+ *
+ * @author Roger Kameugne
+ */
+class ShipLoadingInstance {
+    public int nbTasks;
+    public int nbResources;
+    public int resourceCapacity;
+    public int[] sizes;
+    public ArrayList<Integer>[] successors;
+    public int horizon;
+    public String name;
+    int sumSizes;
+
+    public ShipLoadingInstance (String fileName) throws Exception {
+        Scanner s = new Scanner(new File(fileName)).useDelimiter("\\s+");
+        while (!s.hasNextInt()) s.nextLine();
+        nbTasks = s.nextInt();
+        nbResources = s.nextInt();
+        resourceCapacity = s.nextInt();
+        sizes = new int[nbTasks];
+        successors = new ArrayList[nbTasks];
+        sumSizes = 0;
+        for (int i = 0; i < nbTasks; i++) {
+            successors[i] = new ArrayList<>();
+            sizes[i] = s.nextInt();
+            sumSizes += sizes[i];
+            int nbSucc = s.nextInt();
+            if (nbSucc > 0) {
+                for (int j = 0; j < nbSucc; j++) {
+                    int succ = s.nextInt();
+                    successors[i].add(succ - 1);
+                }
+            }
+        }
+        name = fileName;
+        horizon = sumSizes;
+        s.close();
     }
 }
