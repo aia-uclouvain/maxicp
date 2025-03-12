@@ -148,6 +148,7 @@ public class DARPSeqVar {
 
         // ===================== constraints =====================
 
+        // for each request, its pickup, its drop and its load
         int[] pickup = IntStream.range(0, inst.nRequest).toArray();
         int[] drop = IntStream.range(inst.nRequest, 2 * inst.nRequest).toArray();
         int[] load = IntStream.range(0, inst.nRequest).map(i -> inst.get(i).load).toArray(); // load of pickup nodes
@@ -165,7 +166,7 @@ public class DARPSeqVar {
             // time[drop] <= time[pickup] + duration[pickup] + maxRideTime
             model.add(le(time[drop[r]], plus(time[pickup[r]], duration[pickup[r]] + inst.maxRideTime)));
         }
-        // some time coherence for the transitions. Not necessary for correctness, but helps for the filtering
+        // redundant constraints using time coherence for the transitions
         for (int r = 0; r < inst.nRequest; r++) {
             // time[pickup] + duration[pickup] + distance[pickup][drop] <= time[drop]
             model.add(le(plus(time[pickup[r]], duration[pickup[r]] + inst.distMatrix[pickup[r]][drop[r]]), time[drop[r]]));
