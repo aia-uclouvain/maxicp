@@ -132,16 +132,14 @@ public class DARPSeqVar {
         SeqVar[] routes = new SeqVar[inst.nVehicle]; // the sequence of nodes for each vehicle
         IntExpression[] distance = new IntExpression[inst.nVehicle]; // the distance traveled by each vehicle
 
-        for (int v = 0; v < inst.nVehicle; v++) { // variables for the sequences, start depot and end depot
+        for (int v = 0; v < inst.nVehicle; v++) {
             routes[v] = model.seqVar(n, start[v], end[v]);
             distance[v] = model.intVar(0, inst.get(end[v]).twEnd);
         }
 
-        IntExpression sumDistance = sum(distance);
-
         IntExpression[] time = new IntExpression[n]; // the time at which a node is visited
         int[] duration = new int[n]; // the duration of the visit of the nodes
-        for (int i = 0; i < n; i++) { // variables for the nodes to visit
+        for (int i = 0; i < n; i++) {
             time[i] = model.intVar(inst.get(i).twStart, inst.get(i).twEnd);
             duration[i] = inst.get(i).duration;
         }
@@ -153,7 +151,7 @@ public class DARPSeqVar {
         int[] drop = IntStream.range(inst.nRequest, 2 * inst.nRequest).toArray();
         int[] load = IntStream.range(0, inst.nRequest).map(i -> inst.get(i).load).toArray(); // load of pickup nodes
 
-        for (int v = 0; v < inst.nVehicle; v++) { // variables for the sequences, starting depot and end depot
+        for (int v = 0; v < inst.nVehicle; v++) {
             // transition time between the nodes
             model.add(transitionTimes(routes[v], time, inst.distMatrix, duration));
             // a vehicle has a limited capacity when visiting pickups and drops
@@ -161,6 +159,9 @@ public class DARPSeqVar {
             // maximum distance
             model.add(distance(routes[v], inst.distMatrix, distance[v]));
         }
+
+        IntExpression sumDistance = sum(distance);
+
         // max ride time constraint
         for (int r = 0; r < inst.nRequest; r++) {
             // time[drop] <= time[pickup] + duration[pickup] + maxRideTime

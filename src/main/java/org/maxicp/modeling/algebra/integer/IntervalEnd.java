@@ -11,67 +11,51 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Gives the end of an {@link IntervalVar} or a given value if the interval is not present
- * @param interval the interval
- * @param value the default value if the interval is absent
+ * Gives the end of an {@link IntervalVar}
+ * @param interval the interval, it must be present
  */
-public record IntervalEndOrValue(IntervalVar interval, int value) implements SymbolicIntExpression {
+public record IntervalEnd(IntervalVar interval) implements SymbolicIntExpression {
 
     @Override
     public int defaultEvaluate() throws VariableNotFixedException {
-        if (interval.isOptional())
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
+        else if (interval.endMin() != interval.endMax())
             throw new VariableNotFixedException();
-        if (interval.isPresent()) {
-            if (interval.endMin() != interval.endMax())
-                throw new VariableNotFixedException();
-            return interval.endMax();
-        }
-        assert interval.isAbsent();
-        return value;
+        return interval.endMin();
     }
+
 
     @Override
     public int defaultMin() {
-        if (interval.isOptional())
-            return Math.min(interval.endMin(), value);
-        if (interval.isAbsent())
-            return value;
-        assert (interval.isPresent());
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
         return interval.endMin();
     }
 
     @Override
     public int defaultMax() {
-        if (interval.isOptional())
-            return Math.max(interval.endMax(), value);
-        if (interval.isAbsent())
-            return value;
-        assert (interval.isPresent());
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
         return interval.endMax();
     }
 
     @Override
     public boolean defaultContains(int v) {
-        if (interval.isOptional())
-            return v == value || intervalEndContains(v);
-        if (interval.isAbsent())
-            return v == value;
-        assert (interval.isPresent());
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
         return intervalEndContains(v);
     }
 
     @Override
     public int defaultFillArray(int[] array) {
-        if (interval.isAbsent()) {
-            array[0] = value;
-            return 1;
-        } else {
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
+        else {
             int i = 0;
             int endMin = interval.endMin();
             int endMax = interval.endMax();
             // only add value if optional and not already contained in endMin...endMax
-            if (interval.isOptional() && (value < endMin || value > endMax))
-                array[i++] = value;
             for (int v = endMin; v <= endMax; v++) {
                 array[i++] = v;
             }
@@ -85,14 +69,11 @@ public record IntervalEndOrValue(IntervalVar interval, int value) implements Sym
 
     @Override
     public int defaultSize() {
-        if (interval.isAbsent())
-            return 1;
-        if (interval.isOptional()) {
-            if (intervalEndContains(value))
-                return interval.endMax() - interval.endMin() + 1;
-            return interval.endMax() - interval.endMin() + 2;
+        if (!interval.isPresent())
+            throw new RuntimeException("Interval must be present");
+        else {
+            return interval.endMax() - interval.endMin() + 1;
         }
-        return interval.endMax() - interval.endMin() + 1;
     }
 
     @Override

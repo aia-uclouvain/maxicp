@@ -526,7 +526,7 @@ public final class CPFactory {
      * @return a variable that represents the maximum on x
      * @see CPFactory#minimum(CPIntVar...)
      */
-    public static CPIntVar maximum(CPIntVar... x) {
+    public static CPIntVar max(CPIntVar... x) {
         CPSolver cp = x[0].getSolver();
         int min = Arrays.stream(x).mapToInt(CPIntVar::min).min().getAsInt();
         int max = Arrays.stream(x).mapToInt(CPIntVar::max).max().getAsInt();
@@ -542,11 +542,11 @@ public final class CPFactory {
      *
      * @param x the variables on which to compute the minimum
      * @return a variable that represents the minimum on x
-     * @see CPFactory#maximum(CPIntVar...) (IntVar...)
+     * @see CPFactory#max(CPIntVar...) (IntVar...)
      */
     public static CPIntVar minimum(CPIntVar... x) {
         CPIntVar[] minusX = Arrays.stream(x).map(CPFactory::minus).toArray(CPIntVar[]::new);
-        return minus(maximum(minusX));
+        return minus(max(minusX));
     }
 
     // ********************
@@ -1681,7 +1681,7 @@ public final class CPFactory {
     public static CPIntVar makespan(CPIntervalVar... vars) {
         Stream<CPIntVar> stream = Arrays.stream(vars).map(var -> endOr(var, 0));
         CPIntVar[] ends = stream.toArray(CPIntVar[]::new);
-        CPIntVar end = maximum(ends);
+        CPIntVar end = max(ends);
         return end;
     }
 

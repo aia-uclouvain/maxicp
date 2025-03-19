@@ -230,12 +230,17 @@ public class ConcreteCPModel implements ConcreteModel {
                     CPFactory.sum(IntStream.range(0, ie.subexprs().length).mapToObj(i -> CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i])).toArray(CPIntVar[]::new));
             case Constant c -> CPFactory.makeIntVar(solver, c.v(), c.v());
             case Min m -> CPFactory.minimum(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
-            case Max m -> CPFactory.maximum(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
+            case Max m -> CPFactory.max(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
             case Element1D e -> CPFactory.element(e.array(), getCPVar(e.index()));
             case Element1DVar e ->
                     CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new), getCPVar(e.index()));
             case Element2D e -> CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));
             case IntervalEndOrValue i -> CPFactory.endOr(getCPVar(i.interval()), i.value());
+            case IntervalEnd i -> CPFactory.end(getCPVar(i.interval()));
+            case IntervalStartOrValue i -> CPFactory.startOr(getCPVar(i.interval()), i.value());
+            case IntervalStart i -> CPFactory.start(getCPVar(i.interval()));
+            case IntervalLengthOrValue i -> CPFactory.lengthOr(getCPVar(i.interval()), i.value());
+            case IntervalLength i -> CPFactory.length(getCPVar(i.interval()));
             default ->
                     throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
         };

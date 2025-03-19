@@ -63,7 +63,7 @@ public class MaximumTest extends CPSolverTest {
         CPIntVar x1 = CPFactory.makeIntVar(cp, 0, 0);
         CPIntVar x2 = CPFactory.makeIntVar(cp, 1, 1);
         CPIntVar x3 = CPFactory.makeIntVar(cp, 2, 2);
-        CPIntVar y = CPFactory.maximum(x1, x2, x3);
+        CPIntVar y = CPFactory.max(x1, x2, x3);
 
         assertEquals(2, y.max());
     }
@@ -74,7 +74,7 @@ public class MaximumTest extends CPSolverTest {
         CPIntVar x1 = CPFactory.makeIntVar(cp, 0, 10);
         CPIntVar x2 = CPFactory.makeIntVar(cp, 0, 10);
         CPIntVar x3 = CPFactory.makeIntVar(cp, -5, 50);
-        CPIntVar y = CPFactory.maximum(x1, x2, x3);
+        CPIntVar y = CPFactory.max(x1, x2, x3);
 
         y.removeAbove(5);
         cp.fixPoint();

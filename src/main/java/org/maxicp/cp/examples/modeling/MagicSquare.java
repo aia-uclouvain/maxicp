@@ -35,15 +35,15 @@ public class MagicSquare {
         int n = 5;
         int sumResult = n * (n * n + 1) / 2;
 
-        ModelDispatcher baseModel = Factory.makeModelDispatcher();
+        ModelDispatcher model = Factory.makeModelDispatcher();
 
         IntVar[][] x = new IntVar[n][n];
 
-        baseModel.intVarArray(n, n);
+        model.intVarArray(n, n);
 
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                x[i][j] = baseModel.intVar(1,n*n);
+                x[i][j] = model.intVar(1,n*n);
             }
         }
 
@@ -53,11 +53,11 @@ public class MagicSquare {
         }
 
         // AllDifferent
-        baseModel.add(new AllDifferent(xFlat));
+        model.add(new AllDifferent(xFlat));
 
         // Sum on lines
         for (int i = 0; i < n; i++) {
-            baseModel.add(eq(sum(x[i]),sumResult));
+            model.add(eq(sum(x[i]),sumResult));
         }
 
         // Sum on columns
@@ -66,7 +66,7 @@ public class MagicSquare {
             for (int i = 0; i < x.length; i++) {
                 column[i] = x[i][j];
             }
-            baseModel.add(eq(sum(column),sumResult));
+            model.add(eq(sum(column),sumResult));
         }
 
         // Sum on diagonals
@@ -76,12 +76,12 @@ public class MagicSquare {
             diagonalLeft[i] = x[i][i];
             diagonalRight[i] = x[n - i - 1][i];
         }
-        baseModel.add(eq(sum(diagonalLeft),sumResult));
-        baseModel.add(eq(sum(diagonalRight),sumResult));
+        model.add(eq(sum(diagonalLeft),sumResult));
+        model.add(eq(sum(diagonalRight),sumResult));
 
         long time = TimeIt.run(() -> {
-            baseModel.runCP(() -> {
-                SearchMethod search = baseModel.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(xFlat), var -> var.min()));
+            model.runCP(() -> {
+                SearchMethod search = model.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(xFlat), var -> var.min()));
                 //DFSearch search = cp.dfSearch(Searches.staticOrder(xFlat));
                 search.onSolution(() -> {
                     for (int i = 0; i < n; i++) {

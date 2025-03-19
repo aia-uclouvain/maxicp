@@ -77,7 +77,7 @@ public class RCPSP {
         }
 
         for (int r = 0; r < nResources; r++) {
-            model.add(lessOrEqual(resources[r], capa[r]));
+            model.add(Factory.le(resources[r], capa[r]));
         }
 
         for (int i = 0; i < nActivities; i++) {

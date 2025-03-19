@@ -11,20 +11,20 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Gives the end of an {@link IntervalVar} or a given value if the interval is not present
+ * Gives the length an {@link IntervalVar} or a given value if the interval is not present
  * @param interval the interval
  * @param value the default value if the interval is absent
  */
-public record IntervalEndOrValue(IntervalVar interval, int value) implements SymbolicIntExpression {
+public record IntervalLengthOrValue(IntervalVar interval, int value) implements SymbolicIntExpression {
 
     @Override
     public int defaultEvaluate() throws VariableNotFixedException {
         if (interval.isOptional())
             throw new VariableNotFixedException();
         if (interval.isPresent()) {
-            if (interval.endMin() != interval.endMax())
+            if (interval.lengthMin() != interval.lengthMax())
                 throw new VariableNotFixedException();
-            return interval.endMax();
+            return interval.lengthMax();
         }
         assert interval.isAbsent();
         return value;
@@ -33,31 +33,31 @@ public record IntervalEndOrValue(IntervalVar interval, int value) implements Sym
     @Override
     public int defaultMin() {
         if (interval.isOptional())
-            return Math.min(interval.endMin(), value);
+            return Math.min(interval.lengthMin(), value);
         if (interval.isAbsent())
             return value;
         assert (interval.isPresent());
-        return interval.endMin();
+        return interval.lengthMin();
     }
 
     @Override
     public int defaultMax() {
         if (interval.isOptional())
-            return Math.max(interval.endMax(), value);
+            return Math.max(interval.lengthMax(), value);
         if (interval.isAbsent())
             return value;
         assert (interval.isPresent());
-        return interval.endMax();
+        return interval.lengthMax();
     }
 
     @Override
     public boolean defaultContains(int v) {
         if (interval.isOptional())
-            return v == value || intervalEndContains(v);
+            return v == value || intervalLengthContains(v);
         if (interval.isAbsent())
             return v == value;
         assert (interval.isPresent());
-        return intervalEndContains(v);
+        return intervalLengthContains(v);
     }
 
     @Override
@@ -67,20 +67,20 @@ public record IntervalEndOrValue(IntervalVar interval, int value) implements Sym
             return 1;
         } else {
             int i = 0;
-            int endMin = interval.endMin();
-            int endMax = interval.endMax();
-            // only add value if optional and not already contained in endMin...endMax
-            if (interval.isOptional() && (value < endMin || value > endMax))
+            int lengthMin = interval.lengthMin();
+            int lengthMax = interval.lengthMax();
+            // only add value if optional and not already contained in lengthMin...lengthMax
+            if (interval.isOptional() && (value < lengthMin || value > lengthMax))
                 array[i++] = value;
-            for (int v = endMin; v <= endMax; v++) {
+            for (int v = lengthMin; v <= lengthMax; v++) {
                 array[i++] = v;
             }
             return i;
         }
     }
 
-    private boolean intervalEndContains(int v) {
-        return interval.endMin() <= v && v <= interval.endMax();
+    private boolean intervalLengthContains(int v) {
+        return interval.lengthMin() <= v && v <= interval.lengthMax();
     }
 
     @Override
@@ -88,11 +88,11 @@ public record IntervalEndOrValue(IntervalVar interval, int value) implements Sym
         if (interval.isAbsent())
             return 1;
         if (interval.isOptional()) {
-            if (intervalEndContains(value))
-                return interval.endMax() - interval.endMin() + 1;
-            return interval.endMax() - interval.endMin() + 2;
+            if (intervalLengthContains(value))
+                return interval.lengthMax() - interval.lengthMin() + 1;
+            return interval.lengthMax() - interval.lengthMin() + 2;
         }
-        return interval.endMax() - interval.endMin() + 1;
+        return interval.lengthMax() - interval.lengthMin() + 1;
     }
 
     @Override

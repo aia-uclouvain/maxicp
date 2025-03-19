@@ -84,6 +84,10 @@ public final class Factory {
         return new CstMul(a, b);
     }
 
+    static public IntExpression mul(IntExpression x, BoolExpression b) {
+        return new MulBinary(x,b);
+    }
+
     static public IntExpression mul(IntExpression... x) {
         return new Mul(x);
     }
@@ -217,12 +221,14 @@ public final class Factory {
         return or(not(a), b);
     }
 
-    // ********************
-    // Element constraints
-    // ********************
+
     public static BoolExpression endBeforeStart(IntervalVar a, IntervalVar b) {
         return new EndBeforeStart(a, b);
     }
+
+    // ********************
+    // Element constraints
+    // ********************
 
     public static IntExpression get(int [] T, IntExpression y) {
         return new Element1D(T, y);
@@ -334,6 +340,7 @@ public final class Factory {
         return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);
     }
 
+
     public static Constraint length(IntervalVar var, int length) {
         return new org.maxicp.modeling.constraints.scheduling.Length(var, length);
     }
@@ -357,9 +364,30 @@ public final class Factory {
 
      */
 
-    public static IntExpression endOr(IntervalVar interval, int end) {
-        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, end);
+    public static IntExpression startOr(IntervalVar interval, int v) {
+        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);
     }
+
+    public static IntExpression start(IntervalVar interval) {
+        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);
+    }
+
+    public static IntExpression endOr(IntervalVar interval, int v) {
+        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);
+    }
+
+    public static IntExpression end(IntervalVar interval) {
+        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);
+    }
+
+    public static IntExpression length(IntervalVar interval) {
+        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);
+    }
+
+    public static IntExpression lengthOr(IntervalVar interval, int v) {
+        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);
+    }
+
 
     public static BoolExpression endBefore(IntervalVar intervalVar, IntExpression value) {
         return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);
@@ -425,7 +453,7 @@ public final class Factory {
         return stepAtStart(interval, height, height);
     }
 
-    public static Constraint lessOrEqual(CumulFunction function, int limit) {
+    public static Constraint le(CumulFunction function, int limit) {
         return new LessOrEqual(function, limit);
     }
 

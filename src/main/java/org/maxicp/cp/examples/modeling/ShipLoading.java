@@ -4,15 +4,15 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.modeling;
 
-import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
-import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.algebra.scheduling.CumulFunction;
+import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 
 import java.io.File;
@@ -20,14 +20,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
-import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.and;
 import static org.maxicp.search.Searches.firstFail;
+
+import static org.maxicp.modeling.Factory.*;
 
 /**
  * Ship Loading Problem model.
  *
- * @author Roger Kameugne
+ * @author Roger Kameugne, pschaus
  */
 public class ShipLoading {
 
@@ -56,52 +57,54 @@ public class ShipLoading {
         horizon = data.horizon;
         name = data.name;
 
-        CPSolver cp = CPFactory.makeSolver();
+        ModelDispatcher model = makeModelDispatcher();
 
         // Variables:
-        CPIntervalVar[] intervals = new CPIntervalVar[nbTasks];
-        CPIntVar[] starts = new CPIntVar[nbTasks];
-        CPIntVar[] ends = new CPIntVar[nbTasks];
-        CPIntVar[] height = new CPIntVar[nbTasks];
-        CPCumulFunction resource = flat();
+        IntervalVar[] intervals = new IntervalVar[nbTasks];
+        IntExpression[] starts = new IntExpression[nbTasks];
+        IntExpression[] ends = new IntExpression[nbTasks];
+        IntExpression[] height = new IntExpression[nbTasks];
+        CumulFunction resource = flat();
         for (int i = 0; i < nbTasks; i++) {
-            CPIntervalVar interval = makeIntervalVar(cp);
-            interval.setEndMax(horizon);
-            interval.setLengthMin(1); // remove
-            interval.setLengthMax(sizes[i]);
-            interval.setPresent();
-            starts[i] = CPFactory.start(interval);
-            ends[i] = CPFactory.end(interval);
-            resource = CPFactory.plus(resource, pulse(interval, 1, Math.min(capacityResource, sizes[i])));
+            // intervalVar(int startMin, int endMax, int duration, boolean isPresent)
+            // TODO: min lenght is 1
+            IntervalVar interval = model.intervalVar(0,horizon,sizes[i], true);
+            starts[i] = start(interval);
+
+            ends[i] = end(interval);
+            resource = sum(resource, pulse(interval, 1, Math.min(capacityResource, sizes[i])));
             intervals[i] = interval;
         }
 
         // Precedence and size constraints:
         for (int i = 0; i < nbTasks; i++) {
             for (int k : successors[i]) {
-                cp.post(endBeforeStart(intervals[i], intervals[k]));
+                model.add(endBeforeStart(intervals[i], intervals[k]));
             }
             height[i] = resource.heightAtStart(intervals[i]);
             if (height[i].min() * (ends[i].max() - starts[i].min()) < sizes[i]) {
                 int upd = ceilFunction(sizes[i], ends[i].max() - starts[i].min());
-                cp.post(ge(height[i],upd));
+                model.add(ge(height[i],upd));
             }
             int val = ceilFunction( sizes[i], height[i].max());
-            cp.post(ge(length(intervals[i]), val));
+            model.add(ge(length(intervals[i]), val));
         }
 
         // Resource constraint:
-        cp.post(le(resource, capacityResource));
+        model.add(le(resource, capacityResource));
 
         // Objective
-        CPIntVar makespan = max(ends);
-        Objective obj = cp.minimize(makespan);
+        IntExpression makespan = max(ends);
 
+        Objective obj = minimize(makespan);
+
+        ConcreteCPModel cp = model.cpInstantiate();
         // Search:
-        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(starts), firstFail(ends)));
+        DFSearch dfs = cp.dfSearch(and(firstFail(starts), firstFail(ends)));
 
         // Solution management:
         dfs.onSolution(() -> {
+            this.makespan = makespan.min();
             System.out.println("makespan: " + makespan);
         });
 

@@ -42,7 +42,7 @@ public class JobShop {
             }
         }
 
-        ModelDispatcher baseModel = Factory.makeModelDispatcher();
+        ModelDispatcher model = makeModelDispatcher();
         IntervalVar[][] activities = new IntervalVar[nJobs][nMachines];
         ArrayList<IntervalVar>[] activitiesOnMachine = new ArrayList[nMachines];
         for (int i = 0 ; i < activitiesOnMachine.length ; i++)
@@ -52,12 +52,12 @@ public class JobShop {
         for (int i = 0; i < nJobs; i++) {
             for (int j = 0; j < nMachines; j++) {
                 // each activity has a fixed duration and is always present
-                activities[i][j] = baseModel.intervalVar(duration[i][j], true);
+                activities[i][j] = model.intervalVar(duration[i][j], true);
                 int m = machine[i][j];
                 activitiesOnMachine[m].add(activities[i][j]);
                 // task comes before the other one on the same machine
                 if (j > 0)
-                    baseModel.add(endBeforeStart(activities[i][j - 1], activities[i][j]));
+                    model.add(endBeforeStart(activities[i][j - 1], activities[i][j]));
             }
             lastActivityOfJob[i] = activities[i][nMachines - 1];
         }
@@ -66,14 +66,14 @@ public class JobShop {
         for (int m = 0; m < nMachines ; m++) {
             // no task can overlap on a machine
             IntervalVar[] act = activitiesOnMachine[m].toArray(new IntervalVar[0]);
-            baseModel.add(noOverlap(act));
+            model.add(noOverlap(act));
             // add the precedence
             for (int i = 0; i < act.length; i++) {
                 for (int j = i + 1; j < act.length; j++) {
                     BoolExpression iBeforeJ = endBeforeStart(act[i], act[j]);
                     BoolExpression jBeforeI = endBeforeStart(act[j], act[i]);
                     // the tasks cannot overlap: either i << j, or j << i
-                    baseModel.add(neq(iBeforeJ, jBeforeI));
+                    model.add(neq(iBeforeJ, jBeforeI));
                     // register the precedence to branch on it
                     precedences.add(iBeforeJ);
                 }
@@ -90,7 +90,7 @@ public class JobShop {
             return branch(() -> makespan.getModelProxy().add(eq(makespan,makespan.min())));
         };
 
-        baseModel.runCP((cp) -> {
+        model.runCP((cp) -> {
             DFSearch search = cp.dfSearch(and(branchPrecedences, fixMakespan));
             // print each solution found
             search.onSolution(() -> {

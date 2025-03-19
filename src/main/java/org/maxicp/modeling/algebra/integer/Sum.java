@@ -12,7 +12,7 @@ import java.util.function.Function;
 public record Sum(IntExpression... subexprs) implements SymbolicIntExpression, NonLeafExpressionNode {
 
     public Sum {
-        if(subexprs.length == 0)
+        if (subexprs.length == 0)
             throw new IllegalArgumentException();
     }
 
@@ -23,13 +23,13 @@ public record Sum(IntExpression... subexprs) implements SymbolicIntExpression, N
 
     @Override
     public Sum mapSubexpressions(Function<Expression, Expression> f) {
-        return new Sum(Arrays.stream(subexprs).map(f).map(x -> (IntExpression)x).toArray(IntExpression[]::new));
+        return new Sum(Arrays.stream(subexprs).map(f).map(x -> (IntExpression) x).toArray(IntExpression[]::new));
     }
 
     @Override
     public int defaultEvaluate() throws VariableNotFixedException {
         int c = 0;
-        for(IntExpression expr: subexprs)
+        for (IntExpression expr : subexprs)
             c += expr.evaluate();
         return c;
     }
@@ -37,7 +37,7 @@ public record Sum(IntExpression... subexprs) implements SymbolicIntExpression, N
     @Override
     public int defaultMin() {
         int c = 0;
-        for(IntExpression expr: subexprs)
+        for (IntExpression expr : subexprs)
             c += expr.min();
         return c;
     }
@@ -45,7 +45,7 @@ public record Sum(IntExpression... subexprs) implements SymbolicIntExpression, N
     @Override
     public int defaultMax() {
         int c = 0;
-        for(IntExpression expr: subexprs)
+        for (IntExpression expr : subexprs)
             c += expr.max();
         return c;
     }

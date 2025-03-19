@@ -7,6 +7,7 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.algebra.scheduling.CumulFunction;
@@ -50,7 +51,7 @@ public class CuSP {
             resource = sum(resource, pulse(intervals[i], data.demands[i]));
         }
 
-        baseModel.add(lessOrEqual(resource, data.capacity));
+        baseModel.add(Factory.le(resource, data.capacity));
 
         makespan = max(Arrays.stream(intervals).map(task -> endOr(task, 0)).toArray(IntExpression[]::new));
         obj = minimize(makespan);
