@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 
 /**
- * Maximum Constraint
+ * Constraint x * b = y where b is a boolean variable
  */
 public class Mul extends AbstractCPConstraint {
 
