@@ -104,34 +104,22 @@ public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelPr
         return new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent);
     }
 
-    public IntervalVar intervalVar() {
-        return intervalVar(0, HORIZON,0, HORIZON, 0, HORIZON, false);
-    }
-
     public IntervalVar intervalVar(boolean isPresent) {
         return intervalVar(0, HORIZON,0, HORIZON, 0, HORIZON, isPresent);
-    }
-
-    public IntervalVar intervalVar(int duration) {
-        return intervalVar(0, HORIZON,0, HORIZON, duration, duration, false);
     }
 
     public IntervalVar intervalVar(int duration, boolean isPresent) {
         return intervalVar(0, HORIZON,0, HORIZON, duration, duration, isPresent);
     }
 
-    public IntervalVar intervalVar(int startMin, int endMax, int duration) {
-        return intervalVar(startMin, endMax - duration, startMin + duration, endMax, duration, duration, false);
-    }
-
     public IntervalVar intervalVar(int startMin, int endMax, int duration, boolean isPresent) {
         return intervalVar(startMin, endMax - duration, startMin + duration, endMax, duration, duration, isPresent);
     }
 
-    public IntervalVar[] intervalVarArray(int n) {
+    public IntervalVar[] intervalVarArray(int n, boolean present) {
         IntervalVar[] out = new IntervalVar[n];
         for (int i = 0 ; i < n ; i++) {
-            out[i] = intervalVar();
+            out[i] = intervalVar(present);
         }
         return out;
     }

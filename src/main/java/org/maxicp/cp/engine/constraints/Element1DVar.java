@@ -93,6 +93,7 @@ public class Element1DVar extends AbstractCPConstraint {
                 }
             }
         }
+
     }
 
 }

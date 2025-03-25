@@ -61,7 +61,7 @@ public class FlexibleJobShop {
             alternativeTasks[t] = new ArrayList<>();
             for (int m = 0 ; m < nMachines ; m++) {
                 if (duration[t][m] != -1) {
-                    IntervalVar possibleOperation = model.intervalVar(duration[t][m]);
+                    IntervalVar possibleOperation = model.intervalVar(duration[t][m],false);
                     tasksOnMachine[m].add(possibleOperation);
                     alternativeTasks[t].add(possibleOperation);
                     status.add(possibleOperation.status());

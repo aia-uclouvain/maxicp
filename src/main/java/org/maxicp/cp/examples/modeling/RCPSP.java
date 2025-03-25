@@ -58,10 +58,9 @@ public class RCPSP {
 
         // The Model
         ModelDispatcher model = Factory.makeModelDispatcher();
-        IntervalVar[] tasks = model.intervalVarArray(nActivities);
+        IntervalVar[] tasks = model.intervalVarArray(nActivities, true);
         for (int i = 0; i < nActivities; i++) {
             model.add(length(tasks[i], duration[i]));
-            model.add(present(tasks[i]));
         }
 
         CumulFunction[] resources = new CumulFunction[nResources];

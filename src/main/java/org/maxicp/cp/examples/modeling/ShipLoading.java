@@ -26,7 +26,13 @@ import static org.maxicp.search.Searches.firstFail;
 import static org.maxicp.modeling.Factory.*;
 
 /**
- * Ship Loading Problem model.
+ * Ship Loading Problem.
+ *
+ * The problem is to find a schedule that minimizes the time to unload and
+ * to load a ship. The work contains a set of 34 elementary tasks. Each task has to be handled by
+ * a given number of people and during a given period of time (see Table 2). For each task, only
+ * the associated surface is known (i.e., the product of the task duration by the needed amount of
+ * resource).
  *
  * @author Roger Kameugne, pschaus
  */
@@ -82,6 +88,8 @@ public class ShipLoading {
                 model.add(endBeforeStart(intervals[i], intervals[k]));
             }
             height[i] = resource.heightAtStart(intervals[i]);
+
+
             if (height[i].min() * (ends[i].max() - starts[i].min()) < sizes[i]) {
                 int upd = ceilFunction(sizes[i], ends[i].max() - starts[i].min());
                 model.add(ge(height[i],upd));

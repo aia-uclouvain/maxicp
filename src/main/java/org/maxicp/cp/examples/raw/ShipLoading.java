@@ -82,6 +82,8 @@ public class ShipLoading {
                 cp.post(endBeforeStart(intervals[i], intervals[k]));
             }
             height[i] = resource.heightAtStart(intervals[i]);
+
+
             if (height[i].min() * (ends[i].max() - starts[i].min()) < sizes[i]) {
                 int upd = ceilFunction(sizes[i], ends[i].max() - starts[i].min());
                 cp.post(ge(height[i],upd));

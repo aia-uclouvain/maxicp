@@ -22,7 +22,7 @@ public class IntervalVarEnd extends AbstractCPConstraint {
     public IntervalVarEnd(CPIntervalVar var, CPIntVar end) {
         super(var.getSolver());
         if (!var.isPresent()) {
-            throw new IllegalArgumentException("interval var must be present:" + var);
+            System.out.println("Interval var must be present:" + var);
         }
         this.var = var;
         this.end = end;

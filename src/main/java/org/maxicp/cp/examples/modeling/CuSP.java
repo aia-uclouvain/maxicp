@@ -42,12 +42,10 @@ public class CuSP {
         baseModel = makeModelDispatcher();
 
         // Variables
-        intervals = baseModel.intervalVarArray(data.nTasks);
+        intervals = baseModel.intervalVarArray(data.nTasks,true);
         resource = flat();
         for (int i = 0; i < data.nTasks; i++) {
             baseModel.add(length(intervals[i], data.durations[i]));
-            baseModel.add(present(intervals[i]));
-
             resource = sum(resource, pulse(intervals[i], data.demands[i]));
         }
 
