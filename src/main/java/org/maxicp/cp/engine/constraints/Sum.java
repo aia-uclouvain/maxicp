@@ -32,7 +32,7 @@ public class Sum extends AbstractCPConstraint {
      * <p> This constraint holds iff
      * {@code x[0]+x[1]+...+x[x.length-1] == y}.
      *
-     * @param x the non empty left hand side of the sum
+     * @param x the non-empty left hand side of the sum
      * @param y the right hand side of the sum
      */
     public Sum(CPIntVar[] x, CPIntVar y) {

@@ -104,6 +104,37 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
      */
     int max();
 
+
+    /**
+     * Returns the value that is just before the given value in the domain of the variable
+     * if any, if the value is less than or equal to the minimum of the domain, the value is returned.
+     * @param value
+     * @return the value that is just before the given value in the domain of the variable
+     */
+    default int before(int value) {
+        if (value > min()) {
+            for (int i = value - 1; i >= min(); i--) {
+                if (contains(i)) return i;
+            }
+        }
+        return value;
+    }
+
+    /**
+     * Returns the value that is just after the given value in the domain of the variable
+     * if any, if the value is greater than or equal to the maximum of the domain, the value is returned.
+     * @param value
+     * @return the value that is just after the given value in the domain of the variable
+     */
+    default int after(int value) {
+        if (value < max()) {
+            for (int i = value + 1; i <= max(); i++) {
+                if (contains(i)) return i;
+            }
+        }
+        return value;
+    }
+
     /**
      * Returns the size of the domain of the variable
      *
@@ -196,6 +227,7 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
         throw new VariableNotFixedException();
     }
 
+
     default IntExpression plus(int v) {
         return CPFactory.plus(this, v);
     }
@@ -205,14 +237,14 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
     }
 
     default IntExpression plus(IntExpression v) {
-        if(v instanceof CPIntVar cpi)
+        if (v instanceof CPIntVar cpi)
             return CPFactory.sum(this, cpi);
         else
             throw new RuntimeException("Attempting to sum a CPIntVar with a SymbolicIntExpression");
     }
 
     default IntExpression minus(IntExpression v) {
-        if(v instanceof CPIntVar cpi)
+        if (v instanceof CPIntVar cpi)
             return CPFactory.sum(this, CPFactory.minus(cpi));
         else
             throw new RuntimeException("Attempting to sum a CPIntVar with a SymbolicIntExpression");

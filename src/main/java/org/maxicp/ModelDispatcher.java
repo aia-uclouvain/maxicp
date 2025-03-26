@@ -92,6 +92,10 @@ public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelPr
         return new IntVarSetImpl(this, Set.copyOf(Ints.asList(values)));
     }
 
+    public IntVar intVar(Set<Integer> values) {
+        return new IntVarSetImpl(this, values);
+    }
+
     public IntVar intVar(String id, int[] values) {
         return new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values)));
     }

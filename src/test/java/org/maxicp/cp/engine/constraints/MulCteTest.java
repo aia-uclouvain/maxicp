@@ -60,4 +60,17 @@ public class MulCteTest extends CPSolverTest {
         assertEquals(3, x.min());
     }
 
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test4(CPSolver cp) {
+        CPIntVar x = CPFactory.makeIntVar(cp, -5, 5);
+        CPIntVar z = CPFactory.makeIntVar(cp, -9, 12);
+        cp.post(new MulCte(x, 0, z));
+        assertFalse(x.isFixed());
+        assertEquals(-5, x.min());
+        assertEquals(5, x.max());
+        assertTrue(z.isFixed());
+        assertEquals(0, z.min());
+    }
+
 }

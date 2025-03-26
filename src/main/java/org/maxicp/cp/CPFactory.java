@@ -18,6 +18,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.state.copy.Copier;
 import org.maxicp.state.trail.Trailer;
+import org.maxicp.util.NumberUtils;
 import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.IntOverFlowException;
 
@@ -515,6 +516,44 @@ public final class CPFactory {
      */
     public static CPConstraint sum(int y, CPIntVar... x) {
         return new Sum(x, y);
+    }
+
+    /**
+     * Returns a variable representing
+     * the multiplication of a given set of variables.
+     * This relation is enforced by the {@link Mul} binary constraint
+     * posted by calling this method.
+     *
+     * @param x the n variables to multiply
+     * @return a variable equal to {@code x[0]*x[1]*...*x[n-1]}
+     */
+    public static CPIntVar mul(CPIntVar... x) {
+        // reduce using mult
+        if (x.length == 1)
+            return x[0];
+        CPIntVar res = x[0];
+        for (int i = 1; i < x.length; i++) {
+            res = mul(res, x[i]);
+        }
+        return res;
+    }
+
+    /**
+     * @param x a variable in the same store as y
+     * @param y a variable in the same store as x
+     * @return a variable in the same store representing: x * y
+     */
+    public static CPIntVar mul(CPIntVar x, CPIntVar y) {
+        int a = x.min();
+        int b = x.max();
+        int c = y.min();
+        int d = y.max();
+        int [] t = new int[] {NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};
+        int min = Arrays.stream(t).min().getAsInt();
+        int max = Arrays.stream(t).max().getAsInt();
+        CPIntVar z = makeIntVar(x.getSolver(),min, max);
+        x.getSolver().post(new MulVar(x, y, z));
+        return z;
     }
 
     /**

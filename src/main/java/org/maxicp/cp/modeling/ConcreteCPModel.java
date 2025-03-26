@@ -241,6 +241,7 @@ public class ConcreteCPModel implements ConcreteModel {
             case IntervalStart i -> CPFactory.start(getCPVar(i.interval()));
             case IntervalLengthOrValue i -> CPFactory.lengthOr(getCPVar(i.interval()), i.value());
             case IntervalLength i -> CPFactory.length(getCPVar(i.interval()));
+            case Mul ie -> CPFactory.mul(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
             default ->
                     throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
         };
@@ -274,7 +275,7 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case CstMul cm -> {
                 //fallback
-                post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(expr), cm.mul()), v));
+                post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(cm.expr()), cm.mul()), v));
             }
             case UnaryMinus um -> {
                 // -um.expr == v   <=>  um.expr == -v

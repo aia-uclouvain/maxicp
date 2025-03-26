@@ -50,7 +50,7 @@ public class Equal extends AbstractCPConstraint {
     }
 
     // dom consistent filtering in the direction from -> to
-    // every value of to has a support in from
+    // every value of "to" has a support in "from"
     private void pruneEquals(CPIntVar from, CPIntVar to, int[] domVal) {
         // dump the domain of to into domVal
         int nVal = to.fillArray(domVal);

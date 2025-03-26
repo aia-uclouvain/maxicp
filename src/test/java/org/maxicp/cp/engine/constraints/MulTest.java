@@ -13,6 +13,11 @@ import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,54 +27,20 @@ class MulTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void test1(CPSolver cp) {
 
-        CPBoolVar b = CPFactory.makeBoolVar(cp);
         CPIntVar x = CPFactory.makeIntVar(cp, -10, 10);
-        CPIntVar y = CPFactory.makeIntVar(cp, -5, 5);
-        cp.post(new Mul(x, b, y));
+        CPIntVar y = CPFactory.makeIntVar(cp, Set.of(-70, -50, 50, 70));
+        CPIntVar z = CPFactory.makeIntVar(cp, 100, 100);
 
-        assertEquals(-10, x.min());
-        assertEquals(10, x.max());
-        assertFalse(b.isFixed());
-        assertEquals(-5, y.min());
-        assertEquals(5, y.max());
+        cp.post(new MulVar(x, y, z)); // should post a MulCteRes because z is fixed
 
-        cp.getStateManager().saveState();
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(x, y));
+        search.onSolution(() -> {
+            assertTrue(x.isFixed() && y.isFixed());
+            assertTrue(((x.min() == -2) && (y.min() == -50)) ||  ((x.min() == 2)  && (y.min() == 50)));
+        });
 
-        cp.post(CPFactory.eq(b,1));
-        y.removeAbove(-2);
-        cp.fixPoint();
-        assertEquals(-5, y.min());
-        assertEquals(-2, y.max());
-        assertEquals(-5, x.min());
-        assertEquals(-2, x.max());
-
-        cp.getStateManager().restoreState();
-        cp.getStateManager().saveState();
-
-
-        y.removeAbove(-2);
-        cp.fixPoint();
-        assertTrue(b.isTrue());
-        assertEquals(-5, x.min());
-        assertEquals(-2, x.max());
-
-        cp.getStateManager().restoreState();
-        cp.getStateManager().saveState();
-
-        y.fix(0);
-        cp.fixPoint();
-        assertFalse(b.isFixed());
-        x.fix(0);
-        assertFalse(b.isFixed());
-
-        cp.getStateManager().restoreState();
-        cp.getStateManager().saveState();
-
-        y.fix(0);
-        cp.fixPoint();
-        x.removeAbove(-2);
-        cp.fixPoint();
-        assertTrue(b.isFalse());
+        SearchStatistics stats = search.solve();
+        assertEquals(2, stats.numberOfSolutions());
 
     }
 

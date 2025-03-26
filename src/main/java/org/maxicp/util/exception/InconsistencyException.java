@@ -22,8 +22,9 @@ public class InconsistencyException extends RuntimeException {
      *
      * Uncomment if you need stack traces. Be careful to comment it after debugging.
      */
+    /*
     @Override
     public synchronized Throwable fillInStackTrace() {
         return this;
-    }
+    }*/
 }
