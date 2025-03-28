@@ -130,7 +130,9 @@ public class MulVar extends AbstractCPConstraint {
             // cannot filter u because we potentially have u * 0 = 0
         }
         else {
-            assert(!z.isFixed());
+            //it is possible for z to be fixed as before we call propagateMul there is a first cut on z domain.
+            //assert(!z.isFixed());
+
             int after0 = w.after(0);
             int before0 = w.before(0);
             if (w.min() == 0) {
@@ -145,7 +147,7 @@ public class MulVar extends AbstractCPConstraint {
                         NumberUtils.minCeilDiv(z.max(), w.min(), w.max(), before0, after0));
                 u.removeBelow(umin);
                 int umax = Math.max(NumberUtils.maxFloorDiv(z.min(), w.min(), w.max(), before0, after0),
-                        NumberUtils.minCeilDiv(z.max(), w.min(), w.max(), before0, after0));
+                        NumberUtils.maxFloorDiv(z.max(), w.min(), w.max(), before0, after0));
                 u.removeAbove(umax);
             }
         }
