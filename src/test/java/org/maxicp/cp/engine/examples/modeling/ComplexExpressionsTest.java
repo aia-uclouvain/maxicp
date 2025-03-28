@@ -85,6 +85,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
 
         System.out.println("Number of solutions: " + stats.numberOfSolutions());
         System.out.println("Number of solutions found by brute force: " + nbSol);
+        assertEquals(nbSol, stats.numberOfSolutions());
 
 
     }
