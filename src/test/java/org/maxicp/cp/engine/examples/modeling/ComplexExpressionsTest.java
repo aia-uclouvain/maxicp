@@ -17,10 +17,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.maxicp.modeling.Factory.*;
@@ -28,8 +25,8 @@ import static org.maxicp.modeling.Factory.*;
 
 public class ComplexExpressionsTest extends CPSolverTest {
 
-    public static <T> Set<List<T>> cartesianProduct(Set<T>[] sets) {
-        Set<List<T>> result = new HashSet<>();
+    public static <T> List<List<T>> cartesianProduct(Set<T>[] sets) {
+        List<List<T>> result = new LinkedList<>();
         if (sets.length == 0) {
             return result;
         }
@@ -37,7 +34,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
         return result;
     }
 
-    private static <T> void cartesianProductHelper(Set<T>[] sets, int index, List<T> current, Set<List<T>> result) {
+    private static <T> void cartesianProductHelper(Set<T>[] sets, int index, List<T> current, List<List<T>> result) {
         if (index == sets.length) {
             result.add(new ArrayList<>(current));
             return;
@@ -45,7 +42,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
         for (T element : sets[index]) {
             current.add(element);
             cartesianProductHelper(sets, index + 1, current, result);
-            current.remove(current.size() - 1);
+            current.removeLast();
         }
     }
 
@@ -57,7 +54,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
 
         Set<Integer> [] domains = new Set[]{Set.of(-3,2,5,0),Set.of(-1,-2,3,4),Set.of(1,2,-3,4),Set.of(1,2,3,-4),Set.of(1,-2,3,4)};
 
-        Set<List<Integer>> res = cartesianProduct(domains);
+        List<List<Integer>> res = cartesianProduct(domains);
         int nbSol = 0;
         for (List<Integer> l : res) {
             // ((((3 * x[0]) + (2 * x[1])) * x[2]) - x[3]) + x[4]
@@ -73,7 +70,17 @@ public class ComplexExpressionsTest extends CPSolverTest {
 
         IntExpression [] x = model.intVarArray(5, i -> model.intVar(domains[i]));
 
-        IntExpression expr = sum(mul(sum(mul(3,x[0]),mul(2,x[1])),x[2]),Factory.minus(x[3]),x[4]);
+        IntExpression expr = sum(
+                mul(
+                        sum(
+                                mul(3,x[0]),
+                                mul(2,x[1])
+                        ),
+                        x[2]
+                ),
+                Factory.minus(x[3]),
+                x[4]
+        );
 
         model.add(eq(expr,23));
 
