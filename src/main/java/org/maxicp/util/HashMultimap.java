@@ -1,16 +1,16 @@
 package org.maxicp.util;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class HashMultimap<K,V> {
-    private final HashMap<K, HashSet<V>> map;
-    private final Set<V> emptySet = Collections.unmodifiableSet(new HashSet<>());
+    private final LinkedHashMap<K, LinkedHashSet<V>> map;
+    private final Set<V> emptySet = Collections.unmodifiableSet(new LinkedHashSet<>());
 
     public HashMultimap() {
-        map = new HashMap<>();
+        map = new LinkedHashMap<>();
     }
 
     public Set<V> get(K key) {
@@ -21,7 +21,7 @@ public class HashMultimap<K,V> {
 
     public void put(K key, V value) {
         if(!map.containsKey(key))
-            map.put(key, new HashSet<>());
+            map.put(key, new LinkedHashSet<>());
         map.get(key).add(value);
     }
 

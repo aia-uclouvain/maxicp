@@ -3,7 +3,11 @@ package org.maxicp.modeling.utils;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.util.HashMultimap;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public class ExpressionsTopoSort {
@@ -12,7 +16,7 @@ public class ExpressionsTopoSort {
     }
 
     public static <T extends Expression> List<List<T>> toposort(Set<T> entries, Function<T, T> viewOf) {
-        HashMap<T, T> graphRepr = new HashMap<T, T>();
+        LinkedHashMap<T, T> graphRepr = new LinkedHashMap<T, T>();
         HashMultimap<T, T> graphReprReverse = new HashMultimap<>();
         for(T expr: entries) {
             T repr = viewOf.apply(expr);
@@ -25,12 +29,12 @@ public class ExpressionsTopoSort {
         for(T t: entries)
             populateRecursively(graphRepr, graph, entries, t, t);
 
-        Set<T> allEntries = new HashSet<T>();
+        Set<T> allEntries = new LinkedHashSet<T>();
         allEntries.addAll(graph.keySet());
         allEntries.addAll(graphRepr.values());
 
         //compute number of inbound edges for each node
-        HashMap<T, Integer> inSize = new HashMap<>();
+        LinkedHashMap<T, Integer> inSize = new LinkedHashMap<>();
         for(T entry: allEntries)
             for(T nei: graph.get(entry))
                 inSize.put(nei, inSize.getOrDefault(nei, 0)+1);
@@ -42,7 +46,7 @@ public class ExpressionsTopoSort {
                 noDependence.add(entry);
 
         LinkedList<List<T>> output = new LinkedList<>();
-        while (noDependence.size() != 0) {
+        while (!noDependence.isEmpty()) {
             //Build output List
             LinkedList<T> layer = new LinkedList<>();
             for(T expr: noDependence) {
@@ -72,7 +76,7 @@ public class ExpressionsTopoSort {
         return output;
     }
 
-    private static <T extends Expression> void populateRecursively(HashMap<T, T> graphRepr, HashMultimap<T, T> graph, Set<T> entries, T base, Expression current) {
+    private static <T extends Expression> void populateRecursively(LinkedHashMap<T, T> graphRepr, HashMultimap<T, T> graph, Set<T> entries, T base, Expression current) {
         for(Expression nei: current.subexpressions()) {
             if(entries.contains(nei)) {
                 T a = graphRepr.get((T) nei);

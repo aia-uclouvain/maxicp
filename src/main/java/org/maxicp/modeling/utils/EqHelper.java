@@ -9,7 +9,12 @@ import org.maxicp.modeling.constraints.ExpressionIsTrue;
 import org.maxicp.modeling.symbolic.SymbolicIntVar;
 import org.maxicp.util.HashMultimap;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -32,7 +37,7 @@ import java.util.stream.StreamSupport;
  * and should never need to post any {@link Eq} constraint directly.
  */
 public class EqHelper {
-    public record EqSimplified(List<EqInstantiate> newConstraints, Set<Constraint> oldConstraints) {};
+    public record EqSimplified(List<EqInstantiate> newConstraints, LinkedHashSet<Constraint> oldConstraints) {};
 
     public interface EqInstantiate extends Constraint {}
     public record EqInstantiateAndCache(IntExpression expr) implements EqInstantiate {
@@ -56,21 +61,21 @@ public class EqHelper {
         LinkedList<EqInstantiate> output = new LinkedList<>();
 
         //Find all the Equalities
-        HashSet<Constraint> oldConstraints = StreamSupport.stream(constraints.spliterator(), false)
+        LinkedHashSet<Constraint> oldConstraints = StreamSupport.stream(constraints.spliterator(), false)
                 .filter(x -> (x instanceof ExpressionIsTrue) && ((ExpressionIsTrue) x).expr() instanceof Eq)
-                .collect(Collectors.toCollection(HashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         Eq[] equalities = oldConstraints.stream().map(x -> (Eq) ((ExpressionIsTrue) x).expr()).toArray(Eq[]::new);
 
 
         UnionFind<IntExpression> uf = new UnionFind<>();
         for(Eq eq: equalities)
             uf.union(eq.a(), eq.b());
-        Set<IntExpression> allExpressions = new HashSet<>(uf.representative.keySet());
+        LinkedHashSet<IntExpression> allExpressions = new LinkedHashSet<>(uf.representative.keySet());
 
         //For all expressions, find possible "other representative" that are equivalent
         //for example, in CP, the var for -x is a view of x, so an instantiated x can be a representative
         //for a set containing -x.
-        HashMap<IntExpression, IntExpression> trueRepr = new HashMap<>();
+        LinkedHashMap<IntExpression, IntExpression> trueRepr = new LinkedHashMap<>();
         HashMultimap<IntExpression, IntExpression> trueReprReversed = new HashMultimap<>();
         for(IntExpression expr: allExpressions) {
             IntExpression trueR = viewOf.apply(expr);
@@ -97,7 +102,7 @@ public class EqHelper {
 
         //hashMap containing the UF representative of each connected
         //component who already has a Var representative
-        HashMap<IntExpression, IntExpression> doneCC = new HashMap<>();
+        LinkedHashMap<IntExpression, IntExpression> doneCC = new LinkedHashMap<>();
         HashMultimap<IntExpression, IntExpression> waiting = new HashMultimap<>();
 
         for(List<IntExpression> layer: topoSort) {
@@ -139,9 +144,9 @@ public class EqHelper {
         return new EqSimplified(output, oldConstraints);
     }
 
-    private static void addTrueRepr(HashMap<IntExpression, IntExpression> trueRepr,
+    private static void addTrueRepr(LinkedHashMap<IntExpression, IntExpression> trueRepr,
                                     HashMultimap<IntExpression, IntExpression> trueReprReversed,
-                                    HashMap<IntExpression, IntExpression> doneCC,
+                                    LinkedHashMap<IntExpression, IntExpression> doneCC,
                                     UnionFind<IntExpression> uf,
                                     HashMultimap<IntExpression, IntExpression> waiting,
                                     LinkedList<EqInstantiate> output,
@@ -194,9 +199,9 @@ public class EqHelper {
      * @param <T>
      */
     private static class UnionFind<T> {
-        public HashMap<T, T> representative;
+        public LinkedHashMap<T, T> representative;
         public UnionFind() {
-            representative = new HashMap<>();
+            representative = new LinkedHashMap<>();
         }
 
         public void union(T a, T b) {
@@ -222,11 +227,11 @@ public class EqHelper {
             return repr2;
         }
 
-        public Set<T>[] sets() {
+        public LinkedHashSet<T>[] sets() {
             HashMultimap<T, T> map = new HashMultimap<>();
             for(T expr: representative.keySet())
                 map.put(find(expr), expr);
-            return map.keySet().stream().map(x -> map.get(x)).toArray(Set[]::new);
+            return map.keySet().stream().map(x -> map.get(x)).toArray(LinkedHashSet[]::new);
         }
     }
 }

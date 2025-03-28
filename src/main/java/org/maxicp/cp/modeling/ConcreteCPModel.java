@@ -106,10 +106,9 @@ public class ConcreteCPModel implements ConcreteModel {
 
             Set<Constraint> ignored = eqSimplified.oldConstraints();
 
-            for (Constraint c : baseNode.getConstraints()) {
+            for (Constraint c : baseNode.getConstraints())
                 if (!ignored.contains(c))
                     instantiateConstraint(c);
-            }
         });
         solver.fixPoint();
         getStateManager().saveState();

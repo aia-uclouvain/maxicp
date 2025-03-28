@@ -61,9 +61,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
             int result = ((((3*l.get(0)) + (2*l.get(1))) * l.get(2)) - l.get(3)) + l.get(4);
             if (result == 23) {
                 nbSol++;
-                System.out.println("Solution found: " + l);
             }
-            //System.out.println();
         }
 
         ModelDispatcher model = Factory.makeModelDispatcher();
@@ -90,8 +88,6 @@ public class ComplexExpressionsTest extends CPSolverTest {
 
         SearchStatistics stats = dfs.solve(); // actually solve the problem
 
-        System.out.println("Number of solutions: " + stats.numberOfSolutions());
-        System.out.println("Number of solutions found by brute force: " + nbSol);
         assertEquals(nbSol, stats.numberOfSolutions());
 
 
