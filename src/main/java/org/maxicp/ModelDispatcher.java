@@ -5,7 +5,7 @@
 
 package org.maxicp;
 
-import org.maxicp.cp.modeling.ModelProxyWithCP;
+import org.maxicp.cp.modeling.ModelProxyInstantiatorWithCP;
 import org.maxicp.modeling.*;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.integer.IntExpression;
@@ -25,7 +25,7 @@ import static org.maxicp.Constants.HORIZON;
 /**
  * A class that allows to create symbolic models
  */
-public class ModelDispatcher implements AutoCloseable, ModelProxyWithCP, ModelProxyInstantiator, ModelProxy {
+public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, ModelProxyInstantiatorWithCP, ModelProxy {
     private Model initialModel;
     private ThreadLocal<Model> currentModel;
 
