@@ -241,6 +241,12 @@ public class ConcreteCPModel implements ConcreteModel {
             case IntervalLengthOrValue i -> CPFactory.lengthOr(getCPVar(i.interval()), i.value());
             case IntervalLength i -> CPFactory.length(getCPVar(i.interval()));
             case Mul ie -> CPFactory.mul(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
+            case MulBinary ie -> {
+                if (ie.b().min() == 1) // x * 1 ==> x
+                    yield getCPVar(ie.x());
+                else
+                    yield CPFactory.mul(getCPVar(ie.x()), getCPVar(ie.b()));
+            }
             default ->
                     throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
         };
@@ -275,6 +281,16 @@ public class ConcreteCPModel implements ConcreteModel {
             case CstMul cm -> {
                 //fallback
                 post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(cm.expr()), cm.mul()), v));
+            }
+            case Mul m -> {
+                // m.exprs[0] * m.exprs[1] * ... == v
+                CPIntVar[] exprs = Arrays.stream(m.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new);
+                if (exprs.length == 2) {
+                    // m.exprs[0] * m.exprs[1] == v
+                    post(new org.maxicp.cp.engine.constraints.MulVar(exprs[0], exprs[1], v));
+                } else {
+                    post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(exprs), v));
+                }
             }
             case UnaryMinus um -> {
                 // -um.expr == v   <=>  um.expr == -v

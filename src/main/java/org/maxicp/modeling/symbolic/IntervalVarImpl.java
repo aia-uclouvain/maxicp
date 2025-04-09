@@ -9,7 +9,7 @@ package org.maxicp.modeling.symbolic;
 import org.maxicp.modeling.BoolVar;
 import org.maxicp.modeling.ModelProxy;
 
-public class IntervalVarImpl implements SymbolicIntervalVar{
+public class IntervalVarImpl implements SymbolicIntervalVar {
     private final ModelProxy modelProxy;
     private final int startMin;
     private final int startMax;
@@ -20,7 +20,7 @@ public class IntervalVarImpl implements SymbolicIntervalVar{
     private final boolean isPresent;
     private final boolean isAbsent;
 
-    public IntervalVarImpl(ModelProxy modelProxy, int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent){
+    public IntervalVarImpl(ModelProxy modelProxy, int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent) {
         this.modelProxy = modelProxy;
         this.startMin = startMin;
         this.startMax = startMax;

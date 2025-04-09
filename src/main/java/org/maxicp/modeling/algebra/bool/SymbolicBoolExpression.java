@@ -6,7 +6,7 @@ import org.maxicp.modeling.algebra.integer.SymbolicIntExpression;
 public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpression {
     @Override
     default int defaultMin() {
-        if(isFixed()) {
+        if (isFixed()) {
             try {
                 return evaluate();
             } catch (VariableNotFixedException ex) {
@@ -18,7 +18,7 @@ public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpre
 
     @Override
     default int defaultMax() {
-        if(isFixed()) {
+        if (isFixed()) {
             try {
                 return evaluate();
             } catch (VariableNotFixedException ex) {
@@ -30,14 +30,13 @@ public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpre
 
     @Override
     default int defaultFillArray(int[] array) {
-        if(isFixed()) {
+        if (isFixed()) {
             try {
                 array[0] = evaluate();
                 return 1;
-            }
-            catch (VariableNotFixedException ex) {
+            } catch (VariableNotFixedException ex) {
                 //never happens
-                assert(false);
+                assert (false);
             }
         }
         array[0] = 0;
@@ -46,7 +45,9 @@ public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpre
     }
 
     @Override
-    default int defaultSize() { return isFixed() ? 1 : 2; }
+    default int defaultSize() {
+        return isFixed() ? 1 : 2;
+    }
 
     @Override
     default boolean defaultContains(int v) {
@@ -61,7 +62,7 @@ public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpre
     boolean defaultEvaluateBool() throws VariableNotFixedException;
 
     default boolean evaluateBool() throws VariableNotFixedException {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).evaluateBool();
         return defaultEvaluateBool();
     }

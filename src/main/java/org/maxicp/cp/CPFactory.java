@@ -433,6 +433,7 @@ public final class CPFactory {
      * @return a variable that is equal to {@code x*b}
      */
     public static CPIntVar mul(CPIntVar x, CPBoolVar b) {
+        if (b.isTrue()) return x;
         CPIntVar y = makeIntVar(x.getSolver(), Math.min(0, x.min()), Math.max(0, x.max()));
         x.getSolver().post(new Mul(x, b, y));
         return y;

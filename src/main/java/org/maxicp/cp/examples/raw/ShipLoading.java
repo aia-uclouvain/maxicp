@@ -25,75 +25,61 @@ import static org.maxicp.search.Searches.and;
 import static org.maxicp.search.Searches.firstFail;
 
 /**
- * Ship Loading Problem model.
+ * Ship Loading Problem.
  *
- * @author Roger Kameugne
+ * The problem is to find a schedule that minimizes the time to unload and
+ * to load a ship. The work contains a set of 34 elementary tasks. Each task has to be handled by
+ * a given number of people and during a given period of time. For each task, only
+ * the associated surface is known (i.e., the product of the task duration by the needed amount of
+ * resource).
+ *
+ * This problem was described in the paper:
+ * Aggoun, A., & Beldiceanu, N. (1993). Extending CHIP in order to solve complex scheduling and placement problems.
+ * Mathematical and computer modelling, 17(7), 57-73.
+ *
+ * @author Roger Kameugne, Pierre Schaus
  */
 public class ShipLoading {
 
-    int nbTasks;
-    int nbResources;
-    int capacityResource;
-    int[] sizes;
-    ArrayList<Integer>[] successors;
-    int horizon;
-    String name;
-    public double elapsedTime;
-    public int numberOfNodes;
-    public int numberOfFails;
-    int makespan = -1;
-    int[] startSolution;
-    int[] endSolution;
-    int[] heightSolution;
 
     public ShipLoading(ShipLoadingInstance data) throws Exception {
-        // Data:
-        nbTasks = data.nbTasks;
-        nbResources = data.nbResources;
-        capacityResource = data.resourceCapacity;
-        sizes = data.sizes;
-        successors = data.successors;
-        horizon = data.horizon;
-        name = data.name;
+
 
         CPSolver cp = CPFactory.makeSolver();
 
-        // Variables:
-        CPIntervalVar[] intervals = new CPIntervalVar[nbTasks];
-        CPIntVar[] starts = new CPIntVar[nbTasks];
-        CPIntVar[] ends = new CPIntVar[nbTasks];
-        CPIntVar[] height = new CPIntVar[nbTasks];
+        CPIntervalVar[] intervals = new CPIntervalVar[data.nbTasks];
+        CPIntVar[] starts = new CPIntVar[data.nbTasks];
+        CPIntVar[] ends = new CPIntVar[data.nbTasks];
+        CPIntVar[] length = new CPIntVar[data.nbTasks];
+        CPIntVar[] height = new CPIntVar[data.nbTasks];
+
         CPCumulFunction resource = flat();
-        for (int i = 0; i < nbTasks; i++) {
+        for (int i = 0; i < data.nbTasks; i++) {
             CPIntervalVar interval = makeIntervalVar(cp);
-            interval.setEndMax(horizon);
+            interval.setEndMax(data.horizon);
             interval.setLengthMin(1); // remove
-            interval.setLengthMax(sizes[i]);
+            interval.setLengthMax(data.sizes[i]);
             interval.setPresent();
+            intervals[i] = interval;
+
             starts[i] = CPFactory.start(interval);
             ends[i] = CPFactory.end(interval);
-            resource = CPFactory.plus(resource, pulse(interval, 1, Math.min(capacityResource, sizes[i])));
-            intervals[i] = interval;
+            length[i] = length(intervals[i]);
+            resource = CPFactory.plus(resource, pulse(interval, 1, Math.min(data.resourceCapacity, data.sizes[i])));
+            height[i] = resource.heightAtStart(intervals[i]);
         }
 
-        // Precedence and size constraints:
-        for (int i = 0; i < nbTasks; i++) {
-            for (int k : successors[i]) {
+        for (int i = 0; i < data.nbTasks; i++) {
+            // Precedence constraints
+            for (int k : data.successors[i]) {
                 cp.post(endBeforeStart(intervals[i], intervals[k]));
             }
-            height[i] = resource.heightAtStart(intervals[i]);
-
-
-            if (height[i].min() * (ends[i].max() - starts[i].min()) < sizes[i]) {
-                int upd = ceilFunction(sizes[i], ends[i].max() - starts[i].min());
-                cp.post(ge(height[i],upd));
-            }
-            int val = ceilFunction( sizes[i], height[i].max());
-            cp.post(ge(length(intervals[i]), val));
+            // Size constraints
+            cp.post(eq(mul(length[i], height[i]), data.sizes[i]));
         }
 
         // Resource constraint:
-        cp.post(le(resource, capacityResource));
+        cp.post(le(resource, data.resourceCapacity));
 
         // Objective
         CPIntVar makespan = max(ends);
@@ -104,6 +90,8 @@ public class ShipLoading {
 
         // Solution management:
         dfs.onSolution(() -> {
+            System.out.println("solution:");
+            System.out.println("heights:"+Arrays.toString(height));
             System.out.println("makespan: " + makespan);
         });
 
@@ -111,20 +99,11 @@ public class ShipLoading {
         long begin = System.currentTimeMillis();
         SearchStatistics stats = dfs.optimize(obj);
         System.out.println(stats);
-        elapsedTime = (System.currentTimeMillis() - begin)/1000.0;
-        if (stats.isCompleted()) {
-            numberOfNodes = stats.numberOfNodes();
-            numberOfFails = stats.numberOfFailures();
-        }
+        long time = (System.currentTimeMillis() - begin)/1000;
+        System.out.println("time(s):" + time);
+
     }
 
-    private int ceilFunction(int n, int p) {
-        for (int k = n/p; k <= n; k++) {
-            if (k > 1 && n % k == 0)
-                return k;
-        }
-        return 1;
-    }
 
     public static void main(String[] args) throws Exception{
         ShipLoadingInstance data = new ShipLoadingInstance("data/SHIP_LOADING/shipLoading1.txt");

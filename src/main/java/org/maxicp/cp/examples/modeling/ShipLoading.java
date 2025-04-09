@@ -30,76 +30,63 @@ import static org.maxicp.modeling.Factory.*;
  *
  * The problem is to find a schedule that minimizes the time to unload and
  * to load a ship. The work contains a set of 34 elementary tasks. Each task has to be handled by
- * a given number of people and during a given period of time (see Table 2). For each task, only
+ * a given number of people and during a given period of time. For each task, only
  * the associated surface is known (i.e., the product of the task duration by the needed amount of
  * resource).
  *
- * @author Roger Kameugne, pschaus
+ * This problem was described in the paper:
+ * Aggoun, A., & Beldiceanu, N. (1993). Extending CHIP in order to solve complex scheduling and placement problems.
+ * Mathematical and computer modelling, 17(7), 57-73.
+ *
+ * @author Roger Kameugne, Pierre Schaus
  */
 public class ShipLoading {
 
-    int nbTasks;
-    int nbResources;
-    int capacityResource;
-    int[] sizes;
-    ArrayList<Integer>[] successors;
-    int horizon;
-    String name;
-    public double elapsedTime;
-    public int numberOfNodes;
-    public int numberOfFails;
-    int makespan = -1;
-    int[] startSolution;
-    int[] endSolution;
-    int[] heightSolution;
+
 
     public ShipLoading(ShipLoadingInstance data) throws Exception {
-        // Data:
-        nbTasks = data.nbTasks;
-        nbResources = data.nbResources;
-        capacityResource = data.resourceCapacity;
-        sizes = data.sizes;
-        successors = data.successors;
-        horizon = data.horizon;
-        name = data.name;
 
         ModelDispatcher model = makeModelDispatcher();
 
         // Variables:
-        IntervalVar[] intervals = new IntervalVar[nbTasks];
-        IntExpression[] starts = new IntExpression[nbTasks];
-        IntExpression[] ends = new IntExpression[nbTasks];
-        IntExpression[] height = new IntExpression[nbTasks];
+        IntervalVar[] intervals = new IntervalVar[data.nbTasks];
+        IntExpression[] starts = new IntExpression[data.nbTasks];
+        IntExpression[] ends = new IntExpression[data.nbTasks];
+        IntExpression[] length = new IntExpression[data.nbTasks];
+        IntExpression[] height = new IntExpression[data.nbTasks];
         CumulFunction resource = flat();
-        for (int i = 0; i < nbTasks; i++) {
+
+        for (int i = 0; i < data.nbTasks; i++) {
             // intervalVar(int startMin, int endMax, int duration, boolean isPresent)
             // TODO: min lenght is 1
-            IntervalVar interval = model.intervalVar(0,horizon,sizes[i], true);
+            IntervalVar interval = model.intervalVar(0,data.horizon,data.sizes[i], true);
             starts[i] = start(interval);
-
             ends[i] = end(interval);
-            resource = sum(resource, pulse(interval, 1, Math.min(capacityResource, sizes[i])));
+            length[i] = length(interval);
             intervals[i] = interval;
-        }
 
-        // Precedence and size constraints:
-        for (int i = 0; i < nbTasks; i++) {
-            for (int k : successors[i]) {
-                model.add(endBeforeStart(intervals[i], intervals[k]));
-            }
+            resource = sum(resource, pulse(interval, 1, Math.min(data.resourceCapacity, data.sizes[i])));
             height[i] = resource.heightAtStart(intervals[i]);
 
+        }
 
-            if (height[i].min() * (ends[i].max() - starts[i].min()) < sizes[i]) {
-                int upd = ceilFunction(sizes[i], ends[i].max() - starts[i].min());
-                model.add(ge(height[i],upd));
+
+        for (int i = 0; i < data.nbTasks; i++) {
+
+            // Precedence constraints:
+            for (int k : data.successors[i]) {
+                model.add(endBeforeStart(intervals[i], intervals[k]));
             }
-            int val = ceilFunction( sizes[i], height[i].max());
-            model.add(ge(length(intervals[i]), val));
+
+            // Size constraints:
+            for (int k : data.successors[i]) {
+                // model.add(eq(mul(length[i], height[i]), data.sizes[i]));
+                model.add(eq(mul(length[i], height[i]),data.sizes[i]));
+            }
         }
 
         // Resource constraint:
-        model.add(le(resource, capacityResource));
+        model.add(le(resource, data.resourceCapacity));
 
         // Objective
         IntExpression makespan = max(ends);
@@ -112,7 +99,8 @@ public class ShipLoading {
 
         // Solution management:
         dfs.onSolution(() -> {
-            this.makespan = makespan.min();
+            System.out.println("solution:");
+            System.out.println("heights:"+Arrays.toString(height));
             System.out.println("makespan: " + makespan);
         });
 
@@ -120,20 +108,10 @@ public class ShipLoading {
         long begin = System.currentTimeMillis();
         SearchStatistics stats = dfs.optimize(obj);
         System.out.println(stats);
-        elapsedTime = (System.currentTimeMillis() - begin)/1000.0;
-        if (stats.isCompleted()) {
-            numberOfNodes = stats.numberOfNodes();
-            numberOfFails = stats.numberOfFailures();
-        }
+        long time = (System.currentTimeMillis() - begin)/1000;
+        System.out.println("time(s):" + time);
     }
 
-    private int ceilFunction(int n, int p) {
-        for (int k = n/p; k <= n; k++) {
-            if (k > 1 && n % k == 0)
-                return k;
-        }
-        return 1;
-    }
 
     public static void main(String[] args) throws Exception{
         ShipLoadingInstance data = new ShipLoadingInstance("data/SHIP_LOADING/shipLoading1.txt");
