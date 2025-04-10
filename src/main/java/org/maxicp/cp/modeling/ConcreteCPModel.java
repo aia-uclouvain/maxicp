@@ -7,6 +7,7 @@
 package org.maxicp.cp.modeling;
 
 import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.Equal;
 import org.maxicp.cp.engine.constraints.IsOr;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.core.*;
@@ -324,6 +325,15 @@ public class ConcreteCPModel implements ConcreteModel {
             case Not e -> {
                 //fallback. Note that we don't use e but expr below, so we put v Equals expr === v Equals Not(e).
                 post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(expr), v));
+            }
+            case IntervalStart ivs -> {
+                post(new Equal(getCPVar(ivs),getCPVar(v)));
+            }
+            case IntervalEnd ive -> {
+                post(new Equal(getCPVar(ive),getCPVar(v)));
+            }
+            case IntervalLength ivl -> {
+                post(new Equal(getCPVar(ivl),getCPVar(v)));
             }
             default ->
                     throw new NotYetImplementedException("Unknown expression type %s in enforceEqualityIntExpression".formatted(v.getClass()));

@@ -32,32 +32,21 @@ public class MulVar extends AbstractCPConstraint {
         this.x = x;
         this.y = y;
         this.z = z;
-
     }
 
     @Override
     public void post() {
-
         if (x == y) {
             getSolver().post(new Square(x,z));
-            setActive(false);
-            return;
         }
-        if (z.isFixed()) {
-            if (z.min() == 0 && x.contains(0) && y.contains(0)) {
-                x.propagateOnDomainChange(this);
-                y.propagateOnDomainChange(this);
-            } else {
-                x.propagateOnBoundChange(this);
-                y.propagateOnBoundChange(this);
-            }
+        else if (z.isFixed()) {
+            getSolver().post(new MulCteRes(x,y,z.min()));
         } else {
             x.propagateOnBoundChange(this);
             y.propagateOnBoundChange(this);
             z.propagateOnBoundChange(this);
+            propagate();
         }
-
-        propagate();
     }
 
     @Override

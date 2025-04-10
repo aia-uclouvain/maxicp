@@ -90,7 +90,7 @@ public class ShipLoading {
 
         // Solution management:
         dfs.onSolution(() -> {
-            System.out.println("solution:");
+            System.out.println("---- solution ----");
             System.out.println("heights:"+Arrays.toString(height));
             System.out.println("makespan: " + makespan);
         });

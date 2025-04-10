@@ -11,7 +11,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntVarConstant;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
@@ -71,6 +73,39 @@ class MulVarTest extends CPSolverTest {
         cp.post(new MulVar(x, y, z));
 
         assertEquals(-1, y.max());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test4(CPSolver cp) {
+
+        CPIntVar x = CPFactory.makeIntVar(cp, 1, 6);
+        CPIntVar y = CPFactory.makeIntVar(cp, 1, 6);
+        CPIntVar z = CPFactory.makeIntVar(cp, 6, 6);
+
+        cp.post(new MulVar(x, y, z));
+
+        cp.post(new Equal(y, new CPIntVarConstant(cp, 1)));
+
+        assertEquals(6, x.min());
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test5(CPSolver cp) {
+
+        CPIntVar x = CPFactory.makeIntVar(cp, 1, 6);
+        CPIntVar y = CPFactory.makeIntVar(cp, 1, 6);
+        CPIntVar z = CPFactory.makeIntVar(cp, 6, 6);
+
+        cp.post(new MulVar(x, y, z));
+
+        cp.post(new Equal(x, new CPIntVarConstant(cp, 1)));
+
+        assertEquals(6, y.min());
 
     }
 

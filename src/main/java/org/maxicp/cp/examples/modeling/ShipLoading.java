@@ -26,6 +26,7 @@ import static org.maxicp.search.Searches.firstFail;
 import static org.maxicp.modeling.Factory.*;
 
 /**
+ * !!! This model does not work correctly, there is a bug with heightAtStart in the modeling  !!!
  * Ship Loading Problem.
  *
  * The problem is to find a schedule that minimizes the time to unload and
@@ -59,7 +60,7 @@ public class ShipLoading {
         for (int i = 0; i < data.nbTasks; i++) {
             // intervalVar(int startMin, int endMax, int duration, boolean isPresent)
             // TODO: min lenght is 1
-            IntervalVar interval = model.intervalVar(0,data.horizon,data.sizes[i], true);
+            IntervalVar interval = model.intervalVar(0, data.horizon, 0, data.horizon, 1, data.sizes[i], true);
             starts[i] = start(interval);
             ends[i] = end(interval);
             length[i] = length(interval);
@@ -79,14 +80,15 @@ public class ShipLoading {
             }
 
             // Size constraints:
-            for (int k : data.successors[i]) {
-                // model.add(eq(mul(length[i], height[i]), data.sizes[i]));
+            //for (int k : data.successors[i]) {
                 model.add(eq(mul(length[i], height[i]),data.sizes[i]));
-            }
+            //}
         }
 
         // Resource constraint:
         model.add(le(resource, data.resourceCapacity));
+
+        System.out.println("Resource capacity: " + data.resourceCapacity);
 
         // Objective
         IntExpression makespan = max(ends);
@@ -94,13 +96,29 @@ public class ShipLoading {
         Objective obj = minimize(makespan);
 
         ConcreteCPModel cp = model.cpInstantiate();
+
+
         // Search:
         DFSearch dfs = cp.dfSearch(and(firstFail(starts), firstFail(ends)));
 
         // Solution management:
         dfs.onSolution(() -> {
+            // verify solution size constraints
+            for (int i = 0; i < data.nbTasks; i++) {
+                int s = starts[i].min();
+                int e = ends[i].max();
+                int l = length[i].min();
+                int h = height[i].min();
+                int surface = l*h;
+                System.out.println("task " + i + ": start=" + s + ", end=" + e + ", length=" + l + ", height=" + h + ", surface=" + surface+ ", size=" + data.sizes[i]);
+                assert(surface == data.sizes[i]);
+            }
             System.out.println("solution:");
             System.out.println("heights:"+Arrays.toString(height));
+            System.out.println("starts:"+Arrays.toString(Arrays.stream(starts).map(x -> x.min()).toArray()));
+            System.out.println("ends:"+Arrays.toString(Arrays.stream(ends).map(x -> x.min()).toArray()));
+
+            // System.out.println("lengths:"+Arrays.toString(length));
             System.out.println("makespan: " + makespan);
         });
 

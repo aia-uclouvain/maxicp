@@ -39,8 +39,8 @@ public class MulCte extends AbstractCPConstraint {
     public void post() {
         propagate();
         if (isActive()) {
-            x.propagateOnBoundChange(this);
-            z.propagateOnBoundChange(this);
+            if (!x.isFixed()) x.propagateOnBoundChange(this);
+            if (!z.isFixed()) z.propagateOnBoundChange(this);
         }
 		/*
 		if (l == CPPropagStrength.Strong) {

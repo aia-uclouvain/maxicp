@@ -10,32 +10,32 @@ import org.maxicp.modeling.BoolVar;
 import org.maxicp.modeling.IntervalVar;
 
 public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
-    default int startMin(){
-        if(getModelProxy().isConcrete())
+    default int startMin() {
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).startMin();
         return defaultStartMin();
     }
 
     int defaultStartMin();
 
-    default int startMax(){
-        if(getModelProxy().isConcrete())
+    default int startMax() {
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).startMax();
         return defaultStartMax();
     }
 
     int defaultStartMax();
 
-    default int endMin(){
-        if(getModelProxy().isConcrete())
+    default int endMin() {
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).endMin();
         return defaultEndMin();
     }
 
     int defaultEndMin();
 
-    default int endMax(){
-        if(getModelProxy().isConcrete())
+    default int endMax() {
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).endMax();
         return defaultEndMax();
     }
@@ -43,7 +43,7 @@ public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     int defaultEndMax();
 
     default int lengthMin() {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).lengthMin();
         return defaultLengthMin();
     }
@@ -51,7 +51,7 @@ public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     int defaultLengthMin();
 
     default int lengthMax() {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).lengthMax();
         return defaultLengthMax();
     }
@@ -59,7 +59,7 @@ public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     int defaultLengthMax();
 
     default boolean isPresent() {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).isPresent();
         return defaultIsPresent();
     }
@@ -67,7 +67,7 @@ public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     boolean defaultIsPresent();
 
     default boolean isAbsent() {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).isAbsent();
         return defaultIsAbsent();
     }
@@ -75,7 +75,7 @@ public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     boolean defaultIsAbsent();
 
     default boolean isOptional() {
-        if(getModelProxy().isConcrete())
+        if (getModelProxy().isConcrete())
             return getModelProxy().getConcreteModel().getConcreteVar(this).isOptional();
         return defaultIsOptional();
     }
