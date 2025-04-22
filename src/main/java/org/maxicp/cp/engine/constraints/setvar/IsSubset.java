@@ -7,12 +7,12 @@ package org.maxicp.cp.engine.constraints.setvar;
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
-import org.maxicp.cp.engine.core.CPSetVarImpl;
+import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.util.exception.InconsistencyException;
 
 public class IsSubset extends AbstractCPConstraint {
-    CPSetVarImpl set1;
-    CPSetVarImpl set2;
+    CPSetVar set1;
+    CPSetVar set2;
     CPBoolVar b;
     int[] values;
 
@@ -23,7 +23,7 @@ public class IsSubset extends AbstractCPConstraint {
      * @param set1 the first set than can be included in the second set
      * @param set2 the second set
      */
-    public IsSubset(CPBoolVar b, CPSetVarImpl set1, CPSetVarImpl set2) {
+    public IsSubset(CPBoolVar b, CPSetVar set1, CPSetVar set2) {
         super(b.getSolver());
         this.set1 = set1;
         this.set2 = set2;
