@@ -7,12 +7,12 @@ package org.maxicp.cp.engine.constraints.setvar;
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPSetVar;
+import org.maxicp.cp.engine.core.CPSetVarImpl;
 import org.maxicp.util.exception.InconsistencyException;
 
 public class SetCard extends AbstractCPConstraint {
 
-    CPSetVar set;
+    CPSetVarImpl set;
     CPIntVar card;
 
     /**
@@ -20,7 +20,7 @@ public class SetCard extends AbstractCPConstraint {
      * @param set  the set variable
      * @param card the integer variable representing the cardinality
      */
-    public SetCard(CPSetVar set, CPIntVar card) {
+    public SetCard(CPSetVarImpl set, CPIntVar card) {
         super(set.getSolver());
         this.set = set;
         this.card = card;

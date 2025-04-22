@@ -10,7 +10,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.engine.CPSolverTest;
 
 import java.security.InvalidParameterException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,7 +18,7 @@ public class CPSetVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testConstruction(CPSolver cp) {
-        CPSetVar set = new CPSetVar(cp, 3);
+        CPSetVarImpl set = new CPSetVarImpl(cp, 3);
 
         assertEquals(0, set.card().min());
         assertEquals(3, set.card().max());
@@ -33,13 +32,13 @@ public class CPSetVarTest extends CPSolverTest {
             assertFalse(set.isExcluded(i));
             assertFalse(set.isIncluded(i));
         }
-        assertThrows(InvalidParameterException.class, () -> new CPSetVar(cp, 0));
+        assertThrows(InvalidParameterException.class, () -> new CPSetVarImpl(cp, 0));
     }
 
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testInclude(CPSolver cp) {
-        CPSetVar set = new CPSetVar(cp, 3);
+        CPSetVarImpl set = new CPSetVarImpl(cp, 3);
         set.include(1);
 
         assertTrue(set.isIncluded(1));
@@ -56,7 +55,7 @@ public class CPSetVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testExclude(CPSolver cp) {
-        CPSetVar set = new CPSetVar(cp, 3);
+        CPSetVarImpl set = new CPSetVarImpl(cp, 3);
         set.exclude(1);
 
         assertTrue(set.isExcluded(1));
@@ -74,7 +73,7 @@ public class CPSetVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testFix(CPSolver cp) {
-        CPSetVar set = new CPSetVar(cp, 3);
+        CPSetVarImpl set = new CPSetVarImpl(cp, 3);
         set.include(1);
         set.exclude(2);
         set.include(0);
@@ -82,14 +81,14 @@ public class CPSetVarTest extends CPSolverTest {
         cp.fixPoint();
         assertTrue(set.isFixed());
 
-        set = new CPSetVar(cp, 3);
+        set = new CPSetVarImpl(cp, 3);
         set.excludeAll();
 
         cp.fixPoint();
 
         assertTrue(set.isFixed());
 
-        set = new CPSetVar(cp, 3);
+        set = new CPSetVarImpl(cp, 3);
         set.includeAll();
 
         cp.fixPoint();
@@ -100,7 +99,7 @@ public class CPSetVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testFixFromCard(CPSolver cp) {
-        CPSetVar set = new CPSetVar(cp, 3);
+        CPSetVarImpl set = new CPSetVarImpl(cp, 3);
         set.include(1);
         set.card().fix(1);
 
