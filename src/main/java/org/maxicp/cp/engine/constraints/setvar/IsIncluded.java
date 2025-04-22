@@ -8,11 +8,12 @@ package org.maxicp.cp.engine.constraints.setvar;
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.cp.engine.core.CPSetVarImpl;
 
 public class IsIncluded extends AbstractCPConstraint {
 
-    CPSetVarImpl set;
+    CPSetVar set;
     int v;
     CPBoolVar bool;
 
@@ -22,7 +23,7 @@ public class IsIncluded extends AbstractCPConstraint {
      * @param v    the value to be included/excluded
      * @param set  the set variable
      */
-    public IsIncluded(CPBoolVar bool, int v, CPSetVarImpl set) {
+    public IsIncluded(CPBoolVar bool, int v, CPSetVar set) {
         super(set.getSolver());
         this.set = set;
         this.v = v;
