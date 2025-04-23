@@ -4,6 +4,7 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.LessOrEqual;
 import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.cp.engine.core.CPSetVarImpl;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
@@ -17,56 +18,36 @@ import java.util.StringTokenizer;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.firstFail;
 
+/**
+ * Max Independent Set Problem of a graph:
+ * Given a graph, find the largest set of vertices such that no two vertices in the set are adjacent.
+ * This problem is modeled with a set variable
+ *
+ * @author Amaury Guicchard and Pierre Schaus
+ */
 public class MaxIndependentSet {
 
-    List<int[]> edges = new java.util.ArrayList<>();
-    int nbNodes = -1;
+    record Edge(int u, int v) {}
+    record Instance(int nNodes, List<Edge> edges) {}
 
-    public MaxIndependentSet(String url) {
-        readGraph(url);
-    }
 
-    public void readGraph(String url) {
+    public static void main(String[] args) {
+
+        Instance instance;
         try {
-
-            FileInputStream fis = new FileInputStream(url);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("e")) {
-                    StringTokenizer st = new StringTokenizer(line);
-                    st.nextToken(); // skip "e"
-                    int u = Integer.parseInt(st.nextToken());
-                    int v = Integer.parseInt(st.nextToken());
-
-                    edges.add(new int[]{u, v});
-
-                    nbNodes = Math.max(nbNodes, Math.max(u, v));
-                }
-            }
-
-            br.close();
-
-            nbNodes = nbNodes + 1; // assuming nodes are 0-based
-
-
+            instance = readInstance("data/MIS/MIS-8-10");
         } catch (IOException e) {
-            System.out.println("Error reading file: " + e.getMessage());
+            System.out.println("Error reading instance: " + e.getMessage());
+            return;
         }
 
-
-    }
-
-    public void solve(){
         CPSolver cp = makeSolver();
-        CPSetVarImpl set = new CPSetVarImpl(cp,nbNodes);
-        CPBoolVar[] presence = makeBoolVarArray(cp, nbNodes);
-        for (int i = 0; i < nbNodes; i++) {
-            cp.post(new IsIncluded(presence[i], i, set));
-        }
-        for (int[] e: edges) {
-            cp.post(new LessOrEqual(sum(presence[e[0]], presence[e[1]]), makeIntVar(cp,1,1)));
+        CPSetVar set = makeSetVar(cp,instance.nNodes);
+
+        CPBoolVar[] presence = makeBoolVarArray(instance.nNodes, i -> isIncluded(set,i));
+
+        for (Edge e: instance.edges) {
+            cp.post(le(sum(presence[e.u], presence[e.v]),1));
         }
 
         Objective obj = cp.maximize(set.card());
@@ -82,8 +63,25 @@ public class MaxIndependentSet {
     }
 
 
-    public static void main(String[] args) {
-        MaxIndependentSet mis = new MaxIndependentSet("data/MIS/MIS-8-10");
-        mis.solve();
+    public static Instance readInstance(String path) throws IOException {
+        int nNodes = 0;
+        List<Edge> edges = new java.util.ArrayList<>();
+        FileInputStream fis = new FileInputStream(path);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+        String line;
+        while ((line = br.readLine()) != null) {
+            if (line.startsWith("e")) {
+                StringTokenizer st = new StringTokenizer(line);
+                st.nextToken(); // skip "e"
+                int u = Integer.parseInt(st.nextToken());
+                int v = Integer.parseInt(st.nextToken());
+                edges.add(new Edge(u, v));
+                nNodes = Math.max(nNodes, Math.max(u, v));
+            }
+        }
+        br.close();
+        nNodes = nNodes + 1; // assuming nodes are 0-based
+        return new Instance(nNodes, edges);
+
     }
 }

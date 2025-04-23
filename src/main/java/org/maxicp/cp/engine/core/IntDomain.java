@@ -55,21 +55,21 @@ public interface IntDomain {
      * @param v the value to be removed
      * @param l the methods of the listener are notified as follows:
      *          <ul>
-     *              <li> {@link DomainListener#change()} is called
+     *              <li> {@link IntDomainListener#change()} is called
      *              if v belongs to the domain</li>
-     *              <li> {@link DomainListener#changeMax()} is called
+     *              <li> {@link IntDomainListener#changeMax()} is called
      *              if v is equal to the maximum value</li>
-     *              <li> {@link DomainListener#changeMin()} is called
+     *              <li> {@link IntDomainListener#changeMin()} is called
      *              if v is equal to the minimum value</li>
-     *              <li> {@link DomainListener#bind()} is called
+     *              <li> {@link IntDomainListener#bind()} is called
      *              if v belongs to the domain and after its removal
      *                      the domain has a single value</li>
-     *              <li> {@link DomainListener#empty()}  is called
+     *              <li> {@link IntDomainListener#empty()}  is called
      *              if v is the last value in the domain i.e.
      *              the domain is empty after this operation</li>
      *         </ul>
      */
-    void remove(int v, DomainListener l);
+    void remove(int v, IntDomainListener l);
 
     /**
      * Removes every value from the domain except the specified one.
@@ -77,21 +77,21 @@ public interface IntDomain {
      * @param v the value to be kept
      * @param l the methods of the listener are notified as follows:
      *          <ul>
-     *              <li> {@link DomainListener#change()} is called
+     *              <li> {@link IntDomainListener#change()} is called
      *              if some value is removed during the operation</li>
-     *              <li> {@link DomainListener#changeMax()} is called
+     *              <li> {@link IntDomainListener#changeMax()} is called
      *              if v is not equal to the maximum value</li>
-     *              <li> {@link DomainListener#changeMin()} is called
+     *              <li> {@link IntDomainListener#changeMin()} is called
      *              if v is not equal to the minimum value</li>
-     *              <li> {@link DomainListener#bind()} is called
+     *              <li> {@link IntDomainListener#bind()} is called
      *              if v belongs to the domain and after its removal
      *                      the domain has a single value</li>
-     *              <li> {@link DomainListener#empty()}  is called
+     *              <li> {@link IntDomainListener#empty()}  is called
      *              if v is not in the domain i.e.
      *              the domain is empty after this operation</li>
      *         </ul>
      */
-    void removeAllBut(int v, DomainListener l);
+    void removeAllBut(int v, IntDomainListener l);
 
     /**
      * Removes every value less than the specified value from the domain.
@@ -99,18 +99,18 @@ public interface IntDomain {
      * @param v the value such that all the values less than v are removed
      * @param l the methods of the listener are notified as follows:
      *          <ul>
-     *              <li> {@link DomainListener#change()} is called
+     *              <li> {@link IntDomainListener#change()} is called
      *              if some value is removed during the operation</li>
-     *              <li> {@link DomainListener#changeMax()} is called
+     *              <li> {@link IntDomainListener#changeMax()} is called
      *              if v is is larger than the minimum value</li>
-     *              <li> {@link DomainListener#bind()} is called
+     *              <li> {@link IntDomainListener#bind()} is called
      *              if v is equal to the maximum value</li>
-     *              <li> {@link DomainListener#empty()} is called
+     *              <li> {@link IntDomainListener#empty()} is called
      *              if v is larger than the maximum value i.e.
      *              the domain is empty after this operation</li>
      *         </ul>
      */
-    void removeBelow(int v, DomainListener l);
+    void removeBelow(int v, IntDomainListener l);
 
     /**
      * Removes every value larger than the specified value from the domain.
@@ -118,18 +118,18 @@ public interface IntDomain {
      * @param v the value such that all the values larger than v are removed
      * @param l the methods of the listener are notified as follows:
      *          <ul>
-     *              <li> {@link DomainListener#change()} is called
+     *              <li> {@link IntDomainListener#change()} is called
      *              if some value is removed during the operation</li>
-     *              <li> {@link DomainListener#changeMax()} is called
+     *              <li> {@link IntDomainListener#changeMax()} is called
      *              if v is is less than the maximum value</li>
-     *              <li> {@link DomainListener#bind()} is called
+     *              <li> {@link IntDomainListener#bind()} is called
      *              if v is equal to the minimum value</li>
-     *              <li> {@link DomainListener#empty()} is called
+     *              <li> {@link IntDomainListener#empty()} is called
      *              if v is less than the minimum value i.e.
      *              the domain is empty after this operation</li>
      *         </ul>
      */
-    void removeAbove(int v, DomainListener l);
+    void removeAbove(int v, IntDomainListener l);
 
     /**
      * Copies the values of the domain into an array.

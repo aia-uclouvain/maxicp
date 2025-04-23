@@ -30,7 +30,7 @@ public class IsIncludedTest extends CPSolverTest {
         set1.exclude(1);
         b.fix(true);
 
-        assertThrows(InconsistencyException.class, () -> cp.post(new IsIncluded(b, 1, set1)));
+        assertThrows(InconsistencyException.class, () -> cp.post(new IsIncluded(b, set1,1)));
     }
 
     @ParameterizedTest
@@ -42,7 +42,7 @@ public class IsIncludedTest extends CPSolverTest {
         set1.include(1);
         b.fix(false);
 
-        assertThrows(InconsistencyException.class, () -> cp.post(new IsIncluded(b, 1, set1)));
+        assertThrows(InconsistencyException.class, () -> cp.post(new IsIncluded(b, set1,1)));
     }
 
     @ParameterizedTest
@@ -53,7 +53,7 @@ public class IsIncludedTest extends CPSolverTest {
 
         b.fix(true);
 
-        cp.post(new IsIncluded(b, 1, set1));
+        cp.post(new IsIncluded(b,set1, 1));
 
         assertTrue(set1.isIncluded(1));
     }
@@ -66,7 +66,7 @@ public class IsIncludedTest extends CPSolverTest {
 
         b.fix(false);
 
-        cp.post(new IsIncluded(b, 1, set1));
+        cp.post(new IsIncluded(b, set1,1));
 
         assertTrue(set1.isExcluded(1));
     }
@@ -79,7 +79,7 @@ public class IsIncludedTest extends CPSolverTest {
 
         set1.exclude(1);
 
-        cp.post(new IsIncluded(b, 1, set1));
+        cp.post(new IsIncluded(b, set1,1));
 
         assertTrue(b.isFalse());
     }
@@ -92,7 +92,7 @@ public class IsIncludedTest extends CPSolverTest {
 
         set1.include(1);
 
-        cp.post(new IsIncluded(b, 1, set1));
+        cp.post(new IsIncluded(b, set1,1));
 
         assertTrue(b.isTrue());
     }
