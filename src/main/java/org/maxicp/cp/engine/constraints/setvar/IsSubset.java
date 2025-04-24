@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints.setvar;
 
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.IsLessOrEqual;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPSetVar;
@@ -40,6 +42,8 @@ public class IsSubset extends AbstractCPConstraint {
     public void post() {
         set1.propagateOnDomainChange(this);
         set2.propagateOnDomainChange(this);
+        set1.card().propagateOnBoundChange(this);
+        set2.card().propagateOnBoundChange(this);
         b.propagateOnFix(this);
         propagate();
     }
@@ -68,8 +72,22 @@ public class IsSubset extends AbstractCPConstraint {
         return true;
     }
 
+    // check if all possible values in set1 are included in set2
+    private boolean allPossibleIncluded(){
+        int nPossible = set1.fillPossible(values);
+        for (int j = 0; j < nPossible; j++) {
+            if (!set2.isIncluded(values[j])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public void propagate() {
+        if (set1.card().min() > set2.card().max()) {
+            b.fix(false);
+        }
         if (!canBeSubset()) {
             b.fix(false);
         }
@@ -82,7 +100,7 @@ public class IsSubset extends AbstractCPConstraint {
         } else if (b.isFalse()) {
             // if inclusion and only one possible not in set2, include possible in set1
             if (isSubSet()) {
-                if (set1.isFixed()) {
+                if (allPossibleIncluded()) {
                     throw new InconsistencyException();
                 }
                 int notIncludedCounter = 0;
@@ -101,7 +119,8 @@ public class IsSubset extends AbstractCPConstraint {
             }
 
         } else {
-            if (set1.isFixed() && isSubSet()) {
+
+            if (allPossibleIncluded() && isSubSet()) {
                 // if set1 is fixed, and set1 included in set2 then true and deactivate
                 b.fix(true);
                 setActive(false);

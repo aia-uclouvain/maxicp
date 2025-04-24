@@ -129,9 +129,30 @@ public class IsSubsetTest extends CPSolverTest {
         CPSetVar set1 = new CPSetVarImpl(cp, 3);
         CPSetVar set2 = new CPSetVarImpl(cp, 3);
 
+        cp.post(new IsSubset(b, set1, set2));
         cp.post(CPFactory.eq(set1.card(),3));
         cp.post(CPFactory.eq(set2.card(),2));
 
         assertTrue(b.isFalse());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void detectInclusionWithPossible(CPSolver cp) {
+        CPBoolVar b = CPFactory.makeBoolVar(cp);
+        CPSetVar set1 = new CPSetVarImpl(cp, 3);
+        CPSetVar set2 = new CPSetVarImpl(cp, 3);
+
+        set1.include(0);
+        set1.exclude(2);
+        set2.include(0);
+        set2.include(1);
+
+        // set 1 = I{0} P{1} E{2}
+        // set 2 = I{0,1} P{2}
+
+        cp.post(new IsSubset(b, set1, set2));
+
+        assertTrue(b.isTrue());
     }
 }
