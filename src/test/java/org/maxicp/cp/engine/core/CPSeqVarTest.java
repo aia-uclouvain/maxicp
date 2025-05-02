@@ -251,14 +251,14 @@ public class CPSeqVarTest extends CPSolverTest {
     }
 
     /**
-     * Tests for the removal of detours
+     * Tests for the removal of subsequences
      */
     @ParameterizedTest
     @MethodSource("getSeqVar")
-    public void testRemoveDetour(CPSeqVar seqVar) {
+    public void testNotBetween(CPSeqVar seqVar) {
         StateManager sm = seqVar.getSolver().getStateManager();
-        seqVar.removeDetour(start, 2, seqVar.memberAfter(start));
-        seqVar.removeDetour(start, 4, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 2, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 4, seqVar.memberAfter(start));
         // removing the insert has the side effect of excluding the nodes, as they don't have any insertion point anymore
         int[] member1 = new int[]{start, end};
         int[] possible1 = new int[]{0, 1, 3, 5, 6, 7, 8, 9};
@@ -285,9 +285,9 @@ public class CPSeqVarTest extends CPSolverTest {
         seqVar.insert(start, 6); // the insertion means that removing only one insertion for a non-excluded node
         // does not exclude it directly
 
-        seqVar.removeDetour(start, 3, seqVar.memberAfter(start));
-        seqVar.removeDetour(start, 7, seqVar.memberAfter(start));
-        seqVar.removeDetour(6, 8, seqVar.memberAfter(6));
+        seqVar.notBetween(start, 3, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 7, seqVar.memberAfter(start));
+        seqVar.notBetween(6, 8, seqVar.memberAfter(6));
 
         int[] member2 = new int[]{start, 6, end};
         int[] possible2 = new int[]{0, 1, 3, 5, 7, 8, 9};
@@ -311,11 +311,11 @@ public class CPSeqVarTest extends CPSolverTest {
 
         sm.saveState();
 
-        seqVar.removeDetour(6, 5, seqVar.memberAfter(6));
-        seqVar.removeDetour(start, 5, seqVar.memberAfter(start));
-        seqVar.removeDetour(start, 8, seqVar.memberAfter(start));
-        seqVar.removeDetour(start, 1, seqVar.memberAfter(start));
-        seqVar.removeDetour(6, 0, seqVar.memberAfter(6));
+        seqVar.notBetween(6, 5, seqVar.memberAfter(6));
+        seqVar.notBetween(start, 5, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 8, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 1, seqVar.memberAfter(start));
+        seqVar.notBetween(6, 0, seqVar.memberAfter(6));
 
         int[] member3 = new int[]{start, 6, end};
         int[] possible3 = new int[]{0, 1, 3, 7, 9};
@@ -343,17 +343,17 @@ public class CPSeqVarTest extends CPSolverTest {
     }
 
     /**
-     * Tests for the removal of detours with additional nodes in the detour
+     * Tests for the removal of several sub-sequences with only one notBetween
      */
     @ParameterizedTest
     @MethodSource("getSeqVar")
-    public void testRemoveLongDetour(CPSeqVar seqVar) {
+    public void testRemoveNotBetweenFollowing(CPSeqVar seqVar) {
         StateManager sm = seqVar.getSolver().getStateManager();
         seqVar.insert(start, 1);
         seqVar.insert(1, 2);
         seqVar.insert(2, 3);
         // start -> 1 -> 2 -> 3 -> end
-        seqVar.removeDetour(1, 4, 3);
+        seqVar.notBetween(1, 4, 3);
         int[] member1 = new int[]{start, 1, 2, 3, end};
         int[] possible1 = new int[]{0, 4, 5, 6, 7, 8, 9};
         int[] excluded1 = new int[]{};
@@ -409,7 +409,7 @@ public class CPSeqVarTest extends CPSolverTest {
         int nRemoved = 0;
         for (int i = 0; i < member1.length - 1; ++i) {
             int predToRemove = member1[i];
-            seqVar.removeDetour(predToRemove, node1, seqVar.memberAfter(predToRemove));
+            seqVar.notBetween(predToRemove, node1, seqVar.memberAfter(predToRemove));
             ++nRemoved;
             pred1[node1] = Arrays.stream(pred1[node1]).filter(j -> j != predToRemove).toArray();
             if (nRemoved < member1.length - 1) { // the maximum number of insertions that can be removed without excluding the node (nMember nodes - 2)
@@ -440,7 +440,7 @@ public class CPSeqVarTest extends CPSolverTest {
         nRemoved = 0;
         for (int i = 0; i < member2.length - 1; ++i) {
             int predToRemove = member2[i];
-            seqVar.removeDetour(predToRemove, node2, seqVar.memberAfter(predToRemove));
+            seqVar.notBetween(predToRemove, node2, seqVar.memberAfter(predToRemove));
             ++nRemoved;
             pred2[node2] = Arrays.stream(pred2[node2]).filter(j -> j != predToRemove).toArray();
             if (nRemoved < member1.length - 1) { // the maximum number of insertions that can be removed without excluding the node (nMember nodes - 2)
@@ -506,10 +506,10 @@ public class CPSeqVarTest extends CPSolverTest {
     public void testInsertAndRemoveEdge(CPSeqVar seqVar) {
         seqVar.insert(start, 0);
         seqVar.insert(0, 2);
-        seqVar.removeDetour(0, 5, seqVar.memberAfter(0));
-        seqVar.removeDetour(start, 7, seqVar.memberAfter(start));
-        seqVar.removeDetour(2, 8, seqVar.memberAfter(2));
-        seqVar.removeDetour(0, 3, seqVar.memberAfter(0));
+        seqVar.notBetween(0, 5, seqVar.memberAfter(0));
+        seqVar.notBetween(start, 7, seqVar.memberAfter(start));
+        seqVar.notBetween(2, 8, seqVar.memberAfter(2));
+        seqVar.notBetween(0, 3, seqVar.memberAfter(0));
         // sequence at this point: begin -> 0 -> 2 -> end
         int[] member1 = new int[]{start, 0, 2, end};
         int[] possible1 = new int[]{1, 3, 4, 5, 6, 7, 8, 9};
@@ -608,7 +608,7 @@ public class CPSeqVarTest extends CPSolverTest {
     public void testExcludeAndRemoveEdge(CPSeqVar seqVar) {
         StateManager sm = seqVar.getSolver().getStateManager();
         seqVar.exclude(3);
-        seqVar.removeDetour(start, 8, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 8, seqVar.memberAfter(start));
         int[] member1 = new int[]{start, end};
         int[] possible1 = new int[]{0, 1, 2, 4, 5, 6, 7, 9};
         int[] excluded1 = new int[]{3, 8};
@@ -634,13 +634,13 @@ public class CPSeqVarTest extends CPSolverTest {
         seqVar.insert(start, 4); // start -> 4 -> end
         seqVar.insert(start, 7); // start -> 7 -> 4 -> end
 
-        seqVar.removeDetour(start, 0, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 0, seqVar.memberAfter(start));
         seqVar.exclude(2);
-        seqVar.removeDetour(7, 6, seqVar.memberAfter(7));
-        seqVar.removeDetour(start, 6, seqVar.memberAfter(start));
+        seqVar.notBetween(7, 6, seqVar.memberAfter(7));
+        seqVar.notBetween(start, 6, seqVar.memberAfter(start));
         seqVar.exclude(8); // 8 is already excluded. this should do nothing
-        seqVar.removeDetour(start, 3, seqVar.memberAfter(start)); // 3 is already excluded. this should do nothing
-        seqVar.removeDetour(4, 5, seqVar.memberAfter(4));
+        seqVar.notBetween(start, 3, seqVar.memberAfter(start)); // 3 is already excluded. this should do nothing
+        seqVar.notBetween(4, 5, seqVar.memberAfter(4));
         int[][] pred2 = new int[][]{
                 {7, 4},
                 {start, 7, 4},
@@ -662,10 +662,10 @@ public class CPSeqVarTest extends CPSolverTest {
 
         sm.saveState();
 
-        seqVar.removeDetour(4, 6, seqVar.memberAfter(4)); // this end up excluding node 6
+        seqVar.notBetween(4, 6, seqVar.memberAfter(4)); // this end up excluding node 6
         seqVar.exclude(9);
         seqVar.exclude(5);
-        seqVar.removeDetour(start, 1, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 1, seqVar.memberAfter(start));
         int[][] pred3 = new int[][]{
                 {7, 4},
                 {7, 4},
@@ -688,8 +688,8 @@ public class CPSeqVarTest extends CPSolverTest {
         sm.saveState();
 
         // exclude node 0 through the removal of all its related edges
-        seqVar.removeDetour(4, 0, seqVar.memberAfter(4));
-        seqVar.removeDetour(7, 0, seqVar.memberAfter(7));
+        seqVar.notBetween(4, 0, seqVar.memberAfter(4));
+        seqVar.notBetween(7, 0, seqVar.memberAfter(7));
         seqVar.exclude(1);
         int[] member4 = new int[]{start, 7, 4, end};
         int[] possible4 = new int[]{};
@@ -709,7 +709,7 @@ public class CPSeqVarTest extends CPSolverTest {
     public void testCloseTransitions(CPSeqVar seqVar) {
         StateManager sm = seqVar.getSolver().getStateManager();
         seqVar.insert(start, 5); // start -> 5 -> end
-        seqVar.removeDetour(start, 2, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 2, seqVar.memberAfter(start));
         // node 2 can never be inserted somewhere between start and 5
         int[] member1 = new int[]{start, 5, end};
         int[] possible1 = new int[]{0, 1, 2, 3, 4, 6, 7, 8, 9};
@@ -811,7 +811,7 @@ public class CPSeqVarTest extends CPSolverTest {
         StateManager sm = seqVar.getSolver().getStateManager();
         seqVar.require(8); // start -> 8 -> end
         seqVar.exclude(9);
-        seqVar.removeDetour(8, 3, seqVar.memberAfter(8));
+        seqVar.notBetween(8, 3, seqVar.memberAfter(8));
         seqVar.insert(start, 2); // start -> 2 -> 8 -> end
         seqVar.require(6);
 
@@ -841,9 +841,9 @@ public class CPSeqVarTest extends CPSolverTest {
         seqVar.exclude(0);
         seqVar.require(7);
         seqVar.require(3);
-        seqVar.removeDetour(start, 5, seqVar.memberAfter(start));
-        seqVar.removeDetour(4, 7, seqVar.memberAfter(4));
-        seqVar.removeDetour(2, 7, seqVar.memberAfter(2));
+        seqVar.notBetween(start, 5, seqVar.memberAfter(start));
+        seqVar.notBetween(4, 7, seqVar.memberAfter(4));
+        seqVar.notBetween(2, 7, seqVar.memberAfter(2));
 
         int[] member2 = new int[]{start, 2, 4, 8, end};
         int[] required2 = new int[]{start, 2, 4, 8, end, 3, 7, 6};
@@ -867,8 +867,8 @@ public class CPSeqVarTest extends CPSolverTest {
 
         sm.saveState();
 
-        seqVar.removeDetour(start, 1, seqVar.memberAfter(start));
-        seqVar.removeDetour(8, 1, seqVar.memberAfter(8));
+        seqVar.notBetween(start, 1, seqVar.memberAfter(start));
+        seqVar.notBetween(8, 1, seqVar.memberAfter(8));
         seqVar.insert(2, 6); // start -> 2 -> 6 -> 4 -> 8 -> end
         seqVar.insert(start, 7);  // start -> 7 -> 2 -> 6 -> 4 -> 8 -> end
         seqVar.exclude(5);
@@ -917,7 +917,7 @@ public class CPSeqVarTest extends CPSolverTest {
         // remove all predecessors for node 1, excluding it
         for (int pred : new int[]{2, 4, 6}) { // note that the removal of node 5 should have no effect
             assertFalse(seqVar.isNode(1, EXCLUDED)); // the node is not excluded yet!
-            seqVar.removeDetour(pred, 1, seqVar.memberAfter(pred));
+            seqVar.notBetween(pred, 1, seqVar.memberAfter(pred));
         }
 
         int[] member4 = new int[]{start, 7, 2, 6, 4, 8, end};
@@ -943,7 +943,7 @@ public class CPSeqVarTest extends CPSolverTest {
         // remove all edges except one for a required node. This will insert it
         sm.saveState();
         for (int pred : new int[]{start, 7, 2, 6}) {
-            seqVar.removeDetour(pred, 3, seqVar.memberAfter(pred));
+            seqVar.notBetween(pred, 3, seqVar.memberAfter(pred));
         }
         assertTrue(seqVar.isNode(3, MEMBER));
         sm.restoreState();
@@ -1031,9 +1031,9 @@ public class CPSeqVarTest extends CPSolverTest {
         assertIsBoolArrayTrueAt(propagateInsertRemovedArrCalled);
         resetPropagatorsArrays(propagateInsertArrCalled, propagateRequireArrCalled, propagateInsertRemovedArrCalled, propagateExcludeArrCalled);
 
-        seqVar.removeDetour(start, 1, seqVar.memberAfter(start));
-        seqVar.removeDetour(2, 7, seqVar.memberAfter(2));
-        seqVar.removeDetour(8, 7, seqVar.memberAfter(8)); // start -> 8 -> 2 -> 9 -> end
+        seqVar.notBetween(start, 1, seqVar.memberAfter(start));
+        seqVar.notBetween(2, 7, seqVar.memberAfter(2));
+        seqVar.notBetween(8, 7, seqVar.memberAfter(8)); // start -> 8 -> 2 -> 9 -> end
         cp.fixPoint();
         assertIsBoolArrayTrueAt(propagateInsertArrCalled);
         assertIsBoolArrayTrueAt(propagateRequireArrCalled);
@@ -1074,7 +1074,7 @@ public class CPSeqVarTest extends CPSolverTest {
         };
 
         cp.post(cons);
-        seqVar.removeDetour(start, 4, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 4, seqVar.memberAfter(start));
         cp.fixPoint();
         assertTrue(propagateExcludeCalled.get());
         assertFalse(propagateRequireCalled.get());
@@ -1191,7 +1191,7 @@ public class CPSeqVarTest extends CPSolverTest {
         resetPropagators(propagateInsertCalled, propagateFixCalled, propagateExcludeCalled, propagateRequireCalled);
 
         for (int node: new int[] {0, 1, 9}) {
-            seqVar.removeDetour(node, 6, seqVar.memberAfter(node));
+            seqVar.notBetween(node, 6, seqVar.memberAfter(node));
             cp.fixPoint();
             assertFalse(propagateExcludeCalled.get());
             assertFalse(propagateFixCalled.get());
@@ -1201,7 +1201,7 @@ public class CPSeqVarTest extends CPSolverTest {
         }
         // this removal means that only one point remains, forcing the insertion of the node
 
-        seqVar.removeDetour(start, 6, seqVar.memberAfter(start)); // sequence: start -> 0 -> 8 -> 6-> 1 -> 9 -> end
+        seqVar.notBetween(start, 6, seqVar.memberAfter(start)); // sequence: start -> 0 -> 8 -> 6-> 1 -> 9 -> end
         cp.fixPoint();
         assertFalse(propagateExcludeCalled.get());
         assertTrue(propagateFixCalled.get());
@@ -1283,7 +1283,7 @@ public class CPSeqVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSeqVar")
     public void throwInconsistencyInvalidInsert3(CPSeqVar seqVar) {
-        seqVar.removeDetour(start, 8, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 8, seqVar.memberAfter(start));
         assertThrowsExactly(InconsistencyException.class, () -> seqVar.insert(start, 8),
                 "An insertion cannot happen if one of the edge used do not exist");
     }
@@ -1313,7 +1313,7 @@ public class CPSeqVarTest extends CPSolverTest {
         record Edge(int from, int by, int to) {};
         for (Edge e: new Edge[] {new Edge(start, 1, 2), new Edge(1, 2, 3), new Edge(2, 3, end)}) {
             seqVar.getSolver().getStateManager().saveState();
-            assertThrowsExactly(InconsistencyException.class, () -> seqVar.removeDetour(e.from, e.by, e.to));
+            assertThrowsExactly(InconsistencyException.class, () -> seqVar.notBetween(e.from, e.by, e.to));
             seqVar.getSolver().getStateManager().restoreState();
         }
     }
@@ -1321,7 +1321,7 @@ public class CPSeqVarTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSeqVar")
     public void removeDirectSuccessorIgnored1(CPSeqVar seqVar) {
-        assertDoesNotThrow(() -> seqVar.removeDetour(start, end, seqVar.memberAfter(start)));
+        assertDoesNotThrow(() -> seqVar.notBetween(start, end, seqVar.memberAfter(start)));
     }
 
     @ParameterizedTest
@@ -1334,7 +1334,7 @@ public class CPSeqVarTest extends CPSolverTest {
         record Edge(int from, int by, int to) {};
         for (Edge e: new Edge[] {new Edge(start, 1, 1), new Edge(1, 2, 2), new Edge(2, 3, 3)}) {
             seqVar.getSolver().getStateManager().saveState();
-            assertDoesNotThrow(() -> seqVar.removeDetour(e.from, e.by, e.to));
+            assertDoesNotThrow(() -> seqVar.notBetween(e.from, e.by, e.to));
             seqVar.getSolver().getStateManager().restoreState();
         }
     }
@@ -1408,7 +1408,7 @@ public class CPSeqVarTest extends CPSolverTest {
                 int pred = neighbors[random.nextInt(nPred)];
                 return new Runnable[] {() ->{
                     //assertCounterInvariant(seqVar);
-                    cp.post(removeDetour(seqVar, pred, chosenNode, seqVar.memberAfter(pred)));
+                    cp.post(notBetween(seqVar, pred, chosenNode, seqVar.memberAfter(pred)));
                     try {
                         assertCounterInvariant(seqVar);
                     } catch (AssertionFailedError e) {
@@ -1485,13 +1485,13 @@ public class CPSeqVarTest extends CPSolverTest {
         Arrays.sort(inserts);
         assertArrayEquals(new int[] {0, 1, 2}, inserts);
 
-        seqVar.removeDetour(1, 4, seqVar.memberAfter(1));
+        seqVar.notBetween(1, 4, seqVar.memberAfter(1));
 
         assertEquals(2, seqVar.nInsert(4));
         assertEquals(2, seqVar.fillInsert(4, inserts));
         assertArrayEquals(new int[] {0, 2}, Arrays.stream(inserts).limit(2).sorted().toArray());
 
-        seqVar.removeDetour(2, 4, seqVar.memberAfter(2));
+        seqVar.notBetween(2, 4, seqVar.memberAfter(2));
 
         assertEquals(1, seqVar.nInsert(4));
         assertEquals(1, seqVar.fillInsert(4, inserts));
@@ -1715,6 +1715,14 @@ public class CPSeqVarTest extends CPSolverTest {
     public void testEmptyViewThrowsInconsistency4(CPSeqVar seqVar) {
         CPBoolVar isNode0Required = seqVar.getNodeVar(0).isRequired();
         assertThrowsExactly(InconsistencyException.class, () -> isNode0Required.fix(-1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testNotBetweenForExcludingRequiredNode(CPSeqVar seqVar) {
+        seqVar.insert(seqVar.start(), 1);
+        seqVar.require(2);
+        assertThrowsExactly(InconsistencyException.class, () -> seqVar.notBetween(seqVar.start(), 2, seqVar.end()));
     }
 
 

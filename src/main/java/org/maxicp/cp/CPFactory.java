@@ -10,7 +10,7 @@ import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.constraints.seqvar.Exclude;
 import org.maxicp.cp.engine.constraints.seqvar.Insert;
-import org.maxicp.cp.engine.constraints.seqvar.RemoveDetour;
+import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
@@ -1244,15 +1244,19 @@ public final class CPFactory {
     }
 
     /**
-     * Returns a constraint removing an insertion within a sequence
+     * Forbids a subsequence of length 3 to appear in a {@link CPSeqVar},
+     * removing from the domain all sequences containing the sub-sequence given as input.
+     * <p>
+     * For technical reasons, the two endpoints of the subsequence must belong to the current partial sequence.
      *
-     * @param seqVar sequence is which the insertion must be removed
-     * @param prev   member nodes after which the insertion must be removed
-     * @param node   node whose insertion must be removed
-     * @return a constraint so that {@code seqVar.hasInsert(prev, node)} does not holds
+     * @param seqVar sequence in which the subsequence must be removed
+     * @param prev origin of the subsequence, a member node
+     * @param node node in the middle of the subsequence
+     * @param succ end of the subsequence, a member node
+     * @return a constraint applying a {@code seqVar.notBetween(prev, node, succ)}
      */
-    public static CPConstraint removeDetour(CPSeqVar seqVar, int prev, int node, int succ) {
-        return new RemoveDetour(seqVar, prev, node, succ);
+    public static CPConstraint notBetween(CPSeqVar seqVar, int prev, int node, int succ) {
+        return new NotBetween(seqVar, prev, node, succ);
     }
 
     // ********************

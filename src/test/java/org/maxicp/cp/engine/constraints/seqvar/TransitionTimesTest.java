@@ -189,7 +189,7 @@ public class TransitionTimesTest extends CPSolverTest {
         assertEquals(earliest, time[0].min());
         assertEquals(latest, time[0].max());
         seqVar.insert(start, 1); // start -> 1 -> 2 -> end
-        seqVar.removeDetour(start, 0, seqVar.memberAfter(start));
+        seqVar.notBetween(start, 0, seqVar.memberAfter(start));
         // 0 cannot be inserted after start
         cp.fixPoint();
         earliest = Integer.MAX_VALUE;

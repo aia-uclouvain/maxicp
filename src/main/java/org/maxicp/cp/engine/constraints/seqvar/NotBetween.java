@@ -4,7 +4,7 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.Delta;
 
-public class RemoveDetour extends AbstractCPConstraint {
+public class NotBetween extends AbstractCPConstraint {
 
     private final CPSeqVar seqVar;
     private final int prev;
@@ -12,7 +12,7 @@ public class RemoveDetour extends AbstractCPConstraint {
     private final int succ;
     private boolean scheduled = false;
 
-    public RemoveDetour(CPSeqVar seqVar, int prev, int node, int succ) {
+    public NotBetween(CPSeqVar seqVar, int prev, int node, int succ) {
         super(seqVar.getSolver());
         this.seqVar = seqVar;
         this.prev = prev;
@@ -22,7 +22,7 @@ public class RemoveDetour extends AbstractCPConstraint {
 
     @Override
     public void post() {
-        seqVar.removeDetour(prev, node, succ);
+        seqVar.notBetween(prev, node, succ);
     }
 
     @Override
