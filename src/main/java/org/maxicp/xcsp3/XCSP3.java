@@ -42,6 +42,7 @@ public class XCSP3 extends XCallbacksDecomp {
         XCSP3 xcsp3 = new XCSP3();
         try {
             xcsp3.loadInstance(filename);
+            System.out.println("here");
         }
         catch (Throwable t) {
             xcsp3.md.close();
@@ -65,35 +66,6 @@ public class XCSP3 extends XCallbacksDecomp {
         };
 
         return new XCSP3LoadedInstance(xcsp3.md, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new), solutionGenerator);
-    }
-
-    public static void main(String[] args) throws Exception {
-        XCSP3LoadedInstance instance = load("/Users/gderval/Downloads/Queens/Queens-m1-s1/Queens-0010-m1.xml.lzma");
-
-        IntExpression[] q = instance.decisionVars();
-
-        Supplier<Runnable[]> branching = () -> {
-            int idx = -1; // index of the first variable that is not fixed
-            for (int k = 0; k < q.length; k++)
-                if (!q[k].isFixed()) {
-                    idx=k;
-                    break;
-                }
-            if (idx == -1)
-                return EMPTY;
-            else {
-                IntExpression qi = q[idx];
-                int v = qi.min();
-                Runnable left = () -> instance.md().add(new Eq(qi, v));
-                Runnable right = () -> instance.md().add(new NotEq(qi, v));
-                return branch(left,right);
-            }
-        };
-
-        instance.md().runCP((cp) -> {
-            DFSearch search = cp.dfSearch(branching);
-            System.out.println("Total number of solutions: " + search.solve().numberOfSolutions());
-        });
     }
 
     private final LinkedHashMap<String, IntExpression> varHashMap;

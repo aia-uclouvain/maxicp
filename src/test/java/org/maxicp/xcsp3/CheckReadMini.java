@@ -18,13 +18,12 @@ import static org.junit.Assume.assumeNoException;
 import static org.maxicp.search.Searches.EMPTY;
 
 @RunWith(Parameterized.class)
-public class Coverage {
+public class CheckReadMini {
 
     @Parameterized.Parameters(name = "{0}")
     public static String[] data() {
         try {
-            //TODO: @gderval fix this
-            return Files.walk(Paths.get("data/xcsp3/bench")).filter(Files::isRegularFile)
+            return Files.walk(Paths.get("data/xcsp3/tests/mini")).filter(Files::isRegularFile)
                     .filter(x -> x.toString().contains("xml"))
                     .map(Path::toString).toArray(String[]::new);
         }

@@ -8,6 +8,7 @@ import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.modeling.algebra.bool.NotEq;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Searches;
 import org.maxicp.util.ImmutableSet;
 import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
@@ -27,13 +28,13 @@ import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
 @RunWith(Parameterized.class)
-public class CheckSol {
+public class CheckSolveMini {
 
     @Parameterized.Parameters(name = "{0}")
     public static String[] data() {
         try {
             //TODO: @gderval fix this
-            return Files.walk(Paths.get("data/XCSP3/tests/")).filter(Files::isRegularFile)
+            return Files.walk(Paths.get("data/XCSP3/tests/mini")).filter(Files::isRegularFile)
                     .filter(x -> x.toString().contains("xml"))
                     .map(Path::toString).toArray(String[]::new);
         }
@@ -53,37 +54,18 @@ public class CheckSol {
     public void checkIgnored() {
         String[] fname = filename.split("/");
         Assume.assumeTrue("Instance has been blacklisted", !ignored.contains(fname[fname.length-1]));
-        Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("Subisomorphism"));
-        Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("OpenStacks-m2c"));
     }
 
     @Test
     public void checkSol() throws Exception {
         checkIgnored();
         try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(filename)) {
-            IntExpression[] q = instance.decisionVars();
-            Supplier<Runnable[]> branching = () -> {
-                int idx = -1; // index of the first variable that is not fixed
-                for (int k = 0; k < q.length; k++)
-                    if (!q[k].isFixed()) {
-                        idx=k;
-                        break;
-                    }
-                if (idx == -1)
-                    return EMPTY;
-                else {
-                    IntExpression qi = q[idx];
-                    int v = qi.min();
-                    Runnable left = () -> instance.md().add(new Eq(qi, v));
-                    Runnable right = () -> instance.md().add(new NotEq(qi, v));
-                    return branch(left,right);
-                }
-            };
+            IntExpression[] x = instance.decisionVars();
 
             long start = System.currentTimeMillis();
 
             instance.md().runCP((cp) -> {
-                DFSearch search = cp.dfSearch(branching);
+                DFSearch search = cp.dfSearch(Searches.firstFail(x));
                 LinkedList<String> sols = new LinkedList<>();
                 search.onSolution(() -> {
                     String sol = instance.solutionGenerator().get();

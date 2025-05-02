@@ -5,7 +5,6 @@ import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.modeling.algebra.bool.NotEq;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
-import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
 import org.xcsp.parser.callbacks.SolutionChecker;
 
@@ -21,7 +20,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        String path = "data/XCSP3/tests/AverageAvoiding-mini-20_c24.xml";
+        String path = "data/XCSP3/tests/mini/FRB-30-15-1_c18.xml";
 
         try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(path)) {
             IntExpression[] q = instance.decisionVars();
