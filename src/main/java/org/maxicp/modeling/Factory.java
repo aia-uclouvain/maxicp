@@ -312,8 +312,8 @@ public final class Factory {
         return new Exclude(seqVar, node);
     }
 
-    public static Constraint removeDetour(SeqVar seqVar, int pred, int node, int succ) {
-        return new RemoveDetour(seqVar, pred, node, succ);
+    public static Constraint notBetween(SeqVar seqVar, int pred, int node, int succ) {
+        return new NotBetween(seqVar, pred, node, succ);
     }
 
     public static Constraint transitionTimes(SeqVar seqVar, IntExpression[] time, int[][] dist) {

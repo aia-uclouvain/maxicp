@@ -15,7 +15,6 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
-import org.maxicp.util.io.InputReader;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -25,7 +24,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
@@ -161,7 +159,7 @@ public class TSPSeqVar {
                     int succ = tour.memberAfter(bestPred);
                     // either use the insertion to form bestPred -> node -> succ, or remove the detour
                     return branch(() -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
-                            () -> cp.getModelProxy().add(Factory.removeDetour(tour, bestPred, node, succ)));
+                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
                 }
         );
 

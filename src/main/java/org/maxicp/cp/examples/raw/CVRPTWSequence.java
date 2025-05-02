@@ -123,7 +123,7 @@ public class CVRPTWSequence {
             int pred = bestPred;
             int succ = route.memberAfter(pred);
             return branch(() -> cp.getModelProxy().add(Factory.insert(route, pred, node)),
-                    () -> cp.getModelProxy().add(Factory.removeDetour(route, pred, node, succ)));
+                    () -> cp.getModelProxy().add(Factory.notBetween(route, pred, node, succ)));
         };
 
         // ===================== solve =====================

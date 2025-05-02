@@ -139,8 +139,8 @@ public class Precedence extends AbstractCPConstraint {
             } else if (seqVar.isNode(node, MEMBER)) {
                 for (int nodeToFilter : nodesToFilter) {
                     // nodeToFilter must be placed between pred and node
-                    seqVar.removeDetour(seqVar.start(), nodeToFilter, pred);
-                    seqVar.removeDetour(node, nodeToFilter, seqVar.end());
+                    seqVar.notBetween(seqVar.start(), nodeToFilter, pred);
+                    seqVar.notBetween(node, nodeToFilter, seqVar.end());
                 }
                 pred = node;
                 nodesToFilter.clear();
@@ -160,7 +160,7 @@ public class Precedence extends AbstractCPConstraint {
                         current = seqVar.memberAfter(current);
                     for (int j = i + 1; j < order.length; j++) {
                         int subSequentNode = order[j];
-                        seqVar.removeDetour(seqVar.start(), subSequentNode, current);
+                        seqVar.notBetween(seqVar.start(), subSequentNode, current);
                     }
                 }
                 // backward filtering: filter positions for precedent nodes:
@@ -171,7 +171,7 @@ public class Precedence extends AbstractCPConstraint {
                         current = seqVar.memberBefore(current);
                     for (int j = i - 1; j >= 0; j--) {
                         int precedentNode = order[j];
-                        seqVar.removeDetour(current, precedentNode, seqVar.end());
+                        seqVar.notBetween(current, precedentNode, seqVar.end());
                     }
                 }
             }

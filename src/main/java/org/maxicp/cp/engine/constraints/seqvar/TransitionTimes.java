@@ -9,7 +9,6 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.state.State;
-import org.maxicp.state.StateInt;
 
 import java.util.Optional;
 
@@ -190,7 +189,7 @@ public class TransitionTimes extends AbstractCPConstraint {
         int succ = seqVar.memberAfter(pred);
         int timeReachingNode = time[pred].min() + serviceTime(pred) + dist[pred][node];
         if (timeReachingNode > time[node].max()) { // check that pred -> current is feasible
-            seqVar.removeDetour(pred, node, succ);
+            seqVar.notBetween(pred, node, succ);
             return true;
         } else { // check that current -> succ is feasible
             int timeDeparture = Math.max(timeReachingNode, time[node].min());
@@ -198,7 +197,7 @@ public class TransitionTimes extends AbstractCPConstraint {
                 // The detour pred->node->succ takes too much time.
                 // Because of triangular inequality, there is no way to get a better result by inserting some node
                 // between pred->node: this would only add a longer delay, the edge is still invalid.
-                seqVar.removeDetour(pred, node, succ);
+                seqVar.notBetween(pred, node, succ);
                 return true;
             }
         }

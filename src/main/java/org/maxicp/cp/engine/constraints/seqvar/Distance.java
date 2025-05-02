@@ -89,7 +89,7 @@ public class Distance extends AbstractCPConstraint {
             int succ = seqVar.memberAfter(pred);
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
             if (detour > maxDetour) { // detour is too long
-                seqVar.removeDetour(pred, node, succ);
+                seqVar.notBetween(pred, node, succ);
             }
         }
     }

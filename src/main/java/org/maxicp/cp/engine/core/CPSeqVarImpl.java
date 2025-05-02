@@ -706,11 +706,37 @@ public class CPSeqVarImpl implements CPSeqVar {
         }
     }
 
+
+    /**
+     * Tells if two member nodes are following each other, possibly with other nodes between them
+     * @param prev predecessor, must be a member node
+     * @param succ successor, must be a member node
+     * @return true if {@code prev} is a predecessor of {@code succ}
+     */
+    private boolean areFollowing(int prev, int succ) {
+        int start = start();
+        if (prev == end() || succ == start)
+            return false;
+        int after = memberAfter(prev);
+        if (after == succ) { // prev is the direct predecessor of succ
+            return true;
+        } else {
+            // check if there is a chain prev -> ... -> succ
+            int current = after;
+            boolean areFollowing = false;
+            while (!areFollowing && current != start) {
+                current = memberAfter(current);
+                areFollowing = current == succ;
+            }
+            return areFollowing;
+        }
+    }
+
     @Override
     public void insert(int prev, int node) {
         if (!hasInsert(prev, node)) {
             if (isNode(prev, MEMBER) && isNode(node, MEMBER)) {
-                if (memberBefore(node) != prev) {
+                if (!areFollowing(prev, node)) {
                     throw new IllegalArgumentException("Cannot insert two member nodes that are not consecutive");
                 }
                 return;
@@ -732,25 +758,23 @@ public class CPSeqVarImpl implements CPSeqVar {
         // update the set of insertable nodes
         insertable.remove(node);
         // update the counter of insertions and remove edges between member nodes that are not consecutive
-        int nInsertable = fillNode(values, NOT_EXCLUDED);
-        for (int i = 0 ; i < nInsertable ; i++) {
-            int vertex = values[i];
-            if (vertex == node)
-                continue;
-            if (isNode(vertex, MEMBER)) {
-                if (vertex != prev) {
-                    removeEdge(vertex, node);
+        //int nInsertable = fillNode(values, NOT_EXCLUDED);
+        int nPred = fillPred(node, values);
+        for (int i = 0 ; i < nPred ; i++) {
+            int pred = values[i];
+            if (isNode(pred, MEMBER)) {
+                if (pred != prev) {
+                    removeEdge(pred, node);
+                    int next = memberAfter(pred);
+                    removeEdge(node, next);
                 }
-                if (vertex != after) {
-                    removeEdge(node, vertex);
-                }
-            } else if (hasInsert(prev, vertex)) {
-                nodes[vertex].nInsert.increment();
+            } else if (hasInsert(prev, pred)) {
+                nodes[pred].nInsert.increment();
             } else {
                 // vertex could not be inserted between prev and after
                 // this prevent vertex from being inserted between those two nodes
-                removeEdge(vertex, node);
-                removeEdge(node, vertex);
+                removeEdge(pred, node);
+                removeEdge(node, pred);
             }
         }
         nodes[node].nInsert.setValue(0);
@@ -762,44 +786,46 @@ public class CPSeqVarImpl implements CPSeqVar {
     }
 
     @Override
-    public void removeDetour(int prev, int node, int succ) {
+    public void notBetween(int prev, int node, int succ) {
         if (!isNode(prev, MEMBER) || !isNode(succ, MEMBER)) {
-            throw new IllegalArgumentException("A detour is always defined between two members nodes that are following each other");
+            throw new IllegalArgumentException("A notBetween can only be applied always defined between two members nodes");
         }
         if (prev == node || node == succ || prev == succ) {
             return;
         }
         if (!isNode(node, EXCLUDED)) {
-            // most detours are done between two consecutive nodes
+            // most notBetween are done between two consecutive nodes
             // first fast check if prev and succ are consecutive nodes
+            boolean areFollowing;
+            int start = start();
             int after = memberAfter(prev);
-            boolean areFollowing = false;
-            if (after == succ) { // nodes are consecutive
+            if (prev == end() || succ == start)
+                return;
+            if (after == succ) { // prev is the direct predecessor of succ
                 areFollowing = true;
             } else {
-                // check if the succ if following prev, Otherwise the function is wrongly called, for instance
-                // with "remove end -> x -> begin"
+                // check if there is a chain prev -> ... -> succ
                 int current = after;
+                areFollowing = false;
                 boolean foundNode = current == node;
                 while (!areFollowing && current != start) {
                     current = memberAfter(current);
                     areFollowing = current == succ;
                     foundNode = foundNode || current == node;
                 }
+                if (areFollowing && foundNode)
+                    throw INCONSISTENCY;
             }
-            // only remove the detours if the member nodes are following each other
-            // if the member nodes are not following each other, no such detour can happen anyway
+            // only performs the notBetween if the member nodes are following each other
+            // if the member nodes are not following each other, no such subsequence can happen anyway
             if (areFollowing) {
+                int nInsert = nodes[node].nInsert.value();
                 for (int endPoint = prev; endPoint != succ ;) {
                     if (hasInsert(endPoint, node)) {
                         removeEdge(endPoint, node);
                         endPoint = memberAfter(endPoint);
                         removeEdge(node, endPoint);
-                        nodes[node].nInsert.decrement();
-                        int nInsert = nodes[node].nInsert();
-                        if (isNode(node, REQUIRED) && nInsert == 1) {
-                            insertAtOnlyRemainingPlace(node);
-                        }
+                        nInsert -= 1;
                         if (nInsert == 0) {
                             exclude(node);
                         }
@@ -808,6 +834,10 @@ public class CPSeqVarImpl implements CPSeqVar {
                     } else {
                         endPoint = memberAfter(endPoint);
                     }
+                }
+                nodes[node].nInsert.setValue(nInsert);
+                if (isNode(node, REQUIRED) && nInsert == 1) {
+                    insertAtOnlyRemainingPlace(node);
                 }
             }
         }
