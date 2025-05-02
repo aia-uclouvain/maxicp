@@ -6,4 +6,4 @@
 /**
  * Implementation of XCSP3 API using MaxiCP
  */
-package org.maxicp.modeling.xcsp3;
+package org.maxicp.xcsp3;

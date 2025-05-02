@@ -1,8 +1,7 @@
-package org.maxicp.modeling.xcsp3;
+package org.maxicp.xcsp3;
 
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.maxicp.search.DFSearch;
@@ -25,7 +24,7 @@ public class Coverage {
     public static String[] data() {
         try {
             //TODO: @gderval fix this
-            return Files.walk(Paths.get("/Users/gderval/Desktop/xcsp3/XCSP17")).filter(Files::isRegularFile)
+            return Files.walk(Paths.get("data/xcsp3/bench")).filter(Files::isRegularFile)
                     .filter(x -> x.toString().contains("xml"))
                     .map(Path::toString).toArray(String[]::new);
         }
@@ -39,22 +38,7 @@ public class Coverage {
     public String filename;
 
     public static final ImmutableSet<String> ignored = ImmutableSet.of(
-            "Hanoi-09.xml.lzma", //OOM due to TableCT
-            "MagicSquare-6-table.xml.lzma", //OOM in the XCSP3 parser (org.xcsp.parser.XParser !)
-            "Fischer-11-12-fair.xml.lzma",
-            "Fischer-11-14-fair.xml.lzma",
-            "Hanoi-08.xml.lzma", //TableCT
-            "Steiner3-14.xml.lzma",
-            "BinPacking-tab-sw120-41.xml.lzma",
-            "KnightTour-15-ext06.xml.lzma",
-            "RoomMate-sr0700d-int.xml.lzma",
-            "RoomMate-sr1000c-int.xml.lzma",
-            "RoomMate-sr1000e-int.xml.lzma",
-            "RoomMate-sr1000b-int.xml.lzma",
-            "RoomMate-sr1000-int.xml.lzma",
-            "GraphColoring-wap01a.xml.lzma",
-            "GraphColoring-dsjc-1000-9.xml.lzma",
-            "Subisomorphism-si4-r005-m600-07.xml.lzma"
+            "AircraftAssemblyLine-3-628-000-0_c24.xml"
     );
 
     public void checkIgnored() {

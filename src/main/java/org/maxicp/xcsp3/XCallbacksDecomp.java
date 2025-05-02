@@ -1,4 +1,4 @@
-package org.maxicp.modeling.xcsp3;
+package org.maxicp.xcsp3;
 
 import org.maxicp.util.exception.NotYetImplementedException;
 import org.xcsp.common.Condition;
