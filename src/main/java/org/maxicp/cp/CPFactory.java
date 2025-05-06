@@ -1982,6 +1982,9 @@ public final class CPFactory {
                     case SCHAUS_THOMAS_KAMEUGNE -> {
                         cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
                     }
+                    case SCHAUS_THOMAS_KAMEUGNE_BASELINE -> {
+                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));
+                    }
                 }
             }
         };
@@ -1997,7 +2000,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue) {
-        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
+        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);
     }
 
     /**
@@ -2041,6 +2044,9 @@ public final class CPFactory {
                     case SCHAUS_THOMAS_KAMEUGNE -> {
                         cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
                     }
+                    case SCHAUS_THOMAS_KAMEUGNE_BASELINE -> {
+                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));
+                    }
                 }
             }
         };
@@ -2058,7 +2064,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
-        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
+        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);
     }
 
         /**
@@ -2087,6 +2093,9 @@ public final class CPFactory {
                     }
                     case SCHAUS_THOMAS_KAMEUGNE -> {
                         cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));
+                    }
+                    case SCHAUS_THOMAS_KAMEUGNE_BASELINE -> {
+                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), maxValue));
                     }
                 }
             }

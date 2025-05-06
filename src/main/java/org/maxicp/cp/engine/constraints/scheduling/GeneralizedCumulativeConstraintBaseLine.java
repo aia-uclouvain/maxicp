@@ -24,7 +24,7 @@ import static org.maxicp.Constants.HORIZON;
  *
  * @author Roger Kameugne, Charles Thomas, Pierre Schaus
  */
-public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
+public class GeneralizedCumulativeConstraintBaseLine extends AbstractCPConstraint {
     private final Activity[] activities;
     protected final long maxCapacity;
     protected final long minCapacity;
@@ -68,7 +68,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
      * @param minCapacity minimum capacity
      * @param maxCapacity maximum capacity
      */
-    public GeneralizedCumulativeConstraint(Activity[] activities, int minCapacity, int maxCapacity) {
+    public GeneralizedCumulativeConstraintBaseLine(Activity[] activities, int minCapacity, int maxCapacity) {
         super(activities[0].interval().getSolver());
         if (minCapacity > maxCapacity)
             throw new IllegalArgumentException("The minimum capacity provided is > max capacity");
@@ -103,7 +103,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
      * @param activities  array of activities
      * @param maxCapacity maximum capacity
      */
-    public GeneralizedCumulativeConstraint(Activity[] activities, int maxCapacity) {
+    public GeneralizedCumulativeConstraintBaseLine(Activity[] activities, int maxCapacity) {
         this(activities, Integer.MIN_VALUE, maxCapacity);
     }
 
@@ -299,7 +299,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                                 checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
                             // Adjusting height:
                             // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                            adjustHeightOnFixedPart(actIdx, tpForward);
+                            // adjustHeightOnFixedPart(actIdx, tpForward);
                             tpForward++;
                         }
                     } else {
@@ -324,12 +324,12 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                         }
                         //Adjusting maximum length:
                         maxL = Math.max(maxL, act.getEndMax() - currentStart);
-                        act.setLengthMax(Math.min(act.getLengthMax(), maxL));
+                        // act.setLengthMax(Math.min(act.getLengthMax(), maxL));
 
                         // Adjusting height:
                         // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                        act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
-                        act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
+                        // act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
+                        // act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
                     }
                 }
             }

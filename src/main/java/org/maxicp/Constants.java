@@ -38,5 +38,6 @@ public class Constants {
     public enum CumulativeAlgo {
         BELDICEANU_CARLSSON,
         SCHAUS_THOMAS_KAMEUGNE,
+        SCHAUS_THOMAS_KAMEUGNE_BASELINE,
     }
 }
