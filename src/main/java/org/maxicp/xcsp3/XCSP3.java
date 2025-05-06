@@ -170,6 +170,7 @@ public class XCSP3 extends XCallbacksDecomp {
             case DIST -> $x.minus(p).abs();
             case ADD -> $x.plus(p);
             case SUB -> $x.minus(p);
+            case MUL -> $x.times(p);
             default -> {
                 unimplementedCase(aop, op);
                 yield null;

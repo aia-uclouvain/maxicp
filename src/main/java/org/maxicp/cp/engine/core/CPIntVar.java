@@ -222,20 +222,23 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
      */
     DeltaCPIntVar delta(CPConstraint c);
 
+    @Override
     default int evaluate() throws VariableNotFixedException {
         if (isFixed()) {return min();}
         throw new VariableNotFixedException();
     }
 
-
+    @Override
     default IntExpression plus(int v) {
         return CPFactory.plus(this, v);
     }
 
+    @Override
     default IntExpression minus(int v) {
         return CPFactory.plus(this, -v);
     }
 
+    @Override
     default IntExpression plus(IntExpression v) {
         if (v instanceof CPIntVar cpi)
             return CPFactory.sum(this, cpi);
@@ -243,6 +246,7 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
             throw new RuntimeException("Attempting to sum a CPIntVar with a SymbolicIntExpression");
     }
 
+    @Override
     default IntExpression minus(IntExpression v) {
         if (v instanceof CPIntVar cpi)
             return CPFactory.sum(this, CPFactory.minus(cpi));
@@ -250,6 +254,20 @@ public interface CPIntVar extends CPVar, ConcreteIntVar {
             throw new RuntimeException("Attempting to sum a CPIntVar with a SymbolicIntExpression");
     }
 
+    @Override
+    default IntExpression times(int v) {
+        return CPFactory.mul(this, v);
+    }
+
+    @Override
+    default IntExpression times(IntExpression v) {
+        if (v instanceof CPIntVar cpi)
+            return CPFactory.mul(this, cpi);
+        else
+            throw new RuntimeException("Attempting to sum a CPIntVar with a SymbolicIntExpression");
+    }
+
+    @Override
     default IntExpression abs() {
         return CPFactory.abs(this);
     }

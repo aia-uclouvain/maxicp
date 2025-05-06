@@ -41,8 +41,10 @@ public interface IntExpression extends Expression {
 
     IntExpression plus(int v);
     IntExpression minus(int v);
+    IntExpression times(int v);
     IntExpression plus(IntExpression v);
     IntExpression minus(IntExpression v);
+    IntExpression times(IntExpression v);
     IntExpression abs();
 
     IntExpression mapSubexpressions(Function<Expression, Expression> f);

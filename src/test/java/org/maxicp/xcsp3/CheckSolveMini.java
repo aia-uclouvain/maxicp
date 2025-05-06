@@ -24,8 +24,7 @@ import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNoException;
-import static org.maxicp.search.Searches.EMPTY;
-import static org.maxicp.search.Searches.branch;
+import static org.maxicp.search.Searches.*;
 
 @RunWith(Parameterized.class)
 public class CheckSolveMini {
@@ -65,7 +64,7 @@ public class CheckSolveMini {
             long start = System.currentTimeMillis();
 
             instance.md().runCP((cp) -> {
-                DFSearch search = cp.dfSearch(Searches.firstFail(x));
+                DFSearch search = cp.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(x), var -> var.min()));
                 LinkedList<String> sols = new LinkedList<>();
                 search.onSolution(() -> {
                     String sol = instance.solutionGenerator().get();
@@ -73,7 +72,7 @@ public class CheckSolveMini {
                     System.out.println(sol);
                 });
                 search.solve(limit -> {
-                    Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
+                    //Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
                     return limit.numberOfSolutions() == 1;
                 });
                 for(String sol: sols) {
