@@ -8,10 +8,7 @@ package org.maxicp.cp;
 import org.maxicp.Constants;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
-import org.maxicp.cp.engine.constraints.seqvar.Exclude;
-import org.maxicp.cp.engine.constraints.seqvar.Insert;
-import org.maxicp.cp.engine.constraints.seqvar.RemoveDetour;
-import org.maxicp.cp.engine.constraints.seqvar.Require;
+import org.maxicp.cp.engine.constraints.seqvar.*;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
 import org.maxicp.search.DFSearch;
@@ -254,6 +251,7 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp) {
+        //return new CPIntervalVarImplNaive(cp);
         return new CPIntervalVarImpl(cp);
     }
 
@@ -1947,9 +1945,10 @@ public final class CPFactory {
      * @param fun a cumulative function
      * @param minValue an int value
      * @param maxValue an int value
+     * @param algo a cumulative algorithm
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
-    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue) {
+    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, Constants.CumulativeAlgo algo) {
         List<Activity> activities = fun.flatten(true);
 
         if (activities.isEmpty() && minValue > 0) {
@@ -1975,23 +1974,45 @@ public final class CPFactory {
                 interval.setEnd(maxEnd);
                 Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));
                 activities.add(dummy);
-                cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
+                switch (algo) {
+                    case BELDICEANU_CARLSSON -> {
+                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));
+                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));
+                    }
+                    case SCHAUS_THOMAS_KAMEUGNE -> {
+                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
+                    }
+                }
             }
         };
     }
 
     /**
      * Requires a cumulative function to always be within the range [minValue..maxValue]
-     * on the execution range [from..to).
+     * on the execution range of the cumulative function.
      *
      * @param fun a cumulative function
      * @param minValue an int value
      * @param maxValue an int value
-     * @param from an int value
-     * @param to an int value
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
-    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
+    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue) {
+        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
+    }
+
+    /**
+     * Requires a cumulative function to always be within the range [minValue..maxValue]
+     * on the execution range [from..to).
+     *
+     * @param fun      a cumulative function
+     * @param minValue an int value
+     * @param maxValue an int value
+     * @param from     an int value
+     * @param to       an int value
+     * @param algo     a cumulative algorithm
+     * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
+     */
+    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to, Constants.CumulativeAlgo algo) {
         List<Activity> activities = fun.flatten(true);
 
         if (activities.isEmpty() && minValue > 0) {
@@ -2011,7 +2032,63 @@ public final class CPFactory {
                 interval.setEnd(to);
                 Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));
                 activities.add(dummy);
-                cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
+
+                switch (algo) {
+                    case BELDICEANU_CARLSSON -> {
+                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));
+                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));
+                    }
+                    case SCHAUS_THOMAS_KAMEUGNE -> {
+                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * Requires a cumulative function to always be within the range [minValue..maxValue]
+     * on the execution range [from..to).
+     *
+     * @param fun a cumulative function
+     * @param minValue an int value
+     * @param maxValue an int value
+     * @param from an int value
+     * @param to an int value
+     * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
+     */
+    public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
+        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
+    }
+
+        /**
+         * Requires a cumulative function to always be equal or lesser than a value
+         * on the execution range [0..Constants.HORIZON).
+         *
+         * @param fun a cumulative function
+         * @param maxValue an int value
+         * @param algo a cumulative algorithm
+         * @return a constraint which ensures that fun is always lesser or equal to maxVal
+         */
+    public static CPConstraint le(CPCumulFunction fun, int maxValue, Constants.CumulativeAlgo algo) {
+        List<Activity> activities = fun.flatten(true);
+
+        if (activities.isEmpty()) {
+            return new DoNothingConstraint();
+        }
+
+        CPSolver cp = activities.get(0).interval().getSolver();
+        return new AbstractCPConstraint(cp) {
+            @Override
+            public void post() {
+                switch (algo) {
+                    case BELDICEANU_CARLSSON -> {
+                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));
+                    }
+                    case SCHAUS_THOMAS_KAMEUGNE -> {
+                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));
+                    }
+                }
             }
         };
     }
@@ -2025,18 +2102,6 @@ public final class CPFactory {
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
     public static CPConstraint le(CPCumulFunction fun, int maxValue) {
-        List<Activity> activities = fun.flatten(true);
-
-        if (activities.isEmpty()) {
-            return new DoNothingConstraint();
-        }
-
-        CPSolver cp = activities.get(0).interval().getSolver();
-        return new AbstractCPConstraint(cp) {
-            @Override
-            public void post() {
-                cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));
-            }
-        };
+        return le(fun, maxValue, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
     }
 }

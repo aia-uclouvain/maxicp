@@ -299,7 +299,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                                 checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
                             // Adjusting height:
                             // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                            adjustHeightOnFixedPart(actIdx, tpForward);
+                            // adjustHeightOnFixedPart(actIdx, tpForward);
                             tpForward++;
                         }
                     } else {
@@ -324,12 +324,12 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                         }
                         //Adjusting maximum length:
                         maxL = Math.max(maxL, act.getEndMax() - currentStart);
-                        act.setLengthMax(Math.min(act.getLengthMax(), maxL));
+                        // act.setLengthMax(Math.min(act.getLengthMax(), maxL));
 
                         // Adjusting height:
                         // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                        act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
-                        act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
+                        // act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
+                        // act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
                     }
                 }
             }
