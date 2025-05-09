@@ -41,10 +41,10 @@ public class CheckReadMini {
     );
 
     public void checkIgnored() {
-        String[] fname = filename.split("/");
-        Assume.assumeTrue("Instance has been blacklisted", !ignored.contains(fname[fname.length-1]));
-        Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("Subisomorphism"));
-        Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("OpenStacks-m2c"));
+        //String[] fname = filename.split("/");
+        //Assume.assumeTrue("Instance has been blacklisted", !ignored.contains(fname[fname.length-1]));
+        //Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("Subisomorphism"));
+        //Assume.assumeTrue("Instance has been blacklisted", !fname[fname.length-1].contains("OpenStacks-m2c"));
     }
 
     @Test

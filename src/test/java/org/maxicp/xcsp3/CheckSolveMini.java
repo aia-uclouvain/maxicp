@@ -72,7 +72,7 @@ public class CheckSolveMini {
                     System.out.println(sol);
                 });
                 search.solve(limit -> {
-                    //Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
+                    Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
                     return limit.numberOfSolutions() == 1;
                 });
                 for(String sol: sols) {
