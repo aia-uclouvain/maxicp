@@ -9,6 +9,7 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.IsLessOrEqual;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -22,6 +23,8 @@ public class IsSubset extends AbstractCPConstraint {
     private CPSetVar set2;
     private CPBoolVar b;
     private int[] values; // array to iterate
+    private CPConstraint subsetConstraint;
+    private CPConstraint notSubsetConstraint;
 
     /**
      * Creates a constraint that enforces the boolean variable b to be true
@@ -36,6 +39,9 @@ public class IsSubset extends AbstractCPConstraint {
         this.set2 = set2;
         this.b = b;
         values = new int[Math.max(set1.size(),set2.size())];
+        subsetConstraint = new Subset(set1, set2);
+        notSubsetConstraint = new NotSubset(set1, set2);
+
     }
 
     @Override
@@ -48,32 +54,45 @@ public class IsSubset extends AbstractCPConstraint {
         propagate();
     }
 
+
     /**
-     * Check if set1 can still possibly be a subset of set2.
+     * Detect if set1 is not a subset of set2 by
+     * comparing the cardinalities of the two sets.
+     * checking if at least one included value of set1 is excluded in set2
+     * @return true if set1 is not a subset of set2
      */
-    private boolean canBeSubset() {
+    private boolean detectNotSubset(){
+        if(set1.card().min() > set2.card().max()){
+            return true;
+        }
+
         int nIncluded = set1.fillIncluded(values);
         for (int j = 0; j < nIncluded; j++) {
             if (set2.isExcluded(values[j])) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
+
     }
 
-    // BAD name
-    private boolean isSubSet() {
+    /**
+     * Detect if set1 is a subset of set2 by
+     * comparing the cardinalities of the two sets.
+     * comparing the number of included and possible values of set1 and set2
+     * and checking if all included or possible values of set1 are included in set2
+     * @return true if set1 is a subset of set2
+     */
+    private boolean detectSubset(){
+        if(set1.card().min() > set2.card().max() || set1.nPossible() + set1.nIncluded() > set2.nIncluded()){
+            return false;
+        }
         int nIncluded = set1.fillIncluded(values);
         for (int j = 0; j < nIncluded; j++) {
             if (!set2.isIncluded(values[j])) {
                 return false;
             }
         }
-        return true;
-    }
-
-    // check if all possible values in set1 are included in set2
-    private boolean allPossibleIncluded(){
         int nPossible = set1.fillPossible(values);
         for (int j = 0; j < nPossible; j++) {
             if (!set2.isIncluded(values[j])) {
@@ -84,48 +103,20 @@ public class IsSubset extends AbstractCPConstraint {
     }
 
     @Override
-    public void propagate() {
-        if (set1.card().min() > set2.card().max()) {
+    public void propagate(){
+        if (detectNotSubset()) {
             b.fix(false);
         }
-        if (!canBeSubset()) {
-            b.fix(false);
+        if (detectSubset()) {
+            b.fix(true);
         }
-        if (b.isTrue()) {
-            // excluded from set2 must also be excluded from set1
-            int nExcluded = set2.fillExcluded(values);
-            for (int j = 0; j < nExcluded; j++) {
-                set1.exclude(values[j]);
-            }
+
+        if(b.isTrue()){
+            getSolver().post(subsetConstraint, false);
+            setActive(false);
         } else if (b.isFalse()) {
-            // if inclusion and only one possible not in set2, include possible in set1
-            if (isSubSet()) {
-                if (allPossibleIncluded()) {
-                    throw new InconsistencyException();
-                }
-                int notIncludedCounter = 0;
-                int notIncluded = -1;
-                int nPossible = set1.fillPossible(values);
-                for (int j = 0; j < nPossible; j++) {
-                    if (!set2.isIncluded(values[j])) {
-                        notIncludedCounter++;
-                        notIncluded = values[j];
-                    }
-                }
-                if (notIncludedCounter == 1) {
-                    set1.include(notIncluded);
-                    set2.exclude(notIncluded);
-                }
-            }
-
-        } else {
-
-            if (allPossibleIncluded() && isSubSet()) {
-                // if set1 is fixed, and set1 included in set2 then true and deactivate
-                b.fix(true);
-                setActive(false);
-            }
+            getSolver().post(notSubsetConstraint, false);
+            setActive(false);
         }
-
     }
 }

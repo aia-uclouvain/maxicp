@@ -11,6 +11,7 @@ import org.maxicp.modeling.ModelProxy;
 import org.maxicp.modeling.concrete.ConcreteVar;
 import org.maxicp.state.datastructures.StateStack;
 import org.maxicp.state.datastructures.StateTriPartition;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.security.InvalidParameterException;
 
@@ -42,6 +43,9 @@ public class CPSetVarImpl implements CPSetVar {
     }
 
     public void exclude(int v) {
+        if(domain.isIncluded(v)){
+            throw new InconsistencyException();
+        }
         if (domain.isPossible(v)) {
             domain.exclude(v);
             scheduleAll(onDomain);
@@ -58,6 +62,9 @@ public class CPSetVarImpl implements CPSetVar {
     }
 
     public void include(int v) {
+        if (domain.isExcluded(v)) {
+            throw new InconsistencyException();
+        }
         if (domain.isPossible(v)) {
             domain.include(v);
             scheduleAll(onDomain);
