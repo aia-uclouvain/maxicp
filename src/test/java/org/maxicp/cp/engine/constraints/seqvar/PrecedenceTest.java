@@ -86,7 +86,7 @@ public class PrecedenceTest extends CPSolverTest {
     public void testFilterInsert1(CPSeqVar seqVar) {
         seqVar.insert(start, 0);
         seqVar.insert(0, 1); // start -> 0 -> 1 -> end
-        seqVar.removeDetour(start, 2, 0);
+        seqVar.notBetween(start, 2, 0);
         seqVar.require(2);
         seqVar.require(3);
         CPSolver cp = seqVar.getSolver();
@@ -123,7 +123,7 @@ public class PrecedenceTest extends CPSolverTest {
     public void testFilterInsert2(CPSeqVar seqVar) {
         seqVar.insert(start, 0);
         seqVar.insert(0, 1); // start -> 0 -> 1 -> end
-        seqVar.removeDetour(1, 3, end);
+        seqVar.notBetween(1, 3, end);
         seqVar.require(2);
         seqVar.require(3);
         CPSolver cp = seqVar.getSolver();
@@ -162,8 +162,8 @@ public class PrecedenceTest extends CPSolverTest {
         seqVar.insert(0, 1);
         seqVar.insert(1, 2);
         // start -> 0 -> 1 -> 2 -> end
-        seqVar.removeDetour(start, 3, 1);
-        seqVar.removeDetour(1, 4, end);
+        seqVar.notBetween(start, 3, 1);
+        seqVar.notBetween(1, 4, end);
         seqVar.require(3);
         seqVar.require(4);
         CPSolver cp = seqVar.getSolver();
@@ -610,7 +610,7 @@ public class PrecedenceTest extends CPSolverTest {
                 int nInsert = seqVar.fillInsert(node, nodes);
                 int insert = nodes[random.nextInt(nInsert)];
                 return branch(() -> cp.post(new Insert(seqVar, insert, node)),
-                        () -> cp.post(new RemoveDetour(seqVar, insert, node, seqVar.memberAfter(insert))));
+                        () -> cp.post(new NotBetween(seqVar, insert, node, seqVar.memberAfter(insert))));
             }
         });
         SearchStatistics stats = search.solve();

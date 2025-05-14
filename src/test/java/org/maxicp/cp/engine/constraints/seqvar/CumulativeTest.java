@@ -56,203 +56,6 @@ public class CumulativeTest extends CPSolverTest {
                 .post(new Cumulative(seqVar, new int[]{0, 1, 2, 3}, new int[]{4, 5, 6, 7}, capacity, 3)));
     }
 
-    /*
-    @ParameterizedTest
-    @MethodSource("getSeqVar")
-    public void testProfile1(CPSeqVar seqVar) {
-        int[] capacity = new int[] {2, 2, 1, 1};
-        int[] p = new int[] {0, 1, 2, 3};
-        int[] d = new int[] {4, 5, 6, 7};
-        seqVar.insert(seqVar.start(), p[0]);
-        seqVar.insert(p[0], p[1]);
-        seqVar.insert(p[1], d[0]);
-        seqVar.insert(d[0], d[1]);
-        // seqVar at this point: start -> p0  -> p1  -> d0  -> d1  -> end
-        // profile:                0, 0   0, 2   2, 4   4, 2   2, 0   0, 0
-        Cumulative cumulative = new Cumulative(seqVar, new int[]{0, 1, 2, 3}, new int[]{4, 5, 6, 7}, capacity, 4);
-        Cumulative.Profile profile = cumulative.profile;
-        assertEquals(6, seqVar.nNode(MEMBER));
-        seqVar.getSolver().post(cumulative);
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(2, profile.loadAfter(1));
-        assertEquals(2, profile.loadAt(2));
-        assertEquals(4, profile.loadAfter(2));
-        assertEquals(4, profile.loadAt(3));
-        assertEquals(2, profile.loadAfter(3));
-        assertEquals(2, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-    }
-
-    @ParameterizedTest
-    @MethodSource("getSeqVar")
-    public void testProfile2(CPSeqVar seqVar) {
-        int[] capacity = new int[] {2, 2, 1, 1};
-        int[] p = new int[] {0, 1, 2, 3};
-        int[] d = new int[] {4, 5, 6, 7};
-        seqVar.insert(seqVar.start(), p[0]);
-        seqVar.insert(p[0], p[1]);
-        seqVar.insert(p[1], d[0]);
-        // seqVar at this point: start -> p0  -> p1  -> d0  -> end
-        // profile:                0, 0   0, 2   2, 4   2, 0   0, 0
-        Cumulative cumulative = new Cumulative(seqVar, new int[]{0, 1, 2, 3}, new int[]{4, 5, 6, 7}, capacity, 4);
-        Cumulative.Profile profile = cumulative.profile;
-        assertEquals(5, seqVar.nNode(MEMBER));
-        seqVar.getSolver().post(cumulative);
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(2, profile.loadAfter(1));
-        assertEquals(2, profile.loadAt(2));
-        assertEquals(4, profile.loadAfter(2));
-        assertEquals(2, profile.loadAt(3));
-        assertEquals(0, profile.loadAfter(3));
-        assertEquals(0, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-    }
-
-    @ParameterizedTest
-    @MethodSource("getSeqVar")
-    public void testProfile3(CPSeqVar seqVar) {
-        int[] capacity = new int[] {1, 1, 1, 1};
-        int[] p = new int[] {0, 1, 2, 3};
-        int[] d = new int[] {4, 5, 6, 7};
-        seqVar.insert(seqVar.start(), p[0]);
-        seqVar.insert(p[0], p[1]);
-        seqVar.insert(p[1], p[2]);
-        seqVar.insert(p[2], d[3]);
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   0, 1   0, 1   1, 0   0, 0
-        Cumulative cumulative = new Cumulative(seqVar, new int[]{0, 1, 2, 3}, new int[]{4, 5, 6, 7}, capacity, 4);
-        Cumulative.Profile profile = cumulative.profile;
-        assertEquals(6, seqVar.nNode(MEMBER));
-        seqVar.getSolver().post(cumulative);
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(0, profile.loadAt(2));
-        assertEquals(1, profile.loadAfter(2));
-        assertEquals(0, profile.loadAt(3));
-        assertEquals(1, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-
-        seqVar.getSolver().post(new RemoveDetour(seqVar, p[2], p[3], seqVar.memberAfter(p[2])));
-        cumulative.propagate();
-        // p[3]: closest insertion point to d[3] is between p[1] and p[2]
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   0, 1   1, 2   1, 0   0, 0
-        assertEquals(6, seqVar.nNode(MEMBER));
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(0, profile.loadAt(2));
-        assertEquals(1, profile.loadAfter(2));
-        assertEquals(1, profile.loadAt(3));
-        assertEquals(2, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-
-        seqVar.getSolver().post(new RemoveDetour(seqVar, p[1], p[3], seqVar.memberAfter(p[1])));
-        cumulative.propagate();
-        // p[3]: closest insertion point to d[3] is between p[0] and p[1]
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   1, 2   1, 2   1, 0   0, 0
-        assertEquals(6, seqVar.nNode(MEMBER));
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(1, profile.loadAt(2));
-        assertEquals(2, profile.loadAfter(2));
-        assertEquals(1, profile.loadAt(3));
-        assertEquals(2, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("getSeqVar")
-    public void testProfile4(CPSeqVar seqVar) {
-        int[] capacity = new int[] {1, 1, 1, 1};
-        int[] p = new int[] {0, 1, 2, 3};
-        int[] d = new int[] {4, 5, 6, 7};
-        seqVar.insert(seqVar.start(), p[0]);
-        seqVar.insert(p[0], p[1]);
-        seqVar.insert(p[1], p[2]);
-        seqVar.insert(p[2], d[3]);
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   0, 1   0, 1   1, 0   0, 0
-        Cumulative cumulative = new Cumulative(seqVar, new int[]{0, 1, 2, 3}, new int[]{4, 5, 6, 7}, capacity, 4);
-        Cumulative.Profile profile = cumulative.profile;
-        assertEquals(6, seqVar.nNode(MEMBER));
-        seqVar.getSolver().post(cumulative);
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(0, profile.loadAt(2));
-        assertEquals(1, profile.loadAfter(2));
-        assertEquals(0, profile.loadAt(3));
-        assertEquals(1, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-
-        seqVar.getSolver().post(new RemoveDetour(seqVar, p[0], d[0], seqVar.memberAfter(p[0])));
-        cumulative.propagate();
-        // d[0]: closest insertion point to p[0] is between p[1] and p[2]
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   1, 2   0, 1   1, 0   0, 0
-        assertEquals(6, seqVar.nNode(MEMBER));
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(1, profile.loadAt(2));
-        assertEquals(2, profile.loadAfter(2));
-        assertEquals(0, profile.loadAt(3));
-        assertEquals(1, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-
-        seqVar.getSolver().post(new RemoveDetour(seqVar, p[1], d[0], seqVar.memberAfter(p[1])));
-        cumulative.propagate();
-        // d[0]: closest insertion point to p[0] is between p[2] and d[3]
-        // seqVar at this point: start -> p0  -> p1  -> p2  -> d3  -> end
-        // profile:                0, 0   0, 1   1, 2   1, 2   1, 0   0, 0
-        assertEquals(6, seqVar.nNode(MEMBER));
-        assertEquals(0, profile.loadAt(0));
-        assertEquals(0, profile.loadAfter(0));
-        assertEquals(0, profile.loadAt(1));
-        assertEquals(1, profile.loadAfter(1));
-        assertEquals(1, profile.loadAt(2));
-        assertEquals(2, profile.loadAfter(2));
-        assertEquals(1, profile.loadAt(3));
-        assertEquals(2, profile.loadAfter(3));
-        assertEquals(1, profile.loadAt(4));
-        assertEquals(0, profile.loadAfter(4));
-        assertEquals(0, profile.loadAt(5));
-        assertEquals(0, profile.loadAfter(5));
-    }
-
-     */
-
     @ParameterizedTest
     @MethodSource("getSeqVar")
     public void testOverLoad2(CPSeqVar seqVar) {
@@ -315,7 +118,7 @@ public class CumulativeTest extends CPSolverTest {
         }
 
         // remove insertion (p0, d0). This should remove insertion for activity 3
-        cp.post(removeDetour(seqVar, p[0], d[0], seqVar.memberAfter(p[0])));
+        cp.post(notBetween(seqVar, p[0], d[0], seqVar.memberAfter(p[0])));
         // d0 can at the soonest be inserted after p2
         // this means that activity 3 cannot be inserted after p0 anymore
         for (int node: new int[] {p[3], d[3]}) {
@@ -718,8 +521,8 @@ public class CumulativeTest extends CPSolverTest {
         int[] d = new int[] {5, 6, 7, 8, 9};
         cp.post(insert(seqVar, seqVar.start(), p[0]));
         cp.post(insert(seqVar, p[0], d[0]));
-        cp.post(removeDetour(seqVar, seqVar.start(), p[1], seqVar.memberAfter(seqVar.start())));
-        cp.post(removeDetour(seqVar, p[0], p[1], seqVar.memberAfter(p[0])));
+        cp.post(notBetween(seqVar, seqVar.start(), p[1], seqVar.memberAfter(seqVar.start())));
+        cp.post(notBetween(seqVar, p[0], p[1], seqVar.memberAfter(p[0])));
         // start -> p0 -> d0 -> end
         // p1 can only be put after d0
         // d1 can therefore only be put there as well
@@ -729,6 +532,65 @@ public class CumulativeTest extends CPSolverTest {
         assertFalse(seqVar.hasInsert(p[0], d[1]));
         assertTrue(seqVar.hasInsert(d[0], d[1]));
 
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testFilterNonInserted6(CPSolver cp) {
+        CPSeqVar seqVar = makeSeqVar(cp, 12, 10, 11);
+        int[] capacity = new int[] {1, 1, 1, 1, 1};
+        int[] p = new int[] {0, 1, 2, 3, 4};
+        int[] d = new int[] {5, 6, 7, 8, 9};
+        cp.post(insert(seqVar, seqVar.start(), p[0]));
+        cp.post(insert(seqVar, p[0], d[0]));
+        cp.post(insert(seqVar, d[0], p[1]));
+        cp.post(insert(seqVar, p[1], p[2]));
+        cp.post(insert(seqVar, p[2], d[1]));
+        cp.post(insert(seqVar, d[1], d[3]));
+        cp.post(insert(seqVar, d[3], d[2]));
+        // start -> p0 -> d0 -> p1 -> p2 -> d1 -> d3 -> d2 -> end
+        // cannot put p3 directly before d3
+        seqVar.notBetween(d[1], p[3], d[3]);
+        int nMemberBefore = seqVar.nNode(MEMBER);
+        cp.post(new Cumulative(seqVar, p, d, capacity, 3));
+        // no insertion should have occurred
+        assertEquals(nMemberBefore, seqVar.nNode(MEMBER));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testFilterNonInserted7(CPSolver cp) {
+        CPSeqVar seqVar = makeSeqVar(cp, 12, 10, 11);
+        int[] capacity = new int[] {1, 2, 1, 1, 1};
+        int[] p = new int[] {0, 1, 2, 3, 4};
+        int[] d = new int[] {5, 6, 7, 8, 9};
+        cp.post(insert(seqVar, seqVar.start(), p[0]));
+        cp.post(insert(seqVar, p[0], d[0]));
+        // start -> p0 -> d0 -> end
+        // cannot put p3 directly before d3
+        seqVar.notBetween(seqVar.start(), p[1], p[0]);
+        seqVar.notBetween(d[0], p[1], seqVar.end());
+        cp.post(new Cumulative(seqVar, p, d, capacity, 2));
+        assertTrue(seqVar.isNode(p[1], EXCLUDED));
+        assertTrue(seqVar.isNode(d[1], EXCLUDED));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testNoFilterNonInserted(CPSolver cp) {
+        CPSeqVar seqVar = makeSeqVar(cp, 12, 10, 11);
+        int[] capacity = new int[] {1, 1, 2, 1, 1};
+        int[] p = new int[] {0, 1, 2, 3, 4};
+        int[] d = new int[] {5, 6, 7, 8, 9};
+        cp.post(insert(seqVar, seqVar.start(), p[0]));
+        cp.post(insert(seqVar, p[0], d[1]));
+        // start -> p0 -> d1 -> end
+        // cannot put p3 directly before d3
+        seqVar.notBetween(seqVar.start(), p[1], p[0]);
+        seqVar.notBetween(d[1], p[1], seqVar.end());
+        cp.post(new Cumulative(seqVar, p, d, capacity, 2));
+        assertFalse(seqVar.isNode(p[2], EXCLUDED));
+        assertFalse(seqVar.isNode(d[2], EXCLUDED));
     }
 
     @ParameterizedTest
@@ -852,6 +714,100 @@ public class CumulativeTest extends CPSolverTest {
         cp.post(exclude(seqVar, p[3]));
         assertTrue(seqVar.isNode(p[3], EXCLUDED));
         assertTrue(seqVar.isNode(d[3], EXCLUDED));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testNodeInTwoActivities1(CPSeqVar seqVar) {
+        CPSolver cp = seqVar.getSolver();
+        int[] capacity = new int[] {1, 1, 1};
+        // start -> 0 -> 1 -> 2 -> end
+        // node 0 is both the end of activity 0 and the start of 1
+        cp.post(insert(seqVar, seqVar.start(), 0));
+        cp.post(insert(seqVar, 0, 1));
+        cp.post(insert(seqVar, 1, 2));
+        int[] p = new int[] {0, 1, 3};
+        int[] d = new int[] {1, 2, 4};
+        assertDoesNotThrow(() -> cp.post(new Cumulative(seqVar, p, d, capacity, 1)));
+        assertTrue(seqVar.isNode(p[2], POSSIBLE));
+        assertTrue(seqVar.isNode(d[2], POSSIBLE));
+        for (int node: new int[] {p[2], d[2]}) {
+            assertTrue(seqVar.hasInsert(start, node));
+            assertFalse(seqVar.hasInsert(0, node));
+            assertFalse(seqVar.hasInsert(1, node));
+            assertTrue(seqVar.hasInsert(2, node));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testNodeInTwoActivities2(CPSeqVar seqVar) {
+        CPSolver cp = seqVar.getSolver();
+        int[] capacity = new int[] {1, 2, 1};
+        // start -> 0 -> 1 -> 2 -> end
+        // node 0 is both the start of activity 0 and the start of 1
+        cp.post(insert(seqVar, seqVar.start(), 0));
+        cp.post(insert(seqVar, 0, 1));
+        cp.post(insert(seqVar, 1, 2));
+        int[] p = new int[] {0, 0, 3};
+        int[] d = new int[] {1, 2, 4};
+        assertDoesNotThrow(() -> cp.post(new Cumulative(seqVar, p, d, capacity, 3)));
+        assertTrue(seqVar.isNode(p[2], POSSIBLE));
+        assertTrue(seqVar.isNode(d[2], POSSIBLE));
+        for (int node: new int[] {p[2], d[2]}) {
+            assertTrue(seqVar.hasInsert(start, node));
+            assertFalse(seqVar.hasInsert(0, node));
+            assertTrue(seqVar.hasInsert(1, node));
+            assertTrue(seqVar.hasInsert(2, node));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testNodeInTwoActivities3(CPSeqVar seqVar) {
+        CPSolver cp = seqVar.getSolver();
+        int[] capacity = new int[] {1, 2, 1};
+        // start -> 0 -> 1 -> 2 -> end
+        // node 2 is both the end of activity 0 and the end of 1
+        cp.post(insert(seqVar, seqVar.start(), 0));
+        cp.post(insert(seqVar, 0, 1));
+        cp.post(insert(seqVar, 1, 2));
+        int[] p = new int[] {0, 1, 3};
+        int[] d = new int[] {2, 2, 4};
+        assertDoesNotThrow(() -> cp.post(new Cumulative(seqVar, p, d, capacity, 3)));
+        assertTrue(seqVar.isNode(p[2], POSSIBLE));
+        assertTrue(seqVar.isNode(d[2], POSSIBLE));
+        for (int node: new int[] {p[2], d[2]}) {
+            assertTrue(seqVar.hasInsert(start, node));
+            assertTrue(seqVar.hasInsert(0, node));
+            assertFalse(seqVar.hasInsert(1, node));
+            assertTrue(seqVar.hasInsert(2, node));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testStartAndEndAsActivities(CPSeqVar seqVar) {
+        CPSolver cp = seqVar.getSolver();
+        int[] capacity = new int[] {1, 2, 1};
+        int[] p = new int[] {start, 0, 2};
+        int[] d = new int[] {end, 1, 3};
+        assertDoesNotThrow(() -> cp.post(new Cumulative(seqVar, p, d, capacity, 2)));
+        assertTrue(seqVar.isNode(p[1], EXCLUDED));
+        assertTrue(seqVar.isNode(d[1], EXCLUDED));
+        assertTrue(seqVar.isNode(p[2], POSSIBLE));
+        assertTrue(seqVar.isNode(d[2], POSSIBLE));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSeqVar")
+    public void testNodeAsBothStartAndEndOfSameActivity(CPSeqVar seqVar) {
+        CPSolver cp = seqVar.getSolver();
+        int[] capacity = new int[] {1, 1};
+        int[] p = new int[] {0, 2};
+        int[] d = new int[] {1, 2};
+        assertThrowsExactly(IllegalArgumentException.class, () -> cp.post(new Cumulative(seqVar, p, d, capacity, 2)),
+                "A node cannot be both the start and the end of the same activity");
     }
 
 }

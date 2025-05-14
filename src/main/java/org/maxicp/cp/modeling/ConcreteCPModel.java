@@ -650,8 +650,8 @@ public class ConcreteCPModel implements ConcreteModel {
             case Precedence prec -> {
                 solver.post(new org.maxicp.cp.engine.constraints.seqvar.Precedence(getCPVar(prec.seqVar()), prec.nodes()));
             }
-            case RemoveDetour rd -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.RemoveDetour(getCPVar(rd.seqVar()), rd.prev(), rd.node(), rd.after()));
+            case org.maxicp.modeling.constraints.seqvar.NotBetween nb -> {
+                solver.post(new org.maxicp.cp.engine.constraints.seqvar.NotBetween(getCPVar(nb.seqVar()), nb.prev(), nb.node(), nb.after()));
             }
             case SubSequence ss -> {
                 solver.post(new org.maxicp.cp.engine.constraints.seqvar.SubSequence(getCPVar(ss.main()), getCPVar(ss.sub())));

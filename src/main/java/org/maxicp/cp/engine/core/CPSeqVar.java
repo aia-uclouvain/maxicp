@@ -5,7 +5,6 @@
 
 package org.maxicp.cp.engine.core;
 
-import org.maxicp.modeling.BoolVar;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.modeling.concrete.ConcreteSeqVar;
 import org.maxicp.util.exception.InconsistencyException;
@@ -249,15 +248,15 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
     void insert(int prev, int node);
 
     /**
-     * Removes a detour from the sequence.
-     * This removes all sequences containing the sub-sequence given as input.
+     * Forbids a subsequence of length 3 to appear, removing from the domain all sequences containing the sub-sequence given as input.
+     * For technical reasons, the two endpoints of the subsequence must belong to the current partial sequence.
      *
-     * @param prev origin of the detour, a member node
-     * @param node node where the detour must happen
-     * @param succ end of the detour, a member node
-     * @throws InconsistencyException if the detour to remove currently belongs to the sequence
+     * @param prev origin of the subsequence, a member node
+     * @param node node in the middle of the subsequence
+     * @param succ end of the subsequence, a member node
+     * @throws InconsistencyException if the subsequence to remove appears within the sequence
      */
-    void removeDetour(int prev, int node, int succ);
+    void notBetween(int prev, int node, int succ);
 
     // listeners for propagation
 

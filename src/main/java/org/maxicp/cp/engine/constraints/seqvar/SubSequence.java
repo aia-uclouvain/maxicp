@@ -1,8 +1,6 @@
 package org.maxicp.cp.engine.constraints.seqvar;
 
-import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.*;
-import org.maxicp.state.StateInt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,8 +98,8 @@ public class SubSequence extends AbstractCPConstraint {
             } else if (seqVar.isNode(node, MEMBER)) {
                 for (int nodeToFilter : nodesToFilter) {
                     // nodeToFilter must be placed between pred and node
-                    seqVar.removeDetour(seqVar.start(), nodeToFilter, pred);
-                    seqVar.removeDetour(node, nodeToFilter, seqVar.end());
+                    seqVar.notBetween(seqVar.start(), nodeToFilter, pred);
+                    seqVar.notBetween(node, nodeToFilter, seqVar.end());
                 }
                 pred = node;
                 nodesToFilter.clear();
