@@ -7,8 +7,11 @@ package org.maxicp.state.datastructures;
 
 import org.maxicp.state.StateInt;
 import org.maxicp.state.StateManager;
+import org.maxicp.util.exception.InconsistencyException;
 
+import java.security.InvalidParameterException;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -47,6 +50,27 @@ public class StateSparseSet {
         for (int i = 0; i < n; i++) {
             values[i] = i;
             indexes[i] = i;
+        }
+    }
+
+    /**
+     * Creates a set containing the elements of  {@code values}.
+     *
+     * @param sm     the state manager that will save and restore the set when
+     *               {@link StateManager#saveState()} / {@link StateManager#restoreState()}
+     *               mehtods are called
+     * @param values the elements to initialize the set with
+     */
+    public StateSparseSet(StateManager sm, Set<Integer> values) {
+        this(sm, values.stream().max(Integer::compare).get() - values.stream().min(Integer::compare).get() + 1, values.stream().min(Integer::compare).get());
+        if (values.isEmpty()) throw new InvalidParameterException("at least one setValue in the domain");
+        for (int i = min(); i < max(); i++) {
+            if (!values.contains(i)) {
+                try {
+                    this.remove(i);
+                } catch (InconsistencyException e) {
+                }
+            }
         }
     }
 
