@@ -4,6 +4,7 @@ org.maxicp.cp.engine
 org.maxicp.cp.engine.constraints
 org.maxicp.cp.engine.constraints.scheduling
 org.maxicp.cp.engine.constraints.seqvar
+org.maxicp.cp.engine.constraints.setvar
 org.maxicp.cp.engine.core
 org.maxicp.cp.examples
 org.maxicp.cp.examples.modeling
