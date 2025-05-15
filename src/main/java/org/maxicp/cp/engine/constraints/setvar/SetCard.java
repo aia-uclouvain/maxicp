@@ -10,6 +10,9 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.util.exception.InconsistencyException;
 
+/**
+ * Constraint that links the cardinality of a set variable to an integer variable.
+ */
 public class SetCard extends AbstractCPConstraint {
 
     CPSetVar set;

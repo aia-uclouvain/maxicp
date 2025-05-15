@@ -11,6 +11,9 @@ import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.cp.engine.core.CPSetVarImpl;
 
+/**
+ * Constraint that enforces a boolean variable to be true if a value is included in a set.
+ */
 public class IsIncluded extends AbstractCPConstraint {
 
     CPSetVar set;
@@ -19,6 +22,7 @@ public class IsIncluded extends AbstractCPConstraint {
 
     /**
      * Creates a constraint that links a boolean variable to the inclusion of a value in a set.
+     *
      * @param bool the boolean variable
      * @param set  the set variable
      * @param v    the value to be included/excluded

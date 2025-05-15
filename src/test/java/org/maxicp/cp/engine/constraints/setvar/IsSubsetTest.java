@@ -121,7 +121,7 @@ public class IsSubsetTest extends CPSolverTest {
     }
 
 
-    /*
+
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testCardinalityUpdate(CPSolver cp) {
@@ -135,7 +135,7 @@ public class IsSubsetTest extends CPSolverTest {
         cp.post(CPFactory.eq(set2.card(),2));
 
         assertTrue(b.isFalse());
-    }*/
+    }
 
 
     @ParameterizedTest

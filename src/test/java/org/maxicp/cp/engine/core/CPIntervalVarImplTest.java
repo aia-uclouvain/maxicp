@@ -9,7 +9,9 @@ package org.maxicp.cp.engine.core;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
+
 import static org.maxicp.cp.CPFactory.*;
+
 import org.maxicp.cp.engine.CPSolverTest;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,8 +51,8 @@ public class CPIntervalVarImplTest extends CPSolverTest {
         // start ∈ [50,100],  length ∈ [50,150], end ∈ [150,200]
 
         interval.setLengthMax(75);
-        assertEquals(175,interval.endMax());
-        assertEquals(75,interval.startMin());
+        assertEquals(175, interval.endMax());
+        assertEquals(75, interval.startMin());
 
 
         // start ∈ [75,100],  length ∈ [50,75], end ∈ [150,175]
@@ -59,14 +61,14 @@ public class CPIntervalVarImplTest extends CPSolverTest {
 
         // start ∈ [75,100],  length ∈ [50,75], end ∈ [150,170]
 
-        assertEquals(170,interval.endMax());
-        assertEquals(75,interval.lengthMax());
-        assertEquals(50,interval.lengthMin());
+        assertEquals(170, interval.endMax());
+        assertEquals(75, interval.lengthMax());
+        assertEquals(50, interval.lengthMin());
     }
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPresence(CPSolver cp){
+    public void testPresence(CPSolver cp) {
         CPIntervalVar interval = makeIntervalVar(cp);
 
         assertFalse(interval.isPresent());
@@ -79,7 +81,7 @@ public class CPIntervalVarImplTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testAbsence(CPSolver cp){
+    public void testAbsence(CPSolver cp) {
         CPIntervalVar interval = makeIntervalVar(cp);
 
         assertFalse(interval.isPresent());
@@ -107,7 +109,7 @@ public class CPIntervalVarImplTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testStatusVar(CPSolver cp){
+    public void testStatusVar(CPSolver cp) {
         CPIntervalVar interval = makeIntervalVar(cp);
         assertFalse(interval.isPresent());
         CPBoolVar status = interval.status();
@@ -116,7 +118,7 @@ public class CPIntervalVarImplTest extends CPSolverTest {
         cp.getStateManager().saveState();
 
         // if the status is true then the interval is present
-        cp.post(CPFactory.eq(status,1));
+        cp.post(CPFactory.eq(status, 1));
         assertTrue(interval.isPresent());
 
         cp.getStateManager().restoreState();

@@ -29,6 +29,7 @@ public class IsSubset extends AbstractCPConstraint {
     /**
      * Creates a constraint that enforces the boolean variable b to be true
      * if and only set1 is a subset (not necessarily strict) of set2 .
+     *
      * @param b    the boolean variable
      * @param set1 the first set than can be included in the second set
      * @param set2 the second set
@@ -38,7 +39,7 @@ public class IsSubset extends AbstractCPConstraint {
         this.set1 = set1;
         this.set2 = set2;
         this.b = b;
-        values = new int[Math.max(set1.size(),set2.size())];
+        values = new int[Math.max(set1.size(), set2.size())];
         subsetConstraint = new Subset(set1, set2);
         notSubsetConstraint = new NotSubset(set1, set2);
 
@@ -59,10 +60,11 @@ public class IsSubset extends AbstractCPConstraint {
      * Detect if set1 is not a subset of set2 by
      * comparing the cardinalities of the two sets.
      * checking if at least one included value of set1 is excluded in set2
+     *
      * @return true if set1 is not a subset of set2
      */
-    private boolean detectNotSubset(){
-        if(set1.card().min() > set2.card().max()){
+    private boolean detectNotSubset() {
+        if (set1.card().min() > set2.card().max()) {
             return true;
         }
 
@@ -81,10 +83,11 @@ public class IsSubset extends AbstractCPConstraint {
      * comparing the cardinalities of the two sets.
      * comparing the number of included and possible values of set1 and set2
      * and checking if all included or possible values of set1 are included in set2
+     *
      * @return true if set1 is a subset of set2
      */
-    private boolean detectSubset(){
-        if(set1.card().min() > set2.card().max() || set1.nPossible() + set1.nIncluded() > set2.nIncluded()){
+    private boolean detectSubset() {
+        if (set1.card().min() > set2.card().max() || set1.nPossible() + set1.nIncluded() > set2.nIncluded()) {
             return false;
         }
         int nIncluded = set1.fillIncluded(values);
@@ -103,7 +106,7 @@ public class IsSubset extends AbstractCPConstraint {
     }
 
     @Override
-    public void propagate(){
+    public void propagate() {
         if (detectNotSubset()) {
             b.fix(false);
         }
@@ -111,7 +114,7 @@ public class IsSubset extends AbstractCPConstraint {
             b.fix(true);
         }
 
-        if(b.isTrue()){
+        if (b.isTrue()) {
             getSolver().post(subsetConstraint, false);
             setActive(false);
         } else if (b.isFalse()) {

@@ -4,12 +4,20 @@ import org.maxicp.cp.engine.constraints.LessOrEqual;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSetVar;
 
+/**
+ * Constraint that enforces that one set variable is a subset of another set variable.
+ */
 public class Subset extends AbstractCPConstraint {
 
     private CPSetVar set1;
     private CPSetVar set2;
     private int[] values;
 
+    /**
+     * Creates a constraint that enforces that set1 is a subset of set2.
+     * @param set1 the first set variable
+     * @param set2 the second set variable
+     */
     public Subset(CPSetVar set1, CPSetVar set2) {
         super(set1.getSolver());
         this.set1 = set1;

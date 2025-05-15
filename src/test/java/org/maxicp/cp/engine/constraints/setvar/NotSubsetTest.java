@@ -2,9 +2,7 @@ package org.maxicp.cp.engine.constraints.setvar;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.cp.engine.core.CPSetVarImpl;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -43,6 +41,40 @@ public class NotSubsetTest extends CPSolverTest {
         cp.post(new NotSubset(set1, set2));
 
         assertTrue(set1.isIncluded(0));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void addOnlyPossibleValue2(CPSolver cp) {
+        CPSetVar set1 = new CPSetVarImpl(cp, 3);
+        CPSetVar set2 = new CPSetVarImpl(cp, 3);
+
+        set1.include(0);
+        set1.include(1);
+        set2.include(0);
+        set2.include(1);
+
+        cp.post(new NotSubset(set1, set2));
+
+        assertTrue(set1.isIncluded(2));
+        assertTrue(set2.isExcluded(2));
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void excludeOnlyPossibleValue(CPSolver cp) {
+        CPSetVar set1 = new CPSetVarImpl(cp, 3);
+        CPSetVar set2 = new CPSetVarImpl(cp, 3);
+
+        set1.includeAll();
+        set2.include(0);
+        set2.include(1);
+
+        cp.post(new NotSubset(set1, set2));
+
+        assertTrue(set2.isExcluded(2));
 
     }
 }
