@@ -23,36 +23,42 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Returns a variable that represents the cardinality of the set.
+     *
      * @return the cardinality variable
      */
     CPIntVar card();
 
     /**
      * Returns if the set variable is fixed.
+     *
      * @return true if the set variable is fixed, false otherwise
      */
     boolean isFixed();
 
     /**
      * Returns the size of the set of included elements
+     *
      * @return the size of the set of included elements
      */
     int nIncluded();
 
     /**
      * Returns the size of the set of possible elements
+     *
      * @return the size of the set of possible elements
      */
     int nPossible();
 
     /**
      * Returns the size of the set of excluded elements
+     *
      * @return the size of the set of excluded elements
      */
     int nExcluded();
 
     /**
      * Returns if a value is included in the set.
+     *
      * @param v the value to check
      * @return true if the value is included, false otherwise
      */
@@ -60,6 +66,7 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Returns if a value is possible in the set.
+     *
      * @param v the value to check
      * @return true if the value is possible, false otherwise
      */
@@ -67,6 +74,7 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Returns if a value is excluded from the set.
+     *
      * @param v the value to check
      * @return true if the value is excluded, false otherwise
      */
@@ -74,13 +82,15 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Includes a value in the set.
+     *
      * @param v the value to include, it must be a possible value from the universe otherwise an exception is thrown.
-     *        The method has no effect if the value is already included.
+     *          The method has no effect if the value is already included.
      */
     void include(int v);
 
     /**
      * Excludes a value from the set.
+     *
      * @param v the value to exclude, it must be a possible value from the universe otherwise an exception is thrown
      *          The method has no effect if the value is already excluded.
      */
@@ -98,6 +108,7 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Copies the values (in an arbitrary order) of the set of included elements into an array.
+     *
      * @param dest an array large enough {@code dest.length >= nIncluded()}
      * @return the size of the set of included elements
      */
@@ -105,6 +116,7 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Copies the values (in an arbitrary order) of the set of possible elements into an array.
+     *
      * @param dest an array large enough {@code dest.length >= nPossible()}
      * @return the size of the set of possible elements
      */
@@ -112,6 +124,7 @@ public interface CPSetVar extends CPVar, ConcreteVar {
 
     /**
      * Copies the values (in an arbitrary order) of the set of excluded elements into an array.
+     *
      * @param dest an array large enough {@code dest.length >= nExcluded()}
      * @return the size of the set of excluded elements
      */
@@ -124,12 +137,14 @@ public interface CPSetVar extends CPVar, ConcreteVar {
      * is called when the domain of the set variable changes (I,P or E).
      * If intererested also in the change of the cardinality variable, call
      * {@link CPIntVar#propagateOnBoundChange(CPConstraint)} on the cardinality variable.
+     *
      * @param c the constraint to notify
      */
     void propagateOnDomainChange(CPConstraint c);
 
     /**
      * Returns the solver of the set variable.
+     *
      * @return the solver of the set variable
      */
     CPSolver getSolver();

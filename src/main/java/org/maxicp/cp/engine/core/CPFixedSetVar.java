@@ -6,14 +6,24 @@
 package org.maxicp.cp.engine.core;
 
 import org.maxicp.modeling.ModelProxy;
+
 import java.util.HashSet;
 
+/**
+ * A fixed set variable that contains a specific set of values.
+ */
 public class CPFixedSetVar implements CPSetVar {
 
     HashSet<Integer> set;
     CPIntVar card;
     CPSolver cp;
 
+    /**
+     * Creates a fixed set variable with the given values.
+     *
+     * @param cp     the solver in which the variable is created
+     * @param values the values of the set
+     */
     public CPFixedSetVar(CPSolver cp, int[] values) {
         this.set = new HashSet<>();
         for (int i : values) {

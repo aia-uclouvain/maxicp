@@ -87,7 +87,22 @@ public final class CPFactory {
         return new MaxiCP(byCopy ? new Copier() : new Trailer());
     }
 
-    // -------------- variables creation -----------------------
+    // -------------- variables creation ---------------------
+
+    // ********************
+    // Set variables
+    // ********************
+
+    /**
+     * Creates a set variable with possible elements {@code {0,...,n-1}}
+     *
+     * @param cp the solver in which the variable is created
+     * @param n  the number of possible values with {@code n > 0}
+     * @return a set variable without required elements, and possible elements {@code {0,...,n-1}}
+     */
+    public static CPSetVar makeSetVar(CPSolver cp, int n) {
+        return new CPSetVarImpl(cp, n);
+    }
 
     // ********************
     // Integer variables
@@ -961,6 +976,20 @@ public final class CPFactory {
      */
     public static CPBoolVar isGt(CPIntVar x, CPIntVar y) {
         return isGe(x, plus(y, 1));
+    }
+
+    /**
+     * Returns a boolean variable representing
+     * if a set variable contains a given value.
+     * @param x the set variable
+     * @param v the value
+     * @return a boolean variable that is true if and only if x contains v
+     */
+    public static CPBoolVar isIncluded(CPSetVar x, final int v) {
+        CPSolver cp = x.getSolver();
+        CPBoolVar b = makeBoolVar(cp);
+        cp.post(new IsIncluded(b, x, v));
+        return b;
     }
 
     // ********************

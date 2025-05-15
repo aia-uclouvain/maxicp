@@ -15,6 +15,17 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.security.InvalidParameterException;
 
+/**
+ * Implementation of a set variable.
+ * <p>
+ * A set variable is a variable that can take a set of values
+ * from a finite domain. The possible values are represented
+ * as a tri-partition of the domain.
+ * <p>
+ * The implementation uses a {@link StateTriPartition} to represent
+ * the possible values and a {@link CPIntVar} to represent the cardinality
+ * of the set.
+ */
 public class CPSetVarImpl implements CPSetVar {
 
     private CPSolver cp;
@@ -42,8 +53,14 @@ public class CPSetVarImpl implements CPSetVar {
         return domain.size();
     }
 
+    /**
+     * Excludes a value from the set variable. throws an InconsistencyException if the value
+     * is already included in the set. calls the propagate method of the constraint
+     *
+     * @param v the value to exclude
+     */
     public void exclude(int v) {
-        if(domain.isIncluded(v)){
+        if (domain.isIncluded(v)) {
             throw new InconsistencyException();
         }
         if (domain.isPossible(v)) {
@@ -61,6 +78,12 @@ public class CPSetVarImpl implements CPSetVar {
         return card;
     }
 
+    /**
+     * Includes a value in the set variable. throws an InconsistencyException if the value
+     * is already excluded from the set. calls the propagate method of the constraint
+     *
+     * @param v the value to include
+     */
     public void include(int v) {
         if (domain.isExcluded(v)) {
             throw new InconsistencyException();
@@ -71,6 +94,13 @@ public class CPSetVarImpl implements CPSetVar {
         }
     }
 
+    /**
+     * Returns true if the set variable is fixed.
+     * A set variable is fixed if its cardinality is fixed and the number of
+     * included values is equal to the minimum of the cardinality.
+     *
+     * @return true if the set variable is fixed, false otherwise
+     */
     public boolean isFixed() {
         return card.isFixed() && domain.nIncluded() == card.min();
     }

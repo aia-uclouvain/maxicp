@@ -10,6 +10,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.state.StateManager;
 import org.maxicp.state.StateManagerTest;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +22,7 @@ public class StateSparseSetTest extends StateManagerTest {
 
     @ParameterizedTest
     @MethodSource("getStateManager")
-    public void testExample(StateManager sm)  {
+    public void testExample(StateManager sm) {
         StateSparseSet set = new StateSparseSet(sm, 9, 0);
 
         sm.saveState();
@@ -38,10 +40,27 @@ public class StateSparseSetTest extends StateManagerTest {
 
     }
 
+    @ParameterizedTest
+    @MethodSource("getStateManager")
+    public void instantiateFromSet(StateManager sm) {
+        HashSet<Integer> setValues = new HashSet<>(Arrays.asList(0, 4, 9));
+
+        StateSparseSet set = new StateSparseSet(sm, setValues);
+
+
+        assertTrue(set.contains(0));
+        assertTrue(set.contains(4));
+        assertTrue(set.contains(9));
+
+        assertFalse(set.contains(1));
+        assertEquals(3, set.size());
+
+    }
+
 
     @ParameterizedTest
     @MethodSource("getStateManager")
-    public void testReversibleSparseSet(StateManager sm)  {
+    public void testReversibleSparseSet(StateManager sm) {
         StateSparseSet set = new StateSparseSet(sm, 10, 0);
 
         assertTrue(toSet(set.toArray()).equals(toSet(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})));
@@ -99,7 +118,7 @@ public class StateSparseSetTest extends StateManagerTest {
 
     @ParameterizedTest
     @MethodSource("getStateManager")
-    public void testRangeConstructor(StateManager sm)  {
+    public void testRangeConstructor(StateManager sm) {
         StateSparseSet set = new StateSparseSet(sm, 10, 0);
 
         for (int i = 0; i < 10; i++) {
@@ -134,7 +153,7 @@ public class StateSparseSetTest extends StateManagerTest {
 
     @ParameterizedTest
     @MethodSource("getStateManager")
-    public void testRemoveBelow(StateManager sm)  {
+    public void testRemoveBelow(StateManager sm) {
         StateSparseSet set = new StateSparseSet(sm, 10, 0);
 
         for (int i = 0; i < 10; i++) {
@@ -168,7 +187,7 @@ public class StateSparseSetTest extends StateManagerTest {
 
     @ParameterizedTest
     @MethodSource("getStateManager")
-    public void testRemoveAbove(StateManager sm)  {
+    public void testRemoveAbove(StateManager sm) {
         StateSparseSet set = new StateSparseSet(sm, 10, 0);
 
         for (int i = 0; i < 10; i++) {
