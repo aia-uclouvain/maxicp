@@ -246,7 +246,7 @@ public class GeneralizedCumulativeSweepMax extends AbstractCPConstraint {
     }
 
     private void pruneConsumption(int t, int low, int up) {
-        if (activities[t].interval().endMin() > low && activities[t].interval().startMax() <= up && activities[t].interval().lengthMin() > 0) {
+        if (activities[t].isPresent() && activities[t].interval().endMin() > low && activities[t].interval().startMax() <= up && activities[t].interval().lengthMin() > 0) {
             int v = maxCapacity - (capaSumHeight - capaContrib[t]);
             activities[t].height().removeAbove(maxCapacity - (capaSumHeight - capaContrib[t]));
         }
