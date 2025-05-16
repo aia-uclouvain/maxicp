@@ -124,10 +124,6 @@ public class NegTableCT extends AbstractCPConstraint {
             if (var.isFixed()) {
                 // var has been bound, direct intersection with support
                 validTuples.intersect(supports[idx][var.min()]);
-                // var is bound, removed from unbounded
-                nUnboundValue--;
-                this.unbounded[i] = this.unbounded[nUnboundValue];
-                this.unbounded[nUnboundValue] = idx;
             } else {
                 // clear temp var collecting
                 collected.clear();
@@ -192,10 +188,6 @@ public class NegTableCT extends AbstractCPConstraint {
                 if (var.isFixed()) {
                     // var has been bound, direct intersection with support
                     validTuples.intersect(supports[idx][var.min()]);
-                    // var is bound, removed from unbounded
-                    nUnboundValue--;
-                    this.unbounded[i] = this.unbounded[nUnboundValue];
-                    this.unbounded[nUnboundValue] = idx;
                 } else {
                     // clear temp var collecting
                     collected.clear();

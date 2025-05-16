@@ -14,14 +14,14 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.engine.constraints.TableTest.assertSameSearch;
 import static org.maxicp.cp.engine.constraints.TableTest.randomTuples;
 import static org.maxicp.search.Searches.firstFail;
@@ -103,6 +103,31 @@ public class NegTableTest extends CPSolverTest {
                     DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
                     SearchStatistics stats = dfs.solve();
                 });
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testInitializeWrongTable(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
+        x[0].fix(0);
+        x[1].fix(1);
+        x[2].fix(1);
+        int[][] table = new int[][]{{0, 1, 1}}; // assignment is forbidden
+        assertThrowsExactly(InconsistencyException.class, () -> cp.post(new NegTableCT(x, table)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTwoVariablesFixedBetweenCalls(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
+        int[][] table = new int[][]{
+                {0, 0, 0},
+                {1, 1, 1}};
+        cp.post(new NegTableCT(x, table));
+        x[0].fix(0);
+        x[1].fix(0);
+        x[2].fix(0);
+        assertThrowsExactly(InconsistencyException.class, cp::fixPoint);
     }
 
     public static Stream<Arguments> getRandomTables(boolean noDuplicates) {
