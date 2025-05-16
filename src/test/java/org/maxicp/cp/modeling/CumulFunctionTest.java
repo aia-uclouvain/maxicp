@@ -44,6 +44,7 @@ public class CumulFunctionTest extends CPSolverTest {
         Assertions.assertEquals(2, start2.min());
     }
 
+
     /*
     // buggy implementation
     @Test
@@ -57,7 +58,7 @@ public class CumulFunctionTest extends CPSolverTest {
         IntExpression end1 = Factory.end(interval1);
         IntExpression length1 = Factory.length(interval1);
 
-        CumulFunction resource = sum(pulse(interval1,1,10));
+        CumulFunction resource = pulse(interval1,1,10);
 
         IntExpression height1 = resource.heightAtStart(interval1);
 

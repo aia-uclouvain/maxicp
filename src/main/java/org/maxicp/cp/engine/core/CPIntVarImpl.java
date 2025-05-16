@@ -25,7 +25,7 @@ public class CPIntVarImpl implements CPIntVar {
     private StateStack<CPConstraint> onBind;
     private StateStack<CPConstraint> onBounds;
 
-    private DomainListener domListener = new DomainListener() {
+    private IntDomainListener domListener = new IntDomainListener() {
         @Override
         public void empty() {
             throw new InconsistencyException();

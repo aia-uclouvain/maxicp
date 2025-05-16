@@ -20,8 +20,6 @@ import java.util.function.Predicate;
  * The three partitions are the included (I), possible (P) and excluded (E) values.
  * Initially all the elements are in the possible set and those can only be
  * moved to the possible and excluded partitions.
- *
- *
  */
 public class StateTriPartition {
 

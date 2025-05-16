@@ -10,8 +10,9 @@ import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.constraints.seqvar.Exclude;
 import org.maxicp.cp.engine.constraints.seqvar.Insert;
-import org.maxicp.cp.engine.constraints.seqvar.RemoveDetour;
+import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
+import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
 import org.maxicp.search.DFSearch;
@@ -85,7 +86,22 @@ public final class CPFactory {
         return new MaxiCP(byCopy ? new Copier() : new Trailer());
     }
 
-    // -------------- variables creation -----------------------
+    // -------------- variables creation ---------------------
+
+    // ********************
+    // Set variables
+    // ********************
+
+    /**
+     * Creates a set variable with possible elements {@code {0,...,n-1}}
+     *
+     * @param cp the solver in which the variable is created
+     * @param n  the number of possible values with {@code n > 0}
+     * @return a set variable without required elements, and possible elements {@code {0,...,n-1}}
+     */
+    public static CPSetVar makeSetVar(CPSolver cp, int n) {
+        return new CPSetVarImpl(cp, n);
+    }
 
     // ********************
     // Integer variables
@@ -549,10 +565,10 @@ public final class CPFactory {
         int b = x.max();
         int c = y.min();
         int d = y.max();
-        int [] t = new int[] {NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};
+        int[] t = new int[]{NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};
         int min = Arrays.stream(t).min().getAsInt();
         int max = Arrays.stream(t).max().getAsInt();
-        CPIntVar z = makeIntVar(x.getSolver(),min, max);
+        CPIntVar z = makeIntVar(x.getSolver(), min, max);
         x.getSolver().post(new MulVar(x, y, z));
         return z;
     }
@@ -961,6 +977,21 @@ public final class CPFactory {
         return isGe(x, plus(y, 1));
     }
 
+    /**
+     * Returns a boolean variable representing
+     * if a set variable contains a given value.
+     *
+     * @param x the set variable
+     * @param v the value
+     * @return a boolean variable that is true if and only if x contains v
+     */
+    public static CPBoolVar isIncluded(CPSetVar x, final int v) {
+        CPSolver cp = x.getSolver();
+        CPBoolVar b = makeBoolVar(cp);
+        cp.post(new IsIncluded(b, x, v));
+        return b;
+    }
+
     // ********************
     // Logical constraints (not, or, implies)
     // ********************
@@ -1144,9 +1175,10 @@ public final class CPFactory {
     /**
      * Return a constraint that enforce
      * that N is the number of indices i such that x[i] is in vals
-     * @param x an array of variables
+     *
+     * @param x    an array of variables
      * @param vals a set of values
-     * @param N a variable
+     * @param N    a variable
      * @return a constraint so that {@code N = #{i | x[i] in vals}}
      */
     public static CPConstraint among(CPIntVar[] x, Set<Integer> vals, CPIntVar N) {
@@ -1244,15 +1276,19 @@ public final class CPFactory {
     }
 
     /**
-     * Returns a constraint removing an insertion within a sequence
+     * Forbids a subsequence of length 3 to appear in a {@link CPSeqVar},
+     * removing from the domain all sequences containing the sub-sequence given as input.
+     * <p>
+     * For technical reasons, the two endpoints of the subsequence must belong to the current partial sequence.
      *
-     * @param seqVar sequence is which the insertion must be removed
-     * @param prev   member nodes after which the insertion must be removed
-     * @param node   node whose insertion must be removed
-     * @return a constraint so that {@code seqVar.hasInsert(prev, node)} does not holds
+     * @param seqVar sequence in which the subsequence must be removed
+     * @param prev   origin of the subsequence, a member node
+     * @param node   node in the middle of the subsequence
+     * @param succ   end of the subsequence, a member node
+     * @return a constraint applying a {@code seqVar.notBetween(prev, node, succ)}
      */
-    public static CPConstraint removeDetour(CPSeqVar seqVar, int prev, int node, int succ) {
-        return new RemoveDetour(seqVar, prev, node, succ);
+    public static CPConstraint notBetween(CPSeqVar seqVar, int prev, int node, int succ) {
+        return new NotBetween(seqVar, prev, node, succ);
     }
 
     // ********************
@@ -1798,7 +1834,7 @@ public final class CPFactory {
      * var is present.
      *
      * @param var an interval variable
-     * @param h an int value
+     * @param h   an int value
      * @return a cumulative function that is a pulse of height h when var is present
      */
     public static CPCumulFunction pulse(CPIntervalVar var, int h) {
@@ -1809,7 +1845,7 @@ public final class CPFactory {
      * Creates an elementary Cumulative Function that is a pulse that happen when the Interval variable var is
      * present. Its height is set in the interval {@code [hMin, hMax]}.
      *
-     * @param var an interval variable
+     * @param var  an interval variable
      * @param hMin an int value
      * @param hMax an int value
      * @return a cumulative function that is a pulse of height {@code [hMin, hMax]} when var is present
@@ -1823,7 +1859,7 @@ public final class CPFactory {
      * variable var if it is present.
      *
      * @param var an interval variable
-     * @param h an int value
+     * @param h   an int value
      * @return a cumulative function that is a step of height h at the start of var if it is present
      */
     public static CPCumulFunction stepAtStart(CPIntervalVar var, int h) {
@@ -1834,7 +1870,7 @@ public final class CPFactory {
      * Creates an elementary Cumulative Function that is a step that happen at the start of the Interval
      * variable var if it is present. Its height is set in the interval [hMin, hMax].
      *
-     * @param var an interval variable
+     * @param var  an interval variable
      * @param hMin an int value
      * @param hMax an int value
      * @return a cumulative function that is a step of height [hMin, hMax] at the start of var if it is
@@ -1849,7 +1885,7 @@ public final class CPFactory {
      * variable var if it is present.
      *
      * @param var an interval variable
-     * @param h an int value
+     * @param h   an int value
      * @return a cumulative function that is a step of height h at the end of var if it is present
      */
     public static CPCumulFunction stepAtEnd(CPIntervalVar var, int h) {
@@ -1860,7 +1896,7 @@ public final class CPFactory {
      * Creates an elementary Cumulative Function that is a step that happen at the end of the Interval
      * variable var if it is present. Its height is set in the interval [hMin, hMax].
      *
-     * @param var an interval variable
+     * @param var  an interval variable
      * @param hMin an int value
      * @param hMax an int value
      * @return a cumulative function that is a step of height [hMin, hMax] at the end of var if it is
@@ -1874,7 +1910,7 @@ public final class CPFactory {
      * Creates an elementary Cumulative Function that is a step of height h that happen at time from.
      *
      * @param from an int value
-     * @param h an int value
+     * @param h    an int value
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction step(CPSolver cp, int from, int h) {
@@ -1891,7 +1927,7 @@ public final class CPFactory {
      * Creates an elementary Cumulative Function that is a pulse of height h that happen at time from.
      *
      * @param from an int value
-     * @param h an int value
+     * @param h    an int value
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction pulse(CPSolver cp, int from, int to, int h) {
@@ -1944,7 +1980,7 @@ public final class CPFactory {
      * Requires a cumulative function to always be within the range [minValue..maxValue]
      * on the execution range of the cumulative function.
      *
-     * @param fun a cumulative function
+     * @param fun      a cumulative function
      * @param minValue an int value
      * @param maxValue an int value
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
@@ -1966,9 +2002,9 @@ public final class CPFactory {
             public void post() {
                 int minStart = Constants.HORIZON;
                 int maxEnd = 0;
-                for(Activity act : activities){
-                    if(act.getStartMin() < minStart) minStart = act.getStartMin();
-                    if(act.getEndMax() > maxEnd) maxEnd = act.getEndMax();
+                for (Activity act : activities) {
+                    if (act.getStartMin() < minStart) minStart = act.getStartMin();
+                    if (act.getEndMax() > maxEnd) maxEnd = act.getEndMax();
                 }
                 CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);
                 interval.setStart(minStart);
@@ -1984,11 +2020,11 @@ public final class CPFactory {
      * Requires a cumulative function to always be within the range [minValue..maxValue]
      * on the execution range [from..to).
      *
-     * @param fun a cumulative function
+     * @param fun      a cumulative function
      * @param minValue an int value
      * @param maxValue an int value
-     * @param from an int value
-     * @param to an int value
+     * @param from     an int value
+     * @param to       an int value
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
@@ -2020,7 +2056,7 @@ public final class CPFactory {
      * Requires a cumulative function to always be equal or lesser than a value
      * on the execution range [0..Constants.HORIZON).
      *
-     * @param fun a cumulative function
+     * @param fun      a cumulative function
      * @param maxValue an int value
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
