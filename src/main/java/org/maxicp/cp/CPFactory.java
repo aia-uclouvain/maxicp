@@ -627,6 +627,40 @@ public final class CPFactory {
     }
 
     /**
+     * Returns a constraint imposing that the value is included
+     * in the set variable.
+     *
+     * @param x the set variable that is constrained to include v
+     * @param v the value that must be included in x
+     * @return a constraint so that {@code v in x}
+     */
+    public static CPConstraint include(CPSetVar x, int v) {
+        return new AbstractCPConstraint(x.getSolver()) {
+            @Override
+            public void post() {
+                x.include(v);
+            }
+        };
+    }
+
+    /**
+     * Returns a constraint imposing that the value is excluded
+     * from the set variable.
+     *
+     * @param x the set variable that is constrained to exclude v
+     * @param v the value that must be excluded from x
+     * @return a constraint so that {@code v not in x}
+     */
+    public static CPConstraint exclude(CPSetVar x, int v) {
+        return new AbstractCPConstraint(x.getSolver()) {
+            @Override
+            public void post() {
+                x.exclude(v);
+            }
+        };
+    }
+
+    /**
      * Returns a constraint imposing that the two different variables
      * must take the value.
      *

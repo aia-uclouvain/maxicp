@@ -9,14 +9,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.CPBoolVar;
-import org.maxicp.cp.engine.core.CPSetVar;
-import org.maxicp.cp.engine.core.CPSetVarImpl;
-import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.engine.core.*;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.search.Searches.and;
+import static org.maxicp.search.Searches.firstFail;
 
 public class IsSubsetTest extends CPSolverTest {
 
@@ -157,4 +159,57 @@ public class IsSubsetTest extends CPSolverTest {
 
         assertTrue(b.isTrue());
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test0(CPSolver cp) {
+        int n = 3;
+        CPBoolVar b = CPFactory.makeBoolVar(cp);
+        CPSetVar set1 = new CPSetVarImpl(cp, n);
+        CPSetVar set2 = new CPSetVarImpl(cp, n);
+
+        cp.post(new IsSubset(b, set1, set2));
+
+        Random r = new Random(42);
+        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(b),CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r)));
+        SearchStatistics stats = dfs.solve();
+
+        assertEquals(Math.pow(4,n),stats.numberOfSolutions());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test1(CPSolver cp) {
+        int n = 3;
+        CPBoolVar b = CPFactory.makeBoolVar(cp);
+        CPSetVar set1 = new CPSetVarImpl(cp, n);
+        CPSetVar set2 = new CPSetVarImpl(cp, n);
+
+        cp.post(new IsSubset(b, set1, set2));
+
+        Random r = new Random(42);
+        DFSearch dfs = CPFactory.makeDfs(cp, and(CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r),firstFail(b)));
+        dfs.onSolution(() -> {
+            if(b.isTrue()) {
+                for(int i = 0; i < n; i++) {
+                    if(set1.isIncluded(i)) {
+                        assertTrue(set2.isIncluded(i));
+                    }
+                }
+            } else {
+                int includedExcluded = 0;
+                for(int i = 0; i < n; i++) {
+                    if(set1.isIncluded(i) && set2.isExcluded(i)) {
+                        includedExcluded++;
+                    }
+                }
+                assertTrue(includedExcluded > 0);
+            }
+        });
+        SearchStatistics stats = dfs.solve();
+
+        assertEquals(Math.pow(4,n),stats.numberOfSolutions());
+    }
+
+
 }
