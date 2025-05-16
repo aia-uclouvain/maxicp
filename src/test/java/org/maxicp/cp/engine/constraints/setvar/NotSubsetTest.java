@@ -2,14 +2,19 @@ package org.maxicp.cp.engine.constraints.setvar;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.cp.engine.core.CPSetVarImpl;
+import org.maxicp.cp.engine.core.CPSetVarTest;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class NotSubsetTest extends CPSolverTest {
 
@@ -76,5 +81,21 @@ public class NotSubsetTest extends CPSolverTest {
 
         assertTrue(set2.isExcluded(2));
 
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test0(CPSolver cp) {
+        int n = 3;
+        CPSetVar set1 = new CPSetVarImpl(cp, n);
+        CPSetVar set2 = new CPSetVarImpl(cp, n);
+
+        cp.post(new NotSubset(set1, set2));
+
+        Random r = new Random(42);
+        DFSearch dfs = CPFactory.makeDfs(cp, CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r));
+        SearchStatistics stats = dfs.solve();
+
+        assertEquals(Math.pow(4, n) - Math.pow(3, n), stats.numberOfSolutions());
     }
 }

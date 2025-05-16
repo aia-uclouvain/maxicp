@@ -8,10 +8,17 @@ package org.maxicp.cp.engine.core;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.security.InvalidParameterException;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.cp.CPFactory.exclude;
+import static org.maxicp.cp.CPFactory.include;
+import static org.maxicp.search.Searches.*;
 
 public class CPSetVarTest extends CPSolverTest {
 
@@ -106,5 +113,24 @@ public class CPSetVarTest extends CPSolverTest {
         cp.fixPoint();
         assertTrue(set.isFixed());
         assertEquals(2, set.nExcluded());
+    }
+
+    public static Supplier<Runnable[]> randomSetBranching(CPSetVar[] sets, Random rand) {
+        int[] values = new int[Arrays.stream(sets).mapToInt(CPSetVar::nPossible).max().getAsInt()];
+        return () -> {
+            // select a non fixed set
+            CPSetVar set = selectMin(sets, s -> !s.isFixed(), s -> rand.nextInt());
+            if (set == null) {
+                return EMPTY;
+            }
+            // select a random value
+            int pos = set.fillPossible(values);
+            int v = values[rand.nextInt(pos)];
+            // create the branching
+            return branch(
+                    () -> set.getSolver().post(include(set, v)),
+                    () -> set.getSolver().post(exclude(set, v))
+            );
+        };
     }
 }

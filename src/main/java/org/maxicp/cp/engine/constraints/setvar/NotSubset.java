@@ -35,49 +35,41 @@ public class NotSubset extends AbstractCPConstraint {
 
     @Override
     public void propagate() {
-
         // if one value in set1 is excluded in set2, set1 is not a subset of set2
+        // if only one value can prevent set1 to be a subset of set2, include it in set1 and exclude it from set2
+        // values preventing set1 to be a subset of set2 are in I1 U P1 INTER E2 U P2
+
+        int nPossibleExcluded = 0;
+        int value = -1;
         int nIncluded = set1.fillIncluded(values);
         for (int i = 0; i < nIncluded; i++) {
             if (set2.isExcluded(values[i])) {
                 setActive(false);
                 return;
             }
+            if (set2.isPossible(values[i])) {
+                nPossibleExcluded++;
+                value = values[i];
+            }
+
         }
 
-        // if only one value can be added in set 1 to prevent being subset, include it
-        int nPossibleExcluded = 0;
-        int valueExcluded = -1;
         int nPossible = set1.fillPossible(values);
         for (int i = 0; i < nPossible; i++) {
-            if (set2.isExcluded(values[i]) || set2.isPossible(values[i])) {
+            if (!set2.isIncluded(values[i])) {
                 nPossibleExcluded++;
-                valueExcluded = values[i];
+                value = values[i];
             }
         }
 
         if (nPossibleExcluded == 1) {
-            set1.include(valueExcluded);
-            set2.exclude(valueExcluded);
+            set1.include(value);
+            set2.exclude(value);
             setActive(false);
-        } else if (nPossibleExcluded == 0) { // if no possible include in set1 check possible exclude in set2
-            nPossible = set2.fillPossible(values);
 
-            for (int i = 0; i < nPossible; i++) {
-                if (set1.isIncluded(values[i])) {
-                    nPossibleExcluded++;
-                    valueExcluded = values[i];
-                }
-            }
-            if (nPossibleExcluded == 1) {
-                set2.exclude(valueExcluded);
-                setActive(false);
-
-            } else if (nPossibleExcluded == 0) { // if nothing can prevent set1 to be a subset of set2
-                throw new InconsistencyException();
-            }
+        } else if (nPossibleExcluded == 0) { // if nothing can prevent set1 to be a subset of set2
+            throw new InconsistencyException();
         }
-
     }
 
 

@@ -5,9 +5,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.*;
+import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.modeling.algebra.bool.NotEq;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.util.Random;
+import java.util.function.Supplier;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.cp.CPFactory.exclude;
+import static org.maxicp.cp.CPFactory.include;
+import static org.maxicp.search.Searches.*;
 
 public class SubsetTest extends CPSolverTest {
 
@@ -88,6 +98,23 @@ public class SubsetTest extends CPSolverTest {
         cp.post(c);
 
         assertFalse(c.isActive());
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void test0(CPSolver cp) {
+        int n = 3;
+        CPSetVar set1 = new CPSetVarImpl(cp, n);
+        CPSetVar set2 = new CPSetVarImpl(cp, n);
+
+        cp.post(new Subset(set1, set2));
+
+        Random r = new Random(0);
+        DFSearch dfs = CPFactory.makeDfs(cp, CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r));
+        SearchStatistics stats = dfs.solve();
+
+        assertEquals(Math.pow(3, n), stats.numberOfSolutions());
     }
 
 }
