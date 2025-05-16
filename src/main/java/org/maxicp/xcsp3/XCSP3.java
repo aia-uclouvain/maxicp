@@ -43,7 +43,6 @@ public class XCSP3 extends XCallbacksDecomp {
         XCSP3 xcsp3 = new XCSP3();
         try {
             xcsp3.loadInstance(filename);
-            System.out.println("here");
         } catch (Throwable t) {
             xcsp3.md.close();
             throw t;
