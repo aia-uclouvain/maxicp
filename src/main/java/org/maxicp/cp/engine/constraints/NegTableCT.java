@@ -57,7 +57,7 @@ public class NegTableCT extends AbstractCPConstraint {
      */
     public NegTableCT(CPIntVar[] x, int[][] table) {
         super(x[0].getSolver());
-        assert !hasDuplicates(table) : "your table should not have duplicates";
+        assert !hasDuplicates(table);
         this.scpSize = x.length;
         // variables with offset (min dom = 0)
         this.offx = new CPIntVar[this.scpSize];
@@ -124,10 +124,6 @@ public class NegTableCT extends AbstractCPConstraint {
             if (var.isFixed()) {
                 // var has been bound, direct intersection with support
                 validTuples.intersect(supports[idx][var.min()]);
-                // var is bound, removed from unbounded
-                nUnboundValue--;
-                this.unbounded[i] = this.unbounded[nUnboundValue];
-                this.unbounded[nUnboundValue] = idx;
             } else {
                 // clear temp var collecting
                 collected.clear();
@@ -192,10 +188,6 @@ public class NegTableCT extends AbstractCPConstraint {
                 if (var.isFixed()) {
                     // var has been bound, direct intersection with support
                     validTuples.intersect(supports[idx][var.min()]);
-                    // var is bound, removed from unbounded
-                    nUnboundValue--;
-                    this.unbounded[i] = this.unbounded[nUnboundValue];
-                    this.unbounded[nUnboundValue] = idx;
                 } else {
                     // clear temp var collecting
                     collected.clear();
@@ -238,8 +230,6 @@ public class NegTableCT extends AbstractCPConstraint {
                 this.unbounded[i] = this.unbounded[nUnboundValue];
                 this.unbounded[nUnboundValue] = idx;
             }
-
-
 
             cardinal = threshold * var.size();
         }
