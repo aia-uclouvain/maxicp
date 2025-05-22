@@ -93,7 +93,6 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         n = activities.fillArray(iterator);
         for (int iter = 0; iter < n; iter++) {
             int i = iterator[iter];
-            ;
             CPIntervalVar act = intervals[i];
             startMin[iter] = act.startMin();
             endMax[iter] = act.endMax();
