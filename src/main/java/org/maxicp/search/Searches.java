@@ -282,6 +282,7 @@ public final class Searches {
      *                         it must be assigned on the left branch (and excluded on the right)
      */
     public static Supplier<Runnable[]> conflictOrderingSearch(Supplier<IntExpression> variableSelector, Function<IntExpression, Integer> valueSelector) {
+        // compute the number of fixes variables
         HashMap<IntExpression, Integer> stamp = new HashMap<>();
         return () -> {
             int maxvalue = Integer.MIN_VALUE;

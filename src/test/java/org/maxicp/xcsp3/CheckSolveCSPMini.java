@@ -4,8 +4,6 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.maxicp.modeling.algebra.bool.Eq;
-import org.maxicp.modeling.algebra.bool.NotEq;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Searches;
@@ -20,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
@@ -27,17 +26,16 @@ import static org.junit.Assume.assumeNoException;
 import static org.maxicp.search.Searches.*;
 
 @RunWith(Parameterized.class)
-public class CheckSolveMini {
+public class CheckSolveCSPMini {
 
     @Parameterized.Parameters(name = "{0}")
     public static String[] data() {
         try {
             //TODO: @gderval fix this
-            return Files.walk(Paths.get("data/XCSP3/tests/mini")).filter(Files::isRegularFile)
+            return Files.walk(Paths.get("data/XCSP3/tests/miniCSP")).filter(Files::isRegularFile)
                     .filter(x -> x.toString().contains("xml"))
                     .map(Path::toString).toArray(String[]::new);
-        }
-        catch (IOException ex) {
+        } catch (IOException ex) {
             assumeNoException(ex);
             return new String[]{};
         }
@@ -52,7 +50,21 @@ public class CheckSolveMini {
 
     public void checkIgnored() {
         String[] fname = filename.split("/");
-        Assume.assumeTrue("Instance has been blacklisted", !ignored.contains(fname[fname.length-1]));
+        Assume.assumeTrue("Instance has been blacklisted", !ignored.contains(fname[fname.length - 1]));
+    }
+
+    public static Supplier<IntExpression> customVariableSelector(IntExpression... xs) {
+        return () -> {
+            // count fixed variables
+            int count = 0;
+            for (IntExpression xi : xs) {
+                if (xi.isFixed()) {
+                    count++;
+                }
+            }
+            System.out.println(((float) count) / xs.length);
+            return selectMin(xs, xi -> !xi.isFixed(), IntExpression::size);
+        };
     }
 
     @Test
@@ -60,11 +72,19 @@ public class CheckSolveMini {
         checkIgnored();
         try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(filename)) {
             IntExpression[] x = instance.decisionVars();
-
             long start = System.currentTimeMillis();
 
             instance.md().runCP((cp) -> {
-                DFSearch search = cp.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(x), var -> var.min()));
+                Random r = new Random();
+                DFSearch search = cp.dfSearch(Searches.conflictOrderingSearch(customVariableSelector(x), var -> {
+                    int min = var.min();
+                    int max = var.max();
+                    if (r.nextBoolean()) {
+                        return min;
+                    } else {
+                        return max;
+                    }
+                }));
                 LinkedList<String> sols = new LinkedList<>();
                 search.onSolution(() -> {
                     String sol = instance.solutionGenerator().get();
@@ -75,7 +95,7 @@ public class CheckSolveMini {
                     Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
                     return limit.numberOfSolutions() == 1;
                 });
-                for(String sol: sols) {
+                for (String sol : sols) {
                     try {
                         SolutionChecker sc = new SolutionChecker(false, filename, new ByteArrayInputStream(sol.getBytes()));
                         assertEquals(0, sc.invalidObjs.size());
@@ -85,14 +105,11 @@ public class CheckSolveMini {
                     }
                 }
             });
-        }
-        catch (NotImplementedException ex) {
+        } catch (NotImplementedException ex) {
             Assume.assumeNoException(ex);
-        }
-        catch (InconsistencyException ex) {
+        } catch (InconsistencyException ex) {
             Assume.assumeNoException("Inconsistent", ex);
-        }
-        finally {
+        } finally {
             System.gc();
         }
     }
