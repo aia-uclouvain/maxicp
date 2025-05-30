@@ -1,6 +1,7 @@
 package org.maxicp.modeling.symbolic;
 
 import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,5 +23,10 @@ public class SharedMinimization implements Objective {
     @Override
     public ModelProxy getModelProxy() {
         return expr.getModelProxy();
+    }
+
+    @Override
+    public int evaluate() throws VariableNotFixedException {
+        return expr.evaluate();
     }
 }

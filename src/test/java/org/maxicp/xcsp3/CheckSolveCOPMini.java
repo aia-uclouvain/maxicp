@@ -4,6 +4,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
@@ -75,12 +76,16 @@ public class CheckSolveCOPMini {
                 LinkedList<String> sols = new LinkedList<>();
                 search.onSolution(() -> {
                     System.out.println("Found a solution");
-                    System.out.println("Objective:"+instance.objective().get().min());
+                    try {
+                        System.out.println("Objective:" + instance.objective().get().evaluate());
+                    } catch (VariableNotFixedException e) {
+                        throw new RuntimeException(e);
+                    }
                     String sol = instance.solutionGenerator().get();
                     sols.add(sol);
                     //System.out.println(sol);
                 });
-                SearchStatistics stats = search.solve(limit -> {
+                SearchStatistics stats = search.optimize(instance.objective().get(), limit -> {
                     Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
                     return false;
                 });
