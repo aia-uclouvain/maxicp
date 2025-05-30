@@ -494,6 +494,40 @@ public final class Searches {
         };
     }
 
+    /**
+     * Reverse Look-Ahead value selector. Gives a value selector yielding the value leading to
+     * the smallest decrease on the objective
+     * <p>
+     * Delecluse, A., & Schaus, P. (2024). Black-Box Value Heuristics for Solving Optimization Problems with Constraint Programming.
+     * In 30th International Conference on Principles and Practice of Constraint Programming (CP 2024)
+     *
+     * @param objective objective to minimize, whose impact must be measured
+     * @return value decreasing the less the objective lower bound. Null if no value is valid for the variable
+     */
+    public static Supplier<Function<IntExpression, Integer>> reverseLookAhead(IntExpression objective) {
+        // black magic for java, so that the domain can be updated by the function supplied
+        return () -> (x) -> {
+            if (x.isFixed())
+                return null;
+            int delta = 1;
+            while (true) {
+                x.getModelProxy().getConcreteModel().getStateManager().saveState();
+                int bound = objective.min() + delta;
+                try {
+                    x.getModelProxy().add(Factory.lt(objective, bound)); // obj = {lb, ..., lb + delta - 1}
+                    int bestValue = x.min(); // pick in reduced domain
+                    x.getModelProxy().getConcreteModel().getStateManager().restoreState();
+                    return bestValue;
+                } catch (InconsistencyException e) {
+                    x.getModelProxy().getConcreteModel().getStateManager().restoreState();
+                    // update objective bound and increase delta
+                    x.getModelProxy().add(Factory.ge(objective, bound)); // obj = {lb + delta, ...}
+                    delta *= 2;
+                }
+            }
+        };
+    }
+
     //TODO: adapt all the scheduling searches to modelling interface
 
 
