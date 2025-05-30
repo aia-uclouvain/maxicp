@@ -3,11 +3,10 @@
  * Copyright (c)  2023 UCLouvain
  */
 
-package org.maxicp.cp.engine.constraints.utils;
+package org.maxicp.cp.engine.constraints.scheduling;
 
 
 import org.junit.jupiter.api.Test;
-import org.maxicp.cp.engine.constraints.scheduling.ThetaTree;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
