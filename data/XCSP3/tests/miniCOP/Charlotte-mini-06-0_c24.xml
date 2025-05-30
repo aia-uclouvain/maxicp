@@ -1,0 +1,331 @@
+<instance format="XCSP3" type="COP">
+  <variables>
+    <array id="x" note="x[i][j] is the shift for the jth nurse on the ith day" size="[42][3]">
+      <domain for="x[0][] x[1][] x[2][] x[3][] x[4][] x[7][] x[8][] x[9][] x[10][] x[11][] x[14][] x[15][] x[16][] x[17][] x[18][] x[21][] x[22][] x[23][] x[24][] x[25][] x[28][] x[29][] x[30][] x[31][] x[32][] x[35][] x[36][] x[37][] x[38][] x[39][]"> 0..2 </domain>
+      <domain for="x[5][] x[6][] x[12][] x[13][] x[19][] x[20][] x[26][] x[27][] x[33][] x[34][] x[40][] x[41][]"> 0 2 </domain>
+    </array>
+    <array id="y" note="y[j] is the nurse working on the jth weekend (and its multiple)" size="[3]"> 0..2 </array>
+  </variables>
+  <constraints>
+    <group note="ensuring different shifts on business days">
+      <allDifferent> %0 %1 %2 </allDifferent>
+      <args> x[0][] </args>
+      <args> x[1][] </args>
+      <args> x[2][] </args>
+      <args> x[3][] </args>
+      <args> x[4][] </args>
+      <args> x[7][] </args>
+      <args> x[8][] </args>
+      <args> x[9][] </args>
+      <args> x[10][] </args>
+      <args> x[11][] </args>
+      <args> x[14][] </args>
+      <args> x[15][] </args>
+      <args> x[16][] </args>
+      <args> x[17][] </args>
+      <args> x[18][] </args>
+      <args> x[21][] </args>
+      <args> x[22][] </args>
+      <args> x[23][] </args>
+      <args> x[24][] </args>
+      <args> x[25][] </args>
+      <args> x[28][] </args>
+      <args> x[29][] </args>
+      <args> x[30][] </args>
+      <args> x[31][] </args>
+      <args> x[32][] </args>
+      <args> x[35][] </args>
+      <args> x[36][] </args>
+      <args> x[37][] </args>
+      <args> x[38][] </args>
+      <args> x[39][] </args>
+    </group>
+    <allDifferent note="ensuring a permutation (for ordering worked weekends)"> y[] </allDifferent>
+    <group note="ensuring the same nurse working a long day on friday, saturday and sunday">
+      <element>
+        <list> %0 %1 %2 </list>
+        <index> %3 </index>
+        <value> 2 </value>
+      </element>
+      <args> x[4][] y[0] </args>
+      <args> x[11][] y[1] </args>
+      <args> x[18][] y[2] </args>
+      <args> x[25][] y[0] </args>
+      <args> x[32][] y[1] </args>
+      <args> x[39][] y[2] </args>
+      <args> x[5][] y[0] </args>
+      <args> x[12][] y[1] </args>
+      <args> x[19][] y[2] </args>
+      <args> x[26][] y[0] </args>
+      <args> x[33][] y[1] </args>
+      <args> x[40][] y[2] </args>
+      <args> x[6][] y[0] </args>
+      <args> x[13][] y[1] </args>
+      <args> x[20][] y[2] </args>
+      <args> x[27][] y[0] </args>
+      <args> x[34][] y[1] </args>
+      <args> x[41][] y[2] </args>
+    </group>
+    <group note="ensuring at least two days off, and two days working for every sequence of three days">
+      <extension>
+        <list> %0 %1 %2 </list>
+        <supports> (0,0,*)(0,1,1)(0,1,2)(0,2,1)(0,2,2)(1,0,0)(1,1,*)(1,2,*)(2,0,0)(2,1,*)(2,2,*) </supports>
+      </extension>
+      <args> x[0..2][0] </args>
+      <args> x[0..2][1] </args>
+      <args> x[0..2][2] </args>
+      <args> x[1..3][0] </args>
+      <args> x[1..3][1] </args>
+      <args> x[1..3][2] </args>
+      <args> x[2..4][0] </args>
+      <args> x[2..4][1] </args>
+      <args> x[2..4][2] </args>
+      <args> x[3..5][0] </args>
+      <args> x[3..5][1] </args>
+      <args> x[3..5][2] </args>
+      <args> x[4..6][0] </args>
+      <args> x[4..6][1] </args>
+      <args> x[4..6][2] </args>
+      <args> x[5..7][0] </args>
+      <args> x[5..7][1] </args>
+      <args> x[5..7][2] </args>
+      <args> x[6..8][0] </args>
+      <args> x[6..8][1] </args>
+      <args> x[6..8][2] </args>
+      <args> x[7..9][0] </args>
+      <args> x[7..9][1] </args>
+      <args> x[7..9][2] </args>
+      <args> x[8..10][0] </args>
+      <args> x[8..10][1] </args>
+      <args> x[8..10][2] </args>
+      <args> x[9..11][0] </args>
+      <args> x[9..11][1] </args>
+      <args> x[9..11][2] </args>
+      <args> x[10..12][0] </args>
+      <args> x[10..12][1] </args>
+      <args> x[10..12][2] </args>
+      <args> x[11..13][0] </args>
+      <args> x[11..13][1] </args>
+      <args> x[11..13][2] </args>
+      <args> x[12..14][0] </args>
+      <args> x[12..14][1] </args>
+      <args> x[12..14][2] </args>
+      <args> x[13..15][0] </args>
+      <args> x[13..15][1] </args>
+      <args> x[13..15][2] </args>
+      <args> x[14..16][0] </args>
+      <args> x[14..16][1] </args>
+      <args> x[14..16][2] </args>
+      <args> x[15..17][0] </args>
+      <args> x[15..17][1] </args>
+      <args> x[15..17][2] </args>
+      <args> x[16..18][0] </args>
+      <args> x[16..18][1] </args>
+      <args> x[16..18][2] </args>
+      <args> x[17..19][0] </args>
+      <args> x[17..19][1] </args>
+      <args> x[17..19][2] </args>
+      <args> x[18..20][0] </args>
+      <args> x[18..20][1] </args>
+      <args> x[18..20][2] </args>
+      <args> x[19..21][0] </args>
+      <args> x[19..21][1] </args>
+      <args> x[19..21][2] </args>
+      <args> x[20..22][0] </args>
+      <args> x[20..22][1] </args>
+      <args> x[20..22][2] </args>
+      <args> x[21..23][0] </args>
+      <args> x[21..23][1] </args>
+      <args> x[21..23][2] </args>
+      <args> x[22..24][0] </args>
+      <args> x[22..24][1] </args>
+      <args> x[22..24][2] </args>
+      <args> x[23..25][0] </args>
+      <args> x[23..25][1] </args>
+      <args> x[23..25][2] </args>
+      <args> x[24..26][0] </args>
+      <args> x[24..26][1] </args>
+      <args> x[24..26][2] </args>
+      <args> x[25..27][0] </args>
+      <args> x[25..27][1] </args>
+      <args> x[25..27][2] </args>
+      <args> x[26..28][0] </args>
+      <args> x[26..28][1] </args>
+      <args> x[26..28][2] </args>
+      <args> x[27..29][0] </args>
+      <args> x[27..29][1] </args>
+      <args> x[27..29][2] </args>
+      <args> x[28..30][0] </args>
+      <args> x[28..30][1] </args>
+      <args> x[28..30][2] </args>
+      <args> x[29..31][0] </args>
+      <args> x[29..31][1] </args>
+      <args> x[29..31][2] </args>
+      <args> x[30..32][0] </args>
+      <args> x[30..32][1] </args>
+      <args> x[30..32][2] </args>
+      <args> x[31..33][0] </args>
+      <args> x[31..33][1] </args>
+      <args> x[31..33][2] </args>
+      <args> x[32..34][0] </args>
+      <args> x[32..34][1] </args>
+      <args> x[32..34][2] </args>
+      <args> x[33..35][0] </args>
+      <args> x[33..35][1] </args>
+      <args> x[33..35][2] </args>
+      <args> x[34..36][0] </args>
+      <args> x[34..36][1] </args>
+      <args> x[34..36][2] </args>
+      <args> x[35..37][0] </args>
+      <args> x[35..37][1] </args>
+      <args> x[35..37][2] </args>
+      <args> x[36..38][0] </args>
+      <args> x[36..38][1] </args>
+      <args> x[36..38][2] </args>
+      <args> x[37..39][0] </args>
+      <args> x[37..39][1] </args>
+      <args> x[37..39][2] </args>
+      <args> x[38..40][0] </args>
+      <args> x[38..40][1] </args>
+      <args> x[38..40][2] </args>
+      <args> x[39..41][0] </args>
+      <args> x[39..41][1] </args>
+      <args> x[39..41][2] </args>
+    </group>
+    <group note="at least, 5 consecutive days off every three weeks">
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*)(*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*)(*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*,*,*,*)(*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*,*,*)(*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*,*)(*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*,*)(*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*,*)(*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*,*)(*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*,*)(*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*,*)(*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*,*)(*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*,*)(*,*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*,*)(*,*,*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*,*)(*,*,*,*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*,*)(*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0,*)(*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,*,0,0,0,0,0) </supports>
+      </extension>
+      <args> x[0..20][0] </args>
+      <args> x[0..20][1] </args>
+      <args> x[0..20][2] </args>
+      <args> x[7..27][0] </args>
+      <args> x[7..27][1] </args>
+      <args> x[7..27][2] </args>
+      <args> x[14..34][0] </args>
+      <args> x[14..34][1] </args>
+      <args> x[14..34][2] </args>
+      <args> x[21..41][0] </args>
+      <args> x[21..41][1] </args>
+      <args> x[21..41][2] </args>
+    </group>
+    <group note="at least, one day off at every sequence of 8 days">
+      <extension>
+        <list> %... </list>
+        <supports> (0,*,*,*,*,*,*,*)(*,0,*,*,*,*,*,*)(*,*,0,*,*,*,*,*)(*,*,*,0,*,*,*,*)(*,*,*,*,0,*,*,*)(*,*,*,*,*,0,*,*)(*,*,*,*,*,*,0,*)(*,*,*,*,*,*,*,0) </supports>
+      </extension>
+      <args> x[0..7][0] </args>
+      <args> x[0..7][1] </args>
+      <args> x[0..7][2] </args>
+      <args> x[1..8][0] </args>
+      <args> x[1..8][1] </args>
+      <args> x[1..8][2] </args>
+      <args> x[2..9][0] </args>
+      <args> x[2..9][1] </args>
+      <args> x[2..9][2] </args>
+      <args> x[3..10][0] </args>
+      <args> x[3..10][1] </args>
+      <args> x[3..10][2] </args>
+      <args> x[4..11][0] </args>
+      <args> x[4..11][1] </args>
+      <args> x[4..11][2] </args>
+      <args> x[5..12][0] </args>
+      <args> x[5..12][1] </args>
+      <args> x[5..12][2] </args>
+      <args> x[6..13][0] </args>
+      <args> x[6..13][1] </args>
+      <args> x[6..13][2] </args>
+      <args> x[7..14][0] </args>
+      <args> x[7..14][1] </args>
+      <args> x[7..14][2] </args>
+      <args> x[8..15][0] </args>
+      <args> x[8..15][1] </args>
+      <args> x[8..15][2] </args>
+      <args> x[9..16][0] </args>
+      <args> x[9..16][1] </args>
+      <args> x[9..16][2] </args>
+      <args> x[10..17][0] </args>
+      <args> x[10..17][1] </args>
+      <args> x[10..17][2] </args>
+      <args> x[11..18][0] </args>
+      <args> x[11..18][1] </args>
+      <args> x[11..18][2] </args>
+      <args> x[12..19][0] </args>
+      <args> x[12..19][1] </args>
+      <args> x[12..19][2] </args>
+      <args> x[13..20][0] </args>
+      <args> x[13..20][1] </args>
+      <args> x[13..20][2] </args>
+      <args> x[14..21][0] </args>
+      <args> x[14..21][1] </args>
+      <args> x[14..21][2] </args>
+      <args> x[15..22][0] </args>
+      <args> x[15..22][1] </args>
+      <args> x[15..22][2] </args>
+      <args> x[16..23][0] </args>
+      <args> x[16..23][1] </args>
+      <args> x[16..23][2] </args>
+      <args> x[17..24][0] </args>
+      <args> x[17..24][1] </args>
+      <args> x[17..24][2] </args>
+      <args> x[18..25][0] </args>
+      <args> x[18..25][1] </args>
+      <args> x[18..25][2] </args>
+      <args> x[19..26][0] </args>
+      <args> x[19..26][1] </args>
+      <args> x[19..26][2] </args>
+      <args> x[20..27][0] </args>
+      <args> x[20..27][1] </args>
+      <args> x[20..27][2] </args>
+      <args> x[21..28][0] </args>
+      <args> x[21..28][1] </args>
+      <args> x[21..28][2] </args>
+      <args> x[22..29][0] </args>
+      <args> x[22..29][1] </args>
+      <args> x[22..29][2] </args>
+      <args> x[23..30][0] </args>
+      <args> x[23..30][1] </args>
+      <args> x[23..30][2] </args>
+      <args> x[24..31][0] </args>
+      <args> x[24..31][1] </args>
+      <args> x[24..31][2] </args>
+      <args> x[25..32][0] </args>
+      <args> x[25..32][1] </args>
+      <args> x[25..32][2] </args>
+      <args> x[26..33][0] </args>
+      <args> x[26..33][1] </args>
+      <args> x[26..33][2] </args>
+      <args> x[27..34][0] </args>
+      <args> x[27..34][1] </args>
+      <args> x[27..34][2] </args>
+      <args> x[28..35][0] </args>
+      <args> x[28..35][1] </args>
+      <args> x[28..35][2] </args>
+      <args> x[29..36][0] </args>
+      <args> x[29..36][1] </args>
+      <args> x[29..36][2] </args>
+      <args> x[30..37][0] </args>
+      <args> x[30..37][1] </args>
+      <args> x[30..37][2] </args>
+      <args> x[31..38][0] </args>
+      <args> x[31..38][1] </args>
+      <args> x[31..38][2] </args>
+      <args> x[32..39][0] </args>
+      <args> x[32..39][1] </args>
+      <args> x[32..39][2] </args>
+      <args> x[33..40][0] </args>
+      <args> x[33..40][1] </args>
+      <args> x[33..40][2] </args>
+      <args> x[34..41][0] </args>
+      <args> x[34..41][1] </args>
+      <args> x[34..41][2] </args>
+    </group>
+  </constraints>
+  <objectives>
+    <minimize type="sum">
+      <list> x[][0] x[][1] x[][2] </list>
+      <coeffs> 49 97 53 5 33 65 62 51 100 38 61 45 74 27 64 17 36 17 96 12 79 32 68 90 77 18 39 12 93 9 87 42 60 71 12 45 55 40 78 81 26 70 61 56 66 33 7 70 1 11 92 51 90 100 85 80 0 78 63 42 31 93 41 90 8 24 72 28 30 18 69 57 11 10 40 65 62 13 38 70 37 90 15 70 42 69 26 77 70 75 36 56 11 76 49 40 73 30 37 23 24 23 4 78 84 33 60 8 11 86 96 16 19 4 10 89 69 87 50 90 67 35 66 30 27 86 </coeffs>
+    </minimize>
+  </objectives>
+</instance>
