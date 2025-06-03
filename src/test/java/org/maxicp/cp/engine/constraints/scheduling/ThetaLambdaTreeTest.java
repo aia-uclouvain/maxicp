@@ -28,7 +28,7 @@ public class ThetaLambdaTreeTest {
         assertEquals(35, thetaLambdaTree.getThetaEct());
         thetaLambdaTree.reset();
         assertEquals(Integer.MIN_VALUE, thetaLambdaTree.getThetaEct());
-         */
+        */
     }
 
 }
