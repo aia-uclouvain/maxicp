@@ -33,8 +33,9 @@ public class ThetaLambdaTree {
         }
     }
 
+    // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
     private Node[] nodes;
-    private int isize; //number of internal nodes
+    private int isize; // number of internal nodes
     private int size;
 
     /**
@@ -49,19 +50,16 @@ public class ThetaLambdaTree {
      * @param size the number of activities that can possibly be inserted in the tree
      */
     public ThetaLambdaTree(int size) {
-        // http://en.wikipedia.org/wiki/Binary_heap#Adding_to_the_heap
-        this.size = size;
-        isize = 1;
-        //enumerate multiples of two 2, 4, 6, 8 ... until isize larger than size
-        while (isize < size) {
-            isize <<= 1; //shift the pattern to the left by 1 (i.e. multiplies by 2)
+        int h = 1;
+        while ((1 << h) < size) {
+            h++;
         }
-        //number of nodes in a complete  binary tree with isize leaf nodes is (isize*2)-1
-        nodes = new Node[(isize << 2) - 1];
-        for (int i = 0; i < nodes.length; i++) {
+        this.size = size;
+        isize = 1 << h;
+        nodes = new Node[1 << (h+1)];
+        for (int i = 1; i < nodes.length; i++) {
             nodes[i] = new Node();
         }
-        isize--;
     }
 
     /**
