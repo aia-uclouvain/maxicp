@@ -78,7 +78,7 @@ public class NoOverlapLeftToRight {
             if (inconsistency()) return Outcome.INCONSISTENCY;
             fixed = fixed & !notLast();
             if (inconsistency()) return Outcome.INCONSISTENCY;
-            //fixed = fixed & !edgeFinding();
+            fixed = fixed & !edgeFinding();
             if (inconsistency()) return Outcome.INCONSISTENCY;
             if (!fixed) changed = true;
         }
@@ -201,11 +201,6 @@ public class NoOverlapLeftToRight {
         return changed;
     }
 
-
-    private int thetaTreeIndex(int activity) {
-        return rankEst[activity];
-    }
-
     /**
      * @return true if one domain was changed by the edge finding algo
      *
@@ -225,7 +220,7 @@ public class NoOverlapLeftToRight {
             if (thetaLambdaTree.getThetaEct() > endMax[actj]) {
                 throw InconsistencyException.INCONSISTENCY;
             }
-            thetaLambdaTree.moveFromThetaToLambda(thetaTreeIndex(actj));
+            thetaLambdaTree.moveFromThetaToLambda(rankEst[actj]);
             actj = permLct[++j];
             while (thetaLambdaTree.getThetaLambdaEct() > endMax[actj]) {
                 int i = thetaLambdaTree.getResponsibleForThetaLambdaEct();

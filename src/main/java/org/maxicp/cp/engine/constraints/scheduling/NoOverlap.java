@@ -141,8 +141,8 @@ class NoOverlapGlobal extends AbstractCPConstraint {
                         activities.remove(iterator[i]);
                     }
                 } else {
-                    intervals[iterator[i]].setStartMin(startMin[i]);
-                    intervals[iterator[i]].setEndMax(endMax[i]);
+                    intervals[iterator[i]].setStartMin(globalFilter.startMin[i]);
+                    intervals[iterator[i]].setEndMax(globalFilter.endMax[i]);
                 }
             }
         }
@@ -167,8 +167,8 @@ class NoOverlapGlobal extends AbstractCPConstraint {
                         activities.remove(iterator[i]);
                     }
                 } else {
-                    intervals[iterator[i]].setEndMax(-startMin[i]);
-                    intervals[iterator[i]].setStartMin(-endMax[i]);
+                    intervals[iterator[i]].setEndMax(-globalFilter.startMin[i]);
+                    intervals[iterator[i]].setStartMin(-globalFilter.endMax[i]);
                 }
             }
         }
