@@ -7,6 +7,7 @@
 package org.maxicp.cp.engine.constraints.scheduling;
 
 import org.junit.jupiter.api.Test;
+import org.maxicp.util.exception.InconsistencyException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,6 +91,41 @@ public class NonOverlapLeftToRightTest {
         assertEquals(10, algo.endMax[2]); // this task cannot be last
     }
 
+
+    @Test
+    public void testEdgeFinder1() {
+        // example p26 of Petr Vilim's thesis
+        NoOverlapLeftToRight algo = new NoOverlapLeftToRight(4);
+
+        int[] startMin = new int[]{4, 13,  5,  5};
+        int[] endMax = new int[] {30, 18, 13, 13};
+        int[] duration = new int[]{4,  5,  3,  3}; // total duration = 16, there is thus an overload
+
+        algo.update(startMin, duration, endMax, 4);
+        algo.edgeFinding();
+        assertArrayEquals(new int [] {18, 13, 5, 5}, algo.startMin);
+    }
+
+    @Test
+    public void testEdgeFinder2() {
+        // example p26 of Petr Vilim's thesis
+        NoOverlapLeftToRight algo = new NoOverlapLeftToRight(8);
+
+        int[] startMin = new int[]{45, 128, 130,  0, 38, 50, 70, 33};
+        int[] endMax = new int [] {56, 144, 147, 30, 51, 69, 74, 74};
+        int[] duration = new int[]{ 5,   9,   5,  7,  7, 13, 12, 12};
+
+        algo.update(startMin, duration, endMax, 8);
+        boolean failed = false;
+        try {
+            algo.edgeFinding();
+        } catch (InconsistencyException e) {
+            failed = true;
+        }
+        assertTrue(failed);
+    }
+
+
     @Test
     public void testFilter1() {
         NoOverlapLeftToRight algo = new NoOverlapLeftToRight(3);
@@ -107,14 +143,15 @@ public class NonOverlapLeftToRightTest {
     public void testFilter2() {
         NoOverlapLeftToRight algo = new NoOverlapLeftToRight(3);
 
-        int[] startMin = new int[]{0, 1, 3};
-        int[] endMax = new int[]{14, 15, 13}; // total span = 15
-        int[] duration = new int[]{5, 5, 6}; // total duration = 16, there is thus an overload
+        int[] startMin = new int[]{0,  1, 3};
+        int[] endMax = new int[] {14, 15, 13}; // total span = 15
+        int[] duration = new int[]{5,  5, 6}; // total duration = 16, there is thus an overload
 
         NoOverlapLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 3);
 
         assertEquals(NoOverlapLeftToRight.Outcome.INCONSISTENCY, outcome);
     }
+
 
     @Test
     public void testFilter3() {
@@ -127,5 +164,21 @@ public class NonOverlapLeftToRightTest {
         NoOverlapLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 3);
 
         assertEquals(NoOverlapLeftToRight.Outcome.NO_CHANGE, outcome);
+    }
+
+
+    @Test
+    public void testFilter4() {
+        NoOverlapLeftToRight algo = new NoOverlapLeftToRight(4);
+        // this will only be detected by the edge finding
+        int[] startMin = new int[]{0, 0, 1, 9};
+        int[] endMax =   new int[]{30,9, 9,13};
+        int[] duration = new int[]{4, 4, 4, 4};
+
+        NoOverlapLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 4);
+
+        assertArrayEquals(new int[]{13, 0, 1, 9}, algo.startMin);
+
+        assertEquals(NoOverlapLeftToRight.Outcome.CHANGE, outcome);
     }
 }
