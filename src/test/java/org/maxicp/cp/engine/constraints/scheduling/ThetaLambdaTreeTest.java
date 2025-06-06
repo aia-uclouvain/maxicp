@@ -14,21 +14,46 @@ public class ThetaLambdaTreeTest {
 
     @Test
     public void simpleTest0() {
-        /*
-        ThetaLambdaTree thetaLambdaTree = new ThetaLambdaTree(4);
-        thetaLambdaTree.insertTheta(0, 5, 5);
-        assertEquals(5, thetaLambdaTree.getThetaEct());
-        thetaLambdaTree.insertTheta(1, 31, 6);
-        assertEquals(31, thetaLambdaTree.getThetaEct());
-        thetaLambdaTree.insertTheta(2, 30, 4);
-        assertEquals(35, thetaLambdaTree.getThetaEct());
-        thetaLambdaTree.insertTheta(3, 42, 10);
-        assertEquals(45, thetaLambdaTree.getThetaEct());
-        thetaLambdaTree.remove(3);
-        assertEquals(35, thetaLambdaTree.getThetaEct());
-        thetaLambdaTree.reset();
-        assertEquals(Integer.MIN_VALUE, thetaLambdaTree.getThetaEct());
-        */
+        // example from Vilim's thesis p38
+        ThetaLambdaTree tree = new ThetaLambdaTree(4);
+        tree.insertTheta(0, 0, 5);
+        assertEquals(5, tree.getThetaLambdaEct());
+        tree.insertTheta(1, 25, 6);
+        assertEquals(31, tree.getThetaEct());
+        tree.insertTheta(2, 30, 4);
+        assertEquals(35, tree.getThetaEct());
+        tree.insertTheta(3, 32, 10);
+        assertEquals(45, tree.getThetaEct());
+        tree.remove(3);
+        assertEquals(35, tree.getThetaEct());
+        tree.reset();
+        assertEquals(Integer.MIN_VALUE, tree.getThetaEct());
+    }
+
+
+
+
+    public void simpleTest1() {
+        // example from Vilim's thesis p45
+
+        ThetaLambdaTree tree = new ThetaLambdaTree(4);
+
+        tree.insertTheta(0, 5, 5);
+        tree.insertTheta(1, 25, 6);
+        tree.insertLambda(2, 30, 5);
+        tree.insertTheta(3, 32, 10);
+
+
+        assertEquals(42, tree.getThetaEct());
+
+        assertEquals(46, tree.getThetaLambdaEct());
+        assertEquals(2, tree.getResponsibleForThetaLambdaEct());
+
+        tree.remove(2);
+
+        assertEquals(42, tree.getThetaEct());
+        assertEquals(42, tree.getThetaLambdaEct());
+        assertEquals(ThetaLambdaTree.UNDEF, tree.getResponsibleForThetaLambdaEct());
     }
 
 }

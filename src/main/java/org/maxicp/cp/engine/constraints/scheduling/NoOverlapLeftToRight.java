@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import org.maxicp.util.exception.InconsistencyException;
+
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -23,6 +25,7 @@ public class NoOverlapLeftToRight {
     private final boolean[] inserted;
 
     private final ThetaTree thetaTree;
+    private final ThetaLambdaTree thetaLambdaTree;
 
     public NoOverlapLeftToRight(int nMax) {
         startMin = new int[nMax];
@@ -40,6 +43,7 @@ public class NoOverlapLeftToRight {
         inserted = new boolean[nMax];
 
         thetaTree = new ThetaTree(nMax);
+        thetaLambdaTree = new ThetaLambdaTree(nMax);
     }
 
     /**
@@ -74,6 +78,8 @@ public class NoOverlapLeftToRight {
             if (inconsistency()) return Outcome.INCONSISTENCY;
             fixed = fixed & !notLast();
             if (inconsistency()) return Outcome.INCONSISTENCY;
+            //fixed = fixed & !edgeFinding();
+            if (inconsistency()) return Outcome.INCONSISTENCY;
             if (!fixed) changed = true;
         }
         if (changed) return Outcome.CHANGE;
@@ -105,13 +111,13 @@ public class NoOverlapLeftToRight {
      * @return false if the overload checker detects an overload, true if no overload is detected
      */
     protected boolean overLoadChecker() {
-        update(startMin, duration, endMax, n); // useless ?
+        update(startMin, duration, endMax, n);
         Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -> endMax[i]));
         thetaTree.reset();
         for (int i = 0; i < n; i++) {
             int activity = permLct[i];
-            thetaTree.insert(rankEst[activity], endMin[activity], duration[activity]);
-            if (thetaTree.getECT() > endMax[activity]) {
+            thetaTree.insert(rankEst[activity], startMin[activity], duration[activity]);
+            if (thetaTree.getEct() > endMax[activity]) {
                 return false;
             }
         }
@@ -133,15 +139,15 @@ public class NoOverlapLeftToRight {
             while (idxj < n && endMin[acti] > startMax[permLst[idxj]]) {
                 int j = permLst[idxj];
                 inserted[j] = true;
-                thetaTree.insert(rankEst[j], endMin[j], duration[j]);
+                thetaTree.insert(rankEst[j], startMin[j], duration[j]);
                 idxj++;
             }
             if (inserted[acti]) {
                 thetaTree.remove(rankEst[acti]);
-                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getECT());
-                thetaTree.insert(rankEst[acti], endMin[acti], duration[acti]);
+                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getEct());
+                thetaTree.insert(rankEst[acti], startMin[acti], duration[acti]);
             } else {
-                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getECT());
+                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getEct());
             }
         }
 
@@ -170,26 +176,67 @@ public class NoOverlapLeftToRight {
             while (idxj < n && endMax[acti] > startMax[permLst[idxj]]) {
                 j = permLst[idxj];
                 inserted[j] = true;
-                thetaTree.insert(rankEst[j], endMin[j], duration[j]);
+                thetaTree.insert(rankEst[j], startMin[j], duration[j]);
                 idxj++;
             }
             if (inserted[acti]) {
                 thetaTree.remove(rankEst[acti]);
-                if (thetaTree.getECT() > startMax[acti]) {
+                if (thetaTree.getEct() > startMax[acti]) {
                     if (startMax[j] < endMax[acti]) {
                         endMax[acti] = startMax[j];
                         changed = true;
                     }
                     endMax[acti] = startMax[j];
                 }
-                thetaTree.insert(rankEst[acti], endMin[acti], duration[acti]);
+                thetaTree.insert(rankEst[acti], startMin[acti], duration[acti]);
             } else {
-                if (thetaTree.getECT() > startMax[acti]) {
+                if (thetaTree.getEct() > startMax[acti]) {
                     if (startMax[j] < endMax[acti]) {
                         endMax[acti] = startMax[j];
                         changed = true;
                     }
                 }
+            }
+        }
+        return changed;
+    }
+
+
+    private int thetaTreeIndex(int activity) {
+        return rankEst[activity];
+    }
+
+    /**
+     * @return true if one domain was changed by the edge finding algo
+     *
+     */
+    protected boolean edgeFinding() {
+        update(startMin, duration, endMax, n);
+        thetaLambdaTree.reset();
+        for (int i = 0; i < n; i++) {
+            int acti = permEst[i];
+            thetaLambdaTree.insertTheta(i, startMin[acti], duration[acti]);
+        }
+        boolean changed = false;
+        Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -> -endMax[i]));
+        int j = 0;
+        int actj = permLct[j];
+        while (j < n-1) {
+            if (thetaLambdaTree.getThetaEct() > endMax[actj]) {
+                throw InconsistencyException.INCONSISTENCY;
+            }
+            thetaLambdaTree.moveFromThetaToLambda(thetaTreeIndex(actj));
+            actj = permLct[++j];
+            while (thetaLambdaTree.getThetaLambdaEct() > endMax[actj]) {
+                int i = thetaLambdaTree.getResponsibleForThetaLambdaEct();
+                if (i == ThetaLambdaTree.UNDEF) {
+                    throw InconsistencyException.INCONSISTENCY;
+                }
+                int acti = permEst[i];
+                int oldStartMin = startMin[acti];
+                startMin[acti] = Math.max(startMin[acti], thetaLambdaTree.getThetaEct());
+                changed = changed || startMin[acti] > oldStartMin;
+                thetaLambdaTree.remove(i);
             }
         }
         return changed;

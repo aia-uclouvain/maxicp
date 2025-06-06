@@ -9,6 +9,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
  * Data Structure described in
  * Global Constraints in Scheduling, 2008 Petr Vilim, PhD thesis
  * See <a href="http://vilim.eu/petr/disertace.pdf">The thesis.</a>
+ * @author Pierre Schaus
  */
 public class ThetaTree {
 
@@ -27,6 +28,7 @@ public class ThetaTree {
         }
     }
 
+    // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
     private Node[] nodes;
     private int isize; //number of internal nodes
 
@@ -42,10 +44,8 @@ public class ThetaTree {
      * @param size the number of activities that can possibly be inserted in the tree
      */
     public ThetaTree(int size) {
-        int h = 1; // height of the tree
-        while ((1 << h) < size) { // while the number of leaf nodes is less than size, increase height
-            h++;
-        }
+        int h = 1; // height
+        while ((1 << h) < size) { h++; } // increase height until number of leaf nodes >= size;
         isize = (1 << h) ; // number of internal nodes is 2^h
         nodes = new ThetaTree.Node[1 << (h+1)]; // total number of nodes is 2^(h+1)
         for (int i = 1; i < nodes.length; i++) {
@@ -64,18 +64,18 @@ public class ThetaTree {
 
     /**
      * Insert activity in leaf nodes at given position
-     * such that it is taken into account for the {@link #getECT()}
+     * such that it is taken into account for the {@link #getEct()}
      * computation.
      *
      * @param pos the index of the leaf node (assumed to start at 0 from left to right)
-     * @param ect earliest completion time
+     * @param est earliest start time
      * @param dur duration
      */
-    public void insert(int pos, int ect, int dur) {
+    public void insert(int pos, int est, int dur) {
         //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
         int currPos = isize + pos;
         Node node = nodes[currPos];
-        node.ect = ect;
+        node.ect = est + dur;
         node.sump = dur;
         reCompute(currPos >> 1); // re-compute from the parent node
     }
@@ -97,7 +97,7 @@ public class ThetaTree {
      * The earliest completion time of the activities present in the theta-tree
      * @return the earliest completion time of the activities present in the theta-tree
      */
-    public int getECT() {
+    public int getEct() {
         return nodes[1].ect;
     }
 
@@ -110,8 +110,6 @@ public class ThetaTree {
             pos = pos >> 1; // father
         }
     }
-
-
 }
 
 

@@ -36,7 +36,6 @@ public class ThetaLambdaTree {
     // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
     private Node[] nodes;
     private int isize; // number of internal nodes
-    private int size;
 
     /**
      * Creates a theta-tree able to store
@@ -50,15 +49,14 @@ public class ThetaLambdaTree {
      * @param size the number of activities that can possibly be inserted in the tree
      */
     public ThetaLambdaTree(int size) {
-        int h = 1;
-        while ((1 << h) < size) {
+        int h = 1; // height of the tree
+        while ((1 << h) < size) { // while the number of leaf nodes is less than size, increase height
             h++;
         }
-        this.size = size;
-        isize = 1 << h;
-        nodes = new Node[1 << (h+1)];
+        isize = (1 << h) ; // number of internal nodes is 2^h
+        nodes = new ThetaLambdaTree.Node[1 << (h+1)]; // total number of nodes is 2^(h+1)
         for (int i = 1; i < nodes.length; i++) {
-            nodes[i] = new Node();
+            nodes[i] = new ThetaLambdaTree.Node();
         }
     }
 
@@ -66,8 +64,8 @@ public class ThetaLambdaTree {
      * Remove all the activities from this theta-tree
      */
     public void reset() {
-        for (Node n : nodes) {
-            n.reset();
+        for (int i = 1; i < nodes.length; i++) {
+            nodes[i].reset();
         }
     }
 
@@ -75,20 +73,20 @@ public class ThetaLambdaTree {
      * Insert an activity in the theta set
      *
      * @param activityIndex assumed to start at 0 from left to right up to size-1
-     * @param ect earliest completion time
+     * @param est earliest completion time
      * @param dur duration
      */
-    public void insertTheta(int activityIndex, int ect, int dur) {
+    public void insertTheta(int activityIndex, int est, int dur) {
         //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
         int currPos = isize + activityIndex;
         Node node = nodes[currPos];
-        node.thetaEct = ect;
+        node.thetaEct = est + dur;
         node.thetaSump = dur;
-        node.thetaLambdaEct = ect;
+        node.thetaLambdaEct = est + dur;
         node.thetaLambdaSump = dur;
         node.responsibleThetaLambdaEct = UNDEF;
         node.responsibleThetaLambdaSump = UNDEF;
-        reCompute(getFather(currPos));
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
 
@@ -109,7 +107,7 @@ public class ThetaLambdaTree {
         node.thetaLambdaSump = dur;
         node.responsibleThetaLambdaEct = activityIndex;
         node.responsibleThetaLambdaSump = activityIndex;
-        reCompute(getFather(currPos));
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
     /**
@@ -122,7 +120,9 @@ public class ThetaLambdaTree {
         Node node = nodes[currPos];
         node.responsibleThetaLambdaSump = activityIndex;
         node.responsibleThetaLambdaEct = activityIndex;
-        reCompute(getFather(currPos));
+        node.thetaEct = Integer.MIN_VALUE;
+        node.thetaSump = 0;
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
     /**
@@ -134,110 +134,65 @@ public class ThetaLambdaTree {
         int currPos = isize + activityIndex;
         Node node = nodes[currPos];
         node.reset();
-        reCompute(getFather(currPos));
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
-    private int getThetaEct(int pos) {
-        return nodes[pos].thetaEct;
-    }
-
-    private int getThetaLambdaEct(int pos) {
-        return nodes[pos].thetaLambdaEct;
-    }
-
-    /**
-     * The earliest completion time of the activities present in the theta-tree
-     * @return the earliest completion time of the activities present in the theta-tree
-     */
     public int getThetaEct() {
-        return getThetaEct(0);
+        return nodes[1].thetaEct;
     }
 
     public int getThetaLambdaEct() {
-        return getThetaLambdaEct(0);
+        return nodes[1].thetaLambdaEct;
     }
 
 
     public int getResponsibleForThetaLambdaEct() {
-        return getResponsibleForThetaLambdaEct(0);
+        return nodes[1].responsibleThetaLambdaEct;
     }
 
-    private int getResponsibleForThetaLambdaEct(int pos) {
-        return nodes[pos].responsibleThetaLambdaEct;
+
+    private int getResponsibleForThetaLambdaSump() {
+        return nodes[1].responsibleThetaLambdaSump;
     }
-
-    private int getThetaSump(int pos) {
-        return nodes[pos].thetaSump;
-    }
-
-    private int getThetaLambdaSump(int pos) {
-        return nodes[pos].thetaLambdaSump;
-    }
-
-    public int getResponsibleForThetaLambdaSump() {
-        return getResponsibleForThetaLambdaSump(0);
-    }
-
-    public int getResponsibleForThetaLambdaSump(int pos) {
-        return nodes[pos].responsibleThetaLambdaSump;
-    }
-
-    private int getFather(int pos) {
-        //the father of node in pos is (pos-1)/2
-        return (pos - 1) >> 1;
-    }
-
-    private int getLeft(int pos) {
-        //the left child of pos is pos*2+1
-        return (pos << 1) + 1;
-    }
-
-    private int getRight(int pos) {
-        //the right child of pos is (pos+1)*2
-        return (pos + 1) << 1;
-    }
-
-    private void reComputeAux(int pos) {
-        int pl = getThetaSump(getLeft(pos));
-        int pl_ = getThetaLambdaSump(getLeft(pos));
-        int pr = getThetaSump(getRight(pos));
-        int pr_ = getThetaLambdaSump(getRight(pos));
-
-        nodes[pos].thetaSump = pl + pr;
-
-        if (pl_ + pr > pl + pr_) {
-            nodes[pos].thetaLambdaSump = pl_ + pr;
-            nodes[pos].responsibleThetaLambdaSump = getResponsibleForThetaLambdaSump(getLeft(pos));
-        } else {
-            nodes[pos].thetaLambdaSump = pl + pr_;
-            nodes[pos].responsibleThetaLambdaSump = getResponsibleForThetaLambdaSump(getRight(pos));
-        }
-
-        int el = getThetaEct(getLeft(pos));
-        int el_ = getThetaLambdaEct(getLeft(pos));
-        int er = getThetaEct(getRight(pos));
-        int er_ = getThetaLambdaEct(getRight(pos));
-
-        // case 1
-        nodes[pos].thetaEct = er_;
-        nodes[pos].responsibleThetaLambdaEct = getResponsibleForThetaLambdaSump(getRight(pos));
-        // case 2
-        if (el_ + pr > Math.max(er_, el + pr_)) {
-            nodes[pos].thetaLambdaEct = el_ + pr;
-            nodes[pos].responsibleThetaLambdaEct =  getResponsibleForThetaLambdaEct(getLeft(pos));
-        }
-        // case 3
-        if (el + pr_ > Math.max(er, el_ + pr)) {
-            nodes[pos].thetaLambdaEct = el + pr_;
-            nodes[pos].responsibleThetaLambdaEct = getResponsibleForThetaLambdaSump(getRight(pos));
-        }
-    }
-
 
     private void reCompute(int pos) {
-        while (pos > 0) {
-            reComputeAux(pos);
-            pos = getFather(pos);
+        while (pos >= 1) {
+            Node node = nodes[pos];
+            Node left = nodes[pos << 1]; // left child
+            Node right = nodes[(pos << 1) + 1]; // right child
+
+            // ----- theta tree update -----
+            nodes[pos].thetaSump = left.thetaSump + right.thetaSump;
+            nodes[pos].thetaEct = Math.max(right.thetaEct, left.thetaEct + right.thetaSump);
+
+            // ----- theta-lambda update -----
+
+            // sump update
+            node.thetaSump = left.thetaSump + right.thetaSump;
+            if (left.thetaLambdaSump + right.thetaSump > left.thetaSump + right.thetaLambdaSump) {
+                nodes[pos].thetaLambdaSump = left.thetaSump + right.thetaLambdaSump;
+                nodes[pos].responsibleThetaLambdaSump = left.responsibleThetaLambdaSump;
+            } else {
+                nodes[pos].thetaLambdaSump = left.thetaLambdaSump + right.thetaSump;
+                nodes[pos].responsibleThetaLambdaSump = right.responsibleThetaLambdaSump;
+            }
+
+            // ect update
+            // case 1
+            node.thetaLambdaEct = right.thetaLambdaEct;
+            node.responsibleThetaLambdaEct = right.responsibleThetaLambdaEct;
+            // case 2
+            if (left.thetaEct + right.thetaLambdaSump > node.thetaLambdaEct) {
+                node.thetaLambdaEct = left.thetaEct + right.thetaLambdaSump;
+                node.responsibleThetaLambdaEct =  right.responsibleThetaLambdaSump;
+            }
+            // case 3
+            if (left.thetaLambdaEct + right.thetaSump > node.thetaLambdaEct) {
+                node.thetaLambdaEct = left.thetaLambdaEct + right.thetaSump;
+                node.responsibleThetaLambdaEct = left.responsibleThetaLambdaEct;
+            }
+
+            pos = pos >> 1; // parent
         }
     }
 

@@ -43,7 +43,7 @@ public class JobShop {
     public static void main(String[] args) {
         // Reading data:
         try {
-            FileInputStream istream = new FileInputStream("data/JOBSHOP/jobshop-8-8-0");
+            FileInputStream istream = new FileInputStream("data/JOBSHOP/jobshop-7-7-0");
             BufferedReader in = new BufferedReader(new InputStreamReader(istream));
             in.readLine();
             in.readLine();
