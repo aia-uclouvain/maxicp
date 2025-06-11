@@ -1,0 +1,8 @@
+n_jobs	=	10;
+init_inventory	=	7;
+capa_inventory	=	13;
+type_inventory	=	[1, 0, 1, 1, 1, 0, 1, 0, 0, 0];
+processing	=	[7, 7, 3, 4, 4, 7, 2, 7, 9, 7];
+weight	=	[8, 2, 4, 6, 8, 7, 5, 3, 7, 7];
+release	=	[11, 15, 23, 6, 27, 12, 22, 2, 1, 24];
+inventory	=	[6, 9, 8, 3, 3, 4, 6, 8, 3, 8];
