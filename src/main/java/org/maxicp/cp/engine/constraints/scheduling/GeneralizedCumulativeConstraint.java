@@ -252,8 +252,6 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
             int actIdx = active[i];
             Activity act = activities[actIdx];
             if (!act.isFixed()) {
-                long maxH = Integer.MIN_VALUE; //Maximum available height over activity window
-                long minH = Integer.MAX_VALUE; //Minimum available height over activity window
 
                 //Forward check until fixed part or end min of activity:
                 int tpForward = actToStartMinTp[actIdx];
@@ -266,9 +264,6 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                         act.setStartMin(getEnd(tpForward));
                     } else {
                         if (mandatoryActive) checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
-                        //Updating min & max available heights:
-                        maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));
-                        minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
                     }
                     tpForward++;
                 }
@@ -284,9 +279,6 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                         act.setEndMax(time[tpBackward]);
                     } else {
                         if (mandatoryActive) checkIfMandatory(actIdx, tpBackward); //Checking if activity is mandatory
-                        //Updating min & max available heights:
-                        maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpBackward] - Math.min(act.getHeightMin(), 0L)));
-                        minH = Math.min(minH, minCapacity - ((long) profileMax[tpBackward] - Math.max(act.getHeightMax(), 0L)));
                     }
                     tpBackward--;
                 }
@@ -303,6 +295,10 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                             tpForward++;
                         }
                     } else {
+                        //Checking max and min height at previous timePoint (start of MOI):
+                        long maxH = tpForward > 0 ? maxCapacity - ((long) profileMin[tpForward-1] - Math.min(act.getHeightMin(), 0L)) : Long.MIN_VALUE;
+                        long minH = tpForward > 0 ? minCapacity - ((long) profileMax[tpForward-1] - Math.max(act.getHeightMax(), 0L)) : Long.MAX_VALUE;
+
                         // Last time at which the act can start and span until now without obstruction:
                         // (used to compute max length)
                         int currentStart = act.getStartMin();
@@ -322,14 +318,21 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                             minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
                             tpForward++;
                         }
-                        //Adjusting maximum length:
-                        maxL = Math.max(maxL, act.getEndMax() - currentStart);
-                        act.setLengthMax(Math.min(act.getLengthMax(), maxL));
+
+                        //Updating min & max available heights at next timepoint if necessary:
+                        if(time[tpForward] == act.getStartMax()) {
+                            maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));
+                            minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
+                        }
 
                         // Adjusting height:
                         // (Necessary even if height is fixed as height adjustment will remove task if not possible)
                         act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
                         act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
+
+                        //Adjusting maximum length:
+                        maxL = Math.max(maxL, act.getEndMax() - currentStart);
+                        act.setLengthMax(Math.min(act.getLengthMax(), maxL));
                     }
                 }
             }
