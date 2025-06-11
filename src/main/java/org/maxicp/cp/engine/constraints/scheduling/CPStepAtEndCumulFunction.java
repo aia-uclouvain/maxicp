@@ -35,7 +35,10 @@ public class CPStepAtEndCumulFunction implements CPCumulFunction {
         dummy.setEndMin(Constants.HORIZON);
         dummy.setEndMax(Constants.HORIZON);
         cp.post(eq(var.status(), dummy.status()));
-        cp.post(eq(endOr(var, 0), startOr(dummy, 0)));
+
+
+        cp.post(startAtEnd(dummy, var));
+
         this.var = var;
         height = makeIntVar(var.getSolver(), hMin, hMax);
     }

@@ -10,6 +10,11 @@ import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.constraints.seqvar.*;
 import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
+import org.maxicp.cp.engine.constraints.seqvar.Exclude;
+import org.maxicp.cp.engine.constraints.seqvar.Insert;
+import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
+import org.maxicp.cp.engine.constraints.seqvar.Require;
+import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
 import org.maxicp.search.DFSearch;
@@ -267,7 +272,6 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp) {
-        //return new CPIntervalVarImplNaive(cp);
         return new CPIntervalVarImpl(cp);
     }
 
@@ -1307,7 +1311,6 @@ public final class CPFactory {
         return new Exclude(seqVar, node);
     }
 
-
     /**
      * Forbids a subsequence of length 3 to appear in a {@link CPSeqVar},
      * removing from the domain all sequences containing the sub-sequence given as input.
@@ -2036,9 +2039,9 @@ public final class CPFactory {
             public void post() {
                 int minStart = Constants.HORIZON;
                 int maxEnd = 0;
-                for(Activity act : activities){
-                    if(act.getStartMin() < minStart) minStart = act.getStartMin();
-                    if(act.getEndMax() > maxEnd) maxEnd = act.getEndMax();
+                for (Activity act : activities) {
+                    if (act.getStartMin() < minStart) minStart = act.getStartMin();
+                    if (act.getEndMax() > maxEnd) maxEnd = act.getEndMax();
                 }
                 CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);
                 interval.setStart(minStart);
@@ -2078,12 +2081,11 @@ public final class CPFactory {
      * Requires a cumulative function to always be within the range [minValue..maxValue]
      * on the execution range [from..to).
      *
-     * @param fun      a cumulative function
+     * @param fun a cumulative function
      * @param minValue an int value
      * @param maxValue an int value
-     * @param from     an int value
-     * @param to       an int value
-     * @param algo     a cumulative algorithm
+     * @param from an int value
+     * @param to an int value
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to, Constants.CumulativeAlgo algo) {
