@@ -332,11 +332,8 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[2], 4, 4));
 
         CPIntVar h0 = profile.heightAtStart(intervals[0]);
-        CPIntVar h1 = profile.heightAtStart(intervals[1]);
-        CPIntVar h2 = profile.heightAtStart(intervals[2]);
 
-
-        cp.post(le(profile, 4, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE_BASELINE));
+        cp.post(le(profile, 4));
 
         assertEquals(4, h0.max());
     }
