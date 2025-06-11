@@ -301,4 +301,47 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         assertEquals(360, stats.numberOfSolutions());
     }
+
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testOptimalFiltering(CPSolver cp) {
+        int n = 3; // number of intervals
+
+        CPIntervalVar[] intervals = new CPIntervalVar[3];
+
+        intervals[0] = makeIntervalVar(cp, false, 6);
+        intervals[1] = makeIntervalVar(cp, false, 12);
+        intervals[2] = makeIntervalVar(cp, false, 12);
+
+        intervals[0].setStartMin(8);
+        intervals[0].setStartMax(24);
+
+        intervals[1].setStartMin(0);
+        intervals[1].setStartMax(0);
+
+        intervals[2].setStartMin(20);
+        intervals[2].setStartMax(20);
+
+
+        CPCumulFunction profile = new CPFlatCumulFunction();
+        profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[0], 1, 6));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[1], 4, 4));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[2], 4, 4));
+
+        CPIntVar h0 = profile.heightAtStart(intervals[0]);
+        CPIntVar h1 = profile.heightAtStart(intervals[1]);
+        CPIntVar h2 = profile.heightAtStart(intervals[2]);
+
+
+
+
+        cp.post(le(profile, 4));
+
+        System.out.println(intervals[0]+ "h: " + h0);
+        System.out.println(intervals[1]+ "h: " + h1);
+        System.out.println(intervals[2]+ "h: " + h2);
+        System.out.println("----");
+    }
 }
