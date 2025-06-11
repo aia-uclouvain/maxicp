@@ -9,6 +9,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
@@ -306,7 +307,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testOptimalFiltering(CPSolver cp) {
+    public void testOptimalFilteringHeight(CPSolver cp) {
         int n = 3; // number of intervals
 
         CPIntervalVar[] intervals = new CPIntervalVar[3];
@@ -316,7 +317,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         intervals[2] = makeIntervalVar(cp, false, 12);
 
         intervals[0].setStartMin(8);
-        intervals[0].setStartMax(24);
+        intervals[0].setEndMax(24);
 
         intervals[1].setStartMin(0);
         intervals[1].setStartMax(0);
@@ -335,13 +336,8 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         CPIntVar h2 = profile.heightAtStart(intervals[2]);
 
 
+        cp.post(le(profile, 4, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE_BASELINE));
 
-
-        cp.post(le(profile, 4));
-
-        System.out.println(intervals[0]+ "h: " + h0);
-        System.out.println(intervals[1]+ "h: " + h1);
-        System.out.println(intervals[2]+ "h: " + h2);
-        System.out.println("----");
+        assertEquals(4, h0.max());
     }
 }
