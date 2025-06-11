@@ -55,7 +55,7 @@ public record Max(IntExpression[] exprs) implements SymbolicIntExpression, NonLe
     @Override
     public int defaultMin() {
         int max = Integer.MIN_VALUE;
-        for(IntExpression expr: exprs)
+        for (IntExpression expr : exprs)
             max = Math.max(max, expr.min());
         return max;
     }
