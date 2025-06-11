@@ -20,10 +20,10 @@ public class IsIncluded extends AbstractCPConstraint {
     /**
      * Creates a constraint that links a boolean variable to the inclusion of a value in a set.
      * @param bool the boolean variable
-     * @param v    the value to be included/excluded
      * @param set  the set variable
+     * @param v    the value to be included/excluded
      */
-    public IsIncluded(CPBoolVar bool, int v, CPSetVar set) {
+    public IsIncluded(CPBoolVar bool, CPSetVar set, int v) {
         super(set.getSolver());
         this.set = set;
         this.v = v;

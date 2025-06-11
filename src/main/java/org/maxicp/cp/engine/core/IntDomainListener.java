@@ -10,7 +10,7 @@ package org.maxicp.cp.engine.core;
  * Domain listeners are passed as argument
  * to the {@link IntDomain} modifier methods.
  */
-public interface DomainListener {
+public interface IntDomainListener {
 
     /**
      * Called whenever the domain becomes empty.

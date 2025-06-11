@@ -119,4 +119,19 @@ public class IsSubsetTest extends CPSolverTest {
 
         assertTrue(set1.isIncluded(2));
     }
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testCardinalityUpdate(CPSolver cp) {
+
+        CPBoolVar b = CPFactory.makeBoolVar(cp);
+        CPSetVar set1 = new CPSetVarImpl(cp, 3);
+        CPSetVar set2 = new CPSetVarImpl(cp, 3);
+
+        cp.post(CPFactory.eq(set1.card(),3));
+        cp.post(CPFactory.eq(set2.card(),2));
+
+        assertTrue(b.isFalse());
+    }
 }

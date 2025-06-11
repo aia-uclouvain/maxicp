@@ -54,7 +54,7 @@ public class SparseSetDomain implements IntDomain {
     }
 
     @Override
-    public void remove(int v, DomainListener l) {
+    public void remove(int v, IntDomainListener l) {
         if (domain.contains(v)) {
             boolean maxChanged = max() == v;
             boolean minChanged = min() == v;
@@ -69,7 +69,7 @@ public class SparseSetDomain implements IntDomain {
     }
 
     @Override
-    public void removeAllBut(int v, DomainListener l) {
+    public void removeAllBut(int v, IntDomainListener l) {
         if (domain.contains(v)) {
             if (domain.size() != 1) {
                 boolean maxChanged = max() != v;
@@ -89,7 +89,7 @@ public class SparseSetDomain implements IntDomain {
     }
 
     @Override
-    public void removeBelow(int value, DomainListener l) {
+    public void removeBelow(int value, IntDomainListener l) {
         if (domain.min() < value) {
             domain.removeBelow(value);
             switch (domain.size()) {
@@ -107,7 +107,7 @@ public class SparseSetDomain implements IntDomain {
     }
 
     @Override
-    public void removeAbove(int value, DomainListener l) {
+    public void removeAbove(int value, IntDomainListener l) {
         if (domain.max() > value) {
             domain.removeAbove(value);
             switch (domain.size()) {

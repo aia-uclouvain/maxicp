@@ -26,7 +26,7 @@ public class CPSetVarImpl implements CPSetVar {
      * as initial possible domain.
      *
      * @param cp the solver in which the variable is created
-     * @param n  the number of values with {@code n >= 0}
+     * @param n  the number of values with {@code n > 0}
      */
     public CPSetVarImpl(CPSolver cp, int n) {
         if (n < 1) throw new InvalidParameterException("at least one setValue in the domain");

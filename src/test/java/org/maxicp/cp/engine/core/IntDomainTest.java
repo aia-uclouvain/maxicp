@@ -12,9 +12,9 @@ import org.maxicp.cp.engine.CPSolverTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class DomainTest extends CPSolverTest {
+public class IntDomainTest extends CPSolverTest {
 
-    private static class MyDomainListener implements DomainListener {
+    private static class MyDomainListener implements IntDomainListener {
 
         int nBind = 0;
         int nChange = 0;
