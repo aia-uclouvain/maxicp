@@ -7,24 +7,34 @@
 package org.maxicp.cp.engine.constraints.scheduling;
 
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
 
 import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntervalVarImpl;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
 
 class NonOverlapTest extends CPSolverTest {
@@ -237,6 +247,99 @@ class NonOverlapTest extends CPSolverTest {
         });
         // does not count the number of solutions, simply runs the DFS
         dfs.solve(s -> s.numberOfNodes() >= 10000);
+    }
+
+    /**
+     * Gives arrays of durations, for test purposes
+     */
+    public static Stream<int[]> getDurations() {
+        return Arrays.stream(new int[][] {
+                {5, 4, 6, 7},
+                {1, 2, 3},
+                {1, 1, 1, 1},
+                {10, 20, 15},
+        });
+    }
+
+    /**
+     * Tests that the solutions found with a no overlap are the same with and without decomposition.
+     * Uses present tasks.
+     * @param duration durations of intervals to tests
+     */
+    @ParameterizedTest
+    @MethodSource("getDurations")
+    public void testSameSolutionsAsDecomposition(int[] duration) {
+        int maxDuration = Arrays.stream(duration).max().getAsInt();
+        int sumDuration = Arrays.stream(duration).sum();
+        // allows to place all activities with a small slack between them
+        int startMax = sumDuration - maxDuration + duration.length;
+        CPSolver cp = makeSolver();
+        CPIntervalVar[] intervals = new CPIntervalVar[duration.length];
+        for (int i = 0 ; i < duration.length ; i++) {
+            intervals[i] = makeIntervalVar(cp);
+            intervals[i].setPresent();
+            intervals[i].setLength(duration[i]);
+            intervals[i].setStartMax(startMax);
+        }
+        assertSameSolutionDecomposition(intervals);
+    }
+
+    /**
+     * Tests that the solutions found with a no overlap are the same with and without decomposition.
+     * Uses optional tasks.
+     * @param duration durations of intervals to tests
+     */
+    @ParameterizedTest
+    @MethodSource("getDurations")
+    public void testSameSolutionsAsDecompositionOptionals(int[] duration) {
+        int maxDuration = Arrays.stream(duration).max().getAsInt();
+        int sumDuration = Arrays.stream(duration).sum();
+        // allows to place all activities with a small slack between them
+        int startMax = sumDuration - maxDuration + duration.length;
+        CPSolver cp = makeSolver();
+        CPIntervalVar[] intervals = new CPIntervalVar[duration.length];
+        for (int i = 0 ; i < duration.length ; i++) {
+            intervals[i] = makeIntervalVar(cp);
+            intervals[i].setLength(duration[i]);
+            intervals[i].setStartMax(startMax);
+        }
+        assertSameSolutionDecomposition(intervals);
+    }
+
+    /**
+     * Asserts that the number of solutions found when using a no overlap are the same with and without a decomposition
+     * @param intervals intervals over which the assertion must be performed
+     */
+    public static void assertSameSolutionDecomposition(CPIntervalVar[] intervals) {
+        CPSolver cp = intervals[0].getSolver();
+        cp.fixPoint();
+        cp.getStateManager().saveState();
+        cp.getStateManager().saveState();
+        cp.post(nonOverlap(intervals));
+        SearchStatistics statsNoOverlap = makeDfs(cp, and(Searches.branchOnStatus(intervals), Searches.branchOnPresentStarts(intervals))).solve();
+        cp.getStateManager().restoreState();
+        postDecomposition(intervals);
+        SearchStatistics statsDecomposition = makeDfs(cp, and(Searches.branchOnStatus(intervals), Searches.branchOnPresentStarts(intervals))).solve();
+        assertEquals(statsNoOverlap.numberOfSolutions(), statsDecomposition.numberOfSolutions());
+        cp.getStateManager().restoreState();
+    }
+
+    /**
+     * Post a no overlap through a decomposition with O(n^2) constraints
+     * @param intervals intervals over which the no overlap decomposition must be applied
+     */
+    public static void postDecomposition(CPIntervalVar[] intervals) {
+        CPSolver cp = intervals[0].getSolver();
+        for (int i = 0; i < intervals.length; i++) {
+            for (int j = i + 1; j < intervals.length; j++) {
+                // i before j or j before i:
+                CPBoolVar iBeforej = makeBoolVar(cp);
+                CPBoolVar jBeforei = not(iBeforej);
+
+                cp.post(new IsEndBeforeStart(intervals[i], intervals[j], iBeforej));
+                cp.post(new IsEndBeforeStart(intervals[j], intervals[i], jBeforei));
+            }
+        }
     }
 
 }
