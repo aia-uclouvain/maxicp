@@ -3,6 +3,7 @@ package org.maxicp.cp.examples.raw;
 import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
+import org.maxicp.cp.engine.constraints.scheduling.CPFlatCumulFunction;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -58,7 +59,14 @@ public class InventoryScheduling {
         }
         // constraint
         cp.post(alwaysIn(cumul, 0, data.capaInventory));
+
         cp.post(nonOverlap(intervals));
+        CPCumulFunction cumulNoOverlap = new CPFlatCumulFunction();
+        for (CPIntervalVar interval : intervals) {
+            cumulNoOverlap = CPFactory.plus(cumulNoOverlap,CPFactory.pulse(interval, 1));
+        }
+        cp.post(alwaysIn(cumulNoOverlap,0, 1, Constants.CumulativeAlgo.BELDICEANU_CARLSSON));
+
         // Objective
         IntExpression makespan = CPFactory.max(ends);
         Objective obj = minimize(makespan);
