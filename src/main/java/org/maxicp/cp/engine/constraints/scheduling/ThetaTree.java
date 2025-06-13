@@ -9,6 +9,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
  * Data Structure described in
  * Global Constraints in Scheduling, 2008 Petr Vilim, PhD thesis
  * See <a href="http://vilim.eu/petr/disertace.pdf">The thesis.</a>
+ * @author Pierre Schaus
  */
 public class ThetaTree {
 
@@ -21,32 +22,15 @@ public class ThetaTree {
             reset();
         }
 
-        public void reset() {
-            setECT(Integer.MIN_VALUE);
-            setSUMP(0);
+        void reset() {
+            ect = Integer.MIN_VALUE;
+            sump = 0;
         }
-
-        public int getECT() {
-            return ect;
-        }
-
-        public int getSUMP() {
-            return sump;
-        }
-
-        public void setECT(int ect) {
-            this.ect = ect;
-        }
-
-        public void setSUMP(int sump) {
-            this.sump = sump;
-        }
-
     }
 
+    // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
     private Node[] nodes;
     private int isize; //number of internal nodes
-    private int size;
 
     /**
      * Creates a theta-tree able to store
@@ -60,46 +44,40 @@ public class ThetaTree {
      * @param size the number of activities that can possibly be inserted in the tree
      */
     public ThetaTree(int size) {
-        // http://en.wikipedia.org/wiki/Binary_heap#Adding_to_the_heap
-        this.size = size;
-        isize = 1;
-        //enumerate multiples of two 2, 4, 6, 8 ... until isize larger than size
-        while (isize < size) {
-            isize <<= 1; //shift the pattern to the left by 1 (i.e. multiplies by 2)
+        int h = 1; // height
+        while ((1 << h) < size) { h++; } // increase height until number of leaf nodes >= size;
+        isize = (1 << h) ; // number of internal nodes is 2^h
+        nodes = new ThetaTree.Node[1 << (h+1)]; // total number of nodes is 2^(h+1)
+        for (int i = 1; i < nodes.length; i++) {
+            nodes[i] = new ThetaTree.Node();
         }
-        //number of nodes in a complete  binary tree with isize leaf nodes is (isize*2)-1
-        nodes = new Node[(isize << 2) - 1];
-        for (int i = 0; i < nodes.length; i++) {
-            nodes[i] = new Node();
-        }
-        isize--;
     }
 
     /**
      * Remove all the activities from this theta-tree
      */
     public void reset() {
-        for (Node n : nodes) {
-            n.reset();
+        for (int i = 1; i < nodes.length; i++) {
+            nodes[i].reset();
         }
     }
 
     /**
      * Insert activity in leaf nodes at given position
-     * such that it is taken into account for the {@link #getECT()}
+     * such that it is taken into account for the {@link #getEct()}
      * computation.
      *
      * @param pos the index of the leaf node (assumed to start at 0 from left to right)
-     * @param ect earliest completion time
+     * @param est earliest start time
      * @param dur duration
      */
-    public void insert(int pos, int ect, int dur) {
+    public void insert(int pos, int est, int dur) {
         //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
         int currPos = isize + pos;
         Node node = nodes[currPos];
-        node.setECT(ect);
-        node.setSUMP(dur);
-        reCompute(getFather(currPos));
+        node.ect = est + dur;
+        node.sump = dur;
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
     /**
@@ -112,63 +90,26 @@ public class ThetaTree {
         int currPos = isize + pos;
         Node node = nodes[currPos];
         node.reset();
-        reCompute(getFather(currPos));
-    }
-
-    private int getECT(int pos) {
-        return nodes[pos].getECT();
+        reCompute(currPos >> 1); // re-compute from the parent node
     }
 
     /**
      * The earliest completion time of the activities present in the theta-tree
      * @return the earliest completion time of the activities present in the theta-tree
      */
-    public int getECT() {
-        return getECT(0);
+    public int getEct() {
+        return nodes[1].ect;
     }
-
-    private int getSUMP(int pos) {
-        return nodes[pos].getSUMP();
-    }
-
-    private int getFather(int pos) {
-        //the father of node in pos is (pos-1)/2
-        return (pos - 1) >> 1;
-    }
-
-    private int getLeft(int pos) {
-        //the left child of pos is pos*2+1
-        return (pos << 1) + 1;
-    }
-
-    private int getRight(int pos) {
-        //the right child of pos is (pos+1)*2
-        return (pos + 1) << 1;
-    }
-
-    private void reComputeAux(int pos) {
-        int pl = getSUMP(getLeft(pos));
-        int pr = getSUMP(getRight(pos));
-        nodes[pos].setSUMP(pl + pr);
-
-        int el = getECT(getLeft(pos));
-        int er = getECT(getRight(pos));
-        int en = Math.max(er, el + pr);
-        nodes[pos].setECT(en);
-    }
-
 
     private void reCompute(int pos) {
-        while (pos > 0) {
-            reComputeAux(pos);
-            pos = getFather(pos);
+        while (pos >= 1) {
+            Node left = nodes[pos << 1]; // left child
+            Node right = nodes[(pos << 1) + 1]; // right child
+            nodes[pos].sump = left.sump + right.sump;;
+            nodes[pos].ect = Math.max(right.ect, left.ect + right.sump);
+            pos = pos >> 1; // father
         }
-        // Fast recompute the top node. We do not need all info.
-        nodes[0].setECT(Math.max(nodes[2].getECT(),
-                nodes[1].getECT() + nodes[2].getSUMP()));
     }
-
-
 }
 
 

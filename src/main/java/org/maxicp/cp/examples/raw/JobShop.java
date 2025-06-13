@@ -20,6 +20,7 @@ import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.io.*;
@@ -43,7 +44,7 @@ public class JobShop {
     public static void main(String[] args) {
         // Reading data:
         try {
-            FileInputStream istream = new FileInputStream("data/JOBSHOP/jobshop-8-8-0");
+            FileInputStream istream = new FileInputStream("data/JOBSHOP/jobshop-9-9-0");
             BufferedReader in = new BufferedReader(new InputStreamReader(istream));
             in.readLine();
             in.readLine();
@@ -122,9 +123,9 @@ public class JobShop {
                 });
             };
 
-            //DFSearch dfs = CPFactory.makeDfs(cp, and(branchOnPresentStarts(allActivities)));
             CPBoolVar[] precedencesArray = precedences.toArray(new CPBoolVar[0]);
-            Supplier<Runnable[]> fixPrecedences = firstFail(precedencesArray);
+
+            Supplier<Runnable[]> fixPrecedences = conflictOrderingSearch(Searches.minDomVariableSelector(precedencesArray), x -> x.min());
             DFSearch dfs = CPFactory.makeDfs(cp, and(fixPrecedences,fixMakespan));
 
             dfs.onSolution(() -> {

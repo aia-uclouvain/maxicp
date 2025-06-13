@@ -295,7 +295,7 @@ public final class Searches {
             IntExpression xs;
             if (maxIntVar == null) {
                 xs = variableSelector.get();
-                stamp.put(xs, 0);
+                if (xs != null) stamp.put(xs, 0);
             } else {
                 xs = maxIntVar;
                 stamp.put(xs, stamp.get(xs) + 1);
