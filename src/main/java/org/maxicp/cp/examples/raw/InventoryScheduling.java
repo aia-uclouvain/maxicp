@@ -65,7 +65,7 @@ public class InventoryScheduling {
         for (CPIntervalVar interval : intervals) {
             cumulNoOverlap = CPFactory.plus(cumulNoOverlap,CPFactory.pulse(interval, 1));
         }
-        cp.post(alwaysIn(cumulNoOverlap,0, 1, Constants.CumulativeAlgo.BELDICEANU_CARLSSON));
+        cp.post(alwaysIn(cumulNoOverlap,0, 1));
 
         // Objective
         IntExpression makespan = CPFactory.max(ends);
