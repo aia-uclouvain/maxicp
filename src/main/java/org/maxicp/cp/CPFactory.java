@@ -2184,6 +2184,6 @@ public final class CPFactory {
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
     public static CPConstraint le(CPCumulFunction fun, int maxValue) {
-        return le(fun, maxValue, Constants.CumulativeAlgo.BELDICEANU_CARLSSON);
+        return le(fun, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);
     }
 }

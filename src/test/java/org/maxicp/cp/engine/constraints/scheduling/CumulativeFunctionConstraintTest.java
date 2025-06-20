@@ -308,33 +308,33 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testOptimalFilteringHeight(CPSolver cp) {
-        int n = 3; // number of intervals
+        int n = 4; // number of intervals
 
-        CPIntervalVar[] intervals = new CPIntervalVar[3];
+        CPIntervalVar[] intervals = new CPIntervalVar[4];
 
         intervals[0] = makeIntervalVar(cp, false, 6);
-        intervals[1] = makeIntervalVar(cp, false, 12);
-        intervals[2] = makeIntervalVar(cp, false, 12);
-
         intervals[0].setStartMin(8);
         intervals[0].setEndMax(24);
 
-        intervals[1].setStartMin(0);
-        intervals[1].setStartMax(0);
+        intervals[1] = makeIntervalVar(cp, false, 12);
+        intervals[1].setStart(0);
 
-        intervals[2].setStartMin(20);
-        intervals[2].setStartMax(20);
+        intervals[2] = makeIntervalVar(cp, false, 12);
+        intervals[2].setStart(20);
 
+        intervals[3] = makeIntervalVar(cp, false, 4);
+        intervals[3].setStart(14);
 
         CPCumulFunction profile = new CPFlatCumulFunction();
-        profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[0], 1, 6));
+        profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[0], 3, 6));
         profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[1], 4, 4));
         profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[2], 4, 4));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[3], 1, 1));
 
         CPIntVar h0 = profile.heightAtStart(intervals[0]);
 
         cp.post(le(profile, 4));
 
-        assertEquals(4, h0.max());
+        assertEquals(5, h0.max());
     }
 }
