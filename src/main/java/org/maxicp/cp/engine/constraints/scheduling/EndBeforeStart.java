@@ -36,10 +36,10 @@ public class EndBeforeStart extends AbstractCPConstraint {
     @Override
     public void propagate() {
         if (A.isPresent()) {
-            B.setStartMin(Math.max(A.endMin(), B.startMin()));
+            B.setStartMin(A.endMin());
         }
         if (B.isPresent()) {
-            A.setEndMax(Math.min(B.startMax(), A.endMax()));
+            A.setEndMax(B.startMax());
         }
         if (A.isAbsent() || B.isAbsent()) {
             setActive(false);
