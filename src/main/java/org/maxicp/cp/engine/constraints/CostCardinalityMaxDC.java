@@ -6,6 +6,7 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
@@ -17,19 +18,9 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private final int [] upper;
     private final int nValues ;
     private final int nVars;
+    private final int [][] costs;
 
-    // ----- Reversible  state -----
-
-    // The number of variables that are fixed
-    private StateInt nFixed;
-
-    // Permutation array of indices of variables,
-    // the nFixed first ones are the fixed variable indices
-    private int[] fixed;
-
-    // for each value, the number of variables that are fixed to the value
-    private StateInt[] nValuesFixed;
-
+    private final StateInt [] assignment;
 
     /**
      * Constraint the maximum number of occurrences of a range of values in x.
@@ -42,29 +33,33 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     public CostCardinalityMaxDC(CPIntVar [] x, int upper [], int [][] costs) {
         super(x[0].getSolver());
         nVars = x.length;
-        this.x = new CPIntVar[x.length];
-        nFixed = getSolver().getStateManager().makeStateInt(0);
-        fixed = new int[nVars];
-        for (int i = 0; i < x.length; i++) {
-            this.x[i] = x[i];
-            fixed[i] = i;
-        }
-
+        this.x = CPFactory.makeIntVarArray(nVars, i -> x[i]);
+        this.costs = costs;
         this.nValues = upper.length;
-        nValuesFixed = new StateInt[nValues];
         this.upper = new int[upper.length];
         for (int i = 0; i < upper.length; i++) {
             if (upper[i] < 0) throw new IllegalArgumentException("upper bounds must be non negative" + upper[i]);
             this.upper[i] = upper[i];
-            nValuesFixed[i] = getSolver().getStateManager().makeStateInt(0);
         }
+        if (costs.length != x.length) {
+            throw new IllegalArgumentException("costs must have the same length as upper bounds");
+        }
+        if (costs[0].length != nValues) {
+            throw new IllegalArgumentException("costs must have the same number of columns as upper bounds");
+        }
+        assignment = new StateInt[nVars];
+        for (int i = 0; i < nVars; i++) {
+            assignment[i] = getSolver().getStateManager().makeStateInt(-1); // -1 means unassigned
+            this.x[i] = x[i];
+        }
+        // TODO check cost dimensions
     }
 
     @Override
     public void post() {
         for (CPIntVar var : x) {
             if (!var.isFixed())
-                var.propagateOnFix(this);
+                var.propagateOnDomainChange(this);
         }
         propagate();
     }
@@ -72,30 +67,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
     @Override
     public void propagate() {
-        int nF = nFixed.value();
-        // iterate over non fixed variables
-        for (int i = nF; i < x.length; i++) {
-            int idx = fixed[i];
-            if (x[idx].isFixed()) {
-                int val = x[fixed[i]].min(); // value to remove from unfixed
-                fixed[i] = fixed[nF]; // Swap the variables
-                fixed[nF] = idx;
-                nF++;
-                if (val >= 0 && val < nValues) {
-                    nValuesFixed[val].increment();
-                    if (nValuesFixed[val].value() > upper[val]) {
-                        throw new InconsistencyException();
-                    }
-                    if (nValuesFixed[val].value() == upper[val]) {
-                        // remove the value from the possible values of the unfixed variables
-                        for (int j = nF; j < x.length; j++) {
-                            x[fixed[j]].remove(val);
-                        }
-                    }
-                }
-            }
-        }
-        nFixed.setValue(nF);
+        // TODO
     }
 
 }
