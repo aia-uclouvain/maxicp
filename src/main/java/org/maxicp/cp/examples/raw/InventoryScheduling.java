@@ -40,6 +40,8 @@ public class InventoryScheduling {
         CPIntVar[] starts = new CPIntVar[data.nbJob];
         CPIntVar[] ends = new CPIntVar[data.nbJob];
 
+        CPCumulFunction cumulNoOverlap = CPFactory.flat();
+
         CPCumulFunction cumul = step(cp, 0, data.initInventory);
 
         for (int i = 0; i < data.nbJob; i++) {
@@ -55,10 +57,16 @@ public class InventoryScheduling {
             } else {
                 cumul = minus(cumul, stepAtStart(intervals[i], data.inventory[i], data.inventory[i]));
             }
+
+            cumulNoOverlap = plus(cumulNoOverlap, pulse(intervals[i], 1));
         }
         // constraint
         cp.post(alwaysIn(cumul, 0, data.capaInventory));
-        cp.post(nonOverlap(intervals));
+
+        // cp.post(nonOverlap(intervals));
+        cp.post(le(cumulNoOverlap, 1));
+
+
         // Objective
         IntExpression makespan = CPFactory.max(ends);
         Objective obj = minimize(makespan);

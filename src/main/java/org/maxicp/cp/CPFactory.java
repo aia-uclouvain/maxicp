@@ -275,6 +275,10 @@ public final class CPFactory {
         return new CPIntervalVarImpl(cp);
     }
 
+    public static CPIntervalVar makeIntervalVarNaive(CPSolver cp) {
+        return new CPIntervalVarImplNaive(cp);
+    }
+
     /**
      * Creates a new optional interval variable with a startMin of 0, an unbounded end and fixed length
      *
