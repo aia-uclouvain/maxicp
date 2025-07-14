@@ -217,11 +217,11 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
                 makeIVar(cp, 5, 6, 7, 8),
                 makeIVar(cp, 5, 6, 7)};
 
-        int[] upper = {2, 2, 1, 2, 2};
+        int[] upper = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
         int[][] costs = new int[9][];
         for (int i = 0; i < costs.length; i++) {
-            costs[i] = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // arbitrary costs
+            costs[i] = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // arbitrary costs
         }
 
         CPIntVar H = CPFactory.makeIntVar(cp, 0, 20);
