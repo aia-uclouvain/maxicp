@@ -26,7 +26,7 @@ public class MinCostMaxFlow {
     protected int totalCost;
     protected int totalFlow;
 
-    public MinCostMaxFlow(int[][] costNetworkFlow, int[][] capMaxNetworkFlow, int H, int numVariables) {
+    public MinCostMaxFlow(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int H, int numVariables) {
         this.numNodes = costNetworkFlow.length;
         this.nunVariables = numVariables;
         this.cost = costNetworkFlow;
@@ -47,7 +47,6 @@ public class MinCostMaxFlow {
     // Function to check if it is possible to
     // have a flow from the src to sink
     protected boolean searchByMaxCapacity(int source, int dest) {
-
         // Initialise found[] to false
         Arrays.fill(found, false);
 
@@ -88,7 +87,6 @@ public class MinCostMaxFlow {
                 }
 
                 if (flow[source][k] < capMax[source][k]) {
-
                     int val = (int) (dist[source] + pi[source]
                             - pi[k] + cost[source][k]);
 
@@ -133,14 +131,14 @@ public class MinCostMaxFlow {
         while (searchByMaxCapacity(source, dest)) {
 
             // Set the default amount
-            int amt = INF;
-            for (int x = dest; x != source; x = dad[x])
-
-                amt = Math.min(amt,
-                        flow[x][dad[x]] != 0
-                                ? flow[x][dad[x]]
-                                : capMax[dad[x]][x]
-                                - flow[dad[x]][x]);
+            int amt = 1; //INF;
+//            for (int x = dest; x != source; x = dad[x])
+//
+//                amt = Math.min(amt,
+//                        flow[x][dad[x]] != 0
+//                                ? flow[x][dad[x]]
+//                                : capMax[dad[x]][x]
+//                                - flow[dad[x]][x]);
 
             for (int x = dest; x != source; x = dad[x]) {
 
