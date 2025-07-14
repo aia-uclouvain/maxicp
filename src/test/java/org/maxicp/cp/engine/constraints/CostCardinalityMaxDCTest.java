@@ -38,7 +38,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
     public void simpleTest(CPSolver cp) {
         int nVars = 5;
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, nVars, 3);
-        int[] upper= {3, 2, 2};
+        int[] upper = {3, 2, 2};
         int[][] costs = new int[nVars][3];
 
         for (int i = 0; i < nVars; i++) {
@@ -46,7 +46,9 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
             costs[i][1] = 2;
             costs[i][2] = 3;
         }
-        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, 7);
+
+        CPIntVar H = CPFactory.makeIntVar(cp, 0, 7); // Maximum cost allowed
+        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
         cp.post(constraint);
 
         // check assignments
@@ -71,7 +73,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void simpleTestInconsistency(CPSolver cp) {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 5, 3);
-        int[] upper= {3, 2, 2};
+        int[] upper = {3, 2, 2};
         int[][] costs = new int[5][3];
 
         for (int i = 0; i < 5; i++) {
@@ -79,16 +81,18 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
             costs[i][1] = 2;
             costs[i][2] = 3;
         }
-        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, 6);
+
+        CPIntVar H = CPFactory.makeIntVar(cp, 0, 6); // Maximum cost allowed
+        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
 
 
-        assertThrowsExactly(InconsistencyException.class, ()->cp.post(constraint));
+        assertThrowsExactly(InconsistencyException.class, () -> cp.post(constraint));
     }
 
     @ParameterizedTest
 //    @MethodSource("getSolver")
-    @ValueSource(ints = { 7, 11 })
-    public void costGCCTest(int H) {
+    @ValueSource(ints = {7, 11})
+    public void costGCCTest(int h) {
         CPSolver cp = makeSolver();
         int nVars = 7;
         CPIntVar[] x = new CPIntVar[]{
@@ -100,7 +104,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
                 makeIVar(cp, 3),
                 makeIVar(cp, 3, 4)};
 
-        int[] upper= {2, 2, 1, 2, 2};
+        int[] upper = {2, 2, 1, 2, 2};
         int[][] costs = new int[nVars][];
 
         costs[0] = new int[]{1, 4, 0, 0, 0};
@@ -111,6 +115,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
         costs[5] = new int[]{0, 0, 0, 1, 0};
         costs[6] = new int[]{0, 0, 0, 1, 1};
 
+        CPIntVar H = CPFactory.makeIntVar(cp, 0, h); // Maximum cost allowed
 
         CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
         cp.post(constraint);
@@ -154,7 +159,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
                 makeIVar(cp, 3),
                 makeIVar(cp, 3, 4)};
 
-        int[] upper= {2, 2, 1, 2, 2};
+        int[] upper = {2, 2, 1, 2, 2};
 
         int[][] costs = new int[nVars][];
         costs[0] = new int[]{1, 4, 0, 0, 0};
@@ -165,8 +170,8 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
         costs[5] = new int[]{0, 0, 0, 1, 0};
         costs[6] = new int[]{0, 0, 0, 1, 1};
 
-
-        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, 20);
+        CPIntVar H = CPFactory.makeIntVar(cp, 0, 20); // Maximum cost allowed
+        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
         cp.post(constraint);
 
         // check assignments
@@ -177,7 +182,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
         }
 
         // check min costs of assignment
-        assertEquals(7, constraint.getMinCostAssignment());
+        assertEquals(7, H.min());
 
         assertTrue(x[0].contains(0));
         assertTrue(x[0].contains(1));
@@ -195,7 +200,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
     }
 
     private static CPIntVar makeIVar(CPSolver cp, Integer... values) {
-        return CPFactory.makeIntVar(cp, new HashSet<>(Arrays.asList(values)));
+        return CPFactory.makeIntVar(cp, Set.of(values));
     }
 
     @ParameterizedTest
@@ -212,14 +217,16 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
                 makeIVar(cp, 5, 6, 7, 8),
                 makeIVar(cp, 5, 6, 7)};
 
-        int[] upper= {2, 2, 1, 2, 2};
+        int[] upper = {2, 2, 1, 2, 2};
 
         int[][] costs = new int[9][];
         for (int i = 0; i < costs.length; i++) {
             costs[i] = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // arbitrary costs
         }
 
-        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, 20);
+        CPIntVar H = CPFactory.makeIntVar(cp, 0, 20);
+
+        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
         cp.post(constraint);
 
         assertFalse(x[4].contains(3));

@@ -21,7 +21,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private final int nValues;
     private final int nVars;
     private final int[][] costs;
-    private final int H; // Maximum cost allowed
+    private final CPIntVar H; // Maximum cost allowed
 
     private final StateInt[] assignment;
     private int minCostAssignment;
@@ -37,7 +37,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
      *              upper[i] is the maximum number of occurrences of value i in x
      * @param costs The costs associated with each value in x.
      */
-    public CostCardinalityMaxDC(CPIntVar[] x, int upper[], int[][] costs, int H) {
+    public CostCardinalityMaxDC(CPIntVar[] x, int upper[], int[][] costs, CPIntVar H) {
         super(x[0].getSolver());
         nVars = x.length;
         this.x = CPFactory.makeIntVarArray(nVars, i -> x[i]);
@@ -79,13 +79,14 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         int[][] capMaxNetworkFlow = new int[nValues + nVars + 2][nValues + nVars + 2];
         buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);
 
-        MinCostMaxFlow minCostMaxFlow = new MinCostMaxFlow(capMaxNetworkFlow, costNetworkFlow, H, nVars);
+        MinCostMaxFlow minCostMaxFlow = new MinCostMaxFlow(capMaxNetworkFlow, costNetworkFlow, H.max(), nVars);
 
         minCostMaxFlow.run(0, nVars + nValues + 1);
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
-        if (minCostAssignment > H || minCostMaxFlow.getTotalFlow() != nVars) throw new InconsistencyException();
+        if (minCostAssignment > H.max() || minCostMaxFlow.getTotalFlow() != nVars) throw new InconsistencyException();
+        H.removeBelow(minCostAssignment);
 
         // fill the assignment
         int[][] domains = new int[nVars][nValues];
@@ -101,7 +102,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         }
 
         //TODO: mettre graph en positif
-        builResidualGraph(capMaxNetworkFlow, costNetworkFlow, H, minCostMaxFlow.getFlow(), nVars + nValues + 2);
+        builResidualGraph(capMaxNetworkFlow, costNetworkFlow, H.max(), minCostMaxFlow.getFlow(), nVars + nValues + 2);
 
         //TODO: remove arcs not consistent schmied2024
 
@@ -139,7 +140,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 }
 
                 // Check if the arc (varNode, valueNode) is consistent
-                if (dist[valueNode][varNode] > H - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
+                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
                     // Arc is not consistent, remove it
                     x[i].remove(domains[i][j]);
                 }
