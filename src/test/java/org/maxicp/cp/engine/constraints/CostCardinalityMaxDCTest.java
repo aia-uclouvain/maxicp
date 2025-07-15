@@ -1,31 +1,17 @@
 package org.maxicp.cp.engine.constraints;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-/*
- * MaxiCP is under MIT License
- * Copyright (c)  2025 UCLouvain
- *
- */
-
-import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
 import org.maxicp.state.State;
 import org.maxicp.util.exception.InconsistencyException;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -235,6 +221,66 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
         assertFalse(x[7].contains(5));
         assertFalse(x[7].contains(6));
         assertFalse(x[8].contains(5));
+    }
+
+    @Test
+    public void scc() {
+        SCC scc = new SCC();
+        int[][] adjacencyMatrix = {
+                {0, 1, 0, 0, 0},
+                {0, 0, 1, 0, 0},
+                {0, 0, 0, 1, 0},
+                {1, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0}
+        };
+        scc.findSCC(adjacencyMatrix);
+        List<List<Integer>> composantes = scc.getComposantes();
+        assertEquals(1, composantes.size());
+        assertEquals(5, composantes.getFirst().size());
+        assertTrue(composantes.getFirst().contains(0));
+        assertTrue(composantes.getFirst().contains(1));
+        assertTrue(composantes.getFirst().contains(2));
+        assertTrue(composantes.getFirst().contains(3));
+        assertTrue(composantes.getFirst().contains(4));
+
+    }
+
+    @Test
+    public void scc2() {
+        SCC scc = new SCC();
+        int[][] adjacencyMatrix = {
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+                {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0}
+        };
+        scc.findSCC(adjacencyMatrix);
+        List<List<Integer>> composantes = scc.getComposantes();
+        assertEquals(2, composantes.size());
+        assertEquals(6, composantes.getFirst().size());
+        assertEquals(4, composantes.getLast().size());
+
+        assertTrue(composantes.getFirst().contains(1));
+        assertTrue(composantes.getFirst().contains(2));
+        assertTrue(composantes.getFirst().contains(3));
+        assertTrue(composantes.getFirst().contains(8));
+        assertTrue(composantes.getFirst().contains(9));
+
+        assertTrue(composantes.getLast().contains(7));
+        assertTrue(composantes.getLast().contains(11));
+        assertTrue(composantes.getLast().contains(12));
+        assertTrue(composantes.getLast().contains(13));
+
     }
 
 }

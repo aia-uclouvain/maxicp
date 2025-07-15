@@ -13,6 +13,7 @@ import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
@@ -104,9 +105,106 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         //TODO: mettre graph en positif
         builResidualGraph(capMaxNetworkFlow, costNetworkFlow, H.max(), minCostMaxFlow.getFlow(), nVars + nValues + 2);
 
-        //TODO: remove arcs not consistent schmied2024
 
-        removeArcNotConsistent(numValuesByDomain, domains); //Régin2002
+//        removeArcNotConsistent(numValuesByDomain, domains); // Régin 2002
+        removeArcNotConsistentPivot(numValuesByDomain, domains); //Schmied 2024
+
+    }
+
+    private void removeArcNotConsistentPivot(int[] numValuesByDomain, int[][] domains) {
+
+        int numNodes = capMaxResidualGraph.length;
+        int[][] dist = new int[numNodes][];
+
+        // Create a list of edges
+        int[][] edges = new int[numNodes * numNodes][3];
+        int[][] edgesReverse = new int[numNodes * numNodes][3];
+        int edgeCount = 0;
+        int costArcMax = 0;
+        for (int i = 0; i < numNodes; i++) {
+            for (int j = 0; j < numNodes; j++) {
+                if (capMaxResidualGraph[i][j] > 0) {
+                    edges[edgeCount] = new int[]{i, j, costResidualGraph[i][j]};
+                    edgesReverse[edgeCount] = new int[]{j, i, costResidualGraph[i][j]};
+                    edgeCount++;
+                }
+                if (costArcMax < costResidualGraph[i][j]) {
+                    costArcMax = costResidualGraph[i][j]; // Find the maximum cost of an arc
+                }
+            }
+        }
+
+        SCC scc = new SCC();
+        scc.findSCC(capMaxResidualGraph);
+        List<List<Integer>> sccs = scc.getComposantes();
+        int[] sccByNode = scc.getSCCByNode();
+        int[] pivots = selectPivotBySCC(sccs);
+        int[] distMaxIn = new int[sccs.size()];
+        int[] distMaxOut = new int[sccs.size()];
+
+        // For each SCC, compute the shortest path from the pivot to all other nodes and from all nodes to the pivot
+        for (int indexSCC = 0; indexSCC < pivots.length; indexSCC++) {
+            int pivot = pivots[indexSCC];
+            if (dist[pivot] == null) {
+                dist[pivot] = bellmanFord(numNodes, edgeCount, edges, pivot); // Compute shortest path from pivot to all nodes
+                int[] distPivotRev = bellmanFord(numNodes, edgeCount, edgesReverse, pivot); // Compute shortest path from all nodes to pivot
+                for (int i = 0; i < numNodes; i++) {
+                    if (dist[i] == null) {
+                        dist[i] = new int[numNodes];
+                        Arrays.fill(dist[i], Integer.MAX_VALUE);
+                    }
+                    if (distPivotRev[i] != 0) {
+                        dist[i][pivot] = distPivotRev[i]; // Store the reverse distance
+                    }
+                    if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != Integer.MAX_VALUE) {
+                        distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
+                    }
+                    if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != Integer.MAX_VALUE) {
+                        distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
+                    }
+                }
+            }
+        }
+
+
+        for (int i = 0; i < nVars; i++) {
+            int varNode = i + 1; // node representing variable i
+
+            //iterate over all values of variable i
+            for (int j = 0; j < numValuesByDomain[i]; j++) {
+                int valueNode = nVars + 1 + domains[i][j]; // node representing value j of variable i
+                int indexSCC = sccByNode[valueNode];
+
+                if (assignment[i].value() == domains[i][j])
+                    continue; // skip if already assigned
+
+                if(sccByNode[varNode] != sccByNode[valueNode] || indexSCC == -1){
+                    // there is no way to reach varNode from valueNode so:
+                    // Arc is not consistent, remove it
+                    x[i].remove(domains[i][j]);
+                    continue;
+                }
+                // Check the SCC with the pivot
+                if (distMaxIn[indexSCC] + distMaxOut[indexSCC] <= H.max() - minCostAssignment - costArcMax) {
+                    // SCC is consistent, keep it
+                    continue;
+                }
+                // Check arc with the pivot
+                if (dist[valueNode][pivots[indexSCC]] + dist[pivots[indexSCC]][varNode] <= H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {
+                    // Arc is consistent, keep it
+                    continue;
+                }
+
+                if (dist[valueNode] == null || dist[valueNode][valueNode] == Integer.MAX_VALUE) {
+                    dist[valueNode] = bellmanFord(numNodes, edgeCount, edges, valueNode);
+                }
+                // Check if the arc (varNode, valueNode) is consistent with Régin 2002
+                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
+                    // Arc is not consistent, remove it
+                    x[i].remove(domains[i][j]);
+                }
+            }
+        }
 
     }
 
@@ -142,11 +240,44 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 // Check if the arc (varNode, valueNode) is consistent
                 if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
                     // Arc is not consistent, remove it
+                    System.out.println("Remove ("+varNode+","+valueNode+")");
                     x[i].remove(domains[i][j]);
                 }
             }
         }
 
+    }
+
+    private int[] selectPivotBySCC(List<List<Integer>> composantes) {
+        int[] pivots = new int[composantes.size()];
+        for (int i = 0; i < composantes.size(); i++) {
+            pivots[i] = selectPivot(composantes.get(i));
+        }
+        return pivots;
+    }
+
+    private int selectPivot(List<Integer> scc) {
+        // Select the pivot as the node with the greatest degree
+        int maxDegree = -1;
+        int pivotNode = -1;
+        for (Integer node : scc) {
+            int degreeIn = 0;
+            int degreeOut = 0;
+            for (int i = 0; i < capMaxResidualGraph.length; i++) {
+                if (capMaxResidualGraph[node][i] > 0) {
+                    degreeOut++;
+                }
+                if (capMaxResidualGraph[i][node] > 0) {
+                    degreeIn++;
+                }
+            }
+            int tmp = (degreeIn + degreeOut) * Math.min(degreeIn, degreeOut);
+            if (tmp > maxDegree) {
+                maxDegree = tmp;
+                pivotNode = node;
+            }
+        }
+        return pivotNode;
     }
 
     private void builResidualGraph(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int H, int[][] flow, int numNodes) {
