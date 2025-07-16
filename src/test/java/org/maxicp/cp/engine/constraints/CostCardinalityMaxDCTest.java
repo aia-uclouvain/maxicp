@@ -1,5 +1,20 @@
+/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
 package org.maxicp.cp.engine.constraints;
 
+
+import static org.junit.jupiter.api.Assertions.*;
+import be.uclouvain.solvercheck.core.data.Domain;
+import be.uclouvain.solvercheck.core.data.PartialAssignment;
+import be.uclouvain.solvercheck.core.task.Checker;
+import be.uclouvain.solvercheck.core.task.Filter;
+import be.uclouvain.solvercheck.core.task.StatefulFilter;
+import be.uclouvain.solvercheck.WithSolverCheck;
+import be.uclouvain.solvercheck.generators.GeneratorsDSL;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -10,14 +25,148 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.state.State;
 import org.maxicp.util.exception.InconsistencyException;
-
 import java.util.List;
 import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.makeSolver;
 
-class CostCardinalityMaxDCTest extends CPSolverTest {
+public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolverCheck {
+
+    public GeneratorsDSL.GenDomainBuilder xDom(int maxDom) {
+        return domain().withValuesBetween(0, maxDom);
+    }
+
+    @Test
+    public void testStateLessCostCardinalityMaxDCWithSolverCheck() {
+        int n = 10;
+        int maxCard = 5;
+        int maxDom = 10;
+        int maxCost = 10;
+        int maxH = 40;
+
+        assertThat(
+                forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(4).assertThat(
+                        upper ->
+                                forAll(arrayOf(Integer[].class, arrayOf(Integer.class, integer().between(0, maxCost)).ofSize(maxDom)).ofSize(n)).withExamples(4).assertThat(
+                                        costs ->
+                                                forAll(listOf("x", xDom(maxDom-1)).ofSize(n)).withExamples(10).assertThat(
+                                                        x ->
+                                                                forAll(integer().between(0, maxH)).withExamples(2).assertThat(
+                                                                        h ->
+                                                                                an(arcConsistent(costCardinalityMaxChecker(upper, costs, h)))
+                                                                                        .isEquivalentTo(stateLessCostCardinalityMaxDC(upper, costs, h))
+                                                                                        .forAnyPartialAssignment().with(x))
+                                                )
+                                )
+                )
+        );
+    }
+
+    @Test
+    public void testStateFullCostCardinalityMaxDCWithSolverCheck() {
+        int n = 10;
+        int maxCard = 5;
+        int maxDom = 10;
+        int maxCost = 10;
+        int maxH = 40;
+
+        assertThat(
+                forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(3).assertThat(
+                        upper ->
+                                forAll(arrayOf(Integer[].class, arrayOf(Integer.class, integer().between(0, maxCost)).ofSize(maxDom)).ofSize(n)).withExamples(3).assertThat(
+                                        costs ->
+                                                forAll(listOf("x", xDom(maxDom-1)).ofSize(n)).withExamples(5).assertThat(
+                                                        x ->
+                                                                forAll(integer().between(0, maxH)).withExamples(2).assertThat(
+                                                                        h ->
+                                                                                a(stateFullCostCardinalityMaxDC(upper,costs,h)).isEquivalentTo(stateful(arcConsistent(costCardinalityMaxChecker(upper, costs, h))))
+                                                                                        .forAnyPartialAssignment().with(x))
+                                                )
+                                )
+                )
+        );
+    }
+
+    public static Checker costCardinalityMaxChecker(
+            final Integer[] upper,
+            final Integer[][] costs,
+            final Integer maxCost) {
+
+
+        return x -> {
+            int totalCost = 0;
+            HashMap<Integer, Integer> cardinality = new HashMap<>();
+            for (int i = 0; i < x.size(); i++) {
+                cardinality.put(x.get(i), cardinality.getOrDefault(x.get(i), 0) + 1);
+                if (cardinality.get(x.get(i)) > upper[x.get(i)]) {
+                    return false;
+                }
+                totalCost += costs[i][x.get(i)];
+            }
+            return totalCost <= maxCost;
+        };
+    }
+
+    public static Set<Integer> toSet(CPIntVar x) {
+        Set<Integer> dom = new HashSet<>();
+        for (int i = x.min(); i <= x.max(); i++) {
+            if (x.contains(i)) {
+                dom.add(i);
+            }
+        }
+        return dom;
+    }
+
+    private Filter stateLessCostCardinalityMaxDC(Integer[] upper_, Integer[][] costs_, Integer hMax) {
+        return partialAssignment -> {
+            CPSolver cp = CPFactory.makeSolver();
+            CPIntVar[] x = new CPIntVar[partialAssignment.size()];
+            for (int i = 0; i < x.length; i++) {
+                x[i] = CPFactory.makeIntVar(cp, partialAssignment.get(i));
+            }
+            boolean fail = false;
+            try {
+                int[] upper = Arrays.stream(upper_).mapToInt(Integer::intValue).toArray();
+                int[][] costs = new int[costs_.length][];
+                for (int i = 0; i < costs_.length; i++) {
+                    costs[i] = Arrays.stream(costs_[i]).mapToInt(Integer::intValue).toArray();
+                }
+                cp.post(new CostCardinalityMaxDC(x, upper, costs, CPFactory.makeIntVar(cp, 0, hMax)));
+            } catch (InconsistencyException e) {
+                fail = true;
+            }
+
+            Domain[] domains = new Domain[x.length];
+            for (int i = 0; i < x.length; i++) {
+                if (!fail) {
+                    domains[i] = Domain.from(toSet(x[i]));
+                } else {
+                    domains[i] = Domain.emptyDomain();
+
+                }
+            }
+            PartialAssignment res =  PartialAssignment.from(domains);
+            return res;
+        };
+    }
+
+    private StatefulFilter stateFullCostCardinalityMaxDC(Integer[] upper_, Integer[][] costs_, Integer hMax)  {
+        return SolverCheckUtils.statefulFilter(
+                (solver, vars) -> {
+                    int[] upper = Arrays.stream(upper_).mapToInt(Integer::intValue).toArray();
+                    int[][] costs = new int[costs_.length][];
+                    for (int i = 0; i < costs_.length; i++) {
+                        costs[i] = Arrays.stream(costs_[i]).mapToInt(Integer::intValue).toArray();
+                    }
+                    return new CostCardinalityMaxDC(vars, upper, costs, CPFactory.makeIntVar(solver, 0, hMax));
+                }
+        );
+    }
+
+
+
 
     @ParameterizedTest
     @MethodSource("getSolver")
@@ -222,6 +371,7 @@ class CostCardinalityMaxDCTest extends CPSolverTest {
         assertFalse(x[7].contains(6));
         assertFalse(x[8].contains(5));
     }
+
 
     @Test
     public void scc() {

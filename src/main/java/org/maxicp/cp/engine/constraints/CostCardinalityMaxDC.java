@@ -336,12 +336,10 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 int v = edges[ne][1];
                 int wt = edges[ne][2];
                 if (dist[u] != Integer.MAX_VALUE && dist[u] + wt < dist[v]) {
-
                     // If this is the Vth relaxation, then there is
                     // a negative cycle
                     if (i == numNodes - 1)
                         return new int[]{-1};
-
                     // Update shortest distance to node v
                     dist[v] = dist[u] + wt;
                 }

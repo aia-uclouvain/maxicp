@@ -1,7 +1,6 @@
 package org.maxicp.util.algo;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,7 @@ class BinPackingTest {
         int[] items = generateInstance1(10, 100);
         int[] bins = BinPacking.firstFitDecreasing(items, 10);
         int ub = Arrays.stream(bins).max().orElse(0) + 1;
-
-        assertThat(ub).isEqualTo(100);
+        assertEquals(100, ub);
     }
 
     /**
@@ -62,8 +60,7 @@ class BinPackingTest {
     public void testLowerBound() {
         int[] items = generateInstance1(10, 100);
         int lb = BinPacking.labbeLB(items, 10);
-
-        assertThat(lb).isEqualTo(100);
+        assertEquals(100, lb);
     }
 
     // Helper function for the test cases
@@ -71,9 +68,8 @@ class BinPackingTest {
         int lb = BinPacking.labbeLB(items, 10);
         int[] bins = BinPacking.firstFitDecreasing(items, 10);
         int ub = Arrays.stream(bins).max().orElse(0) + 1;
-
-        assertThat(lb).isLessThanOrEqualTo(ub);
-        assertThat(lb).isGreaterThanOrEqualTo(ub * 3 / 4);
+        assertTrue(lb <= ub);
+        assertTrue(lb >= ub * 3 / 4);
     };
 
     /**
