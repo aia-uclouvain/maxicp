@@ -4,41 +4,49 @@ import java.util.Arrays;
 
 public class MinCostMaxFlow {
     // Stores the found edges
-    protected boolean[] found;
+    private final boolean[] found;
 
-    protected int[][] cost;
-    protected int[][] capMax;
+    private int[][] cost;
+    private int[][] capMax;
 
-    protected int[][] flow;
-    protected final int numNodes;
-    protected final int nunVariables;
+    private final int[][] flow;
+    private final int numNodes;
 
 
     // Stores the distance from each node
     // and picked edges for each node
-    protected int[] dad;
-    protected int[] dist, pi;
+    private final int[] dad;
+    private final int[] dist, pi;
 
-    protected final int INF
+    private final int INF
             = Integer.MAX_VALUE;
-    protected final int H;
+    private final int H;
 
-    protected int totalCost;
-    protected int totalFlow;
+    private int totalCost;
+    private int totalFlow;
 
-    public MinCostMaxFlow(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int H, int numVariables) {
-        this.numNodes = costNetworkFlow.length;
-        this.nunVariables = numVariables;
-        this.cost = costNetworkFlow;
-        this.capMax = capMaxNetworkFlow;
+    private int[] result= new int[2];
+
+
+
+    public MinCostMaxFlow(int H, int numNodes) {
+        this.numNodes = numNodes;
         this.H = H;
+
+        found = new boolean[numNodes];
+        flow = new int[numNodes][numNodes];
+        dist = new int[numNodes + 1];
+        dad = new int[numNodes];
+        pi = new int[numNodes];
     }
 
-    public boolean run(int source, int dest) {
-        int[] ret = getMaxFlowByMaxCapacity(source, dest, numNodes);
+    public boolean run(int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
+        this.cost = costNetworkFlow;
+        this.capMax = capMaxNetworkFlow;
+        result = getMaxFlowByMaxCapacity(source, dest, numNodes);
 
-        totalFlow = ret[0];
-        totalCost = ret[1];
+        totalFlow = result[0];
+        totalCost = result[1];
 
         return true;
     }
@@ -119,11 +127,15 @@ public class MinCostMaxFlow {
 
     // Function to obtain the maximum Flow
     protected int[] getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized) {
-        found = new boolean[numNodes];
-        flow = new int[numNodes][numNodes];
-        dist = new int[numNodes + 1];
-        dad = new int[numNodes];
-        pi = new int[numNodes];
+        Arrays.fill(found, false);
+        Arrays.fill(dist, 0);
+        Arrays.fill(dad, 0);
+        Arrays.fill(pi, 0);
+
+        for (int k = 0; k < numNodes; k++) {
+            Arrays.fill(flow[k], 0);
+        }
+
 
         int totflow = 0, totcost = 0;
 
@@ -158,7 +170,9 @@ public class MinCostMaxFlow {
         }
 
         // Return pair total cost and sink
-        return new int[]{totflow, totcost};
+        result[0] = totflow;
+        result[1] = totcost;
+        return result;
     }
 
     public int getTotalCost() {

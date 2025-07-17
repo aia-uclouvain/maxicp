@@ -375,7 +375,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void scc() {
-        SCC scc = new SCC();
+        SCC scc = new SCC(5);
         int[][] adjacencyMatrix = {
                 {0, 1, 0, 0, 0},
                 {0, 0, 1, 0, 0},
@@ -397,7 +397,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void scc2() {
-        SCC scc = new SCC();
+        SCC scc = new SCC(14);
         int[][] adjacencyMatrix = {
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
