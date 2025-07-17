@@ -118,23 +118,15 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     @Override
     public void propagate() {
 
-        edgeCount = 0;
-        costArcMax=0;
-        for (int i = 0; i < numNodes; i++) {
-            Arrays.fill(capMaxResidualGraph[i], 0);
-            Arrays.fill(costResidualGraph[i], 0);
-            Arrays.fill(dist[i], Integer.MAX_VALUE);
-
-        }
+        cleanDataStructures();
 
         buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);
-
 
         minCostMaxFlow.run(0, nVars + nValues + 1, capMaxNetworkFlow, costNetworkFlow);
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
-        if (minCostAssignment > H.max() || minCostMaxFlow.getTotalFlow() != nVars) throw new InconsistencyException();
+        if (minCostMaxFlow.getTotalFlow() != nVars) throw new InconsistencyException();
         H.removeBelow(minCostAssignment);
 
         // fill the assignment
@@ -152,6 +144,17 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         removeArcNotConsistentPivot(); //Schmied 2024
 
+    }
+
+    private void cleanDataStructures() {
+        edgeCount = 0;
+        costArcMax=0;
+        for (int i = 0; i < numNodes; i++) {
+            Arrays.fill(capMaxResidualGraph[i], 0);
+            Arrays.fill(costResidualGraph[i], 0);
+            Arrays.fill(dist[i], Integer.MAX_VALUE);
+
+        }
     }
 
     private void removeArcNotConsistentPivot() {

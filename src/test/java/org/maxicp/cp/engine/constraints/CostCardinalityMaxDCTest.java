@@ -40,9 +40,9 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateLessCostCardinalityMaxDCWithSolverCheck() {
-        int n = 5;
+        int n = 10;
         int maxCard = 5;
-        int maxDom = 5;
+        int maxDom = 10;
         int maxCost = 10;
         int maxH = 40;
 
@@ -66,9 +66,9 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateFullCostCardinalityMaxDCWithSolverCheck() {
-        int n = 5;
+        int n = 10;
         int maxCard = 5;
-        int maxDom = 5;
+        int maxDom = 10;
         int maxCost = 10;
         int maxH = 40;
 
