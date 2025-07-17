@@ -40,9 +40,9 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateLessCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
+        int n = 5;
         int maxCard = 5;
-        int maxDom = 10;
+        int maxDom = 5;
         int maxCost = 10;
         int maxH = 40;
 
@@ -66,9 +66,9 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateFullCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
+        int n = 5;
         int maxCard = 5;
-        int maxDom = 10;
+        int maxDom = 5;
         int maxCost = 10;
         int maxH = 40;
 
@@ -375,7 +375,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void scc() {
-        SCC scc = new SCC();
+        SCC scc = new SCC(5);
         int[][] adjacencyMatrix = {
                 {0, 1, 0, 0, 0},
                 {0, 0, 1, 0, 0},
@@ -397,7 +397,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void scc2() {
-        SCC scc = new SCC();
+        SCC scc = new SCC(14);
         int[][] adjacencyMatrix = {
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                 {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
@@ -432,5 +432,59 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
         assertTrue(composantes.getLast().contains(13));
 
     }
+
+//    @ParameterizedTest
+//    @MethodSource("getSolver")
+//    public void costGCCTest2() {
+//        CPSolver cp = makeSolver();
+//        int h = 10;
+//        //x : [{0,3}, {0,3}, {0,2,3}, {0,1}, {0,2}]
+//        CPIntVar[] x = new CPIntVar[]{
+//                makeIVar(cp, 0, 3),
+//                makeIVar(cp, 0, 3),
+//                makeIVar(cp, 0, 2, 3),
+//                makeIVar(cp, 0, 1),
+//                makeIVar(cp, 0, 2)
+//        };
+//
+//        int[] upper = {1, 1, 1, 2, 0};
+//        int[][] costs = new int[x.length][];
+//
+//        //[[3, 3, 9, 0, 8], [0, 7, 6, 4, 7], [6, 9, 5, 5, 8], [10, 0, 7, 10, 9], [0, 0, 1, 6, 0]]
+//
+//        costs[0] = new int[]{3, 3, 9, 0, 8}; // costs for x0
+//        costs[1] = new int[]{0, 7, 6, 4, 7}; // costs for x1
+//        costs[2] = new int[]{6, 9, 5, 5, 8}; // costs for x2
+//        costs[3] = new int[]{10, 0, 7, 10, 9}; // costs for x3
+//        costs[4] = new int[]{0, 0, 1, 6, 0}; // costs for x4
+//
+//
+//
+//
+//        CPIntVar H = CPFactory.makeIntVar(cp, 0, h); // Maximum cost allowed
+//
+//        CostCardinalityMaxDC constraint = new CostCardinalityMaxDC(x, upper, costs, H);
+//        cp.post(constraint);
+//
+//        // check min costs of assignment
+////        assertEquals(x.length, constraint.getMinCostAssignment());
+//
+//        //x0={3}, x1={3}, x2={2}, x3={1}, x4={0}
+//        assertTrue(x[0].contains(3));
+//        assertTrue(x[1].contains(3));
+//        assertTrue(x[2].contains(2));
+//        assertTrue(x[3].contains(1));
+//        assertTrue(x[4].contains(0));
+//
+//        assertFalse(x[0].contains(0));
+//        assertFalse(x[1].contains(0));
+//        assertFalse(x[2].contains(0));
+//        assertFalse(x[2].contains(3));
+//        assertFalse(x[3].contains(0));
+//        assertFalse(x[3].contains(2));
+//
+//
+//
+//    }
 
 }

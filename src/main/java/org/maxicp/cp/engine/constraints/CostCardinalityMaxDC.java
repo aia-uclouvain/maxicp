@@ -12,6 +12,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,10 +26,32 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private final CPIntVar H; // Maximum cost allowed
 
     private final StateInt[] assignment;
+    private MinCostMaxFlow minCostMaxFlow;
     private int minCostAssignment;
+
+    private int numNodes;
+    int[][] costNetworkFlow;
+    int[][] capMaxNetworkFlow;
 
     private int[][] capMaxResidualGraph;
     private int[][] costResidualGraph;
+
+    private int[][] edges;
+    private int[][] edgesReverse;
+    private int edgeCount;
+    private int costArcMax;
+
+    private int[][] domains;
+    private int[] numValuesByDomain;
+
+    private int[][] dist;
+
+    private SCC scc;
+    private List<List<Integer>> sccs;
+    int[] sccByNode;
+    int[] pivots;
+    int[] distMaxIn;
+    int[] distMaxOut;
 
     /**
      * Constraint the maximum number of occurrences of a range of values in x.
@@ -61,6 +84,24 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             assignment[i] = getSolver().getStateManager().makeStateInt(-1); // -1 means unassigned
             this.x[i] = x[i];
         }
+
+        numNodes = nValues + nVars + 2; // source, variables, values, sink
+        minCostMaxFlow = new MinCostMaxFlow(H.max(), numNodes);
+
+        costNetworkFlow = new int[numNodes][numNodes];
+        capMaxNetworkFlow = new int[numNodes][numNodes];
+        capMaxResidualGraph = new int[numNodes][numNodes];
+        costResidualGraph = new int[numNodes][numNodes];
+
+        edges = new int[numNodes * numNodes][3];
+        edgesReverse = new int[numNodes * numNodes][3];
+
+        domains = new int[nVars][nValues];
+        numValuesByDomain = new int[nVars];
+
+        dist = new int[numNodes][numNodes];
+
+        scc = new SCC(numNodes);
     }
 
     @Override
@@ -69,20 +110,27 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             if (!var.isFixed())
                 var.propagateOnDomainChange(this);
         }
+
         propagate();
     }
 
 
     @Override
     public void propagate() {
-        // TODO
-        int[][] costNetworkFlow = new int[nValues + nVars + 2][nValues + nVars + 2];
-        int[][] capMaxNetworkFlow = new int[nValues + nVars + 2][nValues + nVars + 2];
+
+        edgeCount = 0;
+        costArcMax=0;
+        for (int i = 0; i < numNodes; i++) {
+            Arrays.fill(capMaxResidualGraph[i], 0);
+            Arrays.fill(costResidualGraph[i], 0);
+            Arrays.fill(dist[i], Integer.MAX_VALUE);
+
+        }
+
         buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);
 
-        MinCostMaxFlow minCostMaxFlow = new MinCostMaxFlow(capMaxNetworkFlow, costNetworkFlow, H.max(), nVars);
 
-        minCostMaxFlow.run(0, nVars + nValues + 1);
+        minCostMaxFlow.run(0, nVars + nValues + 1, capMaxNetworkFlow, costNetworkFlow);
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
@@ -90,8 +138,6 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         H.removeBelow(minCostAssignment);
 
         // fill the assignment
-        int[][] domains = new int[nVars][nValues];
-        int[] numValuesByDomain = new int[nVars];
         for (int i = 0; i < nVars; i++) { // from variables to values
             numValuesByDomain[i] = x[i].fillArray(domains[i]);
             for (int j = 0; j < numValuesByDomain[i]; j++) {
@@ -102,67 +148,40 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             }
         }
 
-        //TODO: mettre graph en positif
-        builResidualGraph(capMaxNetworkFlow, costNetworkFlow, H.max(), minCostMaxFlow.getFlow(), nVars + nValues + 2);
+        builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow());
 
-
-//        removeArcNotConsistent(numValuesByDomain, domains); // Régin 2002
-        removeArcNotConsistentPivot(numValuesByDomain, domains); //Schmied 2024
+        removeArcNotConsistentPivot(); //Schmied 2024
 
     }
 
-    private void removeArcNotConsistentPivot(int[] numValuesByDomain, int[][] domains) {
+    private void removeArcNotConsistentPivot() {
 
-        int numNodes = capMaxResidualGraph.length;
-        int[][] dist = new int[numNodes][];
+        createListOfEdges();
 
-        // Create a list of edges
-        int[][] edges = new int[numNodes * numNodes][3];
-        int[][] edgesReverse = new int[numNodes * numNodes][3];
-        int edgeCount = 0;
-        int costArcMax = 0;
-        for (int i = 0; i < numNodes; i++) {
-            for (int j = 0; j < numNodes; j++) {
-                if (capMaxResidualGraph[i][j] > 0) {
-                    edges[edgeCount] = new int[]{i, j, costResidualGraph[i][j]};
-                    edgesReverse[edgeCount] = new int[]{j, i, costResidualGraph[i][j]};
-                    edgeCount++;
-                }
-                if (costArcMax < costResidualGraph[i][j]) {
-                    costArcMax = costResidualGraph[i][j]; // Find the maximum cost of an arc
-                }
-            }
-        }
-
-        SCC scc = new SCC();
         scc.findSCC(capMaxResidualGraph);
-        List<List<Integer>> sccs = scc.getComposantes();
-        int[] sccByNode = scc.getSCCByNode();
-        int[] pivots = selectPivotBySCC(sccs);
-        int[] distMaxIn = new int[sccs.size()];
-        int[] distMaxOut = new int[sccs.size()];
+        sccs = scc.getComposantes();
+        sccByNode = scc.getSCCByNode();
+        distMaxIn = new int[sccs.size()];
+        distMaxOut = new int[sccs.size()];
+
+        selectPivotBySCC(sccs);
 
         // For each SCC, compute the shortest path from the pivot to all other nodes and from all nodes to the pivot
         for (int indexSCC = 0; indexSCC < pivots.length; indexSCC++) {
             int pivot = pivots[indexSCC];
-            if (dist[pivot] == null) {
-                dist[pivot] = bellmanFord(numNodes, edgeCount, edges, pivot); // Compute shortest path from pivot to all nodes
-                int[] distPivotRev = bellmanFord(numNodes, edgeCount, edgesReverse, pivot); // Compute shortest path from all nodes to pivot
-                for (int i = 0; i < numNodes; i++) {
-                    if (dist[i] == null) {
-                        dist[i] = new int[numNodes];
-                        Arrays.fill(dist[i], Integer.MAX_VALUE);
-                    }
-                    if (distPivotRev[i] != 0) {
-                        dist[i][pivot] = distPivotRev[i]; // Store the reverse distance
-                    }
-                    if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != Integer.MAX_VALUE) {
-                        distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
-                    }
-                    if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != Integer.MAX_VALUE) {
-                        distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
-                    }
+            dist[pivot] = bellmanFord(edgeCount, edges, pivot); // Compute shortest path from pivot to all nodes
+            int[] distPivotRev = bellmanFord(edgeCount, edgesReverse, pivot); // Compute shortest path from all nodes to pivot
+            for (int i = 0; i < numNodes; i++) {
+                if (distPivotRev[i] != 0) {
+                    dist[i][pivot] = distPivotRev[i]; // Store the reverse distance
                 }
+                if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != Integer.MAX_VALUE) {
+                    distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
+                }
+                if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != Integer.MAX_VALUE) {
+                    distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
+                }
+
             }
         }
 
@@ -178,7 +197,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 if (assignment[i].value() == domains[i][j])
                     continue; // skip if already assigned
 
-                if(sccByNode[varNode] != sccByNode[valueNode] || indexSCC == -1){
+                if (sccByNode[varNode] != sccByNode[valueNode] || indexSCC == -1) {
                     // there is no way to reach varNode from valueNode so:
                     // Arc is not consistent, remove it
                     x[i].remove(domains[i][j]);
@@ -195,8 +214,8 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                     continue;
                 }
 
-                if (dist[valueNode] == null || dist[valueNode][valueNode] == Integer.MAX_VALUE) {
-                    dist[valueNode] = bellmanFord(numNodes, edgeCount, edges, valueNode);
+                if (dist[valueNode][valueNode] == Integer.MAX_VALUE) { // If the distance is not computed yet, compute it
+                    dist[valueNode] = bellmanFord(edgeCount, edges, valueNode);
                 }
                 // Check if the arc (varNode, valueNode) is consistent with Régin 2002
                 if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
@@ -208,52 +227,33 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
     }
 
-    private void removeArcNotConsistent(int[] numValuesByDomain, int[][] domains) {
-
-        int numNodes = capMaxResidualGraph.length;
-        int[][] dist = new int[numNodes][];
-
+    private void createListOfEdges() {
         // Create a list of edges
-        int[][] edges = new int[numNodes * numNodes][3];
-        int edgeCount = 0;
         for (int i = 0; i < numNodes; i++) {
             for (int j = 0; j < numNodes; j++) {
                 if (capMaxResidualGraph[i][j] > 0) {
-                    edges[edgeCount++] = new int[]{i, j, costResidualGraph[i][j]};
+                    edges[edgeCount][0]=i;
+                    edges[edgeCount][1]=j;
+                    edges[edgeCount][2]=costResidualGraph[i][j];
+
+                    edgesReverse[edgeCount][0]=j;
+                    edgesReverse[edgeCount][1]=i;
+                    edgesReverse[edgeCount][2]=costResidualGraph[i][j];
+
+                    edgeCount++;
+                }
+                if (costArcMax < costResidualGraph[i][j]) {
+                    costArcMax = costResidualGraph[i][j]; // Find the maximum cost of an arc
                 }
             }
         }
-
-        for (int i = 0; i < nVars; i++) {
-            int varNode = i + 1; // node representing variable i
-
-            //iterate over all values of variable i
-            for (int j = 0; j < numValuesByDomain[i]; j++) {
-                if (assignment[i].value() == domains[i][j]) continue; // skip if already assigned
-
-                int valueNode = nVars + 1 + domains[i][j]; // node representing value j of variable i
-
-                if (dist[valueNode] == null) {
-                    dist[valueNode] = bellmanFord(numNodes, edgeCount, edges, valueNode);
-                }
-
-                // Check if the arc (varNode, valueNode) is consistent
-                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
-                    // Arc is not consistent, remove it
-                    System.out.println("Remove ("+varNode+","+valueNode+")");
-                    x[i].remove(domains[i][j]);
-                }
-            }
-        }
-
     }
 
-    private int[] selectPivotBySCC(List<List<Integer>> composantes) {
-        int[] pivots = new int[composantes.size()];
+    private void selectPivotBySCC(List<List<Integer>> composantes) {
+        pivots = new int[composantes.size()];
         for (int i = 0; i < composantes.size(); i++) {
             pivots[i] = selectPivot(composantes.get(i));
         }
-        return pivots;
     }
 
     private int selectPivot(List<Integer> scc) {
@@ -280,9 +280,8 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         return pivotNode;
     }
 
-    private void builResidualGraph(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int H, int[][] flow, int numNodes) {
-        capMaxResidualGraph = new int[numNodes][numNodes];
-        costResidualGraph = new int[numNodes][numNodes];
+    private void builResidualGraph(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int[][] flow) {
+
 
         for (int i = 0; i < numNodes; i++) {
             for (int j = 0; j < numNodes; j++) {
@@ -304,11 +303,11 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             capMaxNetworkFlow[0][i] = 1;
         }
 
-        int[][] domains = new int[nVars][nValues];
-        int[] numValues = new int[nVars];
         for (int i = 0; i < nVars; i++) { // from variables to values
-            numValues[i] = x[i].fillArray(domains[i]);
-            for (int j = 0; j < numValues[i]; j++) {
+            Arrays.fill(capMaxNetworkFlow[i + 1], 0);
+            Arrays.fill(costNetworkFlow[i + 1], 0);
+            numValuesByDomain[i] = x[i].fillArray(domains[i]);
+            for (int j = 0; j < numValuesByDomain[i]; j++) {
                 capMaxNetworkFlow[i + 1][nVars + 1 + domains[i][j]] = 1; // capacity of 1 for each variable to value edge
                 costNetworkFlow[i + 1][nVars + 1 + domains[i][j]] = costs[i][domains[i][j]]; // cost of assigning variable i to value j
             }
@@ -319,7 +318,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         }
     }
 
-    private int[] bellmanFord(int numNodes, int edgeCount, int[][] edges, int src) {
+    private int[] bellmanFord(int edgeCount, int[][] edges, int src) {
 
 
         // Initially distance from source to all other vertices
@@ -339,7 +338,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                     // If this is the Vth relaxation, then there is
                     // a negative cycle
                     if (i == numNodes - 1)
-                        return new int[]{-1};
+                        return null;
                     // Update shortest distance to node v
                     dist[v] = dist[u] + wt;
                 }

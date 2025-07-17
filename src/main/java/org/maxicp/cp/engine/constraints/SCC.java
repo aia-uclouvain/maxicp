@@ -11,11 +11,25 @@ public class SCC {
     private int[] Low;
     private boolean[] inStack;
     private Stack<Integer> stack;
-    private int time = 0;
-    private int n;
-    private int numSCC =0;
-    private List<List<Integer>> composantes = new ArrayList<>();
+    private int time;
+    private int numSCC;
+    private List<List<Integer>> composantes;
     private int[] SCCByNode;
+    private int numNodes;
+
+    public SCC(int numNodes) {
+        this.numNodes = numNodes;
+        this.dfs = new int[numNodes];
+        this.Low = new int[numNodes];
+        this.inStack = new boolean[numNodes];
+        this.stack = new Stack<>();
+        this.SCCByNode = new int[numNodes];
+        this.composantes = new ArrayList<>();
+        this.adjacencyList = new List[numNodes];
+        for (int i = 0; i < numNodes; i++) {
+            this.adjacencyList[i] = new ArrayList<>();
+        }
+    }
 
     private void DFS(int u) {
         dfs[u] = time;
@@ -55,10 +69,10 @@ public class SCC {
 //            SCCByNode[stack.topBack()]= numSCC;
             if (tmp.size() > 1) {
                 composantes.add(tmp);
-                for(Integer el: tmp){
-                    SCCByNode[el]= numSCC;
+                for (Integer el : tmp) {
+                    SCCByNode[el] = numSCC;
                 }
-                numSCC +=1;
+                numSCC += 1;
             }
             inStack[stack.peek()] = false;
             stack.pop();
@@ -66,36 +80,31 @@ public class SCC {
     }
 
     public void findSCC(int[][] adjacencyMatrix) {
-        composantes = new ArrayList<>();
-        this.adjacencyList = new List[adjacencyMatrix.length];
+
         for (int i = 0; i < adjacencyMatrix.length; i++) {
-            this.adjacencyList[i] = new ArrayList<>();
+            adjacencyList[i].clear();
             for (int j = 0; j < adjacencyMatrix[i].length; j++) {
-                if (adjacencyMatrix[i][j] >0) {
-                    this.adjacencyList[i].add(j);
+                if (adjacencyMatrix[i][j] > 0) {
+                    adjacencyList[i].add(j);
                 }
             }
         }
-//        this.adjacencyList = Arrays.copyOf(adjacencyList, adjacencyList.length);
-        n = adjacencyList.length;
 
-        dfs = new int[n];
-        Low = new int[n];
-        inStack = new boolean[n];
-        stack=new Stack<>();
-        SCCByNode=new int[n];
+        numNodes = adjacencyList.length;
 
+        time = 0;
+        numSCC = 0;
         Arrays.fill(SCCByNode, -1);
+        Arrays.fill(dfs, -1);
+        Arrays.fill(Low, -1);
+        Arrays.fill(inStack, false);
+        composantes.clear();
+        stack.clear();
 
-        n -= 1;
+        numNodes -= 1;
 
-        for (int i = 0; i <= n; i++) {
-            dfs[i] = -1;
-            Low[i] = -1;
-            inStack[i] = false;
-        }
 
-        for (int i = 0; i <= n; ++i) {
+        for (int i = 0; i <= numNodes; ++i) {
             if (dfs[i] == -1)
                 DFS(i);   // call DFS for each undiscovered node.
         }
