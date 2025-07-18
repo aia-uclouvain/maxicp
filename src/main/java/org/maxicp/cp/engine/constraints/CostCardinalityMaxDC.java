@@ -13,19 +13,20 @@ import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
 
 /**
  * Implementation of the Global Cardinality Constraint with Costs from the paper
- *
+ * <p>
  * Margaux Schmied, Jean-Charles Régin:
  * Efficient Implementation of the Global Cardinality Constraint with Costs. CP 2024
  *
- * @author  Margaux Schmied
+ * @author Margaux Schmied
  */
 public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
+    private final int INF
+            = Integer.MAX_VALUE;
     private final CPIntVar[] x;
     private final int[] upper;
     private final int nValues;
@@ -34,33 +35,34 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private final CPIntVar H; // Maximum cost allowed
 
     private final StateInt[] assignment;
-    private MinCostMaxFlow minCostMaxFlow;
+    private final MinCostMaxFlow minCostMaxFlow;
     private int minCostAssignment;
 
-    private int numNodes;
-    int[][] costNetworkFlow;
-    int[][] capMaxNetworkFlow;
+    private final int numNodes;
+    private final int[][] costNetworkFlow;
+    private final int[][] capMaxNetworkFlow;
 
-    private int[][] capMaxResidualGraph;
-    private int[][] costResidualGraph;
+    private final int[][] capMaxResidualGraph;
+    private final int[][] costResidualGraph;
 
-    private int[][] edges;
-    private int[][] edgesReverse;
+    private final int[][] edges;
+    private final int[][] edgesReverse;
     private int edgeCount;
     private int costArcMax;
 
-    private int[][] domain;
-    private int[] domainSize;
+    private final int[][] domain;
+    private final int[] domainSize;
 
-    private long[][] dist; // dist[i][j] is the shortest distance from node i to node j in the residual graph
-    private long[][] distReverse; // distReverse[i][j] is the shortest distance from node j to node i in the reverse residual graph
+    private final long[][] dist; // dist[i][j] is the shortest distance from node i to node j in the residual graph
+    private final long[][] distReverse; // distReverse[i][j] is the shortest distance from node j to node i in the reverse residual graph
 
-    private SCC scc;
-    private List<List<Integer>> sccs;
-    int[] sccByNode;
-    int[] pivots;
-    long[] distMaxIn;
-    long[] distMaxOut;
+    private final SCC scc;
+    private int[] sccByNode;
+    private final int[] degreeMaxBySCC;
+    private final int[] pivots;
+    private final long[] distMaxIn;
+    private final long[] distMaxOut;
+
 
     /**
      * Constraint the maximum number of occurrences of a range of values in x.
@@ -71,7 +73,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
      *              The size of upper must be equal to the number of columns in costs and equal to the larest value in x.
      * @param costs The costs associated with each value in x.
      */
-    public CostCardinalityMaxDC(CPIntVar[] x, int upper[], int[][] costs, CPIntVar H) {
+    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H) {
         super(x[0].getSolver());
         nVars = x.length;
         this.x = CPFactory.makeIntVarArray(nVars, i -> x[i]);
@@ -84,7 +86,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             this.upper[i] = upper[i];
         }
         // largest value in x
-        int largest = Stream.of(x).mapToInt(var -> var.max()).max().getAsInt();
+        int largest = Stream.of(x).mapToInt(CPIntVar::max).max().getAsInt();
         if (nValues < largest) {
             throw new IllegalArgumentException("upper bounds length must be at least as large as the largest value in x");
         }
@@ -105,6 +107,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         numNodes = nValues + nVars + 2; // source, variables, values, sink
         minCostMaxFlow = new MinCostMaxFlow(H.max(), numNodes);
+        scc = new SCC(numNodes);
 
         costNetworkFlow = new int[numNodes][numNodes];
         capMaxNetworkFlow = new int[numNodes][numNodes];
@@ -121,7 +124,10 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         dist = new long[numNodes][numNodes];
         distReverse = new long[numNodes][numNodes];
 
-        scc = new SCC(numNodes);
+        degreeMaxBySCC = new int[numNodes];
+        pivots = new int[numNodes];
+        distMaxIn = new long[numNodes];
+        distMaxOut = new long[numNodes];
     }
 
     @Override
@@ -143,11 +149,11 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);
 
-        minCostMaxFlow.run(0, nVars + nValues + 1, capMaxNetworkFlow, costNetworkFlow);
+        minCostMaxFlow.run(0, numNodes-1, capMaxNetworkFlow, costNetworkFlow);
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
-        if (minCostMaxFlow.getTotalFlow() != nVars) throw new InconsistencyException();
+        if (minCostMaxFlow.getTotalFlow() != nVars) throw InconsistencyException.INCONSISTENCY;
         H.removeBelow(minCostAssignment);
 
         // fill the assignment
@@ -178,7 +184,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         for (int i = 0; i < numNodes; i++) {
             Arrays.fill(capMaxResidualGraph[i], 0);
             Arrays.fill(costResidualGraph[i], 0);
-            Arrays.fill(dist[i], Integer.MAX_VALUE);
+            Arrays.fill(dist[i], INF);
         }
     }
 
@@ -187,15 +193,13 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         createListOfEdges();
 
         scc.findSCC(capMaxResidualGraph);
-        sccs = scc.getComposantes();
+        int numSCC = scc.getNumSCC();
         sccByNode = scc.getSCCByNode();
-        distMaxIn = new long[sccs.size()];
-        distMaxOut = new long[sccs.size()];
 
-        selectPivotBySCC(sccs);
+        selectPivotBySCC();
 
         // For each SCC, compute the shortest path from the pivot to all other nodes and from all nodes to the pivot
-        for (int indexSCC = 0; indexSCC < pivots.length; indexSCC++) {
+        for (int indexSCC = 0; indexSCC < numSCC; indexSCC++) {
             int pivot = pivots[indexSCC];
             bellmanFord(edgeCount, edges, pivot, dist[pivot]); // Compute shortest path from pivot to all nodes
             bellmanFord(edgeCount, edgesReverse, pivot, distReverse[pivot]); // Compute shortest path from all nodes to pivot
@@ -203,10 +207,10 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 if (distReverse[pivot][i] != 0) {
                     dist[i][pivot] = distReverse[pivot][i]; // Store the reverse distance
                 }
-                if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != Integer.MAX_VALUE) {
+                if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != INF) {
                     distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
                 }
-                if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != Integer.MAX_VALUE) {
+                if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != INF) {
                     distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
                 }
             }
@@ -240,7 +244,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                     continue;
                 }
 
-                if (dist[valueNode][valueNode] == Integer.MAX_VALUE) { // If the distance is not computed yet, compute it
+                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it
                     bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);
                 }
                 // Check if the arc (varNode, valueNode) is consistent with Régin 2002
@@ -275,35 +279,30 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         }
     }
 
-    private void selectPivotBySCC(List<List<Integer>> composantes) {
-        pivots = new int[composantes.size()];
-        for (int i = 0; i < composantes.size(); i++) {
-            pivots[i] = selectPivot(composantes.get(i));
-        }
-    }
-
-    private int selectPivot(List<Integer> scc) {
-        // Select the pivot as the node with the greatest degree
-        int maxDegree = -1;
-        int pivotNode = -1;
-        for (Integer node : scc) {
-            int degreeIn = 0;
-            int degreeOut = 0;
-            for (int i = 0; i < capMaxResidualGraph.length; i++) {
-                if (capMaxResidualGraph[node][i] > 0) {
+    private void selectPivotBySCC() {
+        int degreeIn;
+        int degreeOut;
+        int tmp;
+        for (int node = 0; node < numNodes; node++) {
+            if (sccByNode[node] == -1) {
+                continue;
+            }
+            degreeIn = 0;
+            degreeOut = 0;
+            for (int k = 0; k < numNodes; k++) {  // search deg+(node) and deg-(node)
+                if (capMaxResidualGraph[node][k] > 0) {
                     degreeOut++;
                 }
-                if (capMaxResidualGraph[i][node] > 0) {
+                if (capMaxResidualGraph[k][node] > 0) {
                     degreeIn++;
                 }
             }
-            int tmp = (degreeIn + degreeOut) * Math.min(degreeIn, degreeOut);
-            if (tmp > maxDegree) {
-                maxDegree = tmp;
-                pivotNode = node;
+            tmp = (degreeIn + degreeOut) * Math.min(degreeIn, degreeOut);
+            if (tmp > degreeMaxBySCC[sccByNode[node]]) { // if node is a better pivot for his own SCC
+                degreeMaxBySCC[sccByNode[node]] = tmp;
+                pivots[sccByNode[node]] = node;
             }
         }
-        return pivotNode;
     }
 
     private void builResidualGraph(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int[][] flow) {
@@ -349,7 +348,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private void bellmanFord(int edgeCount, int[][] edges, int src, long[] dist) {
         // Initially distance from source to all other vertices
         // is not known(Infinite).
-        Arrays.fill(dist, Integer.MAX_VALUE);
+        Arrays.fill(dist, INF);
         dist[src] = 0;
         // Relaxation of all the edges V times, not (V - 1) as we
         // need one additional relaxation to detect negative cycle
@@ -358,7 +357,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 int u = edges[ne][0];
                 int v = edges[ne][1];
                 int wt = edges[ne][2];
-                if (dist[u] != Integer.MAX_VALUE && dist[u] + wt < dist[v]) {
+                if (dist[u] != INF && dist[u] + wt < dist[v]) {
                     // V_th relaxation => negative cycle
                     if (i == numNodes - 1) {
                         throw InconsistencyException.INCONSISTENCY;

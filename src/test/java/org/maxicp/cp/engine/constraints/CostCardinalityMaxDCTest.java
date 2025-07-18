@@ -384,14 +384,13 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {1, 0, 0, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        List<List<Integer>> composantes = scc.getComposantes();
-        assertEquals(1, composantes.size());
-        assertEquals(5, composantes.getFirst().size());
-        assertTrue(composantes.getFirst().contains(0));
-        assertTrue(composantes.getFirst().contains(1));
-        assertTrue(composantes.getFirst().contains(2));
-        assertTrue(composantes.getFirst().contains(3));
-        assertTrue(composantes.getFirst().contains(4));
+        int[] SCCByNode = scc.getSCCByNode();
+        assertEquals(1, scc.getNumSCC());
+        assertEquals(0, SCCByNode[0]);
+        assertEquals(0, SCCByNode[1]);
+        assertEquals(0, SCCByNode[2]);
+        assertEquals(0, SCCByNode[3]);
+        assertEquals(0, SCCByNode[4]);
 
     }
 
@@ -415,21 +414,19 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        List<List<Integer>> composantes = scc.getComposantes();
-        assertEquals(2, composantes.size());
-        assertEquals(6, composantes.getFirst().size());
-        assertEquals(4, composantes.getLast().size());
+        int[] SCCByNode = scc.getSCCByNode();
+        assertEquals(2, scc.getNumSCC());
 
-        assertTrue(composantes.getFirst().contains(1));
-        assertTrue(composantes.getFirst().contains(2));
-        assertTrue(composantes.getFirst().contains(3));
-        assertTrue(composantes.getFirst().contains(8));
-        assertTrue(composantes.getFirst().contains(9));
+        assertEquals(0, SCCByNode[1]);
+        assertEquals(0, SCCByNode[2]);
+        assertEquals(0, SCCByNode[3]);
+        assertEquals(0, SCCByNode[8]);
+        assertEquals(0, SCCByNode[9]);
 
-        assertTrue(composantes.getLast().contains(7));
-        assertTrue(composantes.getLast().contains(11));
-        assertTrue(composantes.getLast().contains(12));
-        assertTrue(composantes.getLast().contains(13));
+        assertEquals(1, SCCByNode[7]);
+        assertEquals(1, SCCByNode[11]);
+        assertEquals(1, SCCByNode[12]);
+        assertEquals(1, SCCByNode[13]);
 
     }
 

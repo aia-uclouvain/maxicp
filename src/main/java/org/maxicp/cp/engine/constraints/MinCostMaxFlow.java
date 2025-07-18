@@ -25,7 +25,7 @@ public class MinCostMaxFlow {
     private int totalCost;
     private int totalFlow;
 
-    private int[] result= new int[2];
+    private final int[] result= new int[2];
 
 
 
@@ -33,17 +33,17 @@ public class MinCostMaxFlow {
         this.numNodes = numNodes;
         this.H = H;
 
-        found = new boolean[numNodes];
-        flow = new int[numNodes][numNodes];
-        dist = new int[numNodes + 1];
-        dad = new int[numNodes];
-        pi = new int[numNodes];
+        this.found = new boolean[numNodes];
+        this.flow = new int[numNodes][numNodes];
+        this.dist = new int[numNodes + 1];
+        this.dad = new int[numNodes];
+        this.pi = new int[numNodes];
     }
 
     public boolean run(int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
         this.cost = costNetworkFlow;
         this.capMax = capMaxNetworkFlow;
-        result = getMaxFlowByMaxCapacity(source, dest, numNodes);
+        getMaxFlowByMaxCapacity(source, dest, numNodes);
 
         totalFlow = result[0];
         totalCost = result[1];
@@ -54,7 +54,7 @@ public class MinCostMaxFlow {
 
     // Function to check if it is possible to
     // have a flow from the src to sink
-    protected boolean searchByMaxCapacity(int source, int dest) {
+    private boolean searchByMaxCapacity(int source, int dest) {
         // Initialise found[] to false
         Arrays.fill(found, false);
 
@@ -126,7 +126,7 @@ public class MinCostMaxFlow {
     }
 
     // Function to obtain the maximum Flow
-    protected int[] getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized) {
+    private void getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized) {
         Arrays.fill(found, false);
         Arrays.fill(dist, 0);
         Arrays.fill(dad, 0);
@@ -172,7 +172,7 @@ public class MinCostMaxFlow {
         // Return pair total cost and sink
         result[0] = totflow;
         result[1] = totcost;
-        return result;
+//        return result;
     }
 
     public int getTotalCost() {

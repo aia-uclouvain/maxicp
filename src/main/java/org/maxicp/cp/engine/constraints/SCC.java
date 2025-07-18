@@ -6,17 +6,23 @@ import java.util.List;
 import java.util.Stack;
 
 public class SCC {
-    private List[] adjacencyList;
-    private int[] dfs;
-    private int[] Low;
-    private boolean[] inStack;
-    private Stack<Integer> stack;
+    private final int[][] adjacencyList;
+    private final int[] numAdjByNode;
+    private final int[] dfs;
+    private final int[] Low;
+    private final boolean[] inStack;
+    private final Stack<Integer> stack;
     private int time;
     private int numSCC;
-    private List<List<Integer>> composantes;
-    private int[] SCCByNode;
+    private final int[] SCCByNode;
     private int numNodes;
 
+    /**
+     * This class implements Tarjan's algorithm to find strongly connected components (SCCs) in a directed graph.
+     * It uses depth-first search (DFS) to discover SCCs and assigns each node to its corresponding SCC.
+     *
+     * @param numNodes The number of nodes in the graph.
+     */
     public SCC(int numNodes) {
         this.numNodes = numNodes;
         this.dfs = new int[numNodes];
@@ -24,11 +30,8 @@ public class SCC {
         this.inStack = new boolean[numNodes];
         this.stack = new Stack<>();
         this.SCCByNode = new int[numNodes];
-        this.composantes = new ArrayList<>();
-        this.adjacencyList = new List[numNodes];
-        for (int i = 0; i < numNodes; i++) {
-            this.adjacencyList[i] = new ArrayList<>();
-        }
+        this.adjacencyList = new int[numNodes][numNodes];
+        this.numAdjByNode = new int[numNodes];
     }
 
     private void DFS(int u) {
@@ -36,42 +39,37 @@ public class SCC {
         Low[u] = time;
         time++;
         stack.push(u);
-//        stack.pushBackNotFull(u);
         inStack[u] = true;
-        List<Integer> temp = adjacencyList[u]; // get the list of edges from the node.
+        int[] adj = adjacencyList[u]; // get the list of edges from the node.
 
-        if (temp == null)
+        if (adj==null) {
             return;
+        }
 
-        for (int v : temp) {
+        for (int i = 0; i < numAdjByNode[u]; i++) {
+            int v= adj[i];
             if (dfs[v] == -1) //If v is not visited
             {
                 DFS(v);
                 Low[u] = Math.min(Low[u], Low[v]);
             }
-//Differentiate back-edge and cross-edge
+            //Differentiate back-edge and cross-edge
             else if (inStack[v]) //Back-edge case
                 Low[u] = Math.min(Low[u], dfs[v]);
         }
 
         if (Low[u] == dfs[u]) //If u is head node of SCC
         {
-            List<Integer> tmp = new ArrayList<>();
+            int numElInSCC=0;
             while (stack.peek() != u) {
-//            while (stack.topBack() != u) {
-                adjacencyList[stack.peek()] = new ArrayList();
-                tmp.add(stack.peek());
+                numAdjByNode[stack.peek()] = 0;
                 inStack[stack.peek()] = false;
-//                SCCByNode[stack.topBack()]= numSCC;
+                SCCByNode[stack.peek()] = numSCC;
                 stack.pop();
+                numElInSCC++;
             }
-            tmp.add(stack.peek());
-//            SCCByNode[stack.topBack()]= numSCC;
-            if (tmp.size() > 1) {
-                composantes.add(tmp);
-                for (Integer el : tmp) {
-                    SCCByNode[el] = numSCC;
-                }
+            if (numElInSCC > 0) {
+                SCCByNode[stack.peek()] = numSCC;
                 numSCC += 1;
             }
             inStack[stack.peek()] = false;
@@ -82,10 +80,11 @@ public class SCC {
     public void findSCC(int[][] adjacencyMatrix) {
 
         for (int i = 0; i < adjacencyMatrix.length; i++) {
-            adjacencyList[i].clear();
+            numAdjByNode[i] = 0;
             for (int j = 0; j < adjacencyMatrix[i].length; j++) {
                 if (adjacencyMatrix[i][j] > 0) {
-                    adjacencyList[i].add(j);
+                    adjacencyList[i][numAdjByNode[i]]=j;
+                    numAdjByNode[i]++;
                 }
             }
         }
@@ -98,7 +97,6 @@ public class SCC {
         Arrays.fill(dfs, -1);
         Arrays.fill(Low, -1);
         Arrays.fill(inStack, false);
-        composantes.clear();
         stack.clear();
 
         numNodes -= 1;
@@ -110,11 +108,11 @@ public class SCC {
         }
     }
 
-    public List<List<Integer>> getComposantes() {
-        return composantes;
-    }
-
     public int[] getSCCByNode() {
         return SCCByNode;
+    }
+
+    public int getNumSCC() {
+        return numSCC;
     }
 }
