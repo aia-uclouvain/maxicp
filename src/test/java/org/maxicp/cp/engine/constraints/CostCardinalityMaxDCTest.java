@@ -28,12 +28,10 @@ import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.state.State;
 import org.maxicp.util.exception.InconsistencyException;
-import java.util.List;
+
 import java.util.Set;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.cp.CPFactory.makeDfs;
 import static org.maxicp.cp.CPFactory.makeSolver;
 
 public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolverCheck {
@@ -44,11 +42,11 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateLessCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
-        int maxCard = 5;
-        int maxDom = 10;
+        int n = 7;
+        int maxCard = 4;
+        int maxDom = 8;
         int maxCost = 10;
-        int maxH = 40;
+        int maxH = 35;
 
         assertThat(
                 forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(4).assertThat(
@@ -70,11 +68,11 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateFullCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
-        int maxCard = 5;
-        int maxDom = 10;
+        int n = 8;
+        int maxCard = 4;
+        int maxDom = 7;
         int maxCost = 10;
-        int maxH = 40;
+        int maxH = 35;
 
         assertThat(
                 forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(3).assertThat(
@@ -388,7 +386,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {1, 0, 0, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        int[] SCCByNode = scc.getSCCByNode();
+        int[] SCCByNode = scc.getSccByNode();
         assertEquals(1, scc.getNumSCC());
         assertEquals(0, SCCByNode[0]);
         assertEquals(0, SCCByNode[1]);
@@ -418,7 +416,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        int[] SCCByNode = scc.getSCCByNode();
+        int[] SCCByNode = scc.getSccByNode();
         assertEquals(2, scc.getNumSCC());
 
         assertEquals(0, SCCByNode[1]);

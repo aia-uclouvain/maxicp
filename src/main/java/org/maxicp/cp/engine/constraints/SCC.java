@@ -1,20 +1,21 @@
 package org.maxicp.cp.engine.constraints;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Stack;
 
 public class SCC {
+
     private final int[][] adjacencyList;
     private final int[] numAdjByNode;
     private final int[] dfs;
-    private final int[] Low;
+    private final int[] low;
     private final boolean[] inStack;
-    private final Stack<Integer> stack;
+
+    private int stackSize = 0;
+    private final int[] stack;
+
     private int time;
     private int numSCC;
-    private final int[] SCCByNode;
+    private final int[] sccByNode;
     private int numNodes;
 
     /**
@@ -26,90 +27,102 @@ public class SCC {
     public SCC(int numNodes) {
         this.numNodes = numNodes;
         this.dfs = new int[numNodes];
-        this.Low = new int[numNodes];
+        this.low = new int[numNodes];
         this.inStack = new boolean[numNodes];
-        this.stack = new Stack<>();
-        this.SCCByNode = new int[numNodes];
+        this.stack = new int[numNodes];
+        this.sccByNode = new int[numNodes];
         this.adjacencyList = new int[numNodes][numNodes];
         this.numAdjByNode = new int[numNodes];
     }
 
-    private void DFS(int u) {
-        dfs[u] = time;
-        Low[u] = time;
-        time++;
-        stack.push(u);
-        inStack[u] = true;
-        int[] adj = adjacencyList[u]; // get the list of edges from the node.
+    // stack methods
 
-        if (adj==null) {
+    private void pushStack(int u) {
+        stack[stackSize++] = u;
+    }
+
+    private int popStack() {
+        return stack[--stackSize];
+    }
+
+    private int peekStack() {
+        return stack[stackSize - 1];
+    }
+
+    private void clearStack() {
+        stackSize = 0;
+    }
+
+    private void dfs(int u) {
+        dfs[u] = time;
+        low[u] = time;
+        time++;
+        pushStack(u);
+        inStack[u] = true;
+        int[] adj = adjacencyList[u]; // list of edges from the node.
+
+        if (adj == null) {
             return;
         }
 
         for (int i = 0; i < numAdjByNode[u]; i++) {
-            int v= adj[i];
-            if (dfs[v] == -1) //If v is not visited
-            {
-                DFS(v);
-                Low[u] = Math.min(Low[u], Low[v]);
+            int v = adj[i];
+            if (dfs[v] == -1) { // v is not visited
+                dfs(v);
+                low[u] = Math.min(low[u], low[v]);
             }
-            //Differentiate back-edge and cross-edge
-            else if (inStack[v]) //Back-edge case
-                Low[u] = Math.min(Low[u], dfs[v]);
+            // differentiate back-edge and cross-edge
+            else if (inStack[v]) // back-edge case
+                low[u] = Math.min(low[u], dfs[v]);
         }
 
-        if (Low[u] == dfs[u]) //If u is head node of SCC
-        {
-            int numElInSCC=0;
-            while (stack.peek() != u) {
-                numAdjByNode[stack.peek()] = 0;
-                inStack[stack.peek()] = false;
-                SCCByNode[stack.peek()] = numSCC;
-                stack.pop();
+        if (low[u] == dfs[u]) {// u is head-node of SCC
+            int numElInSCC = 0;
+            while (peekStack() != u) {
+                numAdjByNode[peekStack()] = 0;
+                inStack[peekStack()] = false;
+                sccByNode[peekStack()] = numSCC;
+                popStack();
                 numElInSCC++;
             }
             if (numElInSCC > 0) {
-                SCCByNode[stack.peek()] = numSCC;
+                sccByNode[peekStack()] = numSCC;
                 numSCC += 1;
             }
-            inStack[stack.peek()] = false;
-            stack.pop();
+            inStack[peekStack()] = false;
+            popStack();
         }
     }
 
     public void findSCC(int[][] adjacencyMatrix) {
-
         for (int i = 0; i < adjacencyMatrix.length; i++) {
             numAdjByNode[i] = 0;
             for (int j = 0; j < adjacencyMatrix[i].length; j++) {
                 if (adjacencyMatrix[i][j] > 0) {
-                    adjacencyList[i][numAdjByNode[i]]=j;
+                    adjacencyList[i][numAdjByNode[i]] = j;
                     numAdjByNode[i]++;
                 }
             }
         }
-
         numNodes = adjacencyList.length;
-
         time = 0;
         numSCC = 0;
-        Arrays.fill(SCCByNode, -1);
+        Arrays.fill(sccByNode, -1);
         Arrays.fill(dfs, -1);
-        Arrays.fill(Low, -1);
+        Arrays.fill(low, -1);
         Arrays.fill(inStack, false);
-        stack.clear();
+        clearStack();
 
         numNodes -= 1;
 
-
         for (int i = 0; i <= numNodes; ++i) {
             if (dfs[i] == -1)
-                DFS(i);   // call DFS for each undiscovered node.
+                dfs(i);   // call DFS for each undiscovered node.
         }
     }
 
-    public int[] getSCCByNode() {
-        return SCCByNode;
+    public int[] getSccByNode() {
+        return sccByNode;
     }
 
     public int getNumSCC() {

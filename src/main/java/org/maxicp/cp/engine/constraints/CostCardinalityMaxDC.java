@@ -194,7 +194,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         scc.findSCC(capMaxResidualGraph);
         int numSCC = scc.getNumSCC();
-        sccByNode = scc.getSCCByNode();
+        sccByNode = scc.getSccByNode();
 
         selectPivotBySCC();
 
