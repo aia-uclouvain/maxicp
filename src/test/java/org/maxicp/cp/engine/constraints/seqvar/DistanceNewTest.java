@@ -178,6 +178,8 @@ public class DistanceNewTest extends CPSolverTest {
         assertEquals(resultsNoBounds.cost, resultsWithBounds.cost, "The optimal solutions must be the same no matter the constraint used");
         assertTrue(resultsWithBounds.stats.numberOfNodes() < resultsNoBounds.stats.numberOfNodes(),
                 "The search should explore strictly less nodes when using bound computation (in optimization)");
+        System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
+                "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
     }
 
     /**
