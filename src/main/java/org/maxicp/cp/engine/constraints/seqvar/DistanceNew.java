@@ -89,8 +89,8 @@ public class DistanceNew extends AbstractCPConstraint {
             // current distance is at least the current travel
             totalDist.removeBelow(d); //  10..200   5
             // take into account required nodes for the remaining distance
-            updateLowerBoundPredMin();
-            updateLowerBoundDetourMin(d);
+            updateLowerBoundPredMin(); // bug
+            // updateLowerBoundDetourMin(d);
             updateUpperBound();
 
         }
