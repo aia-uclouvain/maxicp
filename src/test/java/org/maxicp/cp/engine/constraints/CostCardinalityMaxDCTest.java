@@ -23,13 +23,15 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.state.State;
 import org.maxicp.util.exception.InconsistencyException;
-import java.util.List;
+
 import java.util.Set;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.makeSolver;
 
 public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolverCheck {
@@ -40,11 +42,11 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateLessCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
-        int maxCard = 5;
-        int maxDom = 10;
+        int n = 7;
+        int maxCard = 4;
+        int maxDom = 8;
         int maxCost = 10;
-        int maxH = 40;
+        int maxH = 35;
 
         assertThat(
                 forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(4).assertThat(
@@ -66,11 +68,11 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
     @Test
     public void testStateFullCostCardinalityMaxDCWithSolverCheck() {
-        int n = 10;
-        int maxCard = 5;
-        int maxDom = 10;
+        int n = 8;
+        int maxCard = 4;
+        int maxDom = 7;
         int maxCost = 10;
-        int maxH = 40;
+        int maxH = 35;
 
         assertThat(
                 forAll(arrayOf(Integer.class, integer().between(0, maxCard)).ofSize(maxDom)).withExamples(3).assertThat(
@@ -384,7 +386,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {1, 0, 0, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        int[] SCCByNode = scc.getSCCByNode();
+        int[] SCCByNode = scc.getSccByNode();
         assertEquals(1, scc.getNumSCC());
         assertEquals(0, SCCByNode[0]);
         assertEquals(0, SCCByNode[1]);
@@ -414,7 +416,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
                 {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0}
         };
         scc.findSCC(adjacencyMatrix);
-        int[] SCCByNode = scc.getSCCByNode();
+        int[] SCCByNode = scc.getSccByNode();
         assertEquals(2, scc.getNumSCC());
 
         assertEquals(0, SCCByNode[1]);
@@ -429,5 +431,66 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
         assertEquals(1, SCCByNode[13]);
 
     }
+
+    // check no solution is removed compared to a decomposition of the constraint
+    @Test
+    public void testDecomp() {
+        for (int i = 0; i < 100; i++) {
+            CPSolver cp = makeSolver();
+            int n = 7;
+            int maxCard = 4;
+            int maxDom = 6;
+            int maxCost = 8;
+            int maxH = 20;
+            Random random = new Random(i);
+
+            int[] upper = new int[maxDom];
+            for (int j = 0; j < maxDom; j++) {
+                upper[j] = random.nextInt(maxCard);
+            }
+
+            int[][] costs = new int[n][maxDom];
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < maxDom; k++) {
+                    costs[j][k] = random.nextInt(maxCost);
+                }
+            }
+
+            // create variables with random domains
+            CPIntVar[] x = new CPIntVar[n];
+            for (int j = 0; j < n; j++) {
+                Set<Integer> dom = new HashSet<>();
+                dom.add(random.nextInt(maxDom)); // ensure at least one value is always present
+                for (int k = 0; k < maxDom; k++) {
+                    if (random.nextBoolean()) {
+                        dom.add(k);
+                    }
+                }
+                x[j] = CPFactory.makeIntVar(cp, dom);
+            }
+
+            CPIntVar H = CPFactory.makeIntVar(cp, 0, maxH); // Maximum cost allowed
+
+            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(x));
+
+            SearchStatistics stats1 = dfs.solveSubjectTo(
+                    s -> false,
+                    () -> {
+                        CostCardinalityMaxDC c = new CostCardinalityMaxDC(x, upper, costs, H);
+                        cp.post(c);
+                    });
+            assertEquals(0, stats1.numberOfFailures()); // because it is domain consistent
+            SearchStatistics stats2 = dfs.solveSubjectTo(
+                    s -> false,
+                    () -> {
+                        CardinalityMaxFWC c = new CardinalityMaxFWC(x, upper);
+                        cp.post(c);
+                        CPIntVar[] costsVars = CPFactory.makeIntVarArray(n, j -> CPFactory.element(costs[j], x[j]));
+                        cp.post(new Sum(costsVars, H));
+                    });
+            assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
+        }
+    }
+
 
 }

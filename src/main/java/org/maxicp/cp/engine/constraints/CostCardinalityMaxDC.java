@@ -169,6 +169,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow());
 
         removeArcNotConsistentPivot(); //Schmied 2024
+//        removeArcNotConsistent(); // Régin 2002
 
     }
 
@@ -194,7 +195,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         scc.findSCC(capMaxResidualGraph);
         int numSCC = scc.getNumSCC();
-        sccByNode = scc.getSCCByNode();
+        sccByNode = scc.getSccByNode();
 
         selectPivotBySCC();
 
@@ -248,7 +249,33 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                     bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);
                 }
                 // Check if the arc (varNode, valueNode) is consistent with Régin 2002
-                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) { //dR(f)(u,v)=dRs(f)(u,v)−dR(f)(s,u)+dR(f)(s,v)
+                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {
+                    // Arc is not consistent, remove it
+                    x[i].remove(domain[i][j]);
+                }
+            }
+        }
+
+    }
+
+    private void removeArcNotConsistent() {
+
+        createListOfEdges();
+
+        for (int i = 0; i < nVars; i++) {
+            int varNode = i + 1; // node representing variable i
+            //iterate over all values of variable i
+            for (int j = 0; j < domainSize[i]; j++) {
+                int valueNode = nVars + 1 + domain[i][j]; // node representing value j of variable i
+
+                if (assignment[i].value() == domain[i][j])
+                    continue; // skip if already assigned
+
+                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it
+                    bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);
+                }
+                // Check if the arc (varNode, valueNode) is consistent with Régin 2002
+                if (dist[valueNode][varNode] > H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {
                     // Arc is not consistent, remove it
                     x[i].remove(domain[i][j]);
                 }
