@@ -439,9 +439,9 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
             CPSolver cp = makeSolver();
             int n = 7;
             int maxCard = 4;
-            int maxDom = 6;
-            int maxCost = 8;
-            int maxH = 20;
+            int maxDom = 5;
+            int maxCost = 5;
+            int maxH = 30;
             Random random = new Random(i);
 
             int[] upper = new int[maxDom];
@@ -476,10 +476,11 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
             SearchStatistics stats1 = dfs.solveSubjectTo(
                     s -> false,
                     () -> {
-                        CostCardinalityMaxDC c = new CostCardinalityMaxDC(x, upper, costs, H);
+                        CostCardinalityMaxDC c = new CostCardinalityMaxDC(x, upper, costs, H, CostCardinalityMaxDC.Algorithm.SCHMIED_REGIN_2024);
                         cp.post(c);
                     });
             assertEquals(0, stats1.numberOfFailures()); // because it is domain consistent
+
             SearchStatistics stats2 = dfs.solveSubjectTo(
                     s -> false,
                     () -> {

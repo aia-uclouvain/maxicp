@@ -16,7 +16,7 @@ import java.util.Arrays;
 public class CostAllDifferentDC extends CostCardinalityMaxDC {
 
     public CostAllDifferentDC(CPIntVar[] x, int [][] costs, CPIntVar H) {
-        super(x, cards(x), costs, H);
+        super(x, cards(x), costs, H, Algorithm.SCHMIED_REGIN_2024);
     }
 
     private static int[] cards(CPIntVar[] x) {
