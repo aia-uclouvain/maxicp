@@ -25,6 +25,11 @@ import java.util.stream.Stream;
  */
 public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
+    // create an enum for the type of algorithm used SCHMIED_REGIN_2024 or REGIN_2002
+    public enum Algorithm {
+        SCHMIED_REGIN_2024, REGIN_2002
+    }
+
     private final int INF
             = Integer.MAX_VALUE;
     private final CPIntVar[] x;
@@ -63,6 +68,9 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
     private final long[] distMaxIn;
     private final long[] distMaxOut;
 
+    private final Algorithm algorithm; // the algorithm to use for the constraint, either SCHMIED_REGIN_2024 or REGIN_2002
+
+
 
     /**
      * Constraint the maximum number of occurrences of a range of values in x.
@@ -72,8 +80,10 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
      *              upper[i] is the maximum number of occurrences of value i in x
      *              The size of upper must be equal to the number of columns in costs and equal to the larest value in x.
      * @param costs The costs associated with each value in x.
+     * @param H     The maximum cost allowed for the assignment.
+     * @param algorithm The algorithm to use for the constraint, either SCHMIED_REGIN_2024 or REGIN_2002.
      */
-    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H) {
+    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H, Algorithm algorithm)  {
         super(x[0].getSolver());
         nVars = x.length;
         this.x = CPFactory.makeIntVarArray(nVars, i -> x[i]);
@@ -128,6 +138,21 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         pivots = new int[numNodes];
         distMaxIn = new long[numNodes];
         distMaxOut = new long[numNodes];
+        this.algorithm = algorithm;
+    }
+
+    /**
+     * Constraint the maximum number of occurrences of a range of values in x.
+     *
+     * @param x     The variables to constraint (at least one), only non-negative values
+     * @param upper The upper cardinality bounds,
+     *              upper[i] is the maximum number of occurrences of value i in x
+     *              The size of upper must be equal to the number of columns in costs and equal to the larest value in x.
+     * @param costs The costs associated with each value in x.
+     * @param H     The maximum cost allowed for the assignment.
+     */
+    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H)  {
+        this(x, upper, costs, H, Algorithm.SCHMIED_REGIN_2024);
     }
 
     @Override
@@ -168,9 +193,13 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow());
 
-        removeArcNotConsistentPivot(); //Schmied 2024
-//        removeArcNotConsistent(); // Régin 2002
-
+        // call the algorithm depending on the enum type
+        if (algorithm == Algorithm.SCHMIED_REGIN_2024) {
+            removeArcNotConsistentPivot();
+        }
+        else {
+            removeArcNotConsistent();
+        }
     }
 
     private void updateDomains() {
@@ -204,19 +233,22 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
             int pivot = pivots[indexSCC];
             bellmanFord(edgeCount, edges, pivot, dist[pivot]); // Compute shortest path from pivot to all nodes
             bellmanFord(edgeCount, edgesReverse, pivot, distReverse[pivot]); // Compute shortest path from all nodes to pivot
-            for (int i = 0; i < numNodes; i++) {
-                if (distReverse[pivot][i] != 0) {
-                    dist[i][pivot] = distReverse[pivot][i]; // Store the reverse distance
-                }
-                if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != INF) {
-                    distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
-                }
-                if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != INF) {
-                    distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
-                }
-            }
         }
 
+        for (int i = 0; i < numNodes; i++) {
+            int indexSCC = sccByNode[i];
+            if (indexSCC == -1) continue; // Node is not in any SCC
+            int pivot = pivots[indexSCC];
+            if (distReverse[pivot][i] != 0) {
+                dist[i][pivot] = distReverse[pivot][i]; // Store the reverse distance
+            }
+            if (distMaxOut[indexSCC] < dist[pivot][i] && dist[pivot][i] != INF) {
+                distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC
+            }
+            if (distMaxIn[indexSCC] < dist[i][pivot] && dist[i][pivot] != INF) {
+                distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot
+            }
+        }
 
         for (int i = 0; i < nVars; i++) {
             int varNode = i + 1; // node representing variable i
