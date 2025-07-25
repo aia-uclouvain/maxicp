@@ -89,8 +89,8 @@ public class DistanceNew extends AbstractCPConstraint {
             // current distance is at least the current travel
             totalDist.removeBelow(d); //  10..200   5
             // take into account required nodes for the remaining distance
-            updateLowerBoundPredMin(); // bug
-            // updateLowerBoundDetourMin(d);
+            updateLowerBoundPredMin();
+            updateLowerBoundDetourMin(d);
             updateUpperBound();
 
         }
@@ -103,6 +103,7 @@ public class DistanceNew extends AbstractCPConstraint {
             for (int p = 0; p < nPreds; p++) {
                 int pred = inserts[p];
                 filterEdge(pred, node, maxDetour);
+                //TODO: filtrage with lower bound
             }
         }
     }
@@ -112,8 +113,6 @@ public class DistanceNew extends AbstractCPConstraint {
      * This method computes the minimum detour for each node inserable
      */
     private void updateLowerBoundDetourMin(int currentDist) {
-        // TODO 0
-
         int totalMinDetour = 0;
 
         Arrays.fill(minDetour, Integer.MAX_VALUE);
@@ -130,7 +129,6 @@ public class DistanceNew extends AbstractCPConstraint {
                     if (pred == succ) {
                         continue; // skip if pred and succ are the same
                     }
-//                    System.out.println("pred: " + pred + ", node: " + node + ", succ: " + succ);
 
                     if (seqVar.hasEdge(pred, succ)) {
                         int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
@@ -145,14 +143,8 @@ public class DistanceNew extends AbstractCPConstraint {
             }
         }
 
-//        System.out.println("totalMinDetour: " + totalMinDetour);
-//        System.out.println("totalDist before: " + totalDist);
-
-
         // remove the lower bound on the total distance
         totalDist.removeBelow(currentDist + totalMinDetour);
-
-//        System.out.println("totalDist after: " + totalDist);
     }
 
     /**
@@ -160,8 +152,6 @@ public class DistanceNew extends AbstractCPConstraint {
      * This method computes the sum of minimum distance from each node to its predecessors
      */
     private void updateLowerBoundPredMin() {
-        // TODO 1
-
         int totalMinPred = 0;
 
         Arrays.fill(minPred, Integer.MAX_VALUE);
