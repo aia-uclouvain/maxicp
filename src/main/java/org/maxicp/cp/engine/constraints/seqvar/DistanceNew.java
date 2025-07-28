@@ -23,7 +23,12 @@ public class DistanceNew extends AbstractCPConstraint {
     private final int[] numSuccs;
 
     private final int[] minPred;
+    private final int[] costMinPred;
+    private int LBPredMin;
     private final int[] minDetour;
+    private int LBDetourMin;
+    private MinimumArborescence minimumArborescence;
+    private int LBMinArborescence;
 
     public DistanceNew(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar.getSolver());
@@ -41,10 +46,10 @@ public class DistanceNew extends AbstractCPConstraint {
         this.numSuccs = new int[numNodes];
 
         this.minPred = new int[numNodes];
+        this.costMinPred = new int[numNodes];
         this.minDetour = new int[numNodes];
 
-        System.out.println(Arrays.deepToString(dist));
-        System.out.println(totalDist);
+        this.minimumArborescence = new MinimumArborescence(dist, seqVar.start());
     }
 
     private static void checkTriangularInequality(int[][] dist) {
@@ -89,8 +94,11 @@ public class DistanceNew extends AbstractCPConstraint {
             // current distance is at least the current travel
             totalDist.removeBelow(d); //  10..200   5
             // take into account required nodes for the remaining distance
-            updateLowerBoundPredMin();
-            updateLowerBoundDetourMin(d);
+
+            LBMinArborescence = updateLowerBoundMinArborescence();
+//            LBPredMin = updateLowerBoundPredMin();
+//            LBDetourMin = updateLowerBoundDetourMin(d);
+
             updateUpperBound();
 
         }
@@ -103,16 +111,33 @@ public class DistanceNew extends AbstractCPConstraint {
             for (int p = 0; p < nPreds; p++) {
                 int pred = inserts[p];
                 filterEdge(pred, node, maxDetour);
-                //TODO: filtrage with lower bound
             }
         }
     }
 
+    private void initPredsAndSuccs() {
+        for (int i = 0; i < numNodes; i++) { // from variables to values
+            numSuccs[i] = seqVar.fillSucc(i, succs[i]);
+            numPreds[i] = seqVar.fillPred(i, preds[i]);
+        }
+    }
+
+    private int updateLowerBoundMinArborescence() {
+        initPredsAndSuccs();
+        minimumArborescence.findMinimumArborescence(preds, numPreds);
+
+        totalDist.removeBelow(minimumArborescence.getCostMinimumArborescence());
+        return minimumArborescence.getCostMinimumArborescence();
+    }
+
+
     /**
      * Updates the lower bound on the distance, based on the current sequence variable
      * This method computes the minimum detour for each node inserable
+     *
+     * @return
      */
-    private void updateLowerBoundDetourMin(int currentDist) {
+    private int updateLowerBoundDetourMin(int currentDist) {
         int totalMinDetour = 0;
 
         Arrays.fill(minDetour, Integer.MAX_VALUE);
@@ -120,8 +145,6 @@ public class DistanceNew extends AbstractCPConstraint {
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
         for (int n = 0; n < nInsertable; n++) {
             int node = nodes[n];
-            numPreds[node] = seqVar.fillPred(node, preds[node]);  // fill the predecessors of node
-            numSuccs[node] = seqVar.fillSucc(node, succs[node]);  // fill the successors of node
             for (int p = 0; p < numPreds[node]; p++) {
                 for (int s = 0; s < numSuccs[node]; s++) {
                     int pred = preds[node][p];
@@ -145,30 +168,36 @@ public class DistanceNew extends AbstractCPConstraint {
 
         // remove the lower bound on the total distance
         totalDist.removeBelow(currentDist + totalMinDetour);
+        return currentDist + totalMinDetour;
     }
 
     /**
      * Updates the lower bound on the distance, based on the current sequence variable
      * This method computes the sum of minimum distance from each node to its predecessors
+     *
+     * @return
      */
-    private void updateLowerBoundPredMin() {
+    private int updateLowerBoundPredMin() {
         int totalMinPred = 0;
 
-        Arrays.fill(minPred, Integer.MAX_VALUE);
+        Arrays.fill(costMinPred, Integer.MAX_VALUE);
 
         for (int i = 0; i < numNodes; i++) {
-            numPreds[i] = seqVar.fillPred(i, preds[i]);
             for (int j = 0; j < numPreds[i]; j++) {
                 int pred = preds[i][j];
-                minPred[i] = Math.min(minPred[i], dist[pred][i]);
+                if (dist[pred][i] < costMinPred[i]) {
+                    costMinPred[i] = dist[pred][i];
+                    minPred[i] = pred;
+                }
             }
-            if (minPred[i] < Integer.MAX_VALUE) {
-                totalMinPred += minPred[i];
+            if (costMinPred[i] < Integer.MAX_VALUE) {
+                totalMinPred += costMinPred[i];
             }
         }
 
         // remove the lower bound on the total distance 
         totalDist.removeBelow(totalMinPred);
+        return totalMinPred;
     }
 
     /**
@@ -184,8 +213,21 @@ public class DistanceNew extends AbstractCPConstraint {
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
+                return;
+            }
+//            for (int i = 0; i < numSuccs[node]; i++) {
+//                if (minPred[i] == node) {
+//                    if (LBPredMin - costMinPred[node] - costMinPred[i] + detour > totalDist.max()) {
+//                        seqVar.notBetween(pred, node, succ);
+//                        return;
+//                    }
+//                }
+//            }
+            else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
+                seqVar.notBetween(pred, node, succ);
             }
         }
     }
+
 
 }

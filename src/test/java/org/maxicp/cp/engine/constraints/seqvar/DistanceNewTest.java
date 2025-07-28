@@ -1,5 +1,6 @@
 package org.maxicp.cp.engine.constraints.seqvar;
 
+import org.junit.Assert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -148,11 +149,12 @@ public class DistanceNewTest extends CPSolverTest {
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
         nNodes, seed
-        25,     1
-        25,     2
-        25,     42
+            25,     1
+            25,     2
+            25,     42
+            30,     1
         """)
-    public void testLessSearchNodesUsingBound(int nNodes, int seed) {
+    public void testTSPLessSearchNodesUsingBound(int nNodes, int seed) {
         // instance data
         Random random = new Random(seed);
         int[][] transitions = randomTransitions(random, nNodes);
@@ -180,6 +182,65 @@ public class DistanceNewTest extends CPSolverTest {
                 "The search should explore strictly less nodes when using bound computation (in optimization)");
         System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
                 "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testMinArborescence(CPSolver cp) {
+        int nNodes = 6;
+        int start = 0;
+        int[][] transitions = new int[][]{
+                {0, 10, 2, 10, 0, 0},
+                {0, 0, 1, 0, 0, 8},
+                {0, 0, 0, 4, 0, 0},
+                {0, 0, 0, 0, 2, 4},
+                {0, 2, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0}
+        };
+
+        int[][] preds = new int[nNodes][nNodes];
+        int[] numPreds = new int[nNodes];
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = 0; j < nNodes; j++) {
+                if (transitions[i][j] > 0) {
+                    preds[j][numPreds[j]] = i;
+                    numPreds[j]++;
+                }
+            }
+        }
+
+        MinimumArborescence arb = new MinimumArborescence(transitions, start);
+        assertEquals(14, arb.findMinimumArborescence(preds, numPreds));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testMinArborescence2(CPSolver cp) {
+        int nNodes = 7;
+        int start = 0;
+        int[][] transitions = new int[][]{
+                {0, 3, 0, 0, 0, 0, 0},
+                {0, 0, 0, 2, 0, 0, 0},
+                {0, 0, 0, 1, 0, 0, 0},
+                {0, 0, 3, 0, 0, 3, 0},
+                {0, 0, 0, 0, 0, 1, 0},
+                {0, 0, 0, 0, 0, 0, 2},
+                {0, 0, 0, 0, 2, 0, 0}
+        };
+
+        int[][] preds = new int[nNodes][nNodes];
+        int[] numPreds = new int[nNodes];
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = 0; j < nNodes; j++) {
+                if (transitions[i][j] > 0) {
+                    preds[j][numPreds[j]] = i;
+                    numPreds[j]++;
+                }
+            }
+        }
+
+        MinimumArborescence arb = new MinimumArborescence(transitions, start);
+        assertEquals(15, arb.findMinimumArborescence(preds, numPreds));
     }
 
     /**
