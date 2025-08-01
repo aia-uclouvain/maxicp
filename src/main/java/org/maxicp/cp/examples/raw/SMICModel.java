@@ -9,6 +9,7 @@ import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.CPFactory.alwaysIn;
@@ -76,7 +77,7 @@ public class SMICModel {
 
         solution = new int[data.nbJob];
         // Search:
-        DFSearch dfs = CPFactory.makeDfs(cp, new StaticOrderGreedySearch(intervals));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.setTimes(intervals));
 
         dfs.onSolution(() -> {
             System.out.println("solution found"+makespan.min());
