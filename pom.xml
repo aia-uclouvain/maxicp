@@ -34,6 +34,13 @@
         </developer>
     </developers>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>21</maven.compiler.source>
@@ -65,9 +72,9 @@
             <version>2.0.1</version>
         </dependency>
         <dependency>
-            <groupId>org.bitbucket.xaviergillard</groupId>
-            <artifactId>SolverCheck</artifactId>
-            <version>1.0.3</version>
+            <groupId>com.github.aia-uclouvain</groupId>
+            <artifactId>solvercheck</artifactId>
+            <version>-f8f6d239c0-1</version>
         </dependency>
     </dependencies>
     <build>

@@ -7,6 +7,7 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.engine.constraints.Circuit;
+import org.maxicp.cp.engine.constraints.CostAllDifferentDC;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -49,29 +50,8 @@ public class TSP {
         CPIntVar totalDist = sum(distSucc);
         Objective obj = cp.minimize(totalDist);
 
-        /*
-        cp.post(lessOrEqual(totalDist, 2085));
-
-
-        int [] sol = new int[] {3, 4, 10, 12, 8, 16, 7, 5, 11, 1, 9, 15, 6, 14, 2, 0, 13};
-        for (int i = 0; i < n; i++) {
-            cp.post(equal(succ[i], sol[i]));
-        }*/
-
-        /*
-        DFSearch dfs = makeDfs(cp, () -> {
-            CPIntVar xs = selectMin(succ,
-                    xi -> xi.size() > 1,
-                    xi -> xi.size());
-            if (xs == null)
-                return EMPTY;
-            else {
-                int v = xs.min();
-                return branch(() -> xs.getSolver().post(equal(xs, v)),
-                        () -> xs.getSolver().post(notEqual(xs, v)));
-            }
-        });
-         */
+        // redundant constraint
+        cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
 
         DFSearch dfs = makeDfs(cp, staticOrder(succ));
 

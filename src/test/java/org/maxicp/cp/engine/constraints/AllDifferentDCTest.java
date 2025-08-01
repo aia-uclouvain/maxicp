@@ -5,6 +5,15 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import be.uclouvain.solvercheck.WithSolverCheck;
+import be.uclouvain.solvercheck.core.data.Domain;
+import be.uclouvain.solvercheck.core.data.PartialAssignment;
+import be.uclouvain.solvercheck.core.task.Checker;
+import be.uclouvain.solvercheck.core.task.Filter;
+import be.uclouvain.solvercheck.core.task.StatefulFilter;
+import be.uclouvain.solvercheck.generators.GeneratorsDSL;
+import be.uclouvain.solvercheck.generators.PartialAssignmentGenerator;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.engine.CPSolverTest;
@@ -13,15 +22,86 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.search.Searches.*;
 
 
-public class AllDifferentDCTest extends CPSolverTest {
+public class AllDifferentDCTest extends CPSolverTest implements WithSolverCheck {
+
+
+    @Test
+    public void testAllDiffWithSolverCheckStateless() {
+        assertThat(
+                forAll(GeneratorsDSL.listOf("Xs", jDom()).ofSizeBetween(1,10)).assertThat(xs ->
+                        an(arcConsistent(allDiff())).isEquivalentTo(stateLessAllDiffDC())
+                                .forAnyPartialAssignment().with(xs)
+                )
+        );
+    }
+
+    @Test
+    public void testAllDiffWithSolverCheckStateFull() {
+        assertThat(
+                forAll(GeneratorsDSL.listOf("Xs", jDom()).ofSizeBetween(1,10)).assertThat(xs ->
+                        a(stateFullAllDiffDC()).isEquivalentTo(stateful(arcConsistent(allDiff())))
+                                .forAnyPartialAssignment().with(xs)
+                )
+        );
+    }
+
+    public GeneratorsDSL.GenDomainBuilder jDom() {
+        return domain().withValuesBetween(0, 20);
+    }
+
+    public static Set<Integer> toSet(CPIntVar x) {
+        Set<Integer> dom = new HashSet<>();
+        for (int i = x.min(); i <= x.max(); i++) {
+            if (x.contains(i)) {
+                dom.add(i);
+            }
+        }
+        return dom;
+    }
+
+    private Filter stateLessAllDiffDC() {
+        return partialAssignment -> {
+            CPSolver cp = CPFactory.makeSolver();
+            CPIntVar[] x = new CPIntVar[partialAssignment.size()];
+            for (int i = 0; i < x.length; i++) {
+                x[i] = CPFactory.makeIntVar(cp, partialAssignment.get(i));
+            }
+            boolean inConsistent = false;
+            try {
+                cp.post(new AllDifferentDC(x));
+            } catch (InconsistencyException e) {
+                inConsistent = true;
+            }
+            Domain [] domains = new Domain[x.length];
+            for (int i = 0; i < x.length; i++) {
+                if (!inConsistent) {
+                    domains[i] = Domain.from(toSet(x[i]));
+                } else {
+                    domains[i] = Domain.emptyDomain();
+                }
+            }
+            return be.uclouvain.solvercheck.core.data.PartialAssignment.from(domains);
+        };
+    }
+
+
+    private StatefulFilter stateFullAllDiffDC() {
+        return SolverCheckUtils.statefulFilter(
+                (solver, vars) -> new AllDifferentDC(vars)
+        );
+    }
 
     @ParameterizedTest
     @MethodSource("getSolver")

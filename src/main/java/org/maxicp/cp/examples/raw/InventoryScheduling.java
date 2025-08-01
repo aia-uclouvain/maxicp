@@ -3,6 +3,7 @@ package org.maxicp.cp.examples.raw;
 import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
+import org.maxicp.cp.engine.constraints.scheduling.CPFlatCumulFunction;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -40,8 +41,6 @@ public class InventoryScheduling {
         CPIntVar[] starts = new CPIntVar[data.nbJob];
         CPIntVar[] ends = new CPIntVar[data.nbJob];
 
-        CPCumulFunction cumulNoOverlap = CPFactory.flat();
-
         CPCumulFunction cumul = step(cp, 0, data.initInventory);
 
         for (int i = 0; i < data.nbJob; i++) {
@@ -57,15 +56,16 @@ public class InventoryScheduling {
             } else {
                 cumul = minus(cumul, stepAtStart(intervals[i], data.inventory[i], data.inventory[i]));
             }
-
-            cumulNoOverlap = plus(cumulNoOverlap, pulse(intervals[i], 1));
         }
         // constraint
         cp.post(alwaysIn(cumul, 0, data.capaInventory));
 
-        // cp.post(nonOverlap(intervals));
-        cp.post(le(cumulNoOverlap, 1));
-
+        cp.post(nonOverlap(intervals));
+        CPCumulFunction cumulNoOverlap = new CPFlatCumulFunction();
+        for (CPIntervalVar interval : intervals) {
+            cumulNoOverlap = CPFactory.plus(cumulNoOverlap,CPFactory.pulse(interval, 1));
+        }
+        cp.post(alwaysIn(cumulNoOverlap,0, 1));
 
         // Objective
         IntExpression makespan = CPFactory.max(ends);
