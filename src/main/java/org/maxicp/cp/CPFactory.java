@@ -272,12 +272,7 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp) {
-        //return new CPIntervalVarImplNaiveDecomp(cp);
         return new CPIntervalVarImpl(cp);
-    }
-
-    public static CPIntervalVar makeIntervalVarNaive(CPSolver cp) {
-        return new CPIntervalVarImplNaiveDecomp(cp);
     }
 
     /**

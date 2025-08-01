@@ -50,10 +50,9 @@ public class SMICModel {
         IntExpression[] starts = new IntExpression[data.nbJob];
         IntExpression[] ends = new IntExpression[data.nbJob];
         CPCumulFunction cumul = step(cp, 0, data.initInventory);
-        CPCumulFunction cumulNoOverlap = CPFactory.flat();
 
         for (int i = 0; i < data.nbJob; i++) {
-            CPIntervalVar interval = makeIntervalVarNaive(cp);//makeIntervalVar(cp);
+            CPIntervalVar interval = makeIntervalVar(cp);
             interval.setStartMin(data.release[i]);
             //interval.setEndMax(data.horizon);
             interval.setLength(data.processing[i]);
@@ -61,7 +60,6 @@ public class SMICModel {
             starts[i] = start(interval);
             ends[i] = end(interval);
             intervals[i] = interval;
-            cumulNoOverlap = plus(cumulNoOverlap, pulse(interval, 1));
             if (data.type[i] == 1) {
                 cumul = plus(cumul, stepAtStart(intervals[i], data.inventory[i], data.inventory[i]));
             } else {
@@ -69,8 +67,9 @@ public class SMICModel {
             }
         }
         // constraints
-        cp.post(alwaysIn(cumul, 0, data.capaInventory, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE));
-        cp.post(le(cumulNoOverlap, 1, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE));
+        cp.post(alwaysIn(cumul, 0, data.capaInventory));
+        cp.post(nonOverlap(intervals));
+
         // Objective
         IntExpression makespan = max(ends);
         Objective obj = minimize(makespan);
