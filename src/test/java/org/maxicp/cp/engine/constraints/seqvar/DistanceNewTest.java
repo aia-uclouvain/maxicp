@@ -1,6 +1,7 @@
 package org.maxicp.cp.engine.constraints.seqvar;
 
 import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -15,6 +16,7 @@ import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -149,6 +151,7 @@ public class DistanceNewTest extends CPSolverTest {
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
         nNodes, seed
+            5,      1
             25,     1
             25,     2
             25,     42
@@ -189,7 +192,7 @@ public class DistanceNewTest extends CPSolverTest {
     public void testMinArborescence(CPSolver cp) {
         int nNodes = 6;
         int start = 0;
-        int[][] transitions = new int[][]{
+        int[][] cost = new int[][]{
                 {0, 10, 2, 10, 0, 0},
                 {0, 0, 1, 0, 0, 8},
                 {0, 0, 0, 4, 0, 0},
@@ -202,15 +205,16 @@ public class DistanceNewTest extends CPSolverTest {
         int[] numPreds = new int[nNodes];
         for (int i = 0; i < nNodes; i++) {
             for (int j = 0; j < nNodes; j++) {
-                if (transitions[i][j] > 0) {
+                if (cost[i][j] > 0) {
                     preds[j][numPreds[j]] = i;
                     numPreds[j]++;
                 }
             }
         }
 
-        MinimumArborescence arb = new MinimumArborescence(transitions, start);
-        assertEquals(14, arb.findMinimumArborescence(preds, numPreds));
+        MinimumArborescence arb = new MinimumArborescence(cost, start);
+        arb.findMinimumArborescence(preds, numPreds);
+        assertEquals(14, arb.getCostMinimumArborescence());
     }
 
     @ParameterizedTest
@@ -218,7 +222,7 @@ public class DistanceNewTest extends CPSolverTest {
     public void testMinArborescence2(CPSolver cp) {
         int nNodes = 7;
         int start = 0;
-        int[][] transitions = new int[][]{
+        int[][] cost = new int[][]{
                 {0, 3, 0, 0, 0, 0, 0},
                 {0, 0, 0, 2, 0, 0, 0},
                 {0, 0, 0, 1, 0, 0, 0},
@@ -232,15 +236,93 @@ public class DistanceNewTest extends CPSolverTest {
         int[] numPreds = new int[nNodes];
         for (int i = 0; i < nNodes; i++) {
             for (int j = 0; j < nNodes; j++) {
-                if (transitions[i][j] > 0) {
+                if (cost[i][j] > 0) {
                     preds[j][numPreds[j]] = i;
                     numPreds[j]++;
                 }
             }
         }
 
-        MinimumArborescence arb = new MinimumArborescence(transitions, start);
-        assertEquals(15, arb.findMinimumArborescence(preds, numPreds));
+        MinimumArborescence arb = new MinimumArborescence(cost, start);
+        arb.findMinimumArborescence(preds, numPreds);
+        assertEquals(15, arb.getCostMinimumArborescence());
+    }
+
+    @Test
+    public void testMST() {
+        int nNodes = 6;
+        int start = 0;
+        int[][] cost = new int[][]{
+                {0, 10, 2, 10, 0, 0},
+                {0, 0, 1, 0, 0, 8},
+                {0, 0, 0, 4, 0, 0},
+                {0, 0, 0, 0, 2, 4},
+                {0, 2, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0}
+        };
+
+        //make cost symmetric
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = i + 1; j < nNodes; j++) {
+                cost[j][i] = Math.max(cost[i][j], cost[j][i]);
+                cost[i][j] = cost[j][i];
+            }
+        }
+
+        int[][] adjacencyMatrix = new int[nNodes][nNodes];
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = i; j < nNodes; j++) {
+                if (cost[i][j] > 0) {
+                    adjacencyMatrix[i][j] = 1; // edge exists
+                    adjacencyMatrix[j][i] = 1;
+                }
+            }
+        }
+
+        MinimumSpanningTree arb = new MinimumSpanningTree(nNodes, start, cost);
+        arb.primMST(adjacencyMatrix);
+        assertEquals(11, arb.getCostMinimumSpanningTree());
+        assertEquals(Arrays.toString(new int[]{-1, 2, 0, 4, 1, 3}), Arrays.toString(arb.getPredsInMST()));
+//        assertEquals(4, arb.arcCostMaxInPath(0, 5));
+    }
+
+    @Test
+    public void testMST2() {
+        int nNodes = 7;
+        int start = 0;
+        int[][] cost = new int[][]{
+                {0, 3, 0, 0, 0, 0, 0},
+                {0, 0, 2, 2, 0, 0, 0},
+                {0, 0, 0, 1, 0, 0, 0},
+                {0, 0, 1, 0, 0, 3, 0},
+                {0, 0, 0, 0, 0, 1, 0},
+                {0, 0, 0, 0, 0, 0, 2},
+                {0, 0, 0, 0, 2, 0, 0}
+        };
+
+        //make cost symmetric
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = i + 1; j < nNodes; j++) {
+                cost[j][i] = Math.max(cost[i][j], cost[j][i]);
+                cost[i][j] = cost[j][i];
+            }
+        }
+
+        int[][] adjacencyMatrix = new int[nNodes][nNodes];
+        for (int i = 0; i < nNodes; i++) {
+            for (int j = i; j < nNodes; j++) {
+                if (cost[i][j] > 0) {
+                    adjacencyMatrix[i][j] = 1; // edge exists
+                    adjacencyMatrix[j][i] = 1;
+                }
+            }
+        }
+
+        MinimumSpanningTree arb = new MinimumSpanningTree(nNodes, start, cost);
+        arb.primMST(adjacencyMatrix);
+        assertEquals(12, arb.getCostMinimumSpanningTree());
+        assertEquals(Arrays.toString(new int[]{-1, 0, 1, 2, 5, 3, 5}), Arrays.toString(arb.getPredsInMST()));
+//        assertEquals(3, arb.arcCostMaxInPath(0, 5));
     }
 
     /**

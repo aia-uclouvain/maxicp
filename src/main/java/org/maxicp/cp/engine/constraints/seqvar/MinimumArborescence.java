@@ -47,7 +47,7 @@ public class MinimumArborescence {
 
     }
 
-    public int findMinimumArborescence(int[][] preds, int[] numPreds) {
+    public void findMinimumArborescence(int[][] preds, int[] numPreds) {
         this.preds = preds;
         this.numPreds = numPreds;
 
@@ -63,12 +63,11 @@ public class MinimumArborescence {
 
         //si il n'y a pas de cycle alors on a trouver l'arborescence min
         if (isTree()) {
-            return costMinimumArborescence;
+            return;
         }
 
         minInputByCycle();
 
-        return costMinimumArborescence;
     }
 
 

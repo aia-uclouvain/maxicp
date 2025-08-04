@@ -21,6 +21,7 @@ public class DistanceNew extends AbstractCPConstraint {
     private final int[] numPreds;
     private final int[][] succs;
     private final int[] numSuccs;
+    private final int[][] adjacencyMatrix;
 
     private final int[] minPred;
     private final int[] costMinPred;
@@ -29,6 +30,9 @@ public class DistanceNew extends AbstractCPConstraint {
     private int LBDetourMin;
     private MinimumArborescence minimumArborescence;
     private int LBMinArborescence;
+    private MinimumSpanningTree minimumSpanningTree;
+    private final int[][] costForMST;
+    private int LBMinSpanningTree;
 
     public DistanceNew(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar.getSolver());
@@ -44,12 +48,23 @@ public class DistanceNew extends AbstractCPConstraint {
         this.numPreds = new int[numNodes];
         this.succs = new int[numNodes][numNodes];
         this.numSuccs = new int[numNodes];
+        this.adjacencyMatrix = new int[numNodes][numNodes];
 
         this.minPred = new int[numNodes];
         this.costMinPred = new int[numNodes];
         this.minDetour = new int[numNodes];
 
         this.minimumArborescence = new MinimumArborescence(dist, seqVar.start());
+
+        costForMST = new int[numNodes][numNodes];
+        for (int i = 0; i < numNodes; i++) {
+            for (int j = i; j < numNodes; j++) {
+                costForMST[i][j] = Math.min(dist[i][j], dist[j][i]); // ensure symmetry
+                costForMST[j][i] = costForMST[i][j]; // ensure symmetry
+            }
+        }
+        this.minimumSpanningTree = new MinimumSpanningTree(numNodes, seqVar.start(), costForMST);
+
     }
 
     private static void checkTriangularInequality(int[][] dist) {
@@ -94,8 +109,10 @@ public class DistanceNew extends AbstractCPConstraint {
             // current distance is at least the current travel
             totalDist.removeBelow(d); //  10..200   5
             // take into account required nodes for the remaining distance
+            initPredsAndSuccs();
 
-            LBMinArborescence = updateLowerBoundMinArborescence();
+            LBMinSpanningTree = updateLowerBoundMST();
+//            LBMinArborescence = updateLowerBoundMinArborescence();
 //            LBPredMin = updateLowerBoundPredMin();
 //            LBDetourMin = updateLowerBoundDetourMin(d);
 
@@ -122,8 +139,26 @@ public class DistanceNew extends AbstractCPConstraint {
         }
     }
 
+    private int updateLowerBoundMST() {
+
+        for (int i = 0; i < numNodes; i++) {
+            Arrays.fill(adjacencyMatrix[i], 0);
+        }
+
+        for (int i = 0; i < numNodes; i++) {
+            for (int j = 0; j < numSuccs[i]; j++) {
+                adjacencyMatrix[i][succs[i][j]]=1;
+                adjacencyMatrix[succs[i][j]][i]=1;
+            }
+        }
+
+        minimumSpanningTree.primMST(adjacencyMatrix);
+
+        totalDist.removeBelow(minimumSpanningTree.getCostMinimumSpanningTree());
+        return minimumSpanningTree.getCostMinimumSpanningTree();
+    }
+
     private int updateLowerBoundMinArborescence() {
-        initPredsAndSuccs();
         minimumArborescence.findMinimumArborescence(preds, numPreds);
 
         totalDist.removeBelow(minimumArborescence.getCostMinimumArborescence());
@@ -207,6 +242,8 @@ public class DistanceNew extends AbstractCPConstraint {
         // TODO 2
     }
 
+
+
     private void filterEdge(int pred, int node, int maxDetour) {
         if (seqVar.isNode(pred, MEMBER)) {
             int succ = seqVar.memberAfter(pred);
@@ -223,11 +260,13 @@ public class DistanceNew extends AbstractCPConstraint {
 //                    }
 //                }
 //            }
-            else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
-                seqVar.notBetween(pred, node, succ);
-            }
+//            else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
+//                seqVar.notBetween(pred, node, succ);
+//            }
         }
     }
+
+
 
 
 }
