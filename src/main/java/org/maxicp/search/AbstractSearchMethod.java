@@ -61,7 +61,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         failureListeners.forEach(Runnable::run);
     }
 
-    protected SearchStatistics solve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit) {
+    protected SearchStatistics solve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit, DFSListener listener) {
         sm.withNewState(() -> {
             try {
                 // runs the visit of the root node
@@ -71,7 +71,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
             }
             if (!statistics.isCompleted()) {
                 try {
-                    startSolve(statistics, limit, onNodeVisit);
+                    startSolve(statistics, limit, onNodeVisit, listener);
                     statistics.setCompleted();
                 } catch (StopSearchException ignored) {
 
@@ -89,7 +89,19 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      */
     public SearchStatistics solve() {
         SearchStatistics statistics = new SearchStatistics();
-        return solve(statistics, stats -> false, () -> {});
+        return solve(statistics, stats -> false, () -> {}, new DFSListener() {});
+    }
+
+    /**
+     * Start the solving process
+     * with a given listener of the search process.
+     *
+     * @param listener a listener of the search process
+     * @return an object with the statistics on the search
+     */
+    public SearchStatistics solve(DFSListener listener) {
+        SearchStatistics statistics = new SearchStatistics();
+        return solve(statistics, stats -> false, () -> {}, listener);
     }
 
     /**
@@ -103,7 +115,22 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      */
     public SearchStatistics solve(Predicate<SearchStatistics> limit) {
         SearchStatistics statistics = new SearchStatistics();
-        return solve(statistics, limit, () -> {});
+        return solve(statistics, limit, () -> {}, new DFSListener() {});
+    }
+
+    /**
+     * Start the solving process
+     * with a given predicate called at each node
+     * to stop the search when it becomes true.
+     *
+     * @param limit a predicate called at each node
+     *             that stops the search when it becomes true
+     * @param listener a listener of the search process
+     * @return an object with the statistics on the search
+     */
+    public SearchStatistics solve(Predicate<SearchStatistics> limit, DFSListener listener) {
+        SearchStatistics statistics = new SearchStatistics();
+        return solve(statistics, limit, () -> {}, listener);
     }
 
     /**
@@ -126,7 +153,36 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         sm.withNewState(() -> {
             try {
                 subjectTo.run();
-                solve(statistics, limit, () -> {});
+                solve(statistics, limit, () -> {}, new DFSListener() {});
+            } catch (InconsistencyException ignored) {
+            }
+        });
+        return statistics;
+    }
+
+
+    /**
+     * Start the solving process
+     * with a given predicate called at each node
+     * to stop the search when it becomes true.
+     * The state manager saves the state
+     * before executing the closure
+     * and restores it after the search.
+     * Any {@link InconsistencyException} that may
+     * be throw when executing the closure is also catched.
+     *
+     * @param limit a predicate called at each node
+     *             that stops the search when it becomes true
+     * @param subjectTo the closure to execute prior to the search starts
+     * @param listener the listener of the search process
+     * @return an object with the statistics on the search
+     */
+    public SearchStatistics solveSubjectTo(Predicate<SearchStatistics> limit, Runnable subjectTo, DFSListener listener) {
+        SearchStatistics statistics = new SearchStatistics();
+        sm.withNewState(() -> {
+            try {
+                subjectTo.run();
+                solve(statistics, limit, () -> {}, listener);
             } catch (InconsistencyException ignored) {
             }
         });
@@ -174,7 +230,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         Runnable tighten = toTighten::tighten;
         onSolution(tighten);
         try {
-            solve(statistics, limit, () -> toTighten.filter());
+            solve(statistics, limit, () -> toTighten.filter(), new DFSListener() {});
         }
         catch (InconsistencyException ignored) {
             ignored.printStackTrace();
@@ -185,7 +241,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
 
     /**
      * Executes a closure prior to effectively
-     * starting a branch and bound depth first search
+     * starting a branch and bound depth-first-search
      * with a given objective to optimize
      * and a given predicate called at each node
      * to stop the search when it becomes true.
@@ -240,6 +296,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      * @param statistics
      * @param limit
      * @param onNodeVisit a closure to execute at each node visit
+     * @param listener a listener of the search process
      */
-    protected abstract void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit);
+    protected abstract void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit, DFSListener listener);
 }

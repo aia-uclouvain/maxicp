@@ -33,7 +33,7 @@ public class BestFirstSearch<T extends Comparable<T>> extends RunnableSearchMeth
     }
 
     @Override
-    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit) {
+    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit, DFSListener listener) {
         pq.clear();
         pq.add(new PQEntry<>(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));
 
