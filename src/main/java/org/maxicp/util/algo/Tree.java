@@ -1,153 +1,124 @@
 package org.maxicp.util.algo;
 
-
-// https://www.microsoft.com/en-us/research/wp-content/uploads/1996/01/drawingtrees.pdf
-
 import java.util.*;
 
+/**
+ * Tree structure for visualizing search trees (e.g., backtracking algorithms).
+ * Implements this tree layout algorithm:
+ * https://www.microsoft.com/en-us/research/wp-content/uploads/1996/01/drawingtrees.pdf
+ */
 public class Tree {
 
-    HashMap<Integer, Node> nodeMap;
-    int rootId;
+    private final Map<Integer, Node> nodeMap;
+    private final int rootId;
 
     public enum NodeType {
-        INNER,
-        SKIP,
-        FAIL,
-        SOLUTION
+        INNER, SKIP, FAIL, SOLUTION
     }
 
     public Tree(int rootId) {
-        nodeMap = new HashMap<>();
+        this.nodeMap = new HashMap<>();
         this.rootId = rootId;
-        System.out.println("put root " + rootId);
-        nodeMap.put(rootId, new Node("root"));
+        Node root = new Node(rootId, -1, "root", NodeType.INNER);
+        nodeMap.put(rootId, root);
     }
 
-
-    public void createNode(int id, int pId, NodeType type) {
-        Node n = nodeMap.get(pId).addChild(id, type, "child", "branch");
-        nodeMap.put(id, n);
+    public void createNode(int id, int parentId, NodeType type) {
+        Node parent = nodeMap.get(parentId);
+        if (parent == null) {
+            throw new IllegalArgumentException("Parent with id " + parentId + " not found");
+        }
+        Node child = parent.addChild(id, type, "", "");
+        nodeMap.put(id, child);
     }
 
+    public void createNode(int id, int parentId, NodeType type, String nodeLabel, String edgeLabel) {
+        Node parent = nodeMap.get(parentId);
+        if (parent == null) {
+            throw new IllegalArgumentException("Parent with id " + parentId + " not found");
+        }
+        Node child = parent.addChild(id, type, nodeLabel, edgeLabel);
+        nodeMap.put(id, child);
+    }
 
     public Node root() {
         return nodeMap.get(rootId);
     }
 
+    /** Immutable pair */
+    public static record Pair<L, R>(L left, R right) { }
 
-    static record Pair<L, R>(L left, R right) { }
-
-
-
+    /** Tree node containing logical data (not layout). */
     public static class Node {
+        public final int id;
+        public final int parentId;
+        public final NodeType type;
+        public final String label;
+        public final List<Node> children;
+        public final List<String> edgeLabels;
 
-        public int nodeId;
-        public int nodePid;
-        public NodeType type;
-        public String nodeLabel;
-        public List<Node> children;
-        public List<String> edgeLabels;
+        public Node(int id, int parentId, String label, NodeType type) {
+            this.id = id;
+            this.parentId = parentId;
+            this.label = label;
+            this.type = type;
+            this.children = new ArrayList<>();
+            this.edgeLabels = new ArrayList<>();
+        }
 
         @Override
         public String toString() {
-            return "Node [" +
-                    " label=" + nodeLabel +
+            return "Node{" +
+                    "id=" + id +
+                    ", parentId=" + parentId +
+                    ", type=" + type +
+                    ", label='" + label + '\'' +
                     ", children=" + children +
                     ", edgeLabels=" + edgeLabels +
-                    ", type=" + type +
-                    ']';
+                    '}';
         }
 
-        public Node() {
-            this.type = NodeType.INNER;
-            this.children = new LinkedList<>();
-            this.edgeLabels = new LinkedList<>();
-        }
-
-        public Node(String nodeLabel) {
-            this.nodeLabel = nodeLabel;
-            this.type = NodeType.INNER;
-            this.children = new LinkedList<>();
-            this.edgeLabels = new LinkedList<>();
-        }
-
-
-        public Node(int nodeId, String nodeLabel, NodeType type, List<Node> children, List edgeLabels) {
-            this.nodeId = nodeId;
-            this.nodeLabel = nodeLabel;
-            this.type = type;
-            this.children = children;
-            this.edgeLabels = edgeLabels;
-        }
-
-        public Node addChild(int nodeId, NodeType type, String nodeLabel, String branchLabel) {
-            Node child = new Node(nodeId, nodeLabel, type, new LinkedList<>(), new LinkedList());
+        public Node addChild(int childId, NodeType type, String label, String edgeLabel) {
+            Node child = new Node(childId, this.id, label, type);
             children.add(child);
-            edgeLabels.add(branchLabel);
+            edgeLabels.add(edgeLabel);
             return child;
         }
 
         public PositionedNode design() {
-            Pair<PositionedNode, Extent> res = design_();
-            return res.left();
+            return designInternal().left();
         }
 
-        private Pair<PositionedNode, Extent> design_() {
-            List<PositionedNode> subtrees = new LinkedList<>();
-            List<Extent> subtreeExtents = new LinkedList<>();
+        private Pair<PositionedNode, Extent> designInternal() {
+            List<PositionedNode> positionedChildren = new ArrayList<>();
+            List<Extent> childExtents = new ArrayList<>();
+
             for (Node child : children) {
-                Pair<PositionedNode, Extent> res = child.design_();
-                subtrees.add(res.left());
-                subtreeExtents.add(res.right());
-            }
-            List<Double> positions = Extent.fitList(subtreeExtents);
-
-            List<PositionedNode> subtreesMoved = new LinkedList<>();
-            List<Extent> extentsMoved = new LinkedList<>();
-
-            Iterator<PositionedNode> childIte = subtrees.iterator();
-            Iterator<Extent> extentIte = subtreeExtents.iterator();
-            Iterator<Double> posIte = positions.iterator();
-
-            while (childIte.hasNext() && posIte.hasNext() && extentIte.hasNext()) {
-
-                double pos = posIte.next();
-                subtreesMoved.add(childIte.next().moveTree(pos));
-                extentsMoved.add(extentIte.next().move(pos));
+                var result = child.designInternal();
+                positionedChildren.add(result.left());
+                childExtents.add(result.right());
             }
 
-            Extent resExtent = Extent.merge(extentsMoved);
-            resExtent.addFirst(0, 0);
-            PositionedNode resTree = new PositionedNode(nodeId, nodeLabel, type, subtreesMoved, edgeLabels, 0);
-            return new Pair(resTree, resExtent);
-        }
+            List<Double> shifts = Extent.fitList(childExtents);
 
-        public void addChildren(Node newChild) {
-            children.add(newChild);
-        }
+            List<PositionedNode> shiftedChildren = new ArrayList<>();
+            List<Extent> shiftedExtents = new ArrayList<>();
+            for (int i = 0; i < positionedChildren.size(); i++) {
+                shiftedChildren.add(positionedChildren.get(i).move(shifts.get(i)));
+                shiftedExtents.add(childExtents.get(i).move(shifts.get(i)));
+            }
 
-        public String getNodeLabel() {
-            return nodeLabel;
-        }
+            Extent merged = Extent.merge(shiftedExtents);
+            merged.addFirst(0, 0);
 
-        public int getNodeId() {
-            return nodeId;
+            PositionedNode positioned = new PositionedNode(this, shiftedChildren, 0);
+            return new Pair<>(positioned, merged);
         }
-
-        public int getNodePid() {
-            return nodePid;
-        }
-
-        public NodeType getType() {
-            return type;
-        }
-
     }
 
-
+    /** Layout node: wraps a Node with its calculated horizontal position. */
     public static class PositionedNode {
-        public final Node node;  // Reference to original node data
+        public final Node node; // Reference to original logical node
         public final List<PositionedNode> children;
         public final double position;
 
@@ -163,105 +134,132 @@ public class Tree {
 
         @Override
         public String toString() {
-            return "PositionedNode{" +
-                    "id=" + node.id +
-                    ", pos=" + position +
-                    ", label=" + node.label +
-                    ", type=" + node.type +
-                    ", children=" + children +
-                    '}';
+            return "PositionedNode{ pos=" + position + ", node =" + node + '}';
+        }
+
+        public String toTikz(double xScale, double yStep, double labelOffsetPt, double nodeDiameterMm) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format("\\begin{tikzpicture}[x=%.3fcm,y=%.3fcm]\n", xScale, yStep));
+            sb.append("\\usetikzlibrary{positioning}\n");
+
+            // TikZ styles with configurable diameter
+            sb.append(String.format("\\tikzstyle{inner}=[circle, draw, fill=white!90!black, minimum size=%.2fmm, inner sep=1pt]\n", nodeDiameterMm));
+            sb.append(String.format("\\tikzstyle{skip}=[circle, draw, fill=yellow!50!white, minimum size=%.2fmm, inner sep=1pt]\n", nodeDiameterMm));
+            sb.append(String.format("\\tikzstyle{fail}=[circle, draw, fill=red!50!white, minimum size=%.2fmm, inner sep=1pt]\n", nodeDiameterMm));
+            sb.append(String.format("\\tikzstyle{solution}=[circle, draw, fill=green!50!white, minimum size=%.2fmm, inner sep=1pt]\n\n", nodeDiameterMm));
+
+            // Pass 1: nodes with absolute coordinates
+            emitNodes(sb, 0, 0.0, labelOffsetPt);
+
+            sb.append("\n");
+
+            // Pass 2: edges
+            emitEdges(sb, 0.0);
+
+            sb.append("\\end{tikzpicture}\n");
+            return sb.toString();
+        }
+
+        // Overload with default diameter for backward compatibility
+        public String toTikz() {
+            return toTikz(1.0, 1.0, 2.0, 4.0); // default 4mm diameter
+        }
+
+        private void emitNodes(StringBuilder sb, int depth, double absX, double labelOffsetPt) {
+            double x = absX + position; // convert relative to absolute
+            double y = -depth;
+            String style = nodeTypeToStyle(node.type);
+            String nodeName = "n" + node.id;
+
+            sb.append(String.format("\\node[%s] (%s) at (%.3f,%.3f) {};\n", style, nodeName, x, y));
+            sb.append(String.format("\\node[right=%.0fpt of %s] {%s};\n", labelOffsetPt, nodeName, node.label));
+
+            for (PositionedNode child : children) {
+                child.emitNodes(sb, depth + 1, x, labelOffsetPt); // pass absolute X
+            }
+        }
+
+        private void emitEdges(StringBuilder sb, double absX) {
+            String parentName = "n" + node.id;
+            double parentAbsX = absX + position;
+            for (int i = 0; i < children.size(); i++) {
+                PositionedNode child = children.get(i);
+                String childName = "n" + child.node.id;
+                String edgeLabel = (i < node.edgeLabels.size()) ? node.edgeLabels.get(i) : "";
+                sb.append(String.format("\\draw (%s) -- node[midway, above]{%s} (%s);\n",
+                        parentName, edgeLabel, childName));
+                child.emitEdges(sb, parentAbsX); // pass parent absolute X
+            }
+        }
+
+        private String nodeTypeToStyle(NodeType type) {
+            return switch (type) {
+                case INNER -> "inner";
+                case SKIP -> "skip";
+                case FAIL -> "fail";
+                case SOLUTION -> "solution";
+            };
         }
     }
 
-    static class Extent {
-
-        double minDist = 1.0;
-
-        List<Pair<Double, Double>> extentList;
+    /** Used for computing horizontal spacing between subtrees. */
+    private static class Extent {
+        private final List<Pair<Double, Double>> extentList;
 
         public Extent() {
-            this(new LinkedList<Pair<Double, Double>>());
+            this.extentList = new ArrayList<>();
         }
 
         public Extent(List<Pair<Double, Double>> extentList) {
             this.extentList = extentList;
         }
 
-        public Extent(double left, double right) {
-            List.of(new Pair(left, right));
-        }
-
-
-        public boolean isEmpty() {
-            return extentList.isEmpty();
-        }
-
-        public void add(double x1, double x2) {
-            extentList.add(new Pair(x1, x2));
+        public Extent move(double x) {
+            List<Pair<Double, Double>> moved = new ArrayList<>();
+            for (Pair<Double, Double> p : extentList) {
+                moved.add(new Pair<>(p.left() + x, p.right() + x));
+            }
+            return new Extent(moved);
         }
 
         public void addFirst(double x1, double x2) {
-            extentList.add(0, new Pair(x1, x2));
-        }
-
-        public Extent move(double x) {
-            return new Extent(extentList.stream().map(p -> new Pair<Double, Double>(p.left() + x, p.right() + x)).toList());
-        }
-
-
-        public Extent merge(Extent other) {
-
-            List<Pair<Double, Double>> f = extentList;
-            List<Pair<Double, Double>> s = other.extentList;
-            List<Pair<Double, Double>> r = new LinkedList<>();
-
-            Iterator<Pair<Double, Double>> fi = f.iterator();
-            Iterator<Pair<Double, Double>> si = s.iterator();
-
-            while (fi.hasNext() && si.hasNext()) {
-                r.add(new Pair(fi.next().left(), si.next().right()));
-            }
-
-            if (!fi.hasNext()) {
-                while (si.hasNext()) {
-                    r.add(si.next());
-                }
-            }
-
-            if (!si.hasNext()) {
-                while (fi.hasNext()) {
-                    r.add(fi.next());
-                }
-            }
-            return new Extent(r);
+            extentList.add(0, new Pair<>(x1, x2));
         }
 
         public static Extent merge(List<Extent> extents) {
-            Extent r = new Extent(); // empty
+            Extent result = new Extent();
             for (Extent e : extents) {
-                r = r.merge(e);
+                result = result.merge(e);
             }
-            return r;
+            return result;
         }
 
-        public Double fit(Extent other) {
-            List<Pair<Double, Double>> f = extentList;
-            List<Pair<Double, Double>> s = other.extentList;
+        public Extent merge(Extent other) {
+            List<Pair<Double, Double>> merged = new ArrayList<>();
+            Iterator<Pair<Double, Double>> it1 = extentList.iterator();
+            Iterator<Pair<Double, Double>> it2 = other.extentList.iterator();
 
-            Iterator<Pair<Double, Double>> fi = f.iterator();
-            Iterator<Pair<Double, Double>> si = s.iterator();
+            while (it1.hasNext() && it2.hasNext()) {
+                merged.add(new Pair<>(it1.next().left(), it2.next().right()));
+            }
+            while (it1.hasNext()) merged.add(it1.next());
+            while (it2.hasNext()) merged.add(it2.next());
 
-            Double minDist = 0.0;
+            return new Extent(merged);
+        }
 
-            while (fi.hasNext() && si.hasNext()) {
-                minDist = Math.max(minDist, fi.next().right() - si.next().left() + 1);
+        private double fit(Extent other) {
+            Iterator<Pair<Double, Double>> it1 = extentList.iterator();
+            Iterator<Pair<Double, Double>> it2 = other.extentList.iterator();
+            double minDist = 0.0;
+            while (it1.hasNext() && it2.hasNext()) {
+                minDist = Math.max(minDist, it1.next().right() - it2.next().left() + 1);
             }
             return minDist;
-
         }
 
-        public static List<Double> fitListLeft(List<Extent> extents) {
-            List<Double> res = new LinkedList<>();
+        private static List<Double> fitListLeft(List<Extent> extents) {
+            List<Double> res = new ArrayList<>();
             Extent acc = new Extent();
             for (Extent e : extents) {
                 double x = acc.fit(e);
@@ -271,9 +269,9 @@ public class Tree {
             return res;
         }
 
-        public static List<Double> fitListRight(List<Extent> extents) {
+        private static List<Double> fitListRight(List<Extent> extents) {
             Collections.reverse(extents);
-            List<Double> res = new LinkedList<>();
+            List<Double> res = new ArrayList<>();
             Extent acc = new Extent();
             for (Extent e : extents) {
                 double x = -e.fit(acc);
@@ -288,16 +286,37 @@ public class Tree {
         public static List<Double> fitList(List<Extent> extents) {
             List<Double> left = fitListLeft(extents);
             List<Double> right = fitListRight(extents);
-            List<Double> res = new LinkedList<>();
-            for (Iterator<Double> leftIte = left.iterator(), rightIte = right.iterator(); leftIte.hasNext() && rightIte.hasNext(); ) {
-                res.add((leftIte.next() + rightIte.next()) / 2);
+            List<Double> res = new ArrayList<>();
+            for (int i = 0; i < left.size(); i++) {
+                res.add((left.get(i) + right.get(i)) / 2);
             }
             return res;
         }
     }
+
+    public static void main(String[] args) {
+        Tree t = new Tree(0); // root id = 0
+
+        // Level 1
+        t.createNode(1, 0, Tree.NodeType.INNER, "$D(x)=\\{1,2,3\\}$", "$x=1$");
+        t.createNode(2, 0, Tree.NodeType.SOLUTION);
+        t.createNode(3, 0, Tree.NodeType.SKIP);
+
+        // Level 2
+        t.createNode(4, 1, Tree.NodeType.FAIL);
+        t.createNode(5, 1, Tree.NodeType.SOLUTION);
+
+        t.createNode(6, 2, Tree.NodeType.INNER);
+        t.createNode(7, 2, Tree.NodeType.FAIL);
+
+        t.createNode(8, 3, Tree.NodeType.SKIP);
+
+        // Level 3
+        t.createNode(9, 6, Tree.NodeType.SOLUTION);
+        t.createNode(10, 8, Tree.NodeType.FAIL);
+
+        // Design and print TikZ
+        Tree.PositionedNode pn = t.root().design();
+        System.out.println(pn.toTikz());
+    }
 }
-
-
-
-
-

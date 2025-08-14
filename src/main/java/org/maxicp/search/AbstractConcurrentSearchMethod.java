@@ -120,7 +120,7 @@ public abstract class AbstractConcurrentSearchMethod extends AbstractSearchMetho
     }
 
     @Override
-    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit, DFSListener listener) {
+    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit) {
         this.statistics = statistics;
         this.onNodeVisit = onNodeVisit;
         sm.withNewState(() -> {

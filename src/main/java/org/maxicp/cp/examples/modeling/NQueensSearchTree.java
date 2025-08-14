@@ -13,7 +13,7 @@ import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.SearchTree;
+import org.maxicp.search.DFSTreeRecorder;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
@@ -28,7 +28,7 @@ import static org.maxicp.search.Searches.*;
  */
 public class NQueensSearchTree {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        int n = 4;
+        int n = 7;
 
         ModelDispatcher model = makeModelDispatcher();
 
@@ -57,12 +57,14 @@ public class NQueensSearchTree {
         dfs.onSolution(() -> {
             System.out.println(Arrays.toString(q));
         });
-        SearchTree st = new SearchTree();
 
+        DFSTreeRecorder treeRecorder = new DFSTreeRecorder();
+        dfs.setDFSListener(treeRecorder);
 
-        SearchStatistics stats = dfs.solve(st);
-        st.toTikZ();
-        System.out.println(st);
+        SearchStatistics stats = dfs.solve();
+
+        treeRecorder.toTikz(0.2,0.4,0.2, 1.5);
+
         System.out.println(stats);
 
     }

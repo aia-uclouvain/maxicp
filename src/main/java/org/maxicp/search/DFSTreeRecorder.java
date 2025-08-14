@@ -2,7 +2,11 @@ package org.maxicp.search;
 
 import org.maxicp.util.algo.Tree;
 
-public class SearchTree implements DFSListener {
+/**
+ * A DFSListener that records the search tree in a Tree structure.
+ * It can be used to visualize the search process by exoprting the tree to TikZ format.
+ */
+public class DFSTreeRecorder implements DFSListener {
 
     Tree tree = new Tree(-1);
 
@@ -28,8 +32,14 @@ public class SearchTree implements DFSListener {
                 '}';
     }
 
-    public void toTikZ() {
+
+    public void toTikz() {
+       toTikz(1.0, 1.0, 2.0, 4.0);
+    }
+
+    public void toTikz(double xScale, double yStep, double labelOffsetPt, double nodeDiameter) {
         Tree.PositionedNode root = tree.root().design();
-        StringBuilder tikz = new StringBuilder();
+        String tikz = root.toTikz(xScale, yStep, labelOffsetPt, nodeDiameter);
+        System.out.println(tikz);
     }
 }

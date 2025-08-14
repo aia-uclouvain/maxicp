@@ -18,6 +18,24 @@ import java.util.function.Supplier;
  */
 public class DFSearch extends RunnableSearchMethod {
 
+    private DFSListener dfsListener = new DFSListener(){};
+
+    public void setDFSListener(DFSListener listener) {
+        this.dfsListener = listener;
+    }
+
+    private void notifySolution(int nodeId, int parentId) {
+        dfsListener.solution(nodeId, parentId);
+    }
+
+    private void notifyFailure(int nodeId, int parentId) {
+        dfsListener.fail(nodeId, parentId);
+    }
+
+    private void notifyBranch(int nodeId, int parentId) {
+        dfsListener.branch(nodeId, parentId);
+    }
+
     private int currNodeId = -1;
 
     public DFSearch(StateManager sm, Supplier<Runnable[]> branching) {
@@ -26,10 +44,11 @@ public class DFSearch extends RunnableSearchMethod {
     public DFSearch(ModelProxy modelProxy, Supplier<Runnable[]> branching) { super(modelProxy.getConcreteModel().getStateManager(), branching); }
 
     // solution to DFS with explicit stack
-    private void expandNode(Stack<Runnable> alternatives, SearchStatistics statistics, Runnable onNodeVisit, DFSListener listener, int parentId) {
+    private void expandNode(Stack<Runnable> alternatives, SearchStatistics statistics, Runnable onNodeVisit, int parentId) {
         Runnable[] alts = branching.get();
         if (alts.length == 0) {
             statistics.incrSolutions();
+            notifySolution(currNodeId++, parentId);
             notifySolution();
         } else {
             for (int i = alts.length - 1; i >= 0; i--) {
@@ -37,11 +56,16 @@ public class DFSearch extends RunnableSearchMethod {
                 Runnable a = alts[i];
                 alternatives.push(() -> sm.restoreState());
                 alternatives.push(() -> {
-                    listener.branch(nodeId, parentId);
                     statistics.incrNodes();
                     onNodeVisit.run();
-                    a.run();
-                    expandNode(alternatives, statistics, onNodeVisit, listener, nodeId);
+                    try {
+                        a.run();
+                        notifyBranch(nodeId, parentId);
+                        expandNode(alternatives, statistics, onNodeVisit, nodeId);
+                    } catch (InconsistencyException e) {
+                        notifyFailure(nodeId, parentId);
+                        throw e;
+                    }
                 });
                 alternatives.push(() -> sm.saveState());
             }
@@ -49,10 +73,10 @@ public class DFSearch extends RunnableSearchMethod {
     }
 
     @Override
-    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit, DFSListener listener) {
+    protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit) {
         currNodeId = -1;
         Stack<Runnable> alternatives = new Stack<Runnable>();
-        expandNode(alternatives, statistics, onNodeVisit, listener, currNodeId);
+        expandNode(alternatives, statistics, onNodeVisit, currNodeId);
         while (!alternatives.isEmpty()) {
             if (limit.test(statistics)) throw new StopSearchException();
             try {
