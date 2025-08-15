@@ -8,7 +8,9 @@ import org.maxicp.util.algo.Tree;
  */
 public class DFSTreeRecorder implements DFSListener {
 
-    Tree tree = new Tree(-1);
+    public final int root = -1;
+
+    Tree tree = new Tree(root);
 
     @Override
     public void branch(int nodeId, int parentId) {
