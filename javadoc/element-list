@@ -1,7 +1,15 @@
 module:org.maxicp
 org.maxicp
 org.maxicp.cp
+org.maxicp.cp.engine.constraints
+org.maxicp.cp.engine.constraints.scheduling
+org.maxicp.cp.engine.constraints.seqvar
+org.maxicp.cp.engine.constraints.setvar
+org.maxicp.cp.engine.core
+org.maxicp.cp.modeling
 org.maxicp.modeling
+org.maxicp.modeling.algebra.bool
 org.maxicp.search
 org.maxicp.state
 org.maxicp.util
+org.maxicp.util.exception
