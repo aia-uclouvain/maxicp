@@ -14,11 +14,13 @@ import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSTreeRecorder;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
@@ -29,7 +31,7 @@ import static org.maxicp.search.Searches.*;
  */
 public class NQueensSearchTreeWithBranchingLabels {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        int n = 7;
+        int n = 6;
 
         ModelDispatcher model = makeModelDispatcher();
 
@@ -45,21 +47,37 @@ public class NQueensSearchTreeWithBranchingLabels {
         AtomicInteger currNodeId = new AtomicInteger(treeRecorder.root);
 
         Supplier<Runnable[]> branching = () -> {
-            IntExpression qs = selectMin(q,
-                    qi -> qi.size() > 1,
-                    qi -> qi.size());
-            if (qs == null)
+            int parentId = currNodeId.get();
+            Integer i = selectMin(
+                    IntStream.range(0, n).boxed().toList(),
+                    qi -> q[qi].size() > 1,
+                    qi -> q[qi].size()
+            );
+            if (i == null) {
+                treeRecorder.solution(currNodeId.incrementAndGet(),parentId);
                 return EMPTY;
+            }
             else {
-                int parentId = currNodeId.get();
-                int v = qs.min();
+                int v = q[i].min();
                 Runnable l = () -> {
-                    model.add(eq(qs, v));
-                    treeRecorder.branch(currNodeId.incrementAndGet(),parentId);
+                    String label = String.format("$q_%d = %d$",i,v);
+                    try {
+                        model.add(eq(q[i], v));
+                        treeRecorder.branch(currNodeId.incrementAndGet(),parentId,label);
+                    } catch (InconsistencyException e) {
+                        treeRecorder.fail(currNodeId.incrementAndGet(),parentId,label);
+                        throw e;
+                    }
                 };
                 Runnable r = () -> {
-                    model.add(neq(qs, v));
-                    treeRecorder.branch(currNodeId.incrementAndGet(),parentId);
+                    String label = String.format("$q_%d \\neq %d$",i,v);
+                    try {
+                        model.add(neq(q[i], v));
+                        treeRecorder.branch(currNodeId.incrementAndGet(),parentId,"");
+                    } catch (InconsistencyException e) {
+                        treeRecorder.fail(currNodeId.incrementAndGet(),parentId,"");
+                        throw e;
+                    }
                 };
                 return branch(l,r);
             }
@@ -73,7 +91,7 @@ public class NQueensSearchTreeWithBranchingLabels {
 
         SearchStatistics stats = dfs.solve();
 
-        treeRecorder.toTikz(0.2,0.4,0.2, 1.5);
+        treeRecorder.toTikz(1.5,0.4,0.2, 1.5);
 
         System.out.println(stats);
 

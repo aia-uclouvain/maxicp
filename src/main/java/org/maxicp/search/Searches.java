@@ -90,6 +90,38 @@ public final class Searches {
      * Minimum selector.
      * <p>Example of usage.
      * <pre>
+     *     {@code
+     *     int i = selectMin(
+     *       IntStream.range(0, n).boxed().toList(),
+     *       qi -> q[qi].size() > 1,
+     *       qi -> q[qi].size()
+     *     );
+     *     }
+     * </pre>
+     *
+     * @param items the iterable on which the minimum value is searched
+     * @param p the predicate that filters the element eligible for selection
+     * @param f the evaluation function that returns a comparable when applied on an element of items
+     * @return the minimum element in items that satisfies the predicate p
+     * @param <T>
+     * @param <N>
+     *
+     */
+    public static <T, N extends Comparable<N>> T selectMin(
+            Iterable<T> items, Predicate<T> p, Function<T, N> f) {
+        T sel = null;
+        for (T xi : items) {
+            if (p.test(xi)) {
+                sel = sel == null || f.apply(xi).compareTo(f.apply(sel)) < 0 ? xi : sel;
+            }
+        }
+        return sel;
+    }
+
+    /**
+     * Minimum selector.
+     * <p>Example of usage.
+     * <pre>
      * {@code
      * IntVar xs = selectMin(x,n, xi -> xi.size() > 1,xi -> xi.size());
      * }
@@ -141,6 +173,7 @@ public final class Searches {
      * assigning the variable to its minimum value.
      * The right branch removing this minimum value from the domain.
      *
+     * @param heuristic the variable heuristic: the selected variable is the one that minimizes this function
      * @param x the variable array
      * @return a static branching strategy
      */
@@ -160,12 +193,42 @@ public final class Searches {
         };
     }
 
-
     /**
      * It selects the first not fixed variable that minimizes the heuristic function.
+     * Then it creates one branch for each value in increasing order
+     *
+     * @param x the variable array
+     * @param heuristic the variable heuristic: the selected variable is the one that minimizes this function
+     * @return a static branching strategy
+     */
+    public static Supplier<Runnable[]> heuristicNary(Function<IntExpression, Integer> heuristic, IntExpression... x) {
+        ModelProxy model = x[0].getModelProxy();
+        return () -> {
+            IntExpression xs = selectMin(x,
+                    xi -> !xi.isFixed(),
+                    heuristic);
+            if (xs == null)
+                return EMPTY;
+            else {
+                // create one branch for each value in increasing order
+                ArrayList<Runnable> branches  = new ArrayList<>();
+                for (int v = xs.min(); v < xs.max(); v++) {
+                    if (xs.contains(v)) {
+                        int value = v;
+                        branches.add(() -> model.add(new Eq(xs, value)));
+                    }
+                }
+                return branch(branches.toArray(new Runnable[0]));
+            }
+        };
+    }
+
+
+    /**
+     * It selects the first not fixed variable.
      *
      * @param xs the variable array to fix
-     * @return a static branching strategy
+     * @return a binary static branching strategy, min value on the left, remove it on the right
      */
     public static Supplier<Runnable[]> staticOrder(IntExpression... xs) {
         HashMap<IntExpression, Integer> index = new HashMap<>();
@@ -176,7 +239,21 @@ public final class Searches {
     }
 
     /**
-     * First-Fail strategy.
+     * It selects the first not fixed variable.
+     *
+     * @param xs the variable array to fix
+     * @return an n-ary static branching strategy, in increasing order of the values
+     */
+    public static Supplier<Runnable[]> staticOrderNary(IntExpression... xs) {
+        HashMap<IntExpression, Integer> index = new HashMap<>();
+        for (int i = 0; i < xs.length; i++) {
+            index.put(xs[i], i);
+        }
+        return heuristicNary(x -> index.get(x), xs);
+    }
+
+    /**
+     * First-Fail Binary search strategy.
      * It selects the first variable with a domain larger than one.
      * Then it creates two branches. The left branch
      * assigning the variable to its minimum value.
@@ -187,6 +264,18 @@ public final class Searches {
      */
     public static Supplier<Runnable[]> firstFail(IntExpression... x) {
         return heuristic(IntExpression::size, x);
+    }
+
+    /**
+     * First-Fail N-Ary search strategy.
+     * It selects the first variable with a domain larger than one.
+     * Then it creates one branch for each value in increasing order.
+     *
+     * @param x the variable on which the first fail strategy is applied.
+     * @return a first-fail n-ary branching strategy
+     */
+    public static Supplier<Runnable[]> firstFailNary(IntExpression... x) {
+        return heuristicNary(IntExpression::size, x);
     }
 
     /**

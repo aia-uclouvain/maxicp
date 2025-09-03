@@ -27,6 +27,17 @@ public class DFSTreeRecorder implements DFSListener {
         tree.createNode(nodeId, parentId, Tree.NodeType.FAIL);
     }
 
+    public void solution(int id, int pId, String edgeLabel) {
+        tree.createNode(id, pId, Tree.NodeType.SOLUTION, "", edgeLabel);
+    };
+    public void fail(int id, int pId, String edgeLabel) {
+        tree.createNode(id, pId, Tree.NodeType.FAIL, "", edgeLabel);
+    };
+
+    public void branch(int id, int pId, String edgeLabel) {
+        tree.createNode(id, pId, Tree.NodeType.INNER, "", edgeLabel);
+    };
+
     @Override
     public String toString() {
         return "SearchTree{" +

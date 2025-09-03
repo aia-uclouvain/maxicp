@@ -19,7 +19,7 @@ public class Tree {
     public Tree(int rootId) {
         this.nodeMap = new HashMap<>();
         this.rootId = rootId;
-        Node root = new Node(rootId, -1, "root", NodeType.INNER);
+        Node root = new Node(rootId, -1, "", NodeType.INNER);
         nodeMap.put(rootId, root);
     }
 
@@ -139,7 +139,7 @@ public class Tree {
 
         public String toTikz(double xScale, double yStep, double labelOffsetPt, double nodeDiameterMm) {
             StringBuilder sb = new StringBuilder();
-            sb.append(String.format("\\begin{tikzpicture}[x=%.3fcm,y=%.3fcm]\n", xScale, yStep));
+            sb.append(String.format("\\begin{tikzpicture}[x=%.3fcm,y=%.3fcm,font=\\tiny]\n", xScale, yStep));
             sb.append("\\usetikzlibrary{positioning}\n");
 
             // TikZ styles with configurable diameter
@@ -186,7 +186,7 @@ public class Tree {
                 PositionedNode child = children.get(i);
                 String childName = "n" + child.node.id;
                 String edgeLabel = (i < node.edgeLabels.size()) ? node.edgeLabels.get(i) : "";
-                sb.append(String.format("\\draw (%s) -- node[midway, above]{%s} (%s);\n",
+                sb.append(String.format("\\draw (%s) -- node[midway, left]{%s} (%s);\n",
                         parentName, edgeLabel, childName));
                 child.emitEdges(sb, parentAbsX); // pass parent absolute X
             }

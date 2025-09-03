@@ -40,20 +40,9 @@ public class NQueensSearchTree {
         model.add(allDifferent(qL));
         model.add(allDifferent(qR));
 
-        Supplier<Runnable[]> branching = () -> {
-            IntExpression qs = selectMin(q,
-                    qi -> qi.size() > 1,
-                    qi -> qi.size());
-            if (qs == null)
-                return EMPTY;
-            else {
-                int v = qs.min();
-                return branch(() -> model.add(eq(qs, v)), () -> model.add(neq(qs, v)));
-            }
-        };
-
         ConcreteCPModel cp = model.cpInstantiate();
-        DFSearch dfs = cp.dfSearch(branching);
+        DFSearch dfs = cp.dfSearch(staticOrder(q));
+
         dfs.onSolution(() -> {
             System.out.println(Arrays.toString(q));
         });
