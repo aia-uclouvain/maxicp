@@ -37,7 +37,7 @@ public class MinimumSpanningTreeDetour {
             int u = nodes[i];
 
             inMST[u] = true;
-            if (succInSeq[u] == start){
+            if (succInSeq[u] == start) {
                 continue;
             }
             costMinimumSpanningTree += cost[u][succInSeq[u]];
@@ -45,7 +45,6 @@ public class MinimumSpanningTreeDetour {
             for (int v = 0; v < numNodes; v++) {
                 if (adjacencyMatrix[u][v] == 1 && !inMST[v]) {
                     int detour = cost[u][v] + cost[v][succInSeq[u]] - cost[u][succInSeq[u]];
-
                     if (detour < key[v]) {
                         predsInMST[v] = u;
                         key[v] = detour;
@@ -56,7 +55,7 @@ public class MinimumSpanningTreeDetour {
             }
         }
 
-        for (int i = 0; i < numNodes - nMember; i++) {
+            for (int i = 0; i < numNodes - nMember; i++) {
 
             // Pick the minimum key vertex from the set of
             // vertices not yet included in MST

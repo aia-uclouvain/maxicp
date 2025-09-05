@@ -215,6 +215,45 @@ public class DistanceNewTest extends CPSolverTest {
         assertEquals(14, arb.getCostMinimumArborescence());
     }
 
+    /**
+     * Simple test instance to see if the lower bound is not overestimated
+     */
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testNoLowerBoundOverestimation(CPSolver cp) {
+        int nNodes = 5;
+        CPSeqVar seqVar = makeSeqVar(cp, nNodes, 0, 2);
+        for (int n = 0 ; n < nNodes ; n++) {
+            seqVar.require(n);
+        }
+        /*
+         * representation (more or less)
+         *
+         *           3     4
+         *
+         * 0 -- 1 ------------- 2
+         */
+        int[][] positions = new int[][]{
+                {0, 0}, // start
+                {0, 10}, // first visit
+                {0, 40}, // end
+                {10, 20}, // to insert
+                {10, 30}, // to insert
+        };
+        int[][] distMatrix = positionToDistances(positions);
+        // sequence: 0 -> 1 -> 2
+        // must insert nodes 1 and 2
+        // the best sequence is 0 -> 1 -> 3 -> 4 -> 2
+        int[] bestPath = new int[] {0, 1, 3, 4, 2};
+        int bestCost = 0;
+        for (int i = 0; i < nNodes - 1; i++)
+            bestCost += distMatrix[bestPath[i]][bestPath[i + 1]];
+        CPIntVar distance = CPFactory.makeIntVar(cp, 0, bestCost * 10);
+        cp.post(new DistanceNew(seqVar, distMatrix, distance));
+        assertTrue(distance.min() <= bestCost,
+                "The best solution is " + bestCost + " but the lower bound was " + distance.min());
+    }
+
     @ParameterizedTest
     @MethodSource("getSolver")
     public void testMinArborescence2(CPSolver cp) {
