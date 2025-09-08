@@ -7,9 +7,11 @@ package org.maxicp.cp.engine.core;
 
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.modeling.concrete.ConcreteSeqVar;
+import org.maxicp.util.TriFunction;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.StringJoiner;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
@@ -413,6 +415,69 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
                 int pred = values[j];
                 String style = isNode(pred, MEMBER) && isNode(i, MEMBER) ? " [penwidth=3.0]" : String.format(" [style=dashed, color=\"%s\"]", possibleEdgeColor);
                 graphViz.add("    " + pred + " -> " + i + style + ";");
+            }
+        }
+        graphViz.add("}");
+        return graphViz.toString();
+    }
+
+    /**
+     * Exports the variable into a GraphViz format
+     * See <a href="http://www.webgraphviz.com/">...</a>
+     *
+     * @return variable encoded into a GraphViz format
+     */
+    default String toGraphViz(BiFunction<Integer, Integer, String> edgeFormatter) {
+        String memberColor = "#0072B2";
+        String requiredColor = "#56B4E9";
+        String possibleColor = "#009E73";
+        String excludedColor = "#D55E00";
+        String possibleEdgeColor = "#969696";
+        StringJoiner graphViz = new StringJoiner("\n");
+        graphViz.add("digraph {");
+        graphViz.add("    node [style=filled];");
+        // nodes from the graph
+        int n = nNode();
+        for (int i = 0; i < n; i++) {
+            if (isNode(i, MEMBER)) {
+                if (i == start() || i ==end()) {
+                    graphViz.add("    " + i + " [shape = doublecircle, color=\"" + memberColor + "\", tooltip=\"member\"];");
+                } else {
+                    graphViz.add("    " + i + " [shape = circle, color=\"" + memberColor + "\", tooltip=\"member\"];");
+                }
+            } else if (isNode(i, REQUIRED)) {
+                graphViz.add("    " + i + " [shape = circle, color=\"" + requiredColor + "\", tooltip=\"required\"];");
+            } else if (isNode(i, POSSIBLE)) {
+                graphViz.add("    " + i + " [shape = circle, color=\"" + possibleColor + "\", tooltip=\"possible\"];");
+            } else {
+                graphViz.add("    " + i + " [shape = circle, color=\"" + excludedColor + "\", tooltip=\"excluded\"];");
+            }
+        }
+        // edges
+        int[] values = new int[nNode()];
+        for (int node = 0 ; node < n ; node++) {
+            int nPred = fillPred(node, values, NOT_EXCLUDED);
+            for (int j = 0 ; j < nPred ; j++) {
+                int pred = values[j];
+                String labelPredToNode = edgeFormatter.apply(pred, node);
+                boolean isEdgeInSequence = isNode(pred, MEMBER) && isNode(node, MEMBER);
+                String style = isEdgeInSequence ? " [penwidth=3.0" : String.format(" [style=dashed, color=\"%s\"", possibleEdgeColor);
+                if (labelPredToNode != null && !labelPredToNode.isEmpty()) {
+                    // if an edge is bidirected and has the same label, only add it once
+                    if (hasEdge(node, pred)) {
+                        String labelNodeToPred = edgeFormatter.apply(node, pred);
+                        if (labelNodeToPred != null && labelNodeToPred.equals(labelPredToNode)) {
+                            if (pred > node)
+                                continue; // only add it once
+                            else
+                                style += ", dir=both"; // edge for both directions
+                        }
+                    }
+                    style += ", label=" + labelPredToNode + ", fontcolor=" + (isEdgeInSequence ? "black" : "\"" + possibleEdgeColor + "\"")  + "]";
+                } else {
+                    style += "]";
+                }
+                graphViz.add("    " + pred + " -> " + node + style + ";");
             }
         }
         graphViz.add("}");

@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -18,6 +19,7 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -92,7 +94,7 @@ public class DistanceNewTest extends CPSolverTest {
         // rough upper bound on the maximum travel distance
         int roughUpperBound = Arrays.stream(transitions).mapToInt(arr -> Arrays.stream(arr).max().getAsInt()).sum();
         CPIntVar distance = CPFactory.makeIntVar(cp, 0, roughUpperBound);
-        cp.post(new Distance(seqVar, transitions, distance));
+        cp.post(new DistanceNew(seqVar, transitions, distance));
 
         // number of sequences that can be constructed: permutation of nNodes - 2 elements
         int nSolutionsExpected = fact(nNodes - 2);
@@ -111,6 +113,101 @@ public class DistanceNewTest extends CPSolverTest {
         });
         SearchStatistics statistics = search.solve();
         assertEquals(nSolutionsExpected, statistics.numberOfSolutions());
+    }
+
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+            nNodes, seed
+            5,     1
+            5,     2
+            5,     3
+            5,     4
+            5,     5
+            5,     6
+            5,     7
+            5,     8
+            5,     9
+            5,     10
+            5,     11
+            5,     12
+            5,     13
+            5,     14
+            5,     15
+            5,     16
+            5,     17
+            5,     18
+            5,     19
+            5,     20
+            6,     1
+            6,     2
+            6,     3
+            6,     4
+            6,     5
+            6,     6
+            6,     7
+            6,     8
+            6,     9
+            6,     10
+            8,     1
+            8,     2
+            8,     3
+            8,     4
+            8,     5
+            8,     6
+            8,     7
+            8,     8
+            8,     9
+            8,     10
+            9,     1
+            10,    1
+            15,    1
+            15,    2
+            15,    3
+            15,    4
+            """)
+    public void testNotRemoveBestSolution(int nNodes, int seed) {
+        // generates a random distance matrix
+        Random random = new Random(seed);
+        int[][] transitions = randomTransitions(random, nNodes);
+        // model
+        CPSolver cp = makeSolver();
+        CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, nNodes - 2, nNodes - 1);
+        for (int node = 0; node < nNodes; node++)
+            seqVar.require(node);
+        // rough upper bound on the maximum travel distance
+        int roughUpperBound = Arrays.stream(transitions).mapToInt(arr -> Arrays.stream(arr).max().getAsInt()).sum();
+        CPIntVar distance = CPFactory.makeIntVar(cp, 0, roughUpperBound);
+
+        CostAndSequence best = bestCostFor(seqVar, transitions, roughUpperBound);
+
+        CPConstraint distanceNew = new DistanceNew(seqVar, transitions, distance);
+        cp.post(distanceNew);
+        //assertTrue(distance.min() <= best, "Initial pruning of the distance overestimated the lower bound");
+
+        // computes the best cost at every node in the search tree and checks if it can be obtained
+        // (this is quite slow ;-) )
+        Supplier<Runnable[]> checker = () -> {
+            CostAndSequence costAndSequence =  bestCostFor(seqVar, transitions, roughUpperBound);
+            int bestCost = costAndSequence.cost;
+            int lb = distance.min();
+            if (lb > bestCost) {
+                String bestSequenceString = String.join(" -> ", Arrays.stream(costAndSequence.sequence).mapToObj(String::valueOf).toArray(String[]::new));
+                String message = "Lower bound is overestimating the best cost.\n" +
+                        "Best cost is   " + bestCost + " (with sequence = " + bestSequenceString + ")\n" +
+                        "Lower bound is " + lb + "\n" +
+                        "Sequence = (copy and paste on https://dreampuf.github.io/GraphvizOnline for visualisation)\n" +
+                        seqVar.toGraphViz((pred, node) -> String.valueOf(transitions[pred][node]));
+                //distanceNew.propagate();
+                fail(message);
+            }
+            return EMPTY;
+        };
+        Objective travelCost = cp.minimize(distance);
+        DFSearch search = makeDfs(cp, and(checker, minDetourSearchProcedure(seqVar, transitions).get()));
+        AtomicInteger bestCostFound = new AtomicInteger(Integer.MAX_VALUE);
+        search.onSolution(() -> bestCostFound.set(distance.min()));
+        SearchStatistics stats = search.optimize(travelCost);
+        assertEquals(best.cost,  bestCostFound.get());
     }
 
     /**
@@ -150,11 +247,11 @@ public class DistanceNewTest extends CPSolverTest {
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
             nNodes, seed
-                7,      1""")
-//                25,     1
-//                25,     2
-//                25,     42
-//            """)
+                7,      1
+                25,     1
+                25,     2
+                25,     42
+            """)
     public void testTSPLessSearchNodesUsingBound(int nNodes, int seed) {
         // instance data
         Random random = new Random(seed);
@@ -183,6 +280,72 @@ public class DistanceNewTest extends CPSolverTest {
                 "The search should explore strictly less nodes when using bound computation (in optimization)");
         System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
                 "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
+    }
+
+    private record CostAndSequence(int cost, int[] sequence) {};
+
+    /**
+     * Gives the minimum distance cost for a given sequence variable.
+     * This works by creating a copy of the sequence and computing the best solution through a DFS - so it's very slow
+     * @param seqVar sequence on which the minimum cost must be computed
+     * @param dist transition cost between nodes
+     * @return best transition cost between nodes
+     */
+    private CostAndSequence bestCostFor(CPSeqVar seqVar, int[][] dist, int roughUpperBound) {
+        seqVar.getSolver().getStateManager().saveState();
+        CPSeqVar copy = deepCopy(seqVar);
+        CPIntVar distance = CPFactory.makeIntVar(copy.getSolver(), 0, roughUpperBound);
+        copy.getSolver().post(new Distance(copy, dist, distance));
+        DFSearch search = minDetourSearch(copy, dist);
+        AtomicInteger bestCost = new AtomicInteger(Integer.MAX_VALUE);
+        int[] sequence = new int[seqVar.nNode()];
+        AtomicInteger nMember = new AtomicInteger();
+        search.onSolution(() -> {
+            nMember.set(copy.fillNode(sequence, SeqStatus.MEMBER_ORDERED));
+            int cost = 0;
+            for (int i = 0; i < nMember.get() - 1 ; i++) {
+                cost += dist[sequence[i]][sequence[i + 1]];
+            }
+            bestCost.set(cost);
+        });
+        search.optimize(seqVar.getSolver().minimize(distance));
+        seqVar.getSolver().getStateManager().restoreState();
+        int[] bestSolution;
+        if (nMember.get() != sequence.length) {
+            bestSolution = new int[nMember.get()];
+            System.arraycopy(sequence, 0, bestSolution, 0, nMember.get());
+        } else {
+            bestSolution = sequence;
+        }
+        return new CostAndSequence(bestCost.get(), bestSolution);
+    }
+
+    private CPSeqVar deepCopy(CPSeqVar seqVar) {
+        CPSeqVar copy = CPFactory.makeSeqVar(seqVar.getSolver(), seqVar.nNode(), seqVar.start(), seqVar.end());
+        int[] nodes = new int[seqVar.nNode()];
+        // enforces the current ordering
+        int nMember = seqVar.fillNode(nodes, SeqStatus.MEMBER_ORDERED);
+        for (int i = 1; i < nMember - 1; i++)
+            copy.insert(nodes[i-1], nodes[i]);
+        // requires nodes
+        int nRequired = seqVar.fillNode(nodes, SeqStatus.REQUIRED);
+        for (int i = 0; i < nRequired; i++)
+            copy.require(nodes[i]);
+        // exclude nodes
+        int nExcluded = seqVar.fillNode(nodes, SeqStatus.EXCLUDED);
+        for (int i = 0; i < nExcluded; i++)
+            copy.exclude(nodes[i]);
+        // add notBetween's
+        int nInsertable = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
+        for (int i = 0; i < nInsertable; i++) {
+            int node = nodes[i];
+            for (int pred = seqVar.start() ; pred != seqVar.end() ; pred = seqVar.memberAfter(pred)) {
+                if (!seqVar.hasInsert(pred, node)) {
+                    copy.notBetween(pred, node, seqVar.memberAfter(pred));
+                }
+            }
+        }
+        return copy;
     }
 
     @ParameterizedTest
@@ -397,9 +560,13 @@ public class DistanceNewTest extends CPSolverTest {
      * @return search procedure for the given sequence
      */
     public DFSearch minDetourSearch(CPSeqVar seqVar, int[][] transitions) {
+        return CPFactory.makeDfs(seqVar.getSolver(), minDetourSearchProcedure(seqVar, transitions).get());
+    }
+
+    public Supplier<Supplier<Runnable[]>> minDetourSearchProcedure(CPSeqVar seqVar, int[][] transitions) {
         int[] nodes = new int[seqVar.nNode()];
         CPSolver cp = seqVar.getSolver();
-        return CPFactory.makeDfs(cp, () -> {
+        return () -> () -> {
             int nInsertable = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
             if (nInsertable == 0)
                 return EMPTY; // no node can be inserted -> solution found
@@ -433,7 +600,7 @@ public class DistanceNewTest extends CPSolverTest {
             int succ = seqVar.memberAfter(pred);
             return branch(() -> cp.post(insert(seqVar, pred, node)),
                     () -> cp.post(notBetween(seqVar, pred, node, succ)));
-        });
+        };
     }
 
     /**
