@@ -616,6 +616,68 @@ public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
         assertEquals(-1, act3.height().max());
     }
 
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void heightAdjust1(CPSolver cp) {
+        List<Activity> activities = new ArrayList<>(3);
+        Activity act1 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 3, 6));
+        act1.interval().setPresent();
+        act1.interval().setStartMin(8);
+        act1.interval().setLength(6);
+        act1.interval().setEndMax(24);
+        activities.add(act1);
+
+        Activity act2 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, -4, -4));
+        act2.interval().setPresent();
+        act2.interval().setStart(0);
+        act2.interval().setLength(12);
+        activities.add(act2);
+
+        Activity act3 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, -4, -4));
+        act2.interval().setPresent();
+        act3.interval().setStart(20);
+        act3.interval().setLength(12);
+        activities.add(act3);
+
+        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), Integer.MIN_VALUE, 4));
+
+        assertEquals(4, act1.height().max());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void heightAdjust2(CPSolver cp) {
+        List<Activity> activities = new ArrayList<>(4);
+        Activity act1 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 3, 6));
+        act1.interval().setPresent();
+        act1.interval().setStartMin(8);
+        act1.interval().setLength(6);
+        act1.interval().setEndMax(24);
+        activities.add(act1);
+
+        Activity act2 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, -4, -4));
+        act2.interval().setPresent();
+        act2.interval().setStart(0);
+        act2.interval().setLength(12);
+        activities.add(act2);
+
+        Activity act3 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, -4, -4));
+        act2.interval().setPresent();
+        act3.interval().setStart(20);
+        act3.interval().setLength(12);
+        activities.add(act3);
+
+        Activity act4 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, -1, -1));
+        act2.interval().setPresent();
+        act3.interval().setStart(14);
+        act3.interval().setLength(4);
+        activities.add(act4);
+
+        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), Integer.MIN_VALUE, 4));
+
+        assertEquals(5, act1.height().max());
+    }
+
     @Test
     public void bug1() {
         CPSolver cp = makeSolver();

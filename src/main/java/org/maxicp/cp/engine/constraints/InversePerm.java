@@ -7,8 +7,6 @@ import org.maxicp.cp.engine.core.DeltaCPIntVar;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * InversePerm is a constraint that enforces that one permutation is the inverse of another.
  * This means that if x[i] = j, then y[j] = i for all i and j in the domain of the variables.
@@ -30,7 +28,7 @@ public class InversePerm extends AbstractCPConstraint {
      */
     public InversePerm(CPIntVar[] x, CPIntVar[] y) {
         super(x[0].getSolver());
-        assertEquals(x.length, y.length);
+        assert(x.length == y.length);
         this.x = x;
         this.y = y;
         this.values = new int[x.length];

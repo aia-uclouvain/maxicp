@@ -33,4 +33,11 @@ public class Constants {
      * To be used for heavy (slow) propagators
      */
     public final static int PIORITY_SLOW = 2;
+
+
+    public enum CumulativeAlgo {
+        BELDICEANU_CARLSSON,
+        SCHAUS_THOMAS_KAMEUGNE,
+        SCHAUS_THOMAS_KAMEUGNE_BASELINE,
+    }
 }

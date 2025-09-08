@@ -16,7 +16,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * An abstract search method, implementing all the needed parts, but the search method itself.
+ * An abstract search method, implementing all the parts needed, but the search method itself.
  * @param <T> the type of the branching
  */
 public abstract class AbstractSearchMethod<T> implements SearchMethod {
@@ -94,6 +94,18 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
 
     /**
      * Start the solving process
+     * with a given listener of the search process.
+     *
+     * @param listener a listener of the search process
+     * @return an object with the statistics on the search
+     */
+    public SearchStatistics solve(DFSListener listener) {
+        SearchStatistics statistics = new SearchStatistics();
+        return solve(statistics, stats -> false, () -> {});
+    }
+
+    /**
+     * Start the solving process
      * with a given predicate called at each node
      * to stop the search when it becomes true.
      *
@@ -105,6 +117,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         SearchStatistics statistics = new SearchStatistics();
         return solve(statistics, limit, () -> {});
     }
+
 
     /**
      * Start the solving process
@@ -185,7 +198,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
 
     /**
      * Executes a closure prior to effectively
-     * starting a branch and bound depth first search
+     * starting a branch and bound depth-first-search
      * with a given objective to optimize
      * and a given predicate called at each node
      * to stop the search when it becomes true.

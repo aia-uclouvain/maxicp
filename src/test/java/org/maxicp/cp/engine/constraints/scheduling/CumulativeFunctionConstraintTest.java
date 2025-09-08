@@ -9,6 +9,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
@@ -300,5 +301,40 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         SearchStatistics stats = dfs.solve();
 
         assertEquals(360, stats.numberOfSolutions());
+    }
+
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testOptimalFilteringHeight(CPSolver cp) {
+        int n = 4; // number of intervals
+
+        CPIntervalVar[] intervals = new CPIntervalVar[4];
+
+        intervals[0] = makeIntervalVar(cp, false, 6);
+        intervals[0].setStartMin(8);
+        intervals[0].setEndMax(24);
+
+        intervals[1] = makeIntervalVar(cp, false, 12);
+        intervals[1].setStart(0);
+
+        intervals[2] = makeIntervalVar(cp, false, 12);
+        intervals[2].setStart(20);
+
+        intervals[3] = makeIntervalVar(cp, false, 4);
+        intervals[3].setStart(14);
+
+        CPCumulFunction profile = new CPFlatCumulFunction();
+        profile = CPFactory.plus(profile, new CPPulseCumulFunction(intervals[0], 3, 6));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[1], 4, 4));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[2], 4, 4));
+        profile = CPFactory.minus(profile, new CPPulseCumulFunction(intervals[3], 1, 1));
+
+        CPIntVar h0 = profile.heightAtStart(intervals[0]);
+
+        cp.post(le(profile, 4));
+
+        assertEquals(5, h0.max());
     }
 }
