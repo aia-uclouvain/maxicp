@@ -117,22 +117,17 @@ public class DistanceNew extends AbstractCPConstraint {
             // take into account required nodes for the remaining distance
             initPredsAndSuccs();
 
-//            System.out.println(seqVar);
-
-            LBMinSpanningTreeDetour = updateLowerBoundMSTD();
+//            LBMinSpanningTreeDetour = updateLowerBoundMSTD();
 //            LBMinSpanningTree = updateLowerBoundMST();
 //            assert LBMinSpanningTreeDetour >= LBMinSpanningTree : LBMinSpanningTreeDetour+ " >= " + LBMinSpanningTree;
 //            LBMinArborescence = updateLowerBoundMinArborescence();
-//            LBPredMin = updateLowerBoundPredMin();
-//            LBDetourMin = updateLowerBoundDetourMin(d);
+            LBPredMin = updateLowerBoundPredMin();
+            LBDetourMin = updateLowerBoundDetourMin(d);
 
-            //   bounds: 6930 nodes
-            //noBounds: 10184 nodes
             updateUpperBound();
 
         }
-//        System.out.println("d = " + d);
-//        System.out.println("totalDist = " + totalDist);
+
         int maxDetour = totalDist.max() - d;
         // filter invalid insertions
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
@@ -289,19 +284,11 @@ public class DistanceNew extends AbstractCPConstraint {
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
-                return;
+            } else if (LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
+                seqVar.notBetween(pred, node, succ);
+            } else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
+                seqVar.notBetween(pred, node, succ);
             }
-//            for (int i = 0; i < numSuccs[node]; i++) {
-//                if (minPred[i] == node) {
-//                    if (LBPredMin - costMinPred[node] - costMinPred[i] + detour > totalDist.max()) {
-//                        seqVar.notBetween(pred, node, succ);
-//                        return;
-//                    }
-//                }
-//            }
-//            else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
-//                seqVar.notBetween(pred, node, succ);
-//            }
         }
     }
 

@@ -213,9 +213,9 @@ public class DistanceNewTest extends CPSolverTest {
     /**
      * Ensures that some trivial inconsistent cases, where the sequence cannot match the distance, are detected
      */
-    @ParameterizedTest
-    @MethodSource("getSolver")
-    public void testDetectInfeasibility(CPSolver cp) {
+    @Test
+    public void testDetectInfeasibility() {
+        CPSolver cp = makeSolver();
         CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, start, end);
         for (int node = 0; node < nNodes; node++)
             seqVar.require(node);
@@ -348,9 +348,9 @@ public class DistanceNewTest extends CPSolverTest {
         return copy;
     }
 
-    @ParameterizedTest
-    @MethodSource("getSolver")
-    public void testMinArborescence(CPSolver cp) {
+    @Test
+    public void testMinArborescence() {
+        CPSolver cp = makeSolver();
         int nNodes = 6;
         int start = 0;
         int[][] cost = new int[][]{
@@ -381,9 +381,9 @@ public class DistanceNewTest extends CPSolverTest {
     /**
      * Simple test instance to see if the lower bound is not overestimated
      */
-    @ParameterizedTest
-    @MethodSource("getSolver")
-    public void testNoLowerBoundOverestimation(CPSolver cp) {
+    @Test
+    public void testNoLowerBoundOverestimation() {
+        CPSolver cp = makeSolver();
         int nNodes = 5;
         CPSeqVar seqVar = makeSeqVar(cp, nNodes, 0, 2);
         for (int n = 0 ; n < nNodes ; n++) {
@@ -417,9 +417,9 @@ public class DistanceNewTest extends CPSolverTest {
                 "The best solution is " + bestCost + " but the lower bound was " + distance.min());
     }
 
-    @ParameterizedTest
-    @MethodSource("getSolver")
-    public void testMinArborescence2(CPSolver cp) {
+    @Test
+    public void testMinArborescence2() {
+        CPSolver cp = makeSolver();
         int nNodes = 7;
         int start = 0;
         int[][] cost = new int[][]{
