@@ -1,5 +1,6 @@
 package org.maxicp.cp.examples.raw;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.DistanceNew;
 import org.maxicp.cp.engine.core.CPBoolVar;
@@ -7,20 +8,15 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.Factory;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
-import java.util.Random;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.CPFactory.makeDfs;
@@ -28,58 +24,57 @@ import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
+// instances from:
+// Hybrid Metaheuristic for the Prize Collecting Travelling Salesman Problem
+// http://www.lac.inpe.br/~lorena/ (Antonio Augusto Chaves & Luiz Antonio Nogueira Lorena)
 public class PCTSP {
 
     public static void main(String[] args) {
 
-        PCTSP.PCTSPInstance instance = new PCTSP.PCTSPInstance("data/TSP/gr21.xml", 42);
+        PCTSP.PCTSPInstance instance = new PCTSP.PCTSPInstance("data/PCTSP/v10.txt");
 
         // ===================== read & preprocessing =====================
 
         int n = instance.n;
-        int[][] distanceMatrix = instance.distanceMatrix;
-
-        // a seqvar needs both a start and an end node
-        // we add two dumy nodes n and n+1 for the start and end node
-        int[][] distance = new int[n + 2][n + 2];
+        int depot = 0; // index of the depot, it must be part of the tour
+        // a SeqVar needs both a start and an end node, duplicate the depot
+        int[][] distance = new int[n + 1][n + 1];
         for (int i = 0; i < n; i++) {
-            System.arraycopy(distanceMatrix[i], 0, distance[i], 0, n);
-            distance[i][n] = 0;
-            distance[n][i] = 0;
-            distance[i][n+1] = 0;
-            distance[n+1][i] = 0;
+            System.arraycopy(instance.travelCosts[i], 0, distance[i], 0, n);
+            distance[i][n] = instance.travelCosts[i][0];
+            distance[n][i] = instance.travelCosts[0][i];
         }
+
+        double sigma = 0.2; // can be 02, 0.5, 0.8
+        int minPrize = (int) (sigma * Arrays.stream(instance.prize).sum());
 
         // ===================== decision variables =====================
 
         CPSolver cp = makeSolver();
         // route for the traveler
-        CPSeqVar tour = makeSeqVar(cp, n + 2, n, n + 1);
-        // distance traveled. This is the objective to minimize
-        CPIntVar totLength = makeIntVar(cp, 0, 10000);
+        CPSeqVar tour = makeSeqVar(cp, n + 1, 0, n);
+        // distance traveled
+        CPIntVar totLength = makeIntVar(cp, 0, 100000);
 
         // ===================== constraints =====================
 
-        CPBoolVar [] required = makeBoolVarArray(n, node -> tour.isNodeRequired(node));
+        CPBoolVar[] required = makeBoolVarArray(n, node -> tour.isNodeRequired(node));
 
-        CPIntVar [] collectedPrice = makeIntVarArray(n, node -> mul(required[node], instance.price[node]));
+        CPIntVar[] prize = makeIntVarArray(n, node -> mul(required[node], instance.prize[node]));
+        CPIntVar[] penalty = makeIntVarArray(n, node -> mul(CPFactory.not(required[node]), instance.penalty[node]));
 
-        CPIntVar totPrice = sum(collectedPrice);
+        CPIntVar totPrice = sum(prize);
+        CPIntVar totPenalty = sum(penalty);
 
+        cp.post(ge(totPrice, minPrize)); // ensure minimum prize collected
 
-        for (int node = 0; node < n; node++) {
-            //cp.post(eq(required[node], 0));
-        }
+        cp.post(new Distance(tour, distance, totLength));
+        // cp.post(new DistanceNew(tour, distance, totLength)); // BUGGY, does not work well with optional
 
-        // capture the distance traveled according to the distance matrix
-        //cp.post(new Distance(tour, distance, totLength));
-        cp.post(new DistanceNew(tour, distance, totLength));
+        CPIntVar objVar = sum(totPenalty, totLength);
 
-
-        CPIntVar objVar = sum(totPrice, minus(totLength));
-
-        // maximize collected price - distance
-        Objective obj = cp.maximize(objVar);
+        // minimize tour length + penalties of unvisited nodes
+        Objective obj = cp.minimize(objVar);
 
         // ===================== search =====================
 
@@ -113,12 +108,13 @@ public class PCTSP {
 
         long init = System.currentTimeMillis();
         dfs.onSolution(() -> {
-            System.out.println("objective:"+objVar);
-            System.out.println(String.format("length: %d price: %d", totLength.min(), totPrice.min()));
             double elapsedSeconds = (double) (System.currentTimeMillis() - init) / 1000.0;
+            System.out.println("objective:" + objVar);
+            System.out.println(String.format("length: %d penalty: %d", totLength.min(), totPenalty.min()));
             System.out.println(tour);
-            System.out.println("number of nodes:" + tour.nNode());
-            System.out.printf("elapsed: %.3f%n", elapsedSeconds);
+            System.out.println(String.format("totPrize: %d minPrize: %d", totPrice.min(), minPrize));
+            System.out.println("number of nodes:" + tour.nNode(SeqStatus.REQUIRED));
+            System.out.printf("elapsed time: %.3f%n", elapsedSeconds);
             System.out.println("-------");
         });
 
@@ -132,56 +128,65 @@ public class PCTSP {
     public static class PCTSPInstance {
 
         public int n; // number of nodes
-        int [] price;
-        public int[][] distanceMatrix;
+        int[] prize;
+        int[] penalty;
+        public int[][] travelCosts;
 
-        /**
-         * Read TSP Instance from xml
-         * See http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/XML-TSPLIB/Description.pdf
-         *
-         * @param xmlPath path to the file
-         * @param seed random seed for generating prices
-         */
-        public PCTSPInstance(String xmlPath, int seed) {
-            // Instantiate the Factory
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            int obj = -1;
+        public PCTSPInstance(String filePath) {
             try {
+                BufferedReader reader = new BufferedReader(new FileReader(filePath));
 
-                // optional, but recommended
-                // process XML securely, avoid attacks like XML External Entities (XXE)
-                dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                String line;
+                int currentSection = 0; // 0: nodes, 1: price, 2: penalty, 3: travel costs
 
-                // parse XML file
-                DocumentBuilder db = dbf.newDocumentBuilder();
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
 
-                Document doc = db.parse(new File(xmlPath));
-                doc.getDocumentElement().normalize();
-
-                NodeList list = doc.getElementsByTagName("vertex");
-
-                n = list.getLength();
-
-                Random rand = new Random(seed);
-
-                price = new int[n];
-                for (int i = 0; i < n; i++) {
-                    price[i] = 80 + rand.nextInt(80);
-                }
-
-                distanceMatrix = new int[n][n];
-
-                for (int i = 0; i < n; i++) {
-                    NodeList edgeList = list.item(i).getChildNodes();
-                    for (int v = 0; v < edgeList.getLength(); v++) {
-
-                        Node node = edgeList.item(v);
-                        if (node.getNodeType() == Node.ELEMENT_NODE) {
-                            Element element = (Element) node;
-                            String cost = element.getAttribute("cost");
-                            String adjacentNode = element.getTextContent();
-                            int j = Integer.parseInt(adjacentNode);
-                            distanceMatrix[i][j] = (int) Math.rint(Double.parseDouble(cost));
+                    if (line.startsWith("THE PROBLEM HAVE")) {
+                        // Extract number of nodes
+                        String[] parts = line.split(" ");
+                        for (String part : parts) {
+                            if (part.matches("\\d+")) {
+                                this.n = Integer.parseInt(part);
+                                this.prize = new int[this.n];
+                                this.penalty = new int[this.n];
+                                this.travelCosts = new int[this.n][this.n];
+                                break;
+                            }
+                        }
+                    } else if (line.startsWith("PRIZE ASSOCIATED TO EACH NODES")) {
+                        currentSection = 1;
+                    } else if (line.startsWith("PENALTY ASSOCIATED TO EACH NODES")) {
+                        currentSection = 2;
+                    } else if (line.startsWith("TRAVEL COST BETWEEN THE NODES")) {
+                        currentSection = 3;
+                    } else if (currentSection == 1 && !line.startsWith("PRIZE")) {
+                        // Parse price line
+                        String[] values = line.split("\\s+");
+                        for (int i = 0; i < values.length && i < this.n; i++) {
+                            if (!values[i].isEmpty()) {
+                                this.prize[i] = Integer.parseInt(values[i]);
+                            }
+                        }
+                    } else if (currentSection == 2 && !line.startsWith("PENALTY")) {
+                        // Parse penalty line
+                        String[] values = line.split("\\s+");
+                        for (int i = 0; i < values.length && i < this.n; i++) {
+                            if (!values[i].isEmpty()) {
+                                this.penalty[i] = Integer.parseInt(values[i]);
+                            }
+                        }
+                    } else if (currentSection == 3 && !line.startsWith("TRAVEL")) {
+                        // Parse travel costs line
+                        String[] values = line.split("\\s+");
+                        int row = Arrays.asList(values).indexOf("0"); // Find the row index (diagonal is 0)
+                        if (row >= 0 && row < this.n) {
+                            for (int col = 0; col < values.length && col < this.n; col++) {
+                                if (!values[col].isEmpty()) {
+                                    this.travelCosts[row][col] = Integer.parseInt(values[col]);
+                                }
+                            }
                         }
                     }
                 }
@@ -189,6 +194,7 @@ public class PCTSP {
                 e.printStackTrace();
             }
         }
+
     }
 
 }
