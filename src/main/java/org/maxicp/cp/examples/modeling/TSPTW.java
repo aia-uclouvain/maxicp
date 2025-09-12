@@ -24,6 +24,7 @@ public class TSPTW {
     public static void main(String[] args) {
 
         TSPTWInstance instance = new TSPTWInstance("data/TSPTW/Dumas/n40w20.001.txt");
+        //TSPTWInstance instance = new TSPTWInstance("data/TSPTW/tsptw_10cities_0.txt");
 
         ModelDispatcher baseModel = makeModelDispatcher();
 

@@ -1807,6 +1807,34 @@ public final class CPFactory {
         return new NoOverlap(vars);
     }
 
+
+    /**
+     * Creates and post a non-overlap constraint on the intervals in vars
+     * and create a sequence variable linked with these intervals representing the order of the intervals
+     * in time. The id of an interval is its index in the array vars.
+     * The intervals cannot overlap.
+     * @param intervals intervals that must be linked with a sequence variable
+     * @return sequence variable linked with the intervals
+     */
+    public static CPSeqVar nonOverlapSequence(CPIntervalVar[] intervals) {
+        int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();
+        CPSolver cp = intervals[0].getSolver();
+        cp.post(nonOverlap(intervals));
+        // start and end nodes are set as dumy intervals
+        CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);
+        CPIntervalVar dummyStart = makeIntervalVar(cp, false, 0); // dumy start
+        dummyStart.setStart(0);
+        CPIntervalVar dummyEnd = makeIntervalVar(cp, false, 0); // dummy end
+        dummyEnd.setStart(lct);
+        // all intervals for the channeling constraint
+        CPIntervalVar[] intervalsWithDummy = new CPIntervalVar[intervals.length + 2];
+        System.arraycopy(intervals, 0, intervalsWithDummy, 0, intervals.length);
+        intervalsWithDummy[intervals.length] = dummyStart;
+        intervalsWithDummy[intervals.length + 1] = dummyEnd;
+        cp.post(new Duration(seqVar, intervalsWithDummy)); // post the channeling
+        return seqVar;
+    }
+
     /**
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then cardinality intervals from the array alternatives

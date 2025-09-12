@@ -1,3 +1,9 @@
+/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
 package org.maxicp.cp.engine.constraints.seqvar;
 
 import org.maxicp.cp.engine.constraints.Equal;
@@ -5,8 +11,6 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
-
-import java.util.StringJoiner;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
@@ -57,7 +61,7 @@ public class Duration extends AbstractCPConstraint {
     private void updateTWForward(int nMember) {
         int current = nodes[0];
         int endMinPred = intervals[current].endMin();
-        for (int i = 1 ; i < nMember ; ++i) {
+        for (int i = 1 ; i < nMember ; i++) {
             current = nodes[i];
             intervals[current].setStartMin(endMinPred);
             endMinPred = intervals[current].endMin();
@@ -71,7 +75,7 @@ public class Duration extends AbstractCPConstraint {
     private void updateTWBackward(int nMember) {
         int succ = nodes[nMember-1];
         int startMaxSucc = intervals[succ].startMax();
-        for (int i = nMember - 2 ; i >= 0 ; --i) {
+        for (int i = nMember - 2 ; i >= 0 ; i--) {
             int current = nodes[i];
             intervals[current].setEndMax(startMaxSucc);
             startMaxSucc = intervals[current].startMax();
@@ -85,7 +89,7 @@ public class Duration extends AbstractCPConstraint {
      */
     private void filterInsertsAndPossiblyTW() {
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
-        for (int i = 0 ; i < nInsertable ; ++i) {
+        for (int i = 0 ; i < nInsertable ; i++) {
             int node = nodes[i];
             filterInsertsAndPossiblyTW(node);
         }
@@ -102,7 +106,7 @@ public class Duration extends AbstractCPConstraint {
             // update the insertions as well as the time window
             int newStartMin = Integer.MAX_VALUE;
             int newEndMax = Integer.MIN_VALUE;
-            for (int i = 0; i < nPred; ++i) {
+            for (int i = 0; i < nPred; i++) {
                 int pred = preds[i];
                 if (!filterInsert(pred, node)) {
                     // if the insertion is valid, it can be used to update the start min and end max
@@ -119,7 +123,7 @@ public class Duration extends AbstractCPConstraint {
                 intervals[node].setEndMax(newEndMax);
             }
         } else {
-            for (int i = 0; i < nPred; ++i) {
+            for (int i = 0; i < nPred; i++) {
                 int pred = preds[i];
                 filterInsert(pred, node);
             }
@@ -133,17 +137,14 @@ public class Duration extends AbstractCPConstraint {
      * @return true if the edge has been removed
      */
     private boolean filterInsert(int pred, int node) {
-        int succ = seqVar.memberAfter(pred);
-        int est = intervals[pred].endMin();
-        if (est > intervals[node].startMax()) { // check that pred -> node is feasible
+        int succ = seqVar.memberAfter(pred); // successor of pred in the current partial sequence
+        if (intervals[pred].endMin() > intervals[node].startMax()) { // no way node can fit after pred because we cannot delay node enough
             seqVar.notBetween(pred, node, succ);
             return true;
         } else { // check that node -> succ is feasible
-            int timeDeparture = Math.max(est, intervals[node].startMin());
-            if (timeDeparture + intervals[node].lengthMin() > intervals[succ].startMax()) {
-                // The detour pred->node->succ takes too much time.
-                // Because of triangular inequality, there is no way to get a better result by inserting some node
-                // between pred->node: this would only add a longer delay, the edge is still invalid.
+            int nodeEst = Math.max(intervals[pred].endMin(), intervals[node].startMin());
+            int nodeEct = nodeEst + intervals[node].lengthMin();
+            if (nodeEct > intervals[succ].startMax()) { // no way node can fit between pred and succ because we cannot delay succ enough
                 seqVar.notBetween(pred, node, succ);
                 return true;
             }
