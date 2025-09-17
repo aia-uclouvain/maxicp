@@ -146,6 +146,21 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         return statistics;
     }
 
+    public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, Runnable subjectTo) {
+        SearchStatistics statistics = new SearchStatistics();
+        sm.withNewState(() -> {
+            try {
+                subjectTo.run();
+                for (Runnable action : linearizer.branchingActions) {
+                    action.run();
+                }
+            } catch (InconsistencyException ignored) {
+            }
+        });
+        return statistics;
+    }
+
+
     /**
      * Start the solving process with a given objective.
      *

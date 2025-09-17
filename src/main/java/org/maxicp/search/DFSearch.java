@@ -18,7 +18,8 @@ import java.util.function.Supplier;
  */
 public class DFSearch extends RunnableSearchMethod {
 
-    private DFSListener dfsListener = new DFSListener(){};
+    private static final DFSListener EMPTY_LISTENER = new DFSListener(){};
+    private DFSListener dfsListener = EMPTY_LISTENER;
 
     public void setDFSListener(DFSListener listener) {
         this.dfsListener = listener;
@@ -34,6 +35,18 @@ public class DFSearch extends RunnableSearchMethod {
 
     private void notifyBranch(int nodeId, int parentId) {
         dfsListener.branch(nodeId, parentId);
+    }
+
+    private void notifyBranchAction(Runnable action) {
+        dfsListener.branchingAction(action);
+    }
+
+    private void notifySaveState() {
+        dfsListener.saveState(sm);
+    }
+
+    private void notifyRestoreState() {
+        dfsListener.restoreState(sm);
     }
 
     private int currNodeId = -1;
@@ -54,11 +67,15 @@ public class DFSearch extends RunnableSearchMethod {
             for (int i = alts.length - 1; i >= 0; i--) {
                 int nodeId = currNodeId++;
                 Runnable a = alts[i];
-                alternatives.push(() -> sm.restoreState());
+                alternatives.push(() -> {
+                    notifyRestoreState();
+                    sm.restoreState();
+                });
                 alternatives.push(() -> {
                     statistics.incrNodes();
                     onNodeVisit.run();
                     try {
+                        notifyBranchAction(a);
                         a.run();
                         notifyBranch(nodeId, parentId);
                         expandNode(alternatives, statistics, onNodeVisit, nodeId);
@@ -67,7 +84,10 @@ public class DFSearch extends RunnableSearchMethod {
                         throw e;
                     }
                 });
-                alternatives.push(() -> sm.saveState());
+                alternatives.push(() -> {
+                    notifySaveState();
+                    sm.saveState();
+                });
             }
         }
     }
@@ -86,5 +106,13 @@ public class DFSearch extends RunnableSearchMethod {
                 notifyFailure();
             }
         }
+    }
+
+
+    public SearchStatistics solve(DFSListener dfsListener) {
+        setDFSListener(dfsListener);
+        SearchStatistics stats = super.solve();
+        setDFSListener(EMPTY_LISTENER);
+        return stats;
     }
 }
