@@ -31,7 +31,7 @@ import static org.maxicp.search.Searches.*;
 /**
  * capacitated vehicle routing, with time windows
  */
-public class CVRPTWSequence {
+public class CVRPTWSeqVar {
 
     public static void main(String[] args) {
         Instance instance = new Instance("data/CVRPTW/Solomon/C101.txt", 100);

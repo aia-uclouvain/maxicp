@@ -7,29 +7,29 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
-
-import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.*;
-
-import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPSolver;
-
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.SeqVar;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
-import org.maxicp.util.exception.InconsistencyException;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
+
+import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.modeling.Factory.eq;
+import static org.maxicp.search.Searches.*;
+import static org.maxicp.search.Searches.EMPTY;
 
 /**
  * The JobShop Problem.
@@ -37,14 +37,14 @@ import java.util.function.Supplier;
  *
  * @author Pierre Schaus
  */
-public class JobShop {
+public class JobShopSeqVar {
 
     public static CPIntervalVar[] flatten(CPIntervalVar[][] x) {
         return Arrays.stream(x).flatMap(Arrays::stream).toArray(CPIntervalVar[]::new);
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-9-9-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/ft10.txt");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -68,6 +68,8 @@ public class JobShop {
             }
         }
 
+        CPSeqVar[] seqVars = new CPSeqVar[nMachines];
+        CPIntervalVar[][] machineIntervals = new CPIntervalVar[nMachines][];
         // no overlap between the activities on the same machine
         for (int m = 0; m < nMachines; m++) {
             ArrayList<CPIntervalVar> machineActivities = new ArrayList<>();
@@ -78,7 +80,8 @@ public class JobShop {
                     }
                 };
             }
-            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            machineIntervals[m] = machineActivities.toArray(new CPIntervalVar[0]);
+            seqVars[m] = nonOverlapSequence(machineIntervals[m]);
         }
 
 
@@ -89,16 +92,65 @@ public class JobShop {
 
         Objective obj = cp.minimize(makespan);
 
-        CPIntervalVar[] allActivities = flatten(activities);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
+        // ------- search on seq vars ------
+
+        Supplier<Runnable[]> fixMakespan = () -> {
+            if (makespan.isFixed())
+                return EMPTY;
+            return branch(() -> makespan.getModelProxy().add(eq(makespan,makespan.min())));
+        };
+
+        Supplier<Runnable[]>[] rankers = new Supplier[nMachines];
 
 
+        for (int m = 0; m < nMachines; m++) {
+            CPIntervalVar[] intervals = machineIntervals[m];
+            rankers[m] = rank(seqVars[m],pred -> pred < intervals.length ? intervals[pred].endMin(): 0);
+        }
+
+        DFSearch dfs = CPFactory.makeDfs(cp, and(and(rankers),fixMakespan));
+
+        long t0 = System.currentTimeMillis();
         dfs.onSolution(() -> {
-            System.out.println("makespan:" + makespan);
+            System.out.println("t="+((System.currentTimeMillis()-t0)/1000.0)+"[s] makespan:" + makespan);
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);
+    }
+
+    public static Supplier<Runnable[]> rank(CPSeqVar seqVar, Function<Integer, Integer> predNodeHeuristic) {
+        // check that all the nodes are required
+        if (IntStream.range(0, seqVar.nNode()).anyMatch(n -> !seqVar.isNode(n,SeqStatus.REQUIRED))) {
+            throw new IllegalArgumentException("rank requires all nodes to be required");
+        }
+        CPSolver cp =seqVar.getSolver();
+        int[] nodes = new int[seqVar.nNode()];
+        return () -> {
+            // select the non-inserted node with the fewest number of insertions (first fail)
+            int nInsertables = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
+            if (nInsertables == 0) {
+                return EMPTY; // no node to insert -> solution found
+            }
+            int node = selectMin(nodes,nInsertables, n -> true, n -> seqVar.nInsert(n)).getAsInt();
+            int nInsert = seqVar.fillInsert(node, nodes);
+            Runnable[] branches = new Runnable[nInsert];
+            Integer[] heuristicPred = new Integer[nInsert];
+
+            // insert the node at every feasible insertion in the sequence
+            for (int j = 0; j < nInsert; j++) {
+                int pred = nodes[j]; // predecessor for the node
+                heuristicPred[j] = predNodeHeuristic.apply(pred);
+                branches[j] = () -> cp.post(insert(seqVar, pred, node));
+            }
+            Map<Runnable,Integer> predHeuristic = new HashMap<>();
+            for (int j = 0; j < nInsert; j++) {
+                predHeuristic.put(branches[j], heuristicPred[j]);
+            }
+            // sort the branches according to the heuristic on the predecessor
+            Arrays.sort(branches, Comparator.comparingInt(predHeuristic::get));
+            return branches;
+        };
     }
 
     private static class JobShopInstance {
@@ -133,6 +185,5 @@ public class JobShop {
             }
         }
     }
-
-
 }
+
