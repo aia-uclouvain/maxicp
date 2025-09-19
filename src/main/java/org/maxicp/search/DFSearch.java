@@ -115,4 +115,11 @@ public class DFSearch extends RunnableSearchMethod {
         setDFSListener(EMPTY_LISTENER);
         return stats;
     }
+
+    public SearchStatistics optimize(Objective obj, DFSListener dfsListener) {
+        setDFSListener(dfsListener);
+        SearchStatistics stats = super.optimize(obj);
+        setDFSListener(EMPTY_LISTENER);
+        return stats;
+    }
 }
