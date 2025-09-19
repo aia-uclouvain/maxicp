@@ -1,29 +1,56 @@
 package org.maxicp.search;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.constraints.Circuit;
 import org.maxicp.cp.engine.constraints.CostAllDifferentDC;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.modeling.constraints.AllDifferent;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.modeling.algebra.bool.NotEq;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.state.StateInt;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.CPFactory.allDifferent;
 import static org.maxicp.cp.CPFactory.allDifferentDC;
-import static org.maxicp.search.Searches.selectMin;
-import static org.maxicp.search.Searches.staticOrder;
+import static org.maxicp.search.Searches.*;
 
 public class ReplayTest extends CPSolverTest {
+
+    public static Supplier<Runnable[]> heuristic(CPIntVar[] x) {
+        CPSolver cp = x[0].getSolver();
+        StateInt i = cp.getStateManager().makeStateInt(0);
+        return () -> staticSearch(x,i);
+    }
+
+    public static Runnable[] staticSearch(CPIntVar[] x, StateInt i) {
+        if (i.value() >= x.length) return EMPTY;
+        CPSolver cp = x[0].getSolver();
+        int v = x[i.value()].min();
+        CPIntVar var = x[i.value()];
+        Runnable[] res = branch(() -> {
+            cp.post(CPFactory.eq(var, v));
+            i.increment();
+        }, () -> {
+            cp.post(CPFactory.neq(var, v));
+        });
+        return res;
+    }
+
+
+
 
     @ParameterizedTest
     @MethodSource("getSolver")
@@ -73,7 +100,8 @@ public class ReplayTest extends CPSolverTest {
 
         DFSLinearizer linearizer = new DFSLinearizer();
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(q));
+        DFSearch search = CPFactory.makeDfs(cp, heuristic(q));
+        //DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(q));
         search.onSolution(() -> {
             System.out.println("solution:" + Arrays.toString(q));
         });

@@ -2,7 +2,7 @@ package org.maxicp.search;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.constraints.Circuit;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPIntVar;

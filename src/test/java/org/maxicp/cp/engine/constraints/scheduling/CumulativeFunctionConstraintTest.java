@@ -9,12 +9,11 @@ package org.maxicp.cp.engine.constraints.scheduling;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
 
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
