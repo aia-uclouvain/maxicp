@@ -68,7 +68,7 @@ public class PCTSP {
 
         cp.post(ge(totPrice, minPrize)); // ensure minimum prize collected
 
-        cp.post(new Distance(tour, distance, totLength));
+        cp.post(new DistanceNew(tour, distance, totLength)); // [WARNING]: triangular inequality not respected with distance matrix
         // cp.post(new DistanceNew(tour, distance, totLength)); // BUGGY, does not work well with optional
 
         CPIntVar objVar = sum(totPenalty, totLength);

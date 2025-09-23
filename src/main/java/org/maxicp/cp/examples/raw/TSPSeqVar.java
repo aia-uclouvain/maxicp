@@ -134,8 +134,8 @@ public class TSPSeqVar {
             tour.require(node);
         }
         // capture the distance traveled according to the distance matrix
-        //cp.post(new Distance(tour, distance, totLength));
-        cp.post(new DistanceNew(tour, distance, totLength));
+        cp.post(new Distance(tour, distance, totLength));
+//        cp.post(new DistanceNew(tour, distance, totLength));
         // objective consists in minimizing the traveled distance
         Objective obj = cp.minimize(totLength);
 

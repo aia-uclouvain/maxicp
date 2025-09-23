@@ -36,6 +36,14 @@ public class DistanceNew extends AbstractCPConstraint {
     private MinimumSpanningTreeDetour minimumSpanningTreeDetour;
     private int LBMinSpanningTreeDetour;
     private MSTDetour mst;
+    private int LBMatching;
+
+    private boolean useMSTDetour = false;
+    private boolean useMST = false;
+    private boolean useMinArborescence = false;
+    private boolean usePredMin = false;
+    private boolean useDetourMin = true;
+    private boolean useMatching = false;
 
 
     public DistanceNew(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
@@ -117,12 +125,18 @@ public class DistanceNew extends AbstractCPConstraint {
             // take into account required nodes for the remaining distance
             initPredsAndSuccs();
 
-//            LBMinSpanningTreeDetour = updateLowerBoundMSTD();
-//            LBMinSpanningTree = updateLowerBoundMST();
-//            assert LBMinSpanningTreeDetour >= LBMinSpanningTree : LBMinSpanningTreeDetour+ " >= " + LBMinSpanningTree;
-//            LBMinArborescence = updateLowerBoundMinArborescence();
-            LBPredMin = updateLowerBoundPredMin();
-            LBDetourMin = updateLowerBoundDetourMin(d);
+            if (useMSTDetour)
+                LBMinSpanningTreeDetour = updateLowerBoundMSTD();
+            if (useMST)
+                LBMinSpanningTree = updateLowerBoundMST();
+            if (useMinArborescence)
+                LBMinArborescence = updateLowerBoundMinArborescence();
+            if (usePredMin)
+                LBPredMin = updateLowerBoundPredMin();
+            if (useDetourMin)
+                LBDetourMin = updateLowerBoundDetourMin(d);
+            if (useMatching)
+                LBMatching = updateLowerBoundMatching();
 
             updateUpperBound();
 
@@ -146,6 +160,10 @@ public class DistanceNew extends AbstractCPConstraint {
             numSuccs[i] = seqVar.fillSucc(i, succs[i]);
             numPreds[i] = seqVar.fillPred(i, preds[i]);
         }
+    }
+
+    private int updateLowerBoundMatching() {
+        return 0;
     }
 
     private int updateLowerBoundMSTD() {
@@ -212,17 +230,19 @@ public class DistanceNew extends AbstractCPConstraint {
 
         Arrays.fill(minDetour, Integer.MAX_VALUE);
 
-        int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
+        int nInsertable = seqVar.fillNode(nodes, INSERTABLE_REQUIRED);
         for (int n = 0; n < nInsertable; n++) {
             int node = nodes[n];
             for (int p = 0; p < numPreds[node]; p++) {
+                int pred = preds[node][p];
+                if (!seqVar.isNode(pred, REQUIRED)) {
+                    continue;
+                }
                 for (int s = 0; s < numSuccs[node]; s++) {
-                    int pred = preds[node][p];
                     int succ = succs[node][s];
-                    if (pred == succ) {
+                    if (pred == succ || !seqVar.isNode(succ, REQUIRED)) {
                         continue; // skip if pred and succ are the same
                     }
-
                     if (seqVar.hasEdge(pred, succ)) {
                         int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
                         if (detour < minDetour[node]) {
@@ -252,20 +272,22 @@ public class DistanceNew extends AbstractCPConstraint {
 
         Arrays.fill(costMinPred, Integer.MAX_VALUE);
 
-        for (int i = 0; i < numNodes; i++) {
-            for (int j = 0; j < numPreds[i]; j++) {
-                int pred = preds[i][j];
-                if (dist[pred][i] < costMinPred[i]) {
-                    costMinPred[i] = dist[pred][i];
-                    minPred[i] = pred;
+        int nInsertable = seqVar.fillNode(nodes, REQUIRED);
+        for (int i = 0; i < nInsertable; i++) {
+            int node = nodes[i];
+            for (int j = 0; j < numPreds[node]; j++) {
+                int pred = preds[node][j];
+                if (dist[pred][node] < costMinPred[node]) {
+                    costMinPred[node] = dist[pred][node];
+                    minPred[node] = pred;
                 }
             }
-            if (costMinPred[i] < Integer.MAX_VALUE) {
-                totalMinPred += costMinPred[i];
+            if (costMinPred[node] < Integer.MAX_VALUE) {
+                totalMinPred += costMinPred[node];
             }
         }
 
-        // remove the lower bound on the total distance 
+        // remove the lower bound on the total distance
         totalDist.removeBelow(totalMinPred);
         return totalMinPred;
     }
@@ -284,12 +306,25 @@ public class DistanceNew extends AbstractCPConstraint {
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
-            } else if (LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
-                seqVar.notBetween(pred, node, succ);
-            } else if (LBDetourMin - minDetour[node] + detour > totalDist.max()) {
-                seqVar.notBetween(pred, node, succ);
+            }
+            else if (seqVar.isNode(node, REQUIRED)) {
+                if (usePredMin && LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
+                    seqVar.notBetween(pred, node, succ);
+                } else if (useDetourMin && LBDetourMin - minDetour[node] + detour > totalDist.max()) {
+                    seqVar.notBetween(pred, node, succ);
+                }
+            } else {
+                if (usePredMin && LBPredMin - costMinPred[succ] + detour > totalDist.max()) {
+                    seqVar.notBetween(pred, node, succ);
+                } else if (useDetourMin && LBDetourMin + detour > totalDist.max()) {
+                    seqVar.notBetween(pred, node, succ);
+                }
             }
         }
+
+
+
+
     }
 
 
