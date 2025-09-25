@@ -306,23 +306,20 @@ public class DistanceNew extends AbstractCPConstraint {
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
-            }
-            else if (seqVar.isNode(node, REQUIRED)) {
-                if (usePredMin && LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
+            } else if (seqVar.isNode(node, REQUIRED)) {
+                if (usePredMin && LBPredMin - costMinPred[node] - costMinPred[succ] + dist[pred][node] + dist[node][succ] > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
                 } else if (useDetourMin && LBDetourMin - minDetour[node] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
                 }
             } else {
-                if (usePredMin && LBPredMin - costMinPred[succ] + detour > totalDist.max()) {
+                if (usePredMin && LBPredMin - costMinPred[succ] + dist[pred][node] + dist[node][succ] > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
                 } else if (useDetourMin && LBDetourMin + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
                 }
             }
         }
-
-
 
 
     }
