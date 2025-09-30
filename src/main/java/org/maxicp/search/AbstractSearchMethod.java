@@ -194,6 +194,10 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         return System.currentTimeMillis() - beforePanicTime;
     }
 
+    public SearchStatistics replay(DFSLinearizer linearizer, CPVar[] variables) {
+        return replaySubjectTo(linearizer, variables, () -> {});
+    }
+
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo) {
         SearchStatistics statistics = new SearchStatistics();
         sm.withNewState(() -> {
