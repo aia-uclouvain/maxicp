@@ -96,6 +96,51 @@ public class CardinalityMinFWCTest extends CPSolverTest {
 
     }
 
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testDebug1(CPSolver cp) {
+
+        Set<Integer>[] initialDomains = new Set[]{
+                Set.of(0, 2, 3),
+                Set.of(1, 3),
+                Set.of(0, 1, 3),
+                Set.of(2, 3),
+                Set.of(0, 3),
+                Set.of(1, 2, 3),
+                Set.of(0, 1, 2, 3),
+                Set.of(3),
+                Set.of(0, 2, 3),
+                Set.of(1, 3)};
+        CPIntVar[] x = CPFactory.makeIntVarArray(initialDomains.length, i -> CPFactory.makeIntVar(cp, initialDomains[i]));
+
+        int[] minCard = new int[]{2, 1, 0, 0};
+
+        // -----------------------------
+
+        cp.getStateManager().saveState();
+
+        cp.post(new CardinalityMinFWC(x, minCard));
+
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        SearchStatistics stats1 = search.solve();
+
+        // -----------------------------
+
+        cp.getStateManager().restoreState();
+
+        for (int i = 0; i < minCard.length; i++) {
+            int v = i;
+            cp.post(CPFactory.ge(CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEq(x[j], v))), minCard[v]));
+        }
+
+        search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        SearchStatistics stats2 = search.solve();
+
+        assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
+
+    }
+
     /**
      * Generates a random set of integers from 0 to maxVal with given density
      */
@@ -109,8 +154,6 @@ public class CardinalityMinFWCTest extends CPSolverTest {
         if (s.isEmpty()) s.add(rand.nextInt(maxVal + 1));
         return s;
     }
-
-
 
 
     @ParameterizedTest
@@ -131,7 +174,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
                 initialDomains[i] = randomSet(d, density, rand);
             }
             CPIntVar[] x = CPFactory.makeIntVarArray(n, i -> CPFactory.makeIntVar(cp, initialDomains[i]));
-            int[] minCard  = new int[d];
+            int[] minCard = new int[d];
             // random cardinality
 
             for (int v = 0; v < d; v++) {
@@ -164,9 +207,6 @@ public class CardinalityMinFWCTest extends CPSolverTest {
             assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
 
         }
-
-
-
 
 
     }
