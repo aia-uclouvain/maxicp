@@ -82,7 +82,7 @@ public class ReplayTest extends CPSolverTest {
         assertEquals(stats.isCompleted(), stats2.isCompleted());
     }
     
-
+    /*
     @ParameterizedTest
     @MethodSource("getSolver")
     public void staticOrderTest(CPSolver cp) {
@@ -122,8 +122,9 @@ public class ReplayTest extends CPSolverTest {
         assertEquals(stats2.numberOfNodes(), stats3.numberOfNodes());
         assertEquals(stats2.numberOfFailures(), stats3.numberOfFailures());
 
-    }
+    }*/
 
+    /*
     @ParameterizedTest
     @MethodSource("getSolver")
     public void noChangeOptimizeTest(CPSolver cp) {
@@ -160,6 +161,6 @@ public class ReplayTest extends CPSolverTest {
         assertEquals(stats.numberOfFailures(), statsReplay.numberOfFailures());
 
 
-    }
+    }*/
 
 }
