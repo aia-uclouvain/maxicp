@@ -137,26 +137,25 @@ public class ReplayTest extends CPSolverTest {
 
         DFSLinearizer linearizer = new DFSLinearizer();
         SearchStatistics stats = dfs.optimize(obj,linearizer);
+        System.out.println(stats);
 
         obj.relax();
-        SearchStatistics stat1 = dfs.optimizeSubjectTo(obj,s -> false, () -> {
-        });
+        SearchStatistics stat1 = dfs.replaySubjectTo(linearizer, succ, () -> {
+        },obj);
+        System.out.println(stat1);
+        assertEquals(stats.numberOfSolutions(), stat1.numberOfSolutions());
+        assertEquals(stats.numberOfNodes(), stat1.numberOfNodes());
+        assertEquals(stats.numberOfFailures(), stat1.numberOfFailures());
+
 
         obj.relax();
-        SearchStatistics stat2 = dfs.optimizeSubjectTo(obj,s -> false, () -> {
-        });
-
-        assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
-        assertEquals(stat1.numberOfFailures(), stat2.numberOfFailures());
-
-        obj.relax();
-        SearchStatistics stat3 = dfs.optimizeSubjectTo(obj,s -> false, () -> {
+        SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {
             // redundant constraint
             cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
-        });
+        }, obj);
 
-        assertEquals(stat1.numberOfSolutions(), stat3.numberOfSolutions());
-        assertTrue(stat1.numberOfFailures() > stat3.numberOfFailures());
+        assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
+        assertTrue(stat1.numberOfFailures() > stat2.numberOfFailures());
 
 
 

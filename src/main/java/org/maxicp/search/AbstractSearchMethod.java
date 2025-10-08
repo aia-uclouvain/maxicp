@@ -172,10 +172,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Objective obj) {
         Runnable toTighten = obj::tighten;
         onSolution(toTighten);
-        SearchStatistics stats = replaySubjectTo(linearizer, variables, () -> {
-            subjectTo.run();
-            //obj.filter();
-        });
+        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo);
         solutionListeners.remove(toTighten);
         return stats;
     }
