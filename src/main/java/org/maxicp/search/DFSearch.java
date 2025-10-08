@@ -110,6 +110,7 @@ public class DFSearch extends RunnableSearchMethod {
 
 
     public SearchStatistics solve(DFSListener dfsListener) {
+        dfsListener.clear();
         setDFSListener(dfsListener);
         SearchStatistics stats = super.solve();
         setDFSListener(EMPTY_LISTENER);
@@ -117,6 +118,7 @@ public class DFSearch extends RunnableSearchMethod {
     }
 
     public SearchStatistics optimize(Objective obj, DFSListener dfsListener) {
+        dfsListener.clear();
         setDFSListener(dfsListener);
         SearchStatistics stats = super.optimize(obj);
         setDFSListener(EMPTY_LISTENER);

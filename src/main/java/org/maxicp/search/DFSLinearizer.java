@@ -48,4 +48,8 @@ public class DFSLinearizer implements DFSListener {
     public void restoreState(StateManager sm) {
         branchingActions.add(new RestoreStateAction(sm::restoreState));
     }
+
+    public void clear() {
+        branchingActions.clear();
+    }
 }

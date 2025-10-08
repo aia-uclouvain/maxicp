@@ -131,14 +131,15 @@ public class ReplayTest extends CPSolverTest {
         }
 
         CPIntVar totalDist = sum(distSucc);
+        cp.post(le(totalDist, 299));
         Objective obj = cp.minimize(totalDist);
 
         DFSearch dfs = makeDfs(cp, staticOrder(succ));
 
         DFSLinearizer linearizer = new DFSLinearizer();
-        SearchStatistics statInit1 = dfs.optimize(obj,linearizer);
+        SearchStatistics statInit1 = dfs.solve(linearizer);
         obj.relax();
-        SearchStatistics statInit2 = dfs.optimize(obj,linearizer);
+        SearchStatistics statInit2 = dfs.solve(linearizer);
 
         System.out.println("---stats init");
         System.out.println(statInit1);
@@ -146,7 +147,7 @@ public class ReplayTest extends CPSolverTest {
         obj.relax();
         System.out.println(obj);
         SearchStatistics stat1 = dfs.replaySubjectTo(linearizer, succ, () -> {
-        },obj);
+        });
 
         System.out.println("---stats1");
         System.out.println(stat1);
@@ -156,7 +157,7 @@ public class ReplayTest extends CPSolverTest {
         SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {
             // redundant constraint
             //cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
-        }, obj);
+        });
 
         System.out.println("---stats2");
         System.out.println(stat2);
