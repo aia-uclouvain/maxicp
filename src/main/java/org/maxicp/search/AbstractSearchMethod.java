@@ -172,7 +172,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Objective obj) {
         Runnable toTighten = obj::tighten;
         onSolution(toTighten);
-        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo);
+        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, () -> obj.filter());
         solutionListeners.remove(toTighten);
         return stats;
     }
@@ -192,10 +192,15 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     }
 
     public SearchStatistics replay(DFSLinearizer linearizer, CPVar[] variables) {
-        return replaySubjectTo(linearizer, variables, () -> {});
+        return replaySubjectTo(linearizer, variables, () -> {
+        });
     }
 
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo) {
+        return replaySubjectTo(linearizer, variables, subjectTo, () -> {});
+    }
+
+    public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Runnable onNodeVisit) {
         SearchStatistics statistics = new SearchStatistics();
         sm.withNewState(() -> {
             try {
@@ -205,7 +210,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                 index.value = 0;
                 long panicTime = 0;
                 while (index.value < linearizer.branchingActions.size()) {
-
+                    onNodeVisit.run();
                     Action action = linearizer.branchingActions.get(index.value);
                     if (action instanceof BranchingAction) {
                         statistics.incrNodes();
