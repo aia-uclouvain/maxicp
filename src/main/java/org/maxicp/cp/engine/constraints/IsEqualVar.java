@@ -65,10 +65,10 @@ public class IsEqualVar extends AbstractCPConstraint { // b <=> x == y
     public void propagate() {
         if (b.isTrue()) {
             setActive(false); //needs to be first to avoid infinite loop
-            this.getSolver().post(isEq);
+            this.getSolver().post(isEq, false);
         } else if (b.isFalse()) {
             setActive(false);
-            this.getSolver().post(isNotEq);
+            this.getSolver().post(isNotEq, false);
         } else if (x.min() > y.max() || x.max() < y.min()) {
             setActive(false);
             b.fix(false);
