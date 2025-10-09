@@ -214,11 +214,11 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                 long panicTime = 0;
                 while (index.value < linearizer.size()) {
                     Action action = linearizer.get(index.value);
-                    if (action instanceof BranchingAction) {
-                        onNodeVisit.run(); // filter the objective
-                        statistics.incrNodes();
-                    }
                     try {
+                        if (action instanceof BranchingAction) {
+                            statistics.incrNodes();
+                            onNodeVisit.run(); // filter the objective
+                        }
                         action.run();
                     } catch (InconsistencyException e) {
                         consistentState.setValue(false);

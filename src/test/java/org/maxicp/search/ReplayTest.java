@@ -177,14 +177,9 @@ public class ReplayTest extends CPSolverTest {
         int[][] distanceMatrix = instance.distanceMatrix;
 
         CPIntVar[] succ = makeIntVarArray(cp, n, n);
-        CPIntVar[] distSucc = makeIntVarArray(cp, n, 1000);
 
-        cp.post(new Circuit(succ));
-        for (int i = 0; i < n; i++) {
-            cp.post(new Element1D(distanceMatrix[i], succ[i], distSucc[i]));
-        }
+        CPIntVar totalDist = sum(makeIntVarArray(n,i -> element(distanceMatrix[i],succ[i])));
 
-        CPIntVar totalDist = sum(distSucc);
         //cp.post(le(totalDist, 299));
         Objective obj = cp.minimize(totalDist);
 
@@ -198,7 +193,8 @@ public class ReplayTest extends CPSolverTest {
         SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {}, obj);
 
         assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
-        //assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
+        assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
+        assertEquals(stat1.numberOfNodes(), stat2.numberOfNodes());
 
     }
 
@@ -227,6 +223,41 @@ public class ReplayTest extends CPSolverTest {
 
         assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
         assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
+        assertEquals(stat1.numberOfNodes(),  stat2.numberOfNodes());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void basicOptimize2(CPSolver cp) {
+
+        int n = 2;
+        int[][] distanceMatrix = new int[][]{
+                {0, 1},
+                {1, 0}};
+        CPIntVar[] succ = makeIntVarArray(cp, n, n);
+
+        CPIntVar totalDist = sum(makeIntVarArray(n,i -> element(distanceMatrix[i],succ[i])));
+        Objective obj = cp.minimize(totalDist);
+
+        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+
+        DFSLinearizer linearizer = new DFSLinearizer();
+        SearchStatistics stat1 = dfs.optimize(obj, linearizer);
+
+        obj.relax();
+
+        SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {}, obj);
+
+        assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
+        assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
+        assertEquals(stat1.numberOfNodes(),  stat2.numberOfNodes());
+        System.out.println(stat1.numberOfFailures()+ " vs "+ stat2.numberOfFailures());
+
+
+        System.out.println(stat1);
+        System.out.println(stat2);
 
     }
 

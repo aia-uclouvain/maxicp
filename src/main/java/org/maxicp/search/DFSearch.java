@@ -73,9 +73,9 @@ public class DFSearch extends RunnableSearchMethod {
                 });
                 alternatives.push(() -> {
                     statistics.incrNodes();
-                    onNodeVisit.run();
                     try {
                         notifyBranchAction(a);
+                        onNodeVisit.run();
                         a.run();
                         notifyBranch(nodeId, parentId);
                         expandNode(alternatives, statistics, onNodeVisit, nodeId);
