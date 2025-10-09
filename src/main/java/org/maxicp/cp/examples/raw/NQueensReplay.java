@@ -42,12 +42,8 @@ public class NQueensReplay {
 
         DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(q));
 
-        search.onSolution(() ->
-                System.out.println("solution:" + Arrays.toString(q))
-        );
         SearchStatistics stats = search.solve(linearizer);
 
-        System.out.format("#Solutions: %s\n", stats.numberOfSolutions());
         System.out.format("Statistics: %s\n", stats);
 
         SearchStatistics stats2 = search.replaySubjectTo(linearizer, q, () -> {

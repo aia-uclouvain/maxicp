@@ -203,12 +203,14 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
 
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Runnable onNodeVisit) {
         SearchStatistics statistics = new SearchStatistics();
+
         sm.withNewState(() -> {
             try {
                 subjectTo.run();
                 State<Boolean> consistentState = sm.makeStateRef(true);
                 IntRef index = new IntRef();
                 index.value = 0;
+                long t0 = System.currentTimeMillis();
                 long panicTime = 0;
                 while (index.value < linearizer.size()) {
                     Action action = linearizer.get(index.value);
@@ -234,6 +236,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                     }
                     index.value++;
                 }
+                statistics.setTimeInMillis(System.currentTimeMillis() - t0 - panicTime);
                 if (index.value == linearizer.size()) {
                     statistics.setCompleted();
                 }

@@ -95,10 +95,14 @@ public class DFSearch extends RunnableSearchMethod {
     @Override
     protected void startSolve(SearchStatistics statistics, Predicate<SearchStatistics> limit, Runnable onNodeVisit) {
         currNodeId = -1;
+        long t0 = System.currentTimeMillis();
         Stack<Runnable> alternatives = new Stack<Runnable>();
         expandNode(alternatives, statistics, onNodeVisit, currNodeId);
         while (!alternatives.isEmpty()) {
-            if (limit.test(statistics)) throw new StopSearchException();
+            statistics.setTimeInMillis(System.currentTimeMillis() - t0);
+            if (limit.test(statistics)) {
+                throw new StopSearchException();
+            }
             try {
                 alternatives.pop().run();
             } catch (InconsistencyException e) {
