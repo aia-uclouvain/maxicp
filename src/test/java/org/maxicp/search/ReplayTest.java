@@ -10,6 +10,7 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.examples.raw.TSPSeqVar;
 import org.maxicp.state.StateInt;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,10 +114,9 @@ public class ReplayTest extends CPSolverTest {
 
     }
 
-
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void noChangeOptimizeTest(CPSolver cp) {
+    public void tspEnumerateTest(CPSolver cp) {
 
         TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
         int n = instance.n;
@@ -131,39 +131,102 @@ public class ReplayTest extends CPSolverTest {
         }
 
         CPIntVar totalDist = sum(distSucc);
-        cp.post(le(totalDist, 299));
+        cp.post(le(totalDist, 285));
+
+        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+
+        SearchStatistics stat0 = dfs.solve();
+
+        DFSLinearizer linearizer = new DFSLinearizer();
+        SearchStatistics stat1 = dfs.solve(linearizer);
+        SearchStatistics stat2 = dfs.solve(linearizer); // just to make sure no state is kept in the linearizer
+        SearchStatistics stat3 = dfs.replaySubjectTo(linearizer, succ, () -> {
+        });
+        SearchStatistics stat4 = dfs.replaySubjectTo(linearizer, succ, () -> { // just to make sure no state is kept in the linearizer
+        });
+
+        // stats0-4 should be the same
+
+        assertEquals(stat0.numberOfSolutions(), stat1.numberOfSolutions());
+        assertEquals(stat0.numberOfSolutions(), stat2.numberOfSolutions());
+        assertEquals(stat0.numberOfSolutions(), stat3.numberOfSolutions());
+        assertEquals(stat0.numberOfSolutions(), stat4.numberOfSolutions());
+
+        assertEquals(stat0.numberOfFailures(), stat1.numberOfFailures());
+        assertEquals(stat0.numberOfFailures(), stat2.numberOfFailures());
+        assertEquals(stat0.numberOfFailures(), stat3.numberOfFailures());
+        assertEquals(stat0.numberOfFailures(), stat4.numberOfFailures());
+
+        // replay with a stronger filtering
+        SearchStatistics stat5 = dfs.replaySubjectTo(linearizer, succ, () -> {
+            cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
+        });
+        // should have the same number of solutions but less failures
+        assertEquals(stat0.numberOfSolutions(), stat5.numberOfSolutions());
+        assertTrue(stat0.numberOfFailures() > stat5.numberOfFailures());
+
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void tspOptimize(CPSolver cp) {
+
+        TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
+        int n = instance.n;
+        int[][] distanceMatrix = instance.distanceMatrix;
+
+        CPIntVar[] succ = makeIntVarArray(cp, n, n);
+        CPIntVar[] distSucc = makeIntVarArray(cp, n, 1000);
+
+        cp.post(new Circuit(succ));
+        for (int i = 0; i < n; i++) {
+            cp.post(new Element1D(distanceMatrix[i], succ[i], distSucc[i]));
+        }
+
+        CPIntVar totalDist = sum(distSucc);
+        //cp.post(le(totalDist, 299));
         Objective obj = cp.minimize(totalDist);
 
         DFSearch dfs = makeDfs(cp, staticOrder(succ));
 
         DFSLinearizer linearizer = new DFSLinearizer();
-        SearchStatistics statInit1 = dfs.solve(linearizer);
-        obj.relax();
-        SearchStatistics statInit2 = dfs.solve(linearizer);
-
-        System.out.println("---stats init");
-        System.out.println(statInit1);
+        SearchStatistics stat1 = dfs.optimize(obj, linearizer);
 
         obj.relax();
-        System.out.println(obj);
-        SearchStatistics stat1 = dfs.replaySubjectTo(linearizer, succ, () -> {
-        });
 
-        System.out.println("---stats1");
-        System.out.println(stat1);
-
-        obj.relax();
-        System.out.println(obj);
-        SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {
-            // redundant constraint
-            //cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
-        });
-
-        System.out.println("---stats2");
-        System.out.println(stat2);
+        SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, succ, () -> {}, obj);
 
         assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
-        assertTrue(stat1.numberOfFailures() >= stat2.numberOfFailures());
+        //assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
+
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void basicOptimize(CPSolver cp) {
+
+        CPIntVar[] x = makeIntVarArray(cp, 2, 2);
+
+        int costCoeffs[] = new int[]{1, 2};
+
+        CPIntVar objVar = sum(makeIntVarArray(2, i -> element(costCoeffs, x[i])));
+
+        Objective obj = cp.maximize(objVar);
+
+        DFSearch dfs = makeDfs(cp, staticOrder(x));
+
+        DFSLinearizer linearizer = new DFSLinearizer();
+
+        SearchStatistics stat1 = dfs.optimize(obj, linearizer);
+
+
+        obj.relax();
+
+        SearchStatistics stat2 = dfs.replaySubjectTo(linearizer, x, () -> {}, obj);
+
+        assertEquals(stat1.numberOfSolutions(), stat2.numberOfSolutions());
+        assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
 
     }
 

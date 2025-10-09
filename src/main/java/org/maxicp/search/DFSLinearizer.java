@@ -52,4 +52,12 @@ public class DFSLinearizer implements DFSListener {
     public void clear() {
         branchingActions.clear();
     }
+
+    public int size() {
+        return branchingActions.size();
+    }
+
+    public Action get(int i) {
+        return branchingActions.get(i);
+    }
 }

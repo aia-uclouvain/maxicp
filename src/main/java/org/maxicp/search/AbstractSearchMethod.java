@@ -15,6 +15,7 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -172,23 +173,33 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Objective obj) {
         Runnable toTighten = obj::tighten;
         onSolution(toTighten);
-        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, () -> obj.filter());
+        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, obj::filter);
         solutionListeners.remove(toTighten);
         return stats;
     }
 
 
-    private long panic(BooleanSupplier invariant,
-                       Action[] decisions,
+    private long panic(BooleanSupplier stoppingCondition,
+                       DFSLinearizer linearizer,
                        IntRef index) {
+        /*
         long beforePanicTime = System.currentTimeMillis();
-        while (invariant.getAsBoolean()
-                && index.value < decisions.length - 1) {
+        while (invariant.getAsBoolean() && index.value < linearizer.size() - 1) {
             index.value++;
-            Action next = decisions[index.value];
+            Action next = linearizer.get(index.value);
             if (!(next instanceof BranchingAction)) next.run();
         }
         return System.currentTimeMillis() - beforePanicTime;
+        */
+        long t0 = System.currentTimeMillis();
+        if (index.value >= linearizer.size() - 1) return 0;
+        // we are sure that the next action is a RestoreStateAction
+        do {
+            index.value++;
+            Action next = linearizer.get(index.value);
+            if (!(next instanceof BranchingAction)) next.run(); // only do push/pop
+        } while (!stoppingCondition.getAsBoolean() && index.value < linearizer.size());
+        return System.currentTimeMillis() - t0;
     }
 
     public SearchStatistics replay(DFSLinearizer linearizer, CPVar[] variables) {
@@ -205,41 +216,35 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         sm.withNewState(() -> {
             try {
                 subjectTo.run();
-                State<Boolean> isFailed = sm.makeStateRef(false);
+                State<Boolean> consistentState = sm.makeStateRef(true);
                 IntRef index = new IntRef();
                 index.value = 0;
                 long panicTime = 0;
-                while (index.value < linearizer.branchingActions.size()) {
-                    onNodeVisit.run();
-                    Action action = linearizer.branchingActions.get(index.value);
+                while (index.value < linearizer.size()) {
+                    Action action = linearizer.get(index.value);
                     if (action instanceof BranchingAction) {
+                        onNodeVisit.run(); // filter the objective
                         statistics.incrNodes();
                     }
-
                     try {
                         action.run();
                     } catch (InconsistencyException e) {
-                        isFailed.setValue(true);
+                        consistentState.setValue(false);
                     }
-
-                    if (isFailed.value()) {
+                    if (!consistentState.value()) {
+                        // failure => apply trail operations only until consistency is restored
                         statistics.incrFailures();
                         notifyFailure();
-                        if (index.value < linearizer.branchingActions.size() - 1) {
-                            Action next = linearizer.branchingActions.get(index.value + 1);
-                            if (!(next instanceof RestoreStateAction)) {
-                                panicTime += panic(() -> isFailed.value(), linearizer.branchingActions.toArray(new Action[0]), index);
-                            }
-                        }
-
+                        panicTime += panic(consistentState::value, linearizer, index);
                     } else if (allFixed(variables)) {
+                        // all variables are fixed => apply trail operations only until not all variables are fixed anymore
                         statistics.incrSolutions();
                         notifySolution();
-                        panicTime += panic(() -> allFixed(variables), linearizer.branchingActions.toArray(new Action[0]), index);
+                        panicTime += panic(() -> !allFixed(variables), linearizer, index);
                     }
                     index.value++;
                 }
-                if (index.value == linearizer.branchingActions.size()) {
+                if (index.value == linearizer.size()) {
                     statistics.setCompleted();
                 }
             } catch (InconsistencyException ignored) {
@@ -289,7 +294,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         Runnable tighten = toTighten::tighten;
         onSolution(tighten);
         try {
-            solve(statistics, limit, () -> toTighten.filter());
+            solve(statistics, limit, toTighten::filter);
         } catch (InconsistencyException ignored) {
             ignored.printStackTrace();
         }
