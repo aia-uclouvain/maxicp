@@ -182,18 +182,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     private long panic(BooleanSupplier stoppingCondition,
                        DFSLinearizer linearizer,
                        IntRef index) {
-        /*
-        long beforePanicTime = System.currentTimeMillis();
-        while (invariant.getAsBoolean() && index.value < linearizer.size() - 1) {
-            index.value++;
-            Action next = linearizer.get(index.value);
-            if (!(next instanceof BranchingAction)) next.run();
-        }
-        return System.currentTimeMillis() - beforePanicTime;
-        */
         long t0 = System.currentTimeMillis();
         if (index.value >= linearizer.size() - 1) return 0;
-        // we are sure that the next action is a RestoreStateAction
         do {
             index.value++;
             Action next = linearizer.get(index.value);
