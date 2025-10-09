@@ -26,7 +26,7 @@ import static org.maxicp.search.Searches.EMPTY;
  */
 public class NQueensReplay {
     public static void main(String[] args) {
-        int n = 8;
+        int n = 13;
 
         CPSolver cp = CPFactory.makeSolver();
         CPIntVar[] q = CPFactory.makeIntVarArray(cp, n, n);
@@ -42,16 +42,20 @@ public class NQueensReplay {
 
         DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(q));
 
-        SearchStatistics stats = search.solve(linearizer);
+        SearchStatistics stats0 = search.solve();
 
-        System.out.format("Statistics: %s\n", stats);
+        System.out.format("Original Statistics: %s\n", stats0);
+
+        SearchStatistics stats1 = search.solve(linearizer);
+
+        System.out.format("Statistics Replay: %s\n", stats1);
 
         SearchStatistics stats2 = search.replaySubjectTo(linearizer, q, () -> {
             cp.post(allDifferentDC(q));
             cp.post(allDifferentDC(qL));
             cp.post(allDifferentDC(qR));
         });
-        System.out.println("Replay stats: " + stats2);
+        System.out.println("Statistics Replay with DC AllDiff: " + stats2);
 
 
 
