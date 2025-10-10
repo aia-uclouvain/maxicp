@@ -7,6 +7,7 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.scheduling.HeadTailConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -82,6 +83,7 @@ public class JobShopSeqVar {
             }
             machineIntervals[m] = machineActivities.toArray(new CPIntervalVar[0]);
             seqVars[m] = nonOverlapSequence(machineIntervals[m]);
+            //cp.post(new HeadTailConstraint(machineIntervals[m]));
         }
 
 

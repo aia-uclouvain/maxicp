@@ -11,6 +11,7 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
+import org.maxicp.cp.engine.constraints.scheduling.HeadTailConstraint;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
@@ -78,7 +79,8 @@ public class JobShop {
                     }
                 };
             }
-            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            //cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            cp.post(new HeadTailConstraint(machineActivities.toArray(new CPIntervalVar[0])));
         }
 
 

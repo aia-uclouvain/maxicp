@@ -6,9 +6,11 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.modeling.algebra.scheduling.*;
 import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -39,7 +41,6 @@ public class NoOverlap extends AbstractCPConstraint {
                 precedences.add(binary.before);
             }
         }
-        this.precedences = precedences.toArray(new CPBoolVar[0]);
         getSolver().post(new NoOverlapGlobal(vars));
     }
 
@@ -68,6 +69,7 @@ class NoOverlapGlobal extends AbstractCPConstraint {
     int n;
 
     NoOverlapLeftToRight globalFilter;
+    HeadTailLeftToRight headTailFilter;
 
     NoOverlapGlobal(CPIntervalVar... vars) {
         super(vars[0].getSolver());
@@ -93,7 +95,6 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         n = activities.fillArray(iterator);
         for (int iter = 0; iter < n; iter++) {
             int i = iterator[iter];
-            ;
             CPIntervalVar act = intervals[i];
             startMin[iter] = act.startMin();
             endMax[iter] = act.endMax();
@@ -101,7 +102,6 @@ class NoOverlapGlobal extends AbstractCPConstraint {
             isOptional[iter] = !act.isPresent();
             assert (!act.isAbsent());
         }
-
     }
 
     private void filter() {
