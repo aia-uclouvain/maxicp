@@ -187,7 +187,7 @@ public class DistanceNewTest extends CPSolverTest {
         // computes the best cost at every node in the search tree and checks if it can be obtained
         // (this is quite slow ;-) )
         Supplier<Runnable[]> checker = () -> {
-            CostAndSequence costAndSequence =  bestCostFor(seqVar, transitions, roughUpperBound);
+            CostAndSequence costAndSequence = bestCostFor(seqVar, transitions, roughUpperBound);
             int bestCost = costAndSequence.cost;
             int lb = distance.min();
             if (lb > bestCost) {
@@ -207,7 +207,7 @@ public class DistanceNewTest extends CPSolverTest {
         AtomicInteger bestCostFound = new AtomicInteger(Integer.MAX_VALUE);
         search.onSolution(() -> bestCostFound.set(distance.min()));
         SearchStatistics stats = search.optimize(travelCost);
-        assertEquals(best.cost,  bestCostFound.get());
+        assertEquals(best.cost, bestCostFound.get());
     }
 
     /**
@@ -247,7 +247,10 @@ public class DistanceNewTest extends CPSolverTest {
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
             nNodes, seed
-                7,      1
+                7, 3
+                6,      10
+                10, 3
+                10, 6
                 25,     1
                 25,     2
                 25,     42
@@ -273,8 +276,8 @@ public class DistanceNewTest extends CPSolverTest {
         // search using bound computation
         StatsAndSolution resultsWithBounds = searchWith(seqVar, distance, transitions,
                 () -> cp.post(new DistanceNew(seqVar, transitions, distance)));
-
         // compare the 2 searches
+
         assertEquals(resultsNoBounds.cost, resultsWithBounds.cost, "The optimal solutions must be the same no matter the constraint used");
         assertTrue(resultsWithBounds.stats.numberOfNodes() <= resultsNoBounds.stats.numberOfNodes(),
                 "The search should explore strictly less nodes when using bound computation (in optimization)");
@@ -282,13 +285,17 @@ public class DistanceNewTest extends CPSolverTest {
                 "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
     }
 
-    private record CostAndSequence(int cost, int[] sequence) {};
+    private record CostAndSequence(int cost, int[] sequence) {
+    }
+
+    ;
 
     /**
      * Gives the minimum distance cost for a given sequence variable.
      * This works by creating a copy of the sequence and computing the best solution through a DFS - so it's very slow
+     *
      * @param seqVar sequence on which the minimum cost must be computed
-     * @param dist transition cost between nodes
+     * @param dist   transition cost between nodes
      * @return best transition cost between nodes
      */
     private CostAndSequence bestCostFor(CPSeqVar seqVar, int[][] dist, int roughUpperBound) {
@@ -303,7 +310,7 @@ public class DistanceNewTest extends CPSolverTest {
         search.onSolution(() -> {
             nMember.set(copy.fillNode(sequence, SeqStatus.MEMBER_ORDERED));
             int cost = 0;
-            for (int i = 0; i < nMember.get() - 1 ; i++) {
+            for (int i = 0; i < nMember.get() - 1; i++) {
                 cost += dist[sequence[i]][sequence[i + 1]];
             }
             bestCost.set(cost);
@@ -326,7 +333,7 @@ public class DistanceNewTest extends CPSolverTest {
         // enforces the current ordering
         int nMember = seqVar.fillNode(nodes, SeqStatus.MEMBER_ORDERED);
         for (int i = 1; i < nMember - 1; i++)
-            copy.insert(nodes[i-1], nodes[i]);
+            copy.insert(nodes[i - 1], nodes[i]);
         // requires nodes
         int nRequired = seqVar.fillNode(nodes, SeqStatus.REQUIRED);
         for (int i = 0; i < nRequired; i++)
@@ -339,7 +346,7 @@ public class DistanceNewTest extends CPSolverTest {
         int nInsertable = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
         for (int i = 0; i < nInsertable; i++) {
             int node = nodes[i];
-            for (int pred = seqVar.start() ; pred != seqVar.end() ; pred = seqVar.memberAfter(pred)) {
+            for (int pred = seqVar.start(); pred != seqVar.end(); pred = seqVar.memberAfter(pred)) {
                 if (!seqVar.hasInsert(pred, node)) {
                     copy.notBetween(pred, node, seqVar.memberAfter(pred));
                 }
@@ -386,7 +393,7 @@ public class DistanceNewTest extends CPSolverTest {
         CPSolver cp = makeSolver();
         int nNodes = 5;
         CPSeqVar seqVar = makeSeqVar(cp, nNodes, 0, 2);
-        for (int n = 0 ; n < nNodes ; n++) {
+        for (int n = 0; n < nNodes; n++) {
             seqVar.require(n);
         }
         /*
@@ -407,7 +414,7 @@ public class DistanceNewTest extends CPSolverTest {
         // sequence: 0 -> 1 -> 2
         // must insert nodes 1 and 2
         // the best sequence is 0 -> 1 -> 3 -> 4 -> 2
-        int[] bestPath = new int[] {0, 1, 3, 4, 2};
+        int[] bestPath = new int[]{0, 1, 3, 4, 2};
         int bestCost = 0;
         for (int i = 0; i < nNodes - 1; i++)
             bestCost += distMatrix[bestPath[i]][bestPath[i + 1]];

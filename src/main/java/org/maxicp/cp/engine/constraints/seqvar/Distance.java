@@ -73,6 +73,8 @@ public class Distance extends AbstractCPConstraint {
         }
         int maxDetour = totalDist.max() - d;
         // filter invalid insertions
+//        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@");
+//        System.out.println(seqVar);
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
         for (int i = 0 ; i < nInsertable ; i++) {
             int node = nodes[i];

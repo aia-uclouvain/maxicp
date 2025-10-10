@@ -20,13 +20,12 @@ public class MinCostMaxFlow {
 
     private final int INF
             = Integer.MAX_VALUE;
-    private final int H;
+    private int H;
 
     private int totalCost;
     private int totalFlow;
 
-    private final int[] result= new int[2];
-
+    private final int[] result = new int[2];
 
 
     public MinCostMaxFlow(int H, int numNodes) {
@@ -39,6 +38,22 @@ public class MinCostMaxFlow {
         this.dad = new int[numNodes];
         this.pi = new int[numNodes];
     }
+
+    public MinCostMaxFlow(int numNodes) {
+        this.numNodes = numNodes;
+
+        this.found = new boolean[numNodes];
+        this.flow = new int[numNodes][numNodes];
+        this.dist = new int[numNodes + 1];
+        this.dad = new int[numNodes];
+        this.pi = new int[numNodes];
+    }
+
+    public boolean run(int H, int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
+        this.H = H;
+        return run(source, dest, capMaxNetworkFlow, costNetworkFlow);
+    }
+
 
     public boolean run(int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
         this.cost = costNetworkFlow;
