@@ -34,4 +34,5 @@ module org.maxicp {
     requires xcsp3.tools;
     requires java.xml;
     requires java.compiler;
+    requires commons.cli;
 }

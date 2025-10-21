@@ -12,6 +12,7 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -23,7 +24,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
     protected Supplier<T[]> branching;
     protected StateManager sm;
 
-    protected List<Runnable> solutionListeners = new LinkedList<Runnable>();
+    protected List<Consumer<SearchStatistics>> solutionListeners = new LinkedList<Consumer<SearchStatistics>>();
     protected List<Runnable> failureListeners = new LinkedList<Runnable>();
 
     public AbstractSearchMethod(StateManager sm, Supplier<T[]> branching) {
@@ -36,7 +37,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      *
      * @param listener the closure to be called whenever a solution is found
      */
-    public void onSolution(Runnable listener) {
+    public void onSolution(Consumer<SearchStatistics> listener) {
         solutionListeners.add(listener);
     }
 
@@ -53,8 +54,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         failureListeners.add(listener);
     }
 
-    protected void notifySolution() {
-        solutionListeners.forEach(Runnable::run);
+    protected void notifySolution(SearchStatistics stats) {
+        solutionListeners.forEach(c -> c.accept(stats));
     }
 
     protected void notifyFailure() {

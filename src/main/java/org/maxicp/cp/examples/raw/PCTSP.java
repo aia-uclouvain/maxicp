@@ -181,8 +181,8 @@ public class PCTSP {
     public static class PCTSPInstance {
 
         public int n; // number of nodes
-        int[] prize;
-        int[] penalty;
+        public int[] prize;
+        public int[] penalty;
         public int[][] travelCosts;
 
         public PCTSPInstance(String filePath) {
