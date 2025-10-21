@@ -1,4 +1,4 @@
-timeout=60  # timeout in seconds
+timeout=3  # timeout in seconds
 iter=1   # number of iterations per config, to take randomness into account
 # compile the project and run the unit tests
 echo "compiling and running tests..."

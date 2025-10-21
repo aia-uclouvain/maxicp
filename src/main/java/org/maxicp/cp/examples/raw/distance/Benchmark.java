@@ -3,6 +3,8 @@ package org.maxicp.cp.examples.raw.distance;
 import org.apache.commons.cli.*;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.DistanceNew;
+import org.maxicp.cp.engine.constraints.seqvar.distance.DistanceMinInputSum;
+import org.maxicp.cp.engine.constraints.seqvar.distance.DistanceOriginal;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.search.DFSearch;
@@ -93,8 +95,8 @@ public abstract class Benchmark {
 
     public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength) {
         switch (variant) {
-            case ORIGINAL -> seqVar.getSolver().post(new Distance(seqVar, distance, totLength));
-            case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceNew(seqVar, distance, totLength));
+            case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
+            case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputSum(seqVar, distance, totLength));
             case MEAN_INPUT_AND_OUTPUT_SUM -> {
             }
             case MIN_DETOUR -> {
