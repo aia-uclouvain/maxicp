@@ -183,12 +183,12 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                        DFSLinearizer linearizer,
                        IntRef index) {
         long t0 = System.currentTimeMillis();
-        if (index.value >= linearizer.size() - 1) return 0;
+        if (index.value > linearizer.size() - 1) return 0;
         do {
             index.value++;
             Action next = linearizer.get(index.value);
             if (!(next instanceof BranchingAction)) next.run(); // only do push/pop
-        } while (!stoppingCondition.getAsBoolean() && index.value < linearizer.size());
+        } while (!stoppingCondition.getAsBoolean() && index.value < linearizer.size() - 1);
         return System.currentTimeMillis() - t0;
     }
 
