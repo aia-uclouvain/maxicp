@@ -135,6 +135,6 @@ public class PCTSPBench extends Benchmark {
      * @param args
      */
     public static void main(String[] args) {
-        new  PCTSPBench(args).solve();
+        new PCTSPBench(args).solve();
     }
 }

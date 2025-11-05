@@ -9,7 +9,7 @@ launch_solver=" java -cp target/maxicp-0.0.1-jar-with-dependencies.jar org.maxic
 currentDate=$(date +%Y-%m-%d_%H-%M-%S);
 gitShortHash=$(git rev-parse --short HEAD)
 outFileOpt="results/pctsp/pctsp-${currentDate}-${gitShortHash}"
-declare -a distanceType=("ORIGINAL" "MIN_INPUT_SUM")  # -m, each type of distance constraint to try
+declare -a distanceType=("ORIGINAL" "MIN_INPUT_SUM" "MEAN_INPUT_AND_OUTPUT_SUM" "MIN_DETOUR" "MST" "MATCHING_SUCCESSOR")  # -m, each type of distance constraint to try
 mkdir -p "results/pctsp"  # where the results will be written
 rm -f $outFileOpt  # delete filename of the results if it already existed (does not delete past results, unless their datetime is the same)
 # the solver must print only one line when it is finished, otherwise we won't get a CSV at the end
@@ -19,7 +19,7 @@ rm -f $outFileOpt  # delete filename of the results if it already existed (does 
 echo "class | instance | variant | best_obj | timeout | runtime | n_nodes | n_failures | n_sols | is_completed | solution_list | args " >> $outFileOpt
 echo "writing inputs"
 # write all the configs into a temporary file
-inputFile="inputFileDARPOpt"
+inputFile="inputFilePCTSPOpt"
 rm -f $inputFile  # delete previous temporary file if it existed
 for (( i=1; i<=$iter; i++ ))  # for each iteration
 do
@@ -39,5 +39,5 @@ echo "launching experiments in parallel"
 # the number ({1}, {2}) corresponds to the columns present in the inputFile, beginning at index 1 (i.e. in this case 2 columns, so 1 and 2 are valid columns)
 cat $inputFile | parallel -j 2 --colsep ',' $launch_solver -f {1} -m {2} -t $timeout -v 0 >> $outFileOpt
 # delete the temporary file
-echo "experiments have been run"
+echo "experiments have been run. Results are at ${outFileOpt}"
 rm -f $inputFile

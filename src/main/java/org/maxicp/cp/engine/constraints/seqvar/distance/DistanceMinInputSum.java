@@ -22,6 +22,7 @@ public class DistanceMinInputSum extends AbstractDistance {
         int nRequired = seqVar.fillNode(nodes, REQUIRED);
         for (int i = 0; i < nRequired; i++) {
             int node = nodes[i];
+            costMinRequiredPred[node] = Integer.MAX_VALUE;
             int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
             for (int j = 0; j < nPred; j++) {
                 int pred = inserts[j];
@@ -29,9 +30,8 @@ public class DistanceMinInputSum extends AbstractDistance {
                     costMinRequiredPred[node] = dist[pred][node];
                 }
             }
-            if (costMinRequiredPred[node] < Integer.MAX_VALUE) {
+            if (costMinRequiredPred[node] < Integer.MAX_VALUE)
                 totalMinPred += costMinRequiredPred[node];
-            }
         }
 
         // remove the lower bound on the total distance

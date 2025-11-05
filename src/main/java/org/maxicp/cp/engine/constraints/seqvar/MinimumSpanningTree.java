@@ -45,12 +45,12 @@ public class MinimumSpanningTree {
             int u = minKey(key, inMST);
 
             inMST[u] = true;
-                for (int v = 0; v < numNodes; v++) {
-                    if (adjacencyMatrix[u][v] == 1 && !inMST[v] && cost[u][v] < key[v]) {
-                        predsInMST[v] = u;
-                        key[v] = cost[u][v];
-                    }
+            for (int v = 0; v < numNodes; v++) {
+                if (adjacencyMatrix[u][v] == 1 && !inMST[v] && cost[u][v] < key[v]) {
+                    predsInMST[v] = u;
+                    key[v] = cost[u][v];
                 }
+            }
 
         }
     }

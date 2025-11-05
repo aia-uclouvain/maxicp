@@ -14,6 +14,7 @@ public abstract class AbstractDistance extends AbstractCPConstraint {
     protected final int[] inserts;
     protected final int[][] dist;
     protected final CPIntVar totalDist;
+    protected int currentDist;
 
     public AbstractDistance(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar.getSolver());
@@ -46,29 +47,29 @@ public abstract class AbstractDistance extends AbstractCPConstraint {
 
     @Override
     public void post() {
-        propagate();
         seqVar.propagateOnInsert(this);
         seqVar.propagateOnFix(this);
         totalDist.propagateOnBoundChange(this);
+        propagate();
     }
 
     @Override
     public void propagate() {
         // update the current distance
         int nMember = seqVar.fillNode(nodes, MEMBER_ORDERED);
-        int d = 0;
+        currentDist = 0;
         for (int i = 0 ; i < nMember-1 ; ++i) {
-            d += dist[nodes[i]][nodes[i+1]];
+            currentDist += dist[nodes[i]][nodes[i+1]];
         }
         if (seqVar.isFixed()) {
-            totalDist.fix(d);
+            totalDist.fix(currentDist);
             setActive(false);
             return;
         } else {
-            totalDist.removeBelow(d);
+            totalDist.removeBelow(currentDist);
             updateLowerBound();
         }
-        int maxDetour = totalDist.max() - d;
+        int maxDetour = totalDist.max() - currentDist;
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
         for (int i = 0 ; i < nInsertable ; i++) {
             int node = nodes[i];

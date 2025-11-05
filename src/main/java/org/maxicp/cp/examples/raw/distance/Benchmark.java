@@ -3,8 +3,7 @@ package org.maxicp.cp.examples.raw.distance;
 import org.apache.commons.cli.*;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.DistanceNew;
-import org.maxicp.cp.engine.constraints.seqvar.distance.DistanceMinInputSum;
-import org.maxicp.cp.engine.constraints.seqvar.distance.DistanceOriginal;
+import org.maxicp.cp.engine.constraints.seqvar.distance.*;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.search.DFSearch;
@@ -97,16 +96,11 @@ public abstract class Benchmark {
         switch (variant) {
             case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
             case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputSum(seqVar, distance, totLength));
-            case MEAN_INPUT_AND_OUTPUT_SUM -> {
-            }
-            case MIN_DETOUR -> {
-            }
-            case MST -> {
-            }
-            case MATCHING_SUCCESSOR -> {
-            }
-            case MATCHING_SUCCESSOR_LAGRANGIAN -> {
-            }
+            case MEAN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputAndOutputSum(seqVar, distance, totLength));
+            case MIN_DETOUR -> seqVar.getSolver().post(new DistanceMinDetourSum(seqVar, distance, totLength));
+            case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));
+            case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
+            case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new RuntimeException("not yet implemented");
         }
     }
 
@@ -132,16 +126,21 @@ public abstract class Benchmark {
     }
 
     public void solve() {
-        initialTimeMS = System.currentTimeMillis();
-        // initialize the model
-        makeModel(instancePath);
-        // make the search and add listeners
-        DFSearch search = makeDFSearch();
-        Objective objective = makeObjective();
-        addSearchListeners(search);
-        // solve the problem
-        statistics = search.optimize(objective, s -> isTimeout());
-        System.out.println(this);
+        try {
+            initialTimeMS = System.currentTimeMillis();
+            // initialize the model
+            makeModel(instancePath);
+            // make the search and add listeners
+            DFSearch search = makeDFSearch();
+            Objective objective = makeObjective();
+            addSearchListeners(search);
+            // solve the problem
+            statistics = search.optimize(objective, s -> isTimeout());
+            System.out.println(this);
+        } catch (Exception e) {
+            System.out.println(String.join(" ", args) + " | crashed");
+            e.printStackTrace();
+        }
     }
 
     private static void bellmanFord(int numNodes, int edgeCount, int[][] edges, int src, long[] dist) throws Exception {
