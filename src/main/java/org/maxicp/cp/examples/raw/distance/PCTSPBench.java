@@ -12,6 +12,9 @@ import org.maxicp.search.Objective;
 import org.maxicp.search.Searches;
 
 import java.util.Arrays;
+import java.util.OptionalInt;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.CPFactory.ge;
@@ -52,12 +55,13 @@ public class PCTSPBench extends Benchmark {
                 () -> {
                     if (tour.isFixed())
                         return EMPTY;
-                    // select node with minimum number of insertions points
+                    // select node with minimum number of insertions points.
+                    // Ties are broken by selecting the node with smallest id
                     int nUnfixed = tour.fillNode(nodes, INSERTABLE);
-                    int node = Searches.selectMin(nodes, nUnfixed, i -> true, tour::nInsert).getAsInt();
+                    int node = selectMin(nodes, nUnfixed, i -> true, tour::nInsert).getAsInt();
                     // get the insertion of the node with the smallest detour cost
                     int nInsert = tour.fillInsert(node, nodes);
-                    int bestPred = Searches.selectMin(nodes, nInsert, pred -> true,
+                    int bestPred = selectMin(nodes, nInsert, pred -> true,
                             pred -> {
                                 int succ = tour.memberAfter(node);
                                 return distance[pred][node] + distance[node][succ] - distance[pred][succ];
@@ -67,10 +71,23 @@ public class PCTSPBench extends Benchmark {
                     // either use the insertion to form bestPred -> node -> succ, or remove the detour
                     return branch(
                             () -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
-                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)),
-                            () -> cp.post(eq(required[node], 0)));
+                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
                 }
         );
+    }
+
+    /**
+     * Select min with tie breaks using the smallest int value
+     */
+    private static<N extends Comparable<N>> OptionalInt selectMin(int[] x, int n, Predicate<Integer> p, Function<Integer, N> f) {
+        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -> {
+            int comparison = f.apply(i).compareTo(f.apply(j));
+            if (comparison == 0) {
+                return Math.min(i, j);
+            } else {
+                return comparison < 0 ? i : j;
+            }
+        });
     }
 
     @Override
