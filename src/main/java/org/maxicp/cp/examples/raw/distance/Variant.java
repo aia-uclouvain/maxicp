@@ -12,4 +12,5 @@ public enum Variant {
     MST_DETOUR,
     MATCHING_SUCCESSOR, // lb = minimum matching of the successors
     MATCHING_SUCCESSOR_LAGRANGIAN, // lb = minimum matching of the successors. Attempt to create as few strongly connected components as possible through lagrangian relaxation
+    SCHEDULING,
 }

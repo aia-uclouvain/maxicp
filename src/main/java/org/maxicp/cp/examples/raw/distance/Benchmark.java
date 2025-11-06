@@ -101,6 +101,7 @@ public abstract class Benchmark {
             case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));
             case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
             case MST_DETOUR -> seqVar.getSolver().post(new DistanceMSTDetour(seqVar, distance, totLength));
+            case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
             case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new RuntimeException("not yet implemented");
         }
     }

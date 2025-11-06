@@ -385,7 +385,7 @@ public abstract class DistanceTest extends CPSolverTest {
         };
         int[][] distMatrix = positionToDistances(positions);
         // sequence: 0 -> 1 -> 2
-        // must insert nodes 1 and 2
+        // must insert nodes 3 and 4
         // the best sequence is 0 -> 1 -> 3 -> 4 -> 2
         int[] bestPath = new int[]{0, 1, 3, 4, 2};
         int bestCost = 0;
