@@ -8,7 +8,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
  */
 public class ThetaLambdaTree {
 
-    protected static final int UNDEF = -1;
+    public static final int UNDEF = -1;
 
     private static class Node {
 

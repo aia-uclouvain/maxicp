@@ -3,8 +3,10 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
+import org.maxicp.cp.engine.constraints.scheduling.ThetaLambdaTree;
 import org.maxicp.cp.engine.constraints.scheduling.ThetaTree;
 import org.maxicp.cp.engine.core.*;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -240,6 +242,7 @@ public class DistanceScheduling extends AbstractDistance {
         private int nMembers;
 
         private ThetaTree thetaTree;
+        private ThetaLambdaTree thetaLambdaTree;
 
         @Override
         public int priority() {
@@ -266,6 +269,7 @@ public class DistanceScheduling extends AbstractDistance {
             inserted = new boolean[nMax];
 
             thetaTree = new ThetaTree(nMax);
+            thetaLambdaTree = new ThetaLambdaTree(nMax);
 
             idxToNode = new int[nMax];
             nodeToIdx = new int[nMax];
@@ -304,6 +308,8 @@ public class DistanceScheduling extends AbstractDistance {
             }
             // enforce the precedences found by detectable precedence
             usePrecedencesFromDetectablePrecedences();
+            // enforce teh precedences found by edge finding
+            usePrecedencesFromEdgeFinding();
         }
 
         protected void update(int[] startMin, int[] duration, int[] endMax, int n) {
@@ -323,6 +329,46 @@ public class DistanceScheduling extends AbstractDistance {
             Arrays.sort(permEst, 0, n, Comparator.comparingInt(i -> startMin[i]));
             for (int i = 0; i < n; i++) {
                 rankEst[permEst[i]] = i;
+            }
+        }
+
+        /**
+         * @return true if one domain was changed by the edge finding algo
+         *
+         */
+        protected void usePrecedencesFromEdgeFinding() {
+            update(startMin, duration, endMax, n);
+            Arrays.fill(inserted, 0, n, true);
+            thetaLambdaTree.reset();
+            for (int i = 0; i < n; i++) {
+                int acti = permEst[i];
+                thetaLambdaTree.insertTheta(i, startMin[acti], duration[acti]);
+            }
+            Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -> -endMax[i]));
+            int j = 0;
+            int actj = permLct[j];
+            while (j < n-1) {
+                if (thetaLambdaTree.getThetaEct() > endMax[actj]) {
+                    throw InconsistencyException.INCONSISTENCY;
+                }
+                thetaLambdaTree.moveFromThetaToLambda(rankEst[actj]);
+                inserted[actj] = false;
+                actj = permLct[++j];
+                while (thetaLambdaTree.getThetaLambdaEct() > endMax[actj]) {
+                    int i = thetaLambdaTree.getResponsibleForThetaLambdaEct();
+                    if (i == ThetaLambdaTree.UNDEF) {
+                        throw InconsistencyException.INCONSISTENCY;
+                    }
+                    int acti = permEst[i];
+                    //startMin[acti] = Math.max(startMin[acti], thetaLambdaTree.getThetaEct());
+                    if (leftToRight) {
+                        afterTaskFromThetaTree(acti);
+                    } else {
+                        beforeTaskFromThetaTree(acti);
+                    }
+                    thetaLambdaTree.remove(i);
+                    inserted[acti] = false;
+                }
             }
         }
 
@@ -388,7 +434,12 @@ public class DistanceScheduling extends AbstractDistance {
             // task must come after this latest node <-> task cannot come between the start and the latest node
             if (latestNode != -1) {
                 int node = getNode(task);
+                int nInsertBefore = seqVar.nInsert(node);
                 seqVar.notBetween(seqVar.start(), node, latestNode);
+                boolean filtered = nInsertBefore != seqVar.nInsert(node);
+                if (filtered) {
+                    System.out.println("filtered detours using precedences reasoning");
+                }
             }
         }
 
@@ -414,7 +465,12 @@ public class DistanceScheduling extends AbstractDistance {
             // task must come before this earliest node <-> task cannot come between the earliest node and the end
             if (earliestNode != -1) {
                 int node = getNode(task);
+                int nInsertBefore = seqVar.nInsert(node);
                 seqVar.notBetween(earliestNode, node, seqVar.end());
+                boolean filtered = nInsertBefore != seqVar.nInsert(node);
+                if (filtered) {
+                    System.out.println("filtered detours using precedences reasoning");
+                }
             }
         }
 

@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 
-filename = "../results/pctsp/pctsp-2025-11-06_11-15-12-1f417675c"
-transpose = True  # if true, rows are the methods and columns are the instances
+filename = "../results/pctsp/pctsp-2025-11-07_11-27-44-df66e4519"
+transpose = False  # if true, rows are the methods and columns are the instances
 
 df = pd.read_csv(filename, engine="python", sep=" \\| ")
 df["instance"] = df["instance"].apply(lambda name: os.path.basename(name).split(".")[0])
@@ -64,5 +64,7 @@ for i, line in enumerate(content):
     print(" & ".join([entry.replace("_", "\\_") for entry in line]) + "\\\\")
     if i == 0:
         print("\\midrule")
+    if i == 1 and transpose:
+        print(f"\\cmidrule(rl){{1-{len(line)}}}")
 print("\\bottomrule")
 print("\\end{tabular}")
