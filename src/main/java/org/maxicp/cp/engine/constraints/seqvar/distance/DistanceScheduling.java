@@ -1,5 +1,6 @@
 package org.maxicp.cp.engine.constraints.seqvar.distance;
 
+import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
 import org.maxicp.cp.engine.constraints.scheduling.ThetaTree;
@@ -12,25 +13,19 @@ import static org.maxicp.cp.CPFactory.eq;
 import static org.maxicp.cp.CPFactory.makeIntervalVar;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
-/*
-using synchronizer:
-  bounds: 18550 nodes
-noBounds: 18982 nodes
-  bounds: 9142 nodes
-noBounds: 9564 nodes
-  bounds: 9860 nodes
-noBounds: 10184 nodes
-
-no synchronizer:
-  bounds: 18550 nodes
-noBounds: 18982 nodes
-  bounds: 9142 nodes
-noBounds: 9564 nodes
-  bounds: 9860 nodes
-noBounds: 10184 nodes
- */
-
 public class DistanceScheduling extends AbstractDistance {
+
+    /**
+     * Attach "time windows" to every node, representing the distance at which the nodes are reached.
+     * The duration of a node is the distance to its successor.
+     *
+     * NoOverlap algorithms are used to filter the time windows, which in turn may invalidate some insertions
+     *
+     * start[node] = cumulative distance at which the node is reached
+     * duration[node] = distance increment to reach the successor of the node
+     * end[node] = cumulative distance at which the successor of the node is reached
+     *
+     */
 
     CPIntervalVar[] intervals;
     int[] nodes;
@@ -59,8 +54,16 @@ public class DistanceScheduling extends AbstractDistance {
             int node = nodes[i];
             currentDistMin += dist[pred][node];
             intervals[node].setStartMin(currentDistMin);
-            //intervals[pred].setEndMin(intervals[node].startMin());
             currentDistMin = intervals[node].startMin();
+
+            if (seqVar.nSucc(pred) == 1) { // link between pred -> node is fixed
+                if (intervals[node].startMin() == intervals[node].startMax()) {
+                    intervals[pred].setEnd(intervals[node].startMin());
+                }
+                if (intervals[pred].endMin() == intervals[pred].endMax()) {
+                    intervals[node].setStart(intervals[pred].endMin());
+                }
+            }
             pred = node;
         }
         // backward pass to set the maximum start time of the intervals
@@ -70,9 +73,14 @@ public class DistanceScheduling extends AbstractDistance {
             int node = nodes[i];
             succDist -= dist[node][succ];
             intervals[node].setStartMax(succDist);
-            //intervals[node].setEndMax(intervals[succ].startMax());
             succDist = intervals[node].startMax();
             succ = node;
+        }
+
+        for (int i = 0; i < nMember - 1 ; i++) {
+            int node = nodes[i];
+            succ = nodes[i+1];
+            intervals[node].setEndMax(intervals[succ].startMax());
         }
     }
 
@@ -86,26 +94,32 @@ public class DistanceScheduling extends AbstractDistance {
         //  every time an insertion (i, j) is possible, this directly gives the earliest start time for
         //  updating j. Update j start time and mark it as processed
         //  same idea in reverse for updating the latest start time
-        int nInsertable = seqVar.fillNode(nodes, INSERTABLE_REQUIRED);
+        int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
         for (int i = 0 ; i < nInsertable ; i++) {
             int node = nodes[i];
             int nInsert = seqVar.fillInsert(node, inserts);
             int startMin = Integer.MAX_VALUE;
             int startMax = Integer.MIN_VALUE;
+            int endMax = Integer.MIN_VALUE;
             for (int j = 0 ; j < nInsert ; j++) {
                 int pred = inserts[j];
-                // track the start min
-                int reachedAt = intervals[pred].startMin() + dist[pred][node];
-                startMin = Math.min(startMin, reachedAt);
-                // track the start max
                 int succ = seqVar.memberAfter(pred);
-                int leavingAt = intervals[succ].startMax() - dist[node][succ];
-                startMax = Math.max(startMax, leavingAt);
+                // track the start
+                int reachedAtMin = intervals[pred].startMin() + dist[pred][node];
+                startMin = Math.min(startMin, reachedAtMin);
+                int reachedAtMax = intervals[succ].startMax() - dist[node][succ];
+                startMax = Math.max(startMax, reachedAtMax);
+                // track the end
+                int distSuccMax = intervals[succ].startMax();
+                endMax = Math.max(endMax, distSuccMax);
+
             }
             intervals[node].setStartMin(startMin);
             intervals[node].setStartMax(startMax);
-            // is it useful to also update the endMin and endMax?
-            // perhaps because of the variable duration this may bring new information
+            intervals[node].setEndMax(endMax);
+            // cannot update endMin in this manner: it represents the distance at which the successor is reached
+            // some successor could be inserted right after this node ; the only estimation that can be done
+            // is endMin = startMin + lengthMin, which is already enforced by the intervalVar itself
         }
     }
 
@@ -114,20 +128,21 @@ public class DistanceScheduling extends AbstractDistance {
         // first task is always the start node
         intervals[seqVar.start()].setPresent();
         intervals[seqVar.start()].setStart(0);
-        // last task is always the end node and has a duration of 0
+        // last task is always the end node and has a duration of 0 (no successor)
         intervals[seqVar.end()].setPresent();
         intervals[seqVar.end()].setLength(0);
         // update the duration of each interval based on its successor in the sequence
         for (int node = 0 ; node < nNodes ; node++) {
+            intervals[node].setEndMax(totalDist.max());
             if (node != seqVar.end()) { // no need to track the successor of the end node: there is none
-                getSolver().post(new IntervalDuration(node), false);
+                getSolver().post(new IntervalChanneling(node), false);
             }
             intervals[node].propagateOnChange(this);
         }
         // post a disjunctive constraint where the nodes are linked to optional tasks intervals
         getSolver().post(new NoOverlap(intervals), false);
-        //getSolver().post(new NoOverlapSynchronizer(true), false);
-        //getSolver().post(new NoOverlapSynchronizer(false), false);
+        getSolver().post(new NoOverlapChanneling(true), false);
+        getSolver().post(new NoOverlapChanneling(false), false);
         // end task == total distance
         getSolver().post(eq(CPFactory.end(intervals[seqVar.end()]), totalDist), false);
         super.post();
@@ -167,13 +182,13 @@ public class DistanceScheduling extends AbstractDistance {
     /**
      * Updates the duration of an interval task based on its related node in the sequence
      */
-    private class IntervalDuration extends AbstractCPConstraint {
+    private class IntervalChanneling extends AbstractCPConstraint {
 
         int me; // id of the node related to this constraint
         CPIntervalVar interval;
         CPNodeVar node;
 
-        public IntervalDuration(int node) {
+        public IntervalChanneling(int node) {
             super(DistanceScheduling.this.getSolver());
             this.me = node;
             interval = intervals[me];
@@ -184,14 +199,14 @@ public class DistanceScheduling extends AbstractDistance {
         public void post() {
             interval.getSolver().post(eq(interval.status(), node.isRequired()), false);
             node.propagateOnInsertRemoved(this);
-            node.propagateOnInsert(this);
+            seqVar.propagateOnInsert(this);
             interval.propagateOnChange(this);
             propagate();
         }
 
         @Override
         public void propagate() {
-            if (interval.isAbsent()) {
+            if (interval.isAbsent() || node.isNode(EXCLUDED)) {
                 setActive(false);
             } else {
                 // inspects the current successor and updates the duration accordingly
@@ -210,7 +225,7 @@ public class DistanceScheduling extends AbstractDistance {
         }
     }
 
-    private class NoOverlapSynchronizer extends AbstractCPConstraint {
+    private class NoOverlapChanneling extends AbstractCPConstraint {
 
         public int[] startMin, endMax;
         private boolean leftToRight;
@@ -219,12 +234,20 @@ public class DistanceScheduling extends AbstractDistance {
         private Integer[] permEst, rankEst, permLct, permLst, permEct;
 
         private boolean[] inserted;
-        private int[] iterator;
+        private int[] idxToNode;
+        private int[] nodeToIdx;
+        private int[] members;
+        private int nMembers;
 
         private ThetaTree thetaTree;
 
+        @Override
+        public int priority() {
+            // ensures that this always runs after the detectable precedence filtering
+            return Constants.PIORITY_SLOW;
+        }
 
-        public NoOverlapSynchronizer(boolean leftToRight) {
+        public NoOverlapChanneling(boolean leftToRight) {
             super(DistanceScheduling.this.getSolver());
             this.leftToRight = leftToRight;
 
@@ -244,7 +267,9 @@ public class DistanceScheduling extends AbstractDistance {
 
             thetaTree = new ThetaTree(nMax);
 
-            iterator = new int[nMax];
+            idxToNode = new int[nMax];
+            nodeToIdx = new int[nMax];
+            members = new int[nMax];
 
         }
 
@@ -253,15 +278,21 @@ public class DistanceScheduling extends AbstractDistance {
             seqVar.propagateOnInsert(this);
             seqVar.propagateOnRequire(this);
             seqVar.propagateOnInsertRemoved(this);
+            for (CPIntervalVar var : intervals) {
+                var.propagateOnChange(this);
+            }
             propagate();
         }
 
         @Override
         public void propagate() {
             // fill the mapping array with the nodes that are required
-            n = seqVar.fillNode(iterator, REQUIRED);
+            n = seqVar.fillNode(idxToNode, REQUIRED);
+            nMembers = seqVar.fillNode(members, MEMBER_ORDERED);
             for (int i = 0 ; i < n ; i++) {
-                CPIntervalVar interval = intervals[iterator[i]];
+                int node = idxToNode[i];
+                nodeToIdx[node] = i;
+                CPIntervalVar interval = intervals[node];
                 if (leftToRight) {
                     startMin[i] = interval.startMin();
                     endMax[i] = interval.endMax();
@@ -344,26 +375,21 @@ public class DistanceScheduling extends AbstractDistance {
             if (seqVar.isNode(getNode(task), MEMBER)) {
                 return;
             }
-            // find the latest member node that is currently in the theta-tree, using the time windows
+            // find the latest member node being inserted in the theta-tree
             int latestNode = -1;
-            int latestStart = -1;
-            for (int i = 0 ; i < n ; i++) {
-                int node = getNode(i);
-                if (inserted[i] && i != task && seqVar.isNode(node, MEMBER) && startMin[i] > latestStart) {
-                    latestStart = startMin[i];
+            for (int i = nMembers - 1; i >= 0; i--) {
+                int node = members[i];
+                int idx = getIndex(node);
+                if (inserted[idx] && idx != task) {
                     latestNode = node;
+                    break;
                 }
             }
             // task must come after this latest node <-> task cannot come between the start and the latest node
             if (latestNode != -1) {
-                //System.out.println("seqvar: " + seqVar);
-                //System.out.println("notBetween(" + seqVar.start() + ", " + getNode(task) + ", " + latestNode + ")");
-                seqVar.notBetween(seqVar.start(), getNode(task), latestNode);
+                int node = getNode(task);
+                seqVar.notBetween(seqVar.start(), node, latestNode);
             }
-        }
-
-        private int getNode(int task) {
-            return iterator[task];
         }
 
         /**
@@ -375,20 +401,29 @@ public class DistanceScheduling extends AbstractDistance {
             if (seqVar.isNode(getNode(task), MEMBER)) {
                 return;
             }
-            // find the earliest member node that is currently in the theta-tree, using the time windows
+            // find the earliest member node that is currently in the theta-tree
             int earliestNode = -1;
-            int earliestStart = Integer.MAX_VALUE;
-            for (int i = 0 ; i < n ; i++) {
-                int node = getNode(i);
-                if (inserted[i] && i != task && seqVar.isNode(node, MEMBER) && startMin[i] < earliestStart) {
-                    earliestStart = startMin[i];
+            for (int i = 0; i < nMembers; i++) {
+                int node = members[i];
+                int idx = getIndex(node);
+                if (inserted[idx] && idx != task) {
                     earliestNode = node;
+                    break;
                 }
             }
             // task must come before this earliest node <-> task cannot come between the earliest node and the end
             if (earliestNode != -1) {
-                seqVar.notBetween(earliestNode, getNode(task), seqVar.end());
+                int node = getNode(task);
+                seqVar.notBetween(earliestNode, node, seqVar.end());
             }
+        }
+
+        private int getNode(int idx) {
+            return idxToNode[idx];
+        }
+
+        private int getIndex(int node) {
+            return nodeToIdx[node];
         }
 
     }
