@@ -89,7 +89,7 @@ public class DistanceScheduling extends AbstractDistance {
     /**
      * Updates the domains of the intervals
      */
-    private void updateStartRequiredInsertable() {
+    private void updateStartInsertable() {
         // TODO could be done more efficiently:
         //  maintain a list of the insertable required nodes that have been updated
         //  iterate over the sequence in order
@@ -114,7 +114,6 @@ public class DistanceScheduling extends AbstractDistance {
                 // track the end
                 int distSuccMax = intervals[succ].startMax();
                 endMax = Math.max(endMax, distSuccMax);
-
             }
             intervals[node].setStartMin(startMin);
             intervals[node].setStartMax(startMax);
@@ -122,6 +121,80 @@ public class DistanceScheduling extends AbstractDistance {
             // cannot update endMin in this manner: it represents the distance at which the successor is reached
             // some successor could be inserted right after this node ; the only estimation that can be done
             // is endMin = startMin + lengthMin, which is already enforced by the intervalVar itself
+        }
+    }
+
+    /**
+     * Each required and insertable node must be added somewhere.
+     *
+     * This adds to the start time of their latest successor the cost of minimum detour to reach them
+     */
+    private void addMinDetoursToCurrentStart() {
+        int[] startMin = new int[seqVar.nNode()];
+        int[] startMax = new int[seqVar.nNode()];
+        int[] minDetours = new int[seqVar.nNode()];
+        int[] earliest = new int[seqVar.nNode()];
+        int[] latest = new int[seqVar.nNode()];
+        Arrays.fill(minDetours, Integer.MAX_VALUE);
+        Arrays.fill(earliest, -1);
+        Arrays.fill(latest, -1);
+        int nInsertableRequired = seqVar.fillNode(inserts, INSERTABLE_REQUIRED);
+        int nMember = seqVar.fillNode(nodes, MEMBER_ORDERED);
+        // track the start min of the nodes, only based on traveled distance
+        int pred = nodes[0];
+        int currentDistMin = 0;
+        for (int i = 1; i < nMember; i++) {
+            int node = nodes[i];
+            currentDistMin += dist[pred][node];
+            startMin[node] = currentDistMin; // only based on traveled distance
+            pred = node;
+        }
+        // track the start max of the nodes, only based on the traveled distance
+        int succDist = totalDist.max();
+        int succ = nodes[nMember-1];
+        for (int i = nMember - 2 ; i >= 0 ; i--) {
+            int node = nodes[i];
+            succDist -= dist[node][succ];
+            startMax[node] = succDist; // only based on traveled distance
+            succ = node;
+        }
+        // for each insertable and required node, tracks its
+        // - earliest node for insertion
+        // - latest node for insertion
+        // - detour with minimum cost
+        for (int i = 0 ; i < nMember - 1 ; i++) {
+            int node = nodes[i];
+            succ = nodes[i+1];
+            for (int j = 0 ; j < nInsertableRequired ; j++) {
+                int toInsert = inserts[j];
+                if (seqVar.hasInsert(node, toInsert)) {
+                    // updates the minimum detour
+                    int detour = dist[node][toInsert] + dist[toInsert][succ] - dist[node][succ];
+                    minDetours[toInsert] = Math.min(minDetours[toInsert], detour);
+                    // track the earliest node that can be used for inserting this one
+                    if (earliest[toInsert] == -1) {
+                        earliest[toInsert] = node;
+                    }
+                    // track the latest node that can be used to inserting this one
+                    latest[toInsert] = node;
+                }
+            }
+        }
+        // update the start min and start max of the member nodes
+        for (int i = 0 ; i < nInsertableRequired ; i++) {
+            int toInsert = inserts[i];
+
+            // add start min delay to latest successor: one insertion must occur to add the node
+            int latestSuccessor = seqVar.memberAfter(latest[toInsert]);
+            CPIntervalVar latestSuccessorInterval = intervals[latestSuccessor];
+            latestSuccessorInterval.setStartMin(startMin[latestSuccessor] + minDetours[toInsert]);
+
+            // add start max delay to earliest predecessor: one insertion must occur to add the node
+            int earliestPredecessor = earliest[toInsert];
+            CPIntervalVar earliestPredecessorInterval = intervals[earliestPredecessor];
+            // the node will at least be inserted with its minimum detour cost,
+            // restricting the start time of its earliest predecessor
+            earliestPredecessorInterval.setStartMax(startMax[earliestPredecessor] - minDetours[toInsert]);
         }
     }
 
@@ -137,14 +210,17 @@ public class DistanceScheduling extends AbstractDistance {
         for (int node = 0 ; node < nNodes ; node++) {
             intervals[node].setEndMax(totalDist.max());
             if (node != seqVar.end()) { // no need to track the successor of the end node: there is none
+                // link an interval variable to its corresponding node in the sequence
+                // this updates the length of the interval based on the successors of the node
                 getSolver().post(new IntervalChanneling(node), false);
             }
             intervals[node].propagateOnChange(this);
         }
         // post a disjunctive constraint where the nodes are linked to optional tasks intervals
         getSolver().post(new NoOverlap(intervals), false);
-        getSolver().post(new NoOverlapChanneling(true), false);
-        getSolver().post(new NoOverlapChanneling(false), false);
+        // enforce the precedences found by the disjunctive onto the sequence
+        getSolver().post(new NoOverlapChanneling(true), false); // forward precedences (i < j)
+        getSolver().post(new NoOverlapChanneling(false), false); // backward precedences (j < i)
         // end task == total distance
         getSolver().post(eq(CPFactory.end(intervals[seqVar.end()]), totalDist), false);
         super.post();
@@ -153,7 +229,8 @@ public class DistanceScheduling extends AbstractDistance {
     @Override
     public void propagate() {
         updateStartMember();
-        updateStartRequiredInsertable();
+        updateStartInsertable();
+        addMinDetoursToCurrentStart();
         super.propagate();
     }
 

@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 
-filename = "../results/pctsp/pctsp-2025-11-07_11-27-44-df66e4519"
-transpose = False  # if true, rows are the methods and columns are the instances
+filename = "../results/pctsp/pctsp-2025-11-07_14-45-10-f11546249"
+transpose = True  # if true, rows are the methods and columns are the instances
 
 df = pd.read_csv(filename, engine="python", sep=" \\| ")
 df["instance"] = df["instance"].apply(lambda name: os.path.basename(name).split(".")[0])
