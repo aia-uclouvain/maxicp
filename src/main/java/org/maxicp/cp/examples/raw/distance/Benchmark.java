@@ -9,6 +9,7 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,6 +94,26 @@ public abstract class Benchmark {
     protected abstract void makeModel(String instancePath);
 
     public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength) {
+        addDistanceConstraint(seqVar, distance, totLength, variant);
+        /*switch (variant) {
+            case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
+            case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputSum(seqVar, distance, totLength));
+            case MEAN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputAndOutputSum(seqVar, distance, totLength));
+            case MIN_DETOUR -> seqVar.getSolver().post(new DistanceMinDetourSum(seqVar, distance, totLength));
+            case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));
+            case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
+            case MST_DETOUR -> seqVar.getSolver().post(new DistanceMSTDetour(seqVar, distance, totLength));
+            case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
+            case ALL -> {
+                seqVar.getSolver()
+            }
+            case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new RuntimeException("not yet implemented");
+        }
+
+         */
+    }
+
+    public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength, Variant variant) {
         switch (variant) {
             case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
             case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputSum(seqVar, distance, totLength));
@@ -102,7 +123,18 @@ public abstract class Benchmark {
             case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
             case MST_DETOUR -> seqVar.getSolver().post(new DistanceMSTDetour(seqVar, distance, totLength));
             case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
-            case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new RuntimeException("not yet implemented");
+            case ALL -> {
+                for (Variant v: Variant.values()) {
+                    if (v != Variant.ALL) {
+                        try {
+                            addDistanceConstraint(seqVar, distance, totLength, v);
+                        } catch (NotImplementedException ignored) {
+
+                        }
+                    }
+                }
+            }
+            case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new NotImplementedException("not yet implemented");
         }
     }
 
