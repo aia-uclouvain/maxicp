@@ -6,7 +6,6 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 
 import java.util.Arrays;
 
-import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
 public class DistanceMatchingSuccessor extends AbstractDistance{
@@ -18,6 +17,8 @@ public class DistanceMatchingSuccessor extends AbstractDistance{
     private int[][] capMaxNetworkFlow;
     private int[][] costNetworkFlow;
 
+    private EdgeIterator edgeIterator;
+
     public DistanceMatchingSuccessor(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         this.succs = new int[nNodes][nNodes];
@@ -26,16 +27,19 @@ public class DistanceMatchingSuccessor extends AbstractDistance{
         this.minCostMaxFlow = new MinCostMaxFlow(numNodesInMatching);
         this.capMaxNetworkFlow = new int[numNodesInMatching][numNodesInMatching];
         this.costNetworkFlow = new int[numNodesInMatching][numNodesInMatching];
+        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         for (int i = 0; i < numNodesInMatching; i++) {
             Arrays.fill(capMaxNetworkFlow[i], 0);
             Arrays.fill(costNetworkFlow[i], 0);
         }
         for (int i = 0; i < nNodes; i++) { // from variables to values
-            numSuccs[i] = seqVar.fillSucc(i, succs[i]);
+            //numSuccs[i] = seqVar.fillSucc(i, succs[i]);
+            numSuccs[i] = edgeIterator.fillSucc(i, succs[i]);
         }
 
         for (int i = 0; i < nNodes; i++) {

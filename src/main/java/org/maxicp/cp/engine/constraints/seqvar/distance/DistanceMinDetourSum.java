@@ -16,6 +16,8 @@ public class DistanceMinDetourSum extends AbstractDistance{
     private final int[] numSuccs;
     private final int[] minDetour;
 
+    private EdgeIterator edgeIterator;
+
     public DistanceMinDetourSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         this.preds = new int[nNodes][nNodes];
@@ -23,10 +25,12 @@ public class DistanceMinDetourSum extends AbstractDistance{
         this.succs = new int[nNodes][nNodes];
         this.numSuccs = new int[nNodes];
         this.minDetour = new int[nNodes];
+        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         for (int i = 0; i < nNodes; i++) { // from variables to values
             numSuccs[i] = seqVar.fillSucc(i, succs[i]);
             numPreds[i] = seqVar.fillPred(i, preds[i]);
@@ -48,7 +52,7 @@ public class DistanceMinDetourSum extends AbstractDistance{
                     if (pred == succ || !seqVar.isNode(succ, REQUIRED)) {
                         continue; // skip if pred and succ are the same
                     }
-                    if (seqVar.hasEdge(pred, succ)) {
+                    if (edgeIterator.hasEdge(pred, succ) && edgeIterator.hasEdge(pred, node) && edgeIterator.hasEdge(node, succ)) {
                         int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
                         if (detour < minDetour[node]) {
                             minDetour[node] = detour;

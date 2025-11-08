@@ -12,6 +12,7 @@ import static org.maxicp.search.Searches.selectMin;
 public class DistanceMSTDetour extends AbstractDistance {
 
     private MST minimumSpanningTree;
+    private EdgeIterator edgeIterator;
 
     public DistanceMSTDetour(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
@@ -22,11 +23,13 @@ public class DistanceMSTDetour extends AbstractDistance {
                 costForMST[j][i] = costForMST[i][j]; // ensure symmetry
             }
         }
+        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
         this.minimumSpanningTree = new MST(seqVar, costForMST);
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         minimumSpanningTree.compute();
         totalDist.removeBelow(minimumSpanningTree.cost());
     }
@@ -114,14 +117,17 @@ public class DistanceMSTDetour extends AbstractDistance {
                             int pred = member[i];
                             int succ = member[i + 1];
                             // consider that an insertion pred -> newlyInserted -> succ happened
-                            if (canConnect(pred, toInsert, succ) && canConnect(pred, newlyInserted, succ)) {
+                            if (seqVar.hasInsert(pred, toInsert) && seqVar.hasInsert(pred, newlyInserted)) {
                                 updateCostFor(pred, toInsert, newlyInserted); // try to insert on pred -> newlyInserted
                                 updateCostFor(newlyInserted, toInsert, succ); // try to insert on newlyInserted -> succ
                             }
-                            for (int k = nRequiredRemaining ; k < nRequiredRemainingInit ; k++) {
-                                int inserted = required[k];
-                                updateCostFor(newlyInserted, toInsert, inserted);
-                                updateCostFor(inserted, toInsert, newlyInserted);
+                        }
+                        for (int k = nRequiredRemaining ; k < nRequiredRemainingInit ; k++) {
+                            // insertable node that has already been added to the MST at a previous iteration
+                            int previouslyInserted = required[k];
+                            if (edgeIterator.hasEdge(newlyInserted, toInsert) && edgeIterator.hasEdge(toInsert, previouslyInserted)) {
+                                updateCostFor(newlyInserted, toInsert, previouslyInserted);
+                                updateCostFor(previouslyInserted, toInsert, newlyInserted);
                             }
                         }
                     }
@@ -134,10 +140,6 @@ public class DistanceMSTDetour extends AbstractDistance {
             if (detour < minDetour[node]) {
                 minDetour[node] = detour;
             }
-        }
-
-        private boolean canConnect(int pred, int node, int succ) {
-            return seqVar.hasInsert(pred, node);
         }
 
         /**
