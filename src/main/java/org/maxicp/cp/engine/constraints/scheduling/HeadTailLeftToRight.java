@@ -30,7 +30,6 @@ public class HeadTailLeftToRight {
     PriorityQueue<Operation> operations;
     PriorityQueue<Operation> pq;
     boolean[] delayed;
-    private boolean mirror;
     int maxLct;
     HashMap<Integer, HashSet<Operation>> delayedBy;
 
@@ -43,12 +42,12 @@ public class HeadTailLeftToRight {
         endMax = new int[nMax];
 
         this.operations = new PriorityQueue<>(Comparator.comparingInt(a -> startMin[a.id]));
-        this.K = new Operation[n];
-        for (int i = 0; i < nOps; i++) {
-            K[i] = new Operation(i, 0);
+        this.K = new Operation[nMax];
+        for (int i = 0; i < nMax; i++) {
+            this.K[i] = new Operation(i, 0);
         }
         this.pq = new PriorityQueue<>(Comparator.comparingInt(a -> endMax[a.id]));
-        this.delayed = new boolean[nOps];
+        this.delayed = new boolean[nMax];
         this.delayedBy = new HashMap<>();
     }
 
@@ -65,6 +64,9 @@ public class HeadTailLeftToRight {
      * If a change is detected, the time windows (startMin and endMax) are reduced.
      */
     public Outcome filter(int[] startMin, int[] duration, int[] endMax, int n) {
+        if (n <= 1) {
+            //return Outcome.NO_CHANGE;
+        }
         update(startMin, duration, endMax, n);
         return fixPoint();
     }
@@ -76,13 +78,19 @@ public class HeadTailLeftToRight {
     private Outcome fixPoint() {
         Arrays.sort(K,0, n, Comparator.comparingInt((Operation op) -> endMax[op.id]).reversed());
         int t = 0;
+        Outcome outcome = Outcome.NO_CHANGE;
         while (!operations.isEmpty() || !pq.isEmpty()) {
             ArrayList<Operation> cs = new ArrayList<>();
-            // Add all operations released up to current time
+            // Add all operations released before or at time t
+            // the operations are sorted by release time in the queue
             while (!operations.isEmpty() && startMin[operations.peek().id] <= t) {
-                Operation op = operations.poll();
+                Operation op = operations.poll(); // remove from the queue
                 if (delayed[op.id]) {
                     startMin[op.id]++;
+                    if (startMin[op.id] > endMax[op.id]) {
+                        return Outcome.INCONSISTENCY;
+                    }
+                    outcome = Outcome.CHANGE;
                     operations.add(op);
                 } else {
                     if (startMin[op.id] == t) {
@@ -96,7 +104,7 @@ public class HeadTailLeftToRight {
                 t = startMin[operations.peek().id];
                 continue;
             }
-
+            // cs is the set of operations available at time t
             for (Operation c : cs) {
                 int pc = duration[c.id];
                 int pplus = 0;
@@ -107,6 +115,8 @@ public class HeadTailLeftToRight {
                         pplus += op.p;
                     }
                 }
+                // Kc is the set of operations in K \ {c} with positive remaining processing time
+                // Kc is sorted by decreasing endMax
                 boolean alreadyDelayed = false;
                 for (int i = 0; i < Kc.size(); i++) {
                     Operation sc = Kc.get(i);
@@ -114,6 +124,10 @@ public class HeadTailLeftToRight {
                         int psc = duration[sc.id];
                         if (!alreadyDelayed && startMin[c.id] + pc + pplus > endMax[sc.id]) {
                             startMin[c.id] += pplus;
+                            if (startMin[c.id] + duration[c.id] > endMax[c.id]) {
+                                return Outcome.INCONSISTENCY;
+                            }
+                            outcome = Outcome.CHANGE;
                             alreadyDelayed = true;
                             delayedBy.put(c.id, new HashSet<>(Kc.subList(i, Kc.size())));
                             delayed[c.id] = true;
@@ -121,8 +135,14 @@ public class HeadTailLeftToRight {
                             operations.add(c);
                         } else if (!alreadyDelayed) {
                             pplus -= sc.p;
-                            if (sc.p < psc && startMin[sc.id] + psc > startMin[c.id] && startMin[c.id] + pc + psc > endMax[c.id]) {
-                                startMin[c.id] = Math.max(startMin[c.id], startMin[c.id] + psc);
+                            if (sc.p < psc &&
+                                    startMin[sc.id] + psc > startMin[c.id] &&
+                                    startMin[c.id] + pc + psc > endMax[sc.id]) {
+                                startMin[c.id] = startMin[c.id] + psc;
+                                if (startMin[c.id] + duration[c.id] > endMax[c.id]) {
+                                    return Outcome.INCONSISTENCY;
+                                }
+                                outcome = Outcome.CHANGE;
                                 HashSet<Operation> delayedSet = delayedBy.get(c.id);
                                 if (delayedSet == null) {
                                     delayedBy.put(c.id, new HashSet<>(Arrays.asList(sc)));
@@ -144,9 +164,7 @@ public class HeadTailLeftToRight {
                 int nextRelease = (!operations.isEmpty() ? startMin[operations.peek().id] : Integer.MAX_VALUE);
                 // Run the operation until either it finishes or a new job arrives
                 int runTime = min(cur.p, nextRelease - t);
-                if (!delayed[cur.id]) {
-                    cur.p -= runTime;
-                }
+                cur.p -= runTime;
                 t += runTime;
                 if (cur.p != 0) {
                     if (!delayed[cur.id]) {
@@ -163,15 +181,17 @@ public class HeadTailLeftToRight {
                                 delayed[op.id] = false;
                                 delayedBy.remove(op.id);
                                 startMin[op.id] = t;
+                                if (startMin[op.id] + duration[op.id] > endMax[op.id]) {
+                                    return Outcome.INCONSISTENCY;
+                                }
+                                outcome = Outcome.CHANGE;
                             }
                         }
                     }
                 }
             }
         }
-
-
-        return Outcome.NO_CHANGE;
+        return outcome;
     }
 
     protected void update(int[] startMin, int[] duration, int[] endMax, int n) {
@@ -193,6 +213,7 @@ public class HeadTailLeftToRight {
         }
         for (int i = 0; i < n; i++) {
             K[i].p = duration[i];
+            K[i].id = i;
             operations.add(K[i]);
         }
         this.pq.clear();
