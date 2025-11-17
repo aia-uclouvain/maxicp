@@ -495,6 +495,14 @@ public class DistanceScheduling extends AbstractDistance {
          * @return
          */
         private void afterTaskFromThetaTree(int task) {
+            /*for (int i = 0 ; i < n; i++) {
+                int ti = idxToNode[i];
+                if (inserted[i]) {
+                    intervals[getNode(task)].setStartMin(intervals[ti].startMin() + dist[ti][getNode(task)]);
+                }
+            }
+
+             */
             if (seqVar.isNode(getNode(task), MEMBER)) {
                 return;
             }
@@ -526,6 +534,14 @@ public class DistanceScheduling extends AbstractDistance {
          * @return
          */
         private void beforeTaskFromThetaTree(int task) {
+            /*for (int i = 0 ; i < n; i++) {
+                int ti = idxToNode[i];
+                if (inserted[i]) {
+                    intervals[getNode(task)].setStartMax(intervals[ti].startMax() - dist[getNode(task)][ti]);
+                }
+            }
+
+             */
             if (seqVar.isNode(getNode(task), MEMBER)) {
                 return;
             }

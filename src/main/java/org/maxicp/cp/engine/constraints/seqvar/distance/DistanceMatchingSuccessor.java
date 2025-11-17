@@ -27,7 +27,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance{
         this.minCostMaxFlow = new MinCostMaxFlow(numNodesInMatching);
         this.capMaxNetworkFlow = new int[numNodesInMatching][numNodesInMatching];
         this.costNetworkFlow = new int[numNodesInMatching][numNodesInMatching];
-        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
     @Override

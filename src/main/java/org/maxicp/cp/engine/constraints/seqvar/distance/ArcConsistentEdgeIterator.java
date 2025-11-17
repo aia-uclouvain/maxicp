@@ -28,33 +28,17 @@ public class ArcConsistentEdgeIterator implements EdgeIterator {
     }
 
     @Override
+    public CPSeqVar seqVar() {
+        return seqVar;
+    }
+
+    @Override
     public boolean hasEdge(int from, int to) {
         if (seqVar.isNode(from, INSERTABLE) && seqVar.isNode(to, INSERTABLE)) {
             return hasEdge[from][to];
         } else {
             return seqVar.hasEdge(from, to);
         }
-    }
-
-    @Override
-    public int fillSucc(int node, int[] dest) {
-        int nSucc = seqVar.fillSucc(node, dest);
-        if (seqVar.isNode(node, INSERTABLE)) {
-            // post filtering of the successor of the node
-            for (int i = 0; i < nSucc;) {
-                int succ = dest[i];
-                if (!hasEdge(node, succ)) {
-                    // remove this successor by swapping it with the latest dest
-                    int toSwap = dest[nSucc-1];
-                    dest[i] = toSwap;
-                    dest[nSucc-1] = succ;
-                    nSucc--;
-                } else {
-                    i++;
-                }
-            }
-        }
-        return nSucc;
     }
 
     @Override
@@ -70,9 +54,11 @@ public class ArcConsistentEdgeIterator implements EdgeIterator {
         for (int i = 0; i < nInsertable; i++) {
             int from = nodes[i];
             int nInsertFrom = seqVar.nInsert(from);
+            //int nInsertFrom = seqVar.fillInsert(from, insertions[from]);
             for (int j = i+1; j < nInsertable; j++) {
                 int to = nodes[j];
                 int nInsertTo = seqVar.nInsert(to);
+                //int nInsertTo = seqVar.fillInsert(to, insertions[to]);
                 if (nInsertFrom + nInsertTo > maxNInsert) {
                     // there must be at least one insertion in common
                     hasEdge[from][to] = true;

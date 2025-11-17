@@ -3,7 +3,6 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
 public class DistanceMinInputAndOutputSum extends AbstractDistance {
@@ -12,16 +11,19 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
     protected final int[] costMinRequiredSucc; //  minimum cost of edges from required successors
     protected final int[] costMin;
     private int lowerBound; // lower bound computed with this method
+    private EdgeIterator edgeIterator;
 
     public DistanceMinInputAndOutputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         costMinRequiredPred = new int[nNodes];
         costMinRequiredSucc = new int[nNodes];
         costMin = new int[nNodes];
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         int totalCost = 0;
 
         int nRequired = seqVar.fillNode(nodes, REQUIRED);
@@ -29,7 +31,8 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
             int node = nodes[i];
             costMinRequiredPred[node] = Integer.MAX_VALUE;
             costMinRequiredSucc[node] = Integer.MAX_VALUE;
-            int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
+            //int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
+            int nPred = edgeIterator.fillPred(node, inserts, REQUIRED); // gets all required predecessors
             for (int j = 0; j < nPred; j++) {
                 int pred = inserts[j];
                 // update minimum cost for the predecessors
@@ -37,7 +40,8 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
                     costMinRequiredPred[node] = dist[pred][node];
                 }
             }
-            int nSucc = seqVar.fillSucc(node, inserts, REQUIRED); // gets all required successors
+            //int nSucc = seqVar.fillSucc(node, inserts, REQUIRED); // gets all required successors
+            int nSucc = edgeIterator.fillSucc(node, inserts, REQUIRED); // gets all required successors
             for (int j = 0; j < nSucc; j++) {
                 int succ = inserts[j];
                 // update minimum cost for the successors

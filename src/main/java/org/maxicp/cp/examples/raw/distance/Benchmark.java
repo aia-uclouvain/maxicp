@@ -1,8 +1,6 @@
 package org.maxicp.cp.examples.raw.distance;
 
 import org.apache.commons.cli.*;
-import org.maxicp.cp.engine.constraints.seqvar.Distance;
-import org.maxicp.cp.engine.constraints.seqvar.DistanceNew;
 import org.maxicp.cp.engine.constraints.seqvar.distance.*;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -123,6 +121,8 @@ public abstract class Benchmark {
             case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
             case MST_DETOUR -> seqVar.getSolver().post(new DistanceMSTDetour(seqVar, distance, totLength));
             case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
+            case FORWARD_SLACK -> seqVar.getSolver().post(new DistanceForwardSlack(seqVar, distance, totLength));
+            case SUBSEQUENCE_SPLIT -> seqVar.getSolver().post(new DistanceSubsequenceSplit(seqVar, distance, totLength));
             case ALL -> {
                 for (Variant v: Variant.values()) {
                     if (v != Variant.ALL) {

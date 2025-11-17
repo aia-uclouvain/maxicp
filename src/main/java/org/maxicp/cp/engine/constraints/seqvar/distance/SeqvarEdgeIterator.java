@@ -1,6 +1,7 @@
 package org.maxicp.cp.engine.constraints.seqvar.distance;
 
 import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
 
 public class SeqvarEdgeIterator implements EdgeIterator {
 
@@ -11,13 +12,23 @@ public class SeqvarEdgeIterator implements EdgeIterator {
     }
 
     @Override
+    public CPSeqVar seqVar() {
+        return seqVar;
+    }
+
+    @Override
     public boolean hasEdge(int from, int to) {
         return seqVar.hasEdge(from, to);
     }
 
     @Override
-    public int fillSucc(int node, int[] dest) {
-        return seqVar.fillSucc(node, dest);
+    public int fillPred(int node, int[] dest, SeqStatus status) {
+        return seqVar.fillPred(node, dest, status);
+    }
+
+    @Override
+    public int fillSucc(int node, int[] dest, SeqStatus status) {
+        return seqVar.fillSucc(node, dest, status);
     }
 
     @Override

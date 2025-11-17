@@ -19,12 +19,15 @@ public class MST {
     protected int[] required;
     protected int nRequired;
 
+    private EdgeIterator edgeIterator;
+
     public MST(CPSeqVar seqVar, int[][] cost) {
         this.seqVar = seqVar;
         this.cost = cost;
         this.key = new int[seqVar.nNode()];
         inMST = new boolean[seqVar.nNode()];
         this.required = new int[seqVar.nNode()];
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
     /**
@@ -32,6 +35,7 @@ public class MST {
      */
     public void compute() {
         // Resets the data structures
+        edgeIterator.update();
         MSTcost = 0;
         Arrays.fill(inMST, false);
         Arrays.fill(key, Integer.MAX_VALUE);
@@ -57,7 +61,7 @@ public class MST {
     }
 
     private boolean hasEdge(int i, int j) {
-        return (seqVar.hasEdge(i, j) || seqVar.hasEdge(j, i));
+        return (edgeIterator.hasEdge(i, j) || edgeIterator.hasEdge(j, i));
     }
 
     /**

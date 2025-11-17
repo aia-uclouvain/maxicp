@@ -1,30 +1,9 @@
 import os
 import pandas as pd
 
-#filename = "../results/pctsp/pctsp-2025-11-08_11-49-40-2de52fff6"
-filename = "../results/pctsp/pctsp-2025-11-08_18-45-34-df1fde783"
+#filename = "../results/pctsp/pctsp-2025-11-17_10-23-19-0ee3f57b1"  # arc consistent edge estimator
+filename = "../results/pctsp/pctsp-2025-11-17_10-29-07-0ee3f57b1"  # pure sequence edge estimator
 transpose = True  # if true, rows are the methods and columns are the instances
-
-#previous:
-"""
-\begin{tabular}{rrr}
-\toprule
-Method & v10 & v20\\
-\midrule
-ORIGINAL & 344 & 136 134\\
-\cmidrule(rl){1-3}
-MATCHING\_SUCCESSOR & 322 & 101 220\\
-MEAN\_INPUT\_AND\_OUTPUT\_SUM & 344 & 136 028\\
-MIN\_DETOUR & \textbf{292} & 113 862\\
-MIN\_INPUT\_SUM & 342 & 135 688\\
-MST & 340 & 135 444\\
-MST\_DETOUR & 334 & 132 224\\
-SCHEDULING & 310 & \textbf{99 172}\\
-\cmidrule(rl){1-3}
-ALL & 262 & 61 392\\
-\bottomrule
-\end{tabular}
-"""
 
 df = pd.read_csv(filename, engine="python", sep=" \\| ")
 df["instance"] = df["instance"].apply(lambda name: os.path.basename(name).split(".")[0])

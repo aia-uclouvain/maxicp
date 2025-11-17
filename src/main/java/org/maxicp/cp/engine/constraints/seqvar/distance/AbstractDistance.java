@@ -82,7 +82,7 @@ public abstract class AbstractDistance extends AbstractCPConstraint {
         }
     }
 
-    private void filterEdge(int pred, int node, int maxDetour) {
+    protected void filterEdge(int pred, int node, int maxDetour) {
         if (seqVar.isNode(pred, MEMBER)) {
             int succ = seqVar.memberAfter(pred);
             int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];

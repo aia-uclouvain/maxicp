@@ -9,21 +9,25 @@ public class DistanceMinInputSum extends AbstractDistance {
 
     protected final int[] costMinRequiredPred; //  minimum cost of edges from required predecessors
     private int lowerBound; // lower bound computed with this method
+    private EdgeIterator edgeIterator;
 
     public DistanceMinInputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         costMinRequiredPred = new int[nNodes];
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         int totalMinPred = 0;
 
         int nRequired = seqVar.fillNode(nodes, REQUIRED);
         for (int i = 0; i < nRequired; i++) {
             int node = nodes[i];
             costMinRequiredPred[node] = Integer.MAX_VALUE;
-            int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
+            //int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
+            int nPred = edgeIterator.fillPred(node, inserts, REQUIRED); // gets all required predecessors
             for (int j = 0; j < nPred; j++) {
                 int pred = inserts[j];
                 if (dist[pred][node] < costMinRequiredPred[node]) {

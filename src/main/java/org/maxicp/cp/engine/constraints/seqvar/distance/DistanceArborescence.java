@@ -9,18 +9,22 @@ public class DistanceArborescence extends AbstractDistance {
     private MinimumArborescence minimumArborescence;
     int[][] preds;
     int[] numPreds;
+    private EdgeIterator edgeIterator;
 
     public DistanceArborescence(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         this.minimumArborescence = new MinimumArborescence(dist, seqVar.start());
         this.preds = new int[nNodes][nNodes];
         this.numPreds = new int[nNodes];
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
+
     }
 
     @Override
     public void updateLowerBound() {
+        edgeIterator.update();
         for (int node = 0 ; node < nNodes ; node++) {
-            numPreds[node] = seqVar.fillPred(node, preds[node]);
+            numPreds[node] = edgeIterator.fillPred(node, preds[node]);
         }
         minimumArborescence.findMinimumArborescence(preds, numPreds);
 

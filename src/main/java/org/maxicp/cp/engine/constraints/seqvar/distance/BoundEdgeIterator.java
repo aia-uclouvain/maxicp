@@ -47,6 +47,11 @@ public class BoundEdgeIterator implements EdgeIterator {
     }
 
     @Override
+    public CPSeqVar seqVar() {
+        return seqVar;
+    }
+
+    @Override
     public boolean hasEdge(int from, int to) {
         if (seqVar.isNode(from, INSERTABLE) && seqVar.isNode(to, INSERTABLE)) {
             // tells if an edge from -> to could appear in a sequence from the domain
@@ -59,27 +64,6 @@ public class BoundEdgeIterator implements EdgeIterator {
         } else {
             return seqVar.hasEdge(from, to);
         }
-    }
-
-    @Override
-    public int fillSucc(int node, int[] dest) {
-        int nSucc = seqVar.fillSucc(node, dest);
-        if (seqVar.isNode(node, INSERTABLE)) {
-            // post filtering of the successor of the node
-            for (int i = 0; i < nSucc;) {
-                int succ = dest[i];
-                if (!hasEdge(node, succ)) {
-                    // remove this successor by swapping it with the latest dest
-                    int toSwap = dest[nSucc-1];
-                    dest[i] = toSwap;
-                    dest[nSucc-1] = succ;
-                    nSucc--;
-                } else {
-                    i++;
-                }
-            }
-        }
-        return nSucc;
     }
 
     @Override

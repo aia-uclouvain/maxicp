@@ -23,7 +23,7 @@ public class DistanceMSTDetour extends AbstractDistance {
                 costForMST[j][i] = costForMST[i][j]; // ensure symmetry
             }
         }
-        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
         this.minimumSpanningTree = new MST(seqVar, costForMST);
     }
 
@@ -100,7 +100,7 @@ public class DistanceMSTDetour extends AbstractDistance {
                 // required[0..nRequiredRemaining] = insertable nodes that must be added to the MST
                 // required[nRequiredRemaining..nRequiredRemainingInit] = insertable nodes that have already been added to the MST
                 while (nRequiredRemaining > 0) {
-                    int id = minKeyIdx(nRequiredRemaining);
+                    int id = maxKeyIdx(nRequiredRemaining); //minKeyIdx(nRequiredRemaining);
                     // selected the node at required[id]
                     // swap it with the node at required[nRequiredRemaining-1]
                     // this way the nodes that are not belonging to the MST are only located in required[0..nRequiredRemaining]
@@ -125,9 +125,18 @@ public class DistanceMSTDetour extends AbstractDistance {
                         for (int k = nRequiredRemaining ; k < nRequiredRemainingInit ; k++) {
                             // insertable node that has already been added to the MST at a previous iteration
                             int previouslyInserted = required[k];
-                            if (edgeIterator.hasEdge(newlyInserted, toInsert) && edgeIterator.hasEdge(toInsert, previouslyInserted)) {
+                            if (previouslyInserted != newlyInserted) {
+                                // for correctness, this should be added into the inner loop that checks the edges between
+                                // pred -> succ. But it provides so little difference that this can be put outside instead
+                                // more links which will be examined than necessary, which slightly worsen the bound,
+                                // but the speed is increased
+                                //if (seqVar.hasEdge(pred, previouslyInserted)) {
+                                // a chain pred -> previouslyInserted -> succ can be formed
+                                // try to insert on newlyInserted -> toInsert -> previouslyInserted
                                 updateCostFor(newlyInserted, toInsert, previouslyInserted);
+                                // try other direction: insert on previouslyInserted -> toInsert -> newlyInserted
                                 updateCostFor(previouslyInserted, toInsert, newlyInserted);
+                                //}
                             }
                         }
                     }
@@ -147,6 +156,15 @@ public class DistanceMSTDetour extends AbstractDistance {
          */
         private int minKeyIdx(int n) {
             OptionalInt idx = selectMin(indices, n, i -> true, i -> minDetour[required[i]]);
+            assert idx.isPresent();
+            return idx.getAsInt();
+        }
+
+        /**
+         * Returns the required node with maximum cost, not included in the minimum spanning tree
+         */
+        private int maxKeyIdx(int n) {
+            OptionalInt idx = selectMin(indices, n, i -> true, i -> - minDetour[required[i]]);
             assert idx.isPresent();
             return idx.getAsInt();
         }

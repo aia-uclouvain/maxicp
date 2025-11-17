@@ -25,7 +25,7 @@ public class DistanceMinDetourSum extends AbstractDistance{
         this.succs = new int[nNodes][nNodes];
         this.numSuccs = new int[nNodes];
         this.minDetour = new int[nNodes];
-        edgeIterator = new ArcConsistentEdgeIterator(seqVar);
+        edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
     @Override
