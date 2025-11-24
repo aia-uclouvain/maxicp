@@ -254,7 +254,6 @@ public class ReplayTest extends CPSolverTest {
         assertEquals(stat1.numberOfFailures(),  stat2.numberOfFailures());
         assertEquals(stat1.numberOfNodes(),  stat2.numberOfNodes());
 
-
     }
 
 }
