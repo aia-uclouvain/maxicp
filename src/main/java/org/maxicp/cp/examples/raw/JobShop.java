@@ -72,9 +72,9 @@ public class JobShop {
                     }
                 };
             }
-            //cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
             //cp.post(new HeadTailConstraint(machineActivities.toArray(new CPIntervalVar[0])));
-            cp.post(new NoOverlapHeadTail(machineActivities.toArray(new CPIntervalVar[0])));
+            //cp.post(new NoOverlapHeadTail(machineActivities.toArray(new CPIntervalVar[0])));
         }
 
 

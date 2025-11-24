@@ -357,23 +357,12 @@ class NonOverlapHeadTailTest extends CPSolverTest {
         cp.post(new NoOverlapHeadTail(intervals));
         org.maxicp.search.DFSearch dfs  = makeDfs(cp, and(Searches.branchOnStatus(intervals), Searches.branchOnPresentStarts(intervals)));
 
-        dfs.onSolution(() -> {
-            System.out.println("solution: "+
-                    intervals[0].startMin()+","+intervals[0].isPresent()+"|"+
-                    intervals[1].startMin()+","+intervals[1].isPresent()+"|"+
-                    intervals[2].startMin()+intervals[2].isPresent()+"|");
-        });
         SearchStatistics statsNoOverlap = dfs.solve();
-        System.out.println("-------------------");
         cp.getStateManager().restoreState();
         postDecomposition(intervals);
 
         dfs  = makeDfs(cp, and(Searches.branchOnStatus(intervals), Searches.branchOnPresentStarts(intervals)));
-        dfs.onSolution(() -> {
-            System.out.println("solution: "+
-                    intervals[0].startMin()+","+intervals[0].isPresent()+"|"+
-                    intervals[1].startMin()+","+intervals[1].isPresent()+"|"+
-                    intervals[2].startMin()+intervals[2].isPresent()+"|");        });
+
         SearchStatistics statsDecomposition = dfs.solve();
         assertEquals(statsNoOverlap.numberOfSolutions(), statsDecomposition.numberOfSolutions());
         cp.getStateManager().restoreState();

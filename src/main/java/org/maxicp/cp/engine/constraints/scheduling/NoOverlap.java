@@ -151,9 +151,9 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         update();
         // mirror the activities
         for (int i = 0; i < n; i++) {
-            int startMinOld = startMin[i];
+            int oldStartMin = startMin[i];
             startMin[i] = -endMax[i];
-            endMax[i] = isOptional[i] ? 1000000 : -startMinOld;
+            endMax[i] = isOptional[i] ? 1000000 : -oldStartMin;
         }
         oc = globalFilter.filter(startMin, duration, endMax, n);
         if (oc == NoOverlapLeftToRight.Outcome.INCONSISTENCY) {
