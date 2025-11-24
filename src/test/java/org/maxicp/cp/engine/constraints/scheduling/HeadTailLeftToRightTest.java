@@ -76,4 +76,35 @@ public class HeadTailLeftToRightTest {
 
         assertEquals(HeadTailLeftToRight.Outcome.CHANGE, outcome);
     }
+
+    @Test
+    public void testFilter5() {
+        // Example found in the paper:
+        // "Solving Open Benchmark instances for the job-shop problem
+        //    by parallel head-tail adjustment" p56
+        // Authors: Wolfgang Brinkkotter and Peter Brucker
+        HeadTailLeftToRight algo = new HeadTailLeftToRight(3);
+        // this will only be detected by the edge finding
+        int[] startMin = new int[]{2,3,4};
+        int[] duration =   new int[]{3,2,2};
+        int[] endMax = new int[]{12,8,6};
+        HeadTailLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 3);
+        assertArrayEquals(new int[]{8,6,4}, algo.startMin);
+        assertEquals(HeadTailLeftToRight.Outcome.CHANGE, outcome);
+    }
+
+    @Test
+    public void testFilter6Infeasible() {
+        // Example found in the paper:
+        // "Solving Open Benchmark instances for the job-shop problem
+        //    by parallel head-tail adjustment" p57
+        // Authors: Wolfgang Brinkkotter and Peter Brucker
+        HeadTailLeftToRight algo = new HeadTailLeftToRight(3);
+        // this will only be detected by the edge finding
+        int[] startMin = new int[]{2,3,4};
+        int[] duration =   new int[]{3,2,2};
+        int[] endMax = new int[]{10,8,6};
+        HeadTailLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 3);
+        assertEquals(HeadTailLeftToRight.Outcome.INCONSISTENCY, outcome);
+    }
 }

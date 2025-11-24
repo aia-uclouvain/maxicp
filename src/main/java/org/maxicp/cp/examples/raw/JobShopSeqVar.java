@@ -7,12 +7,11 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.scheduling.HeadTailConstraint;
+import org.maxicp.cp.engine.constraints.scheduling.NoOverlapHeadTail;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
@@ -84,6 +83,7 @@ public class JobShopSeqVar {
             machineIntervals[m] = machineActivities.toArray(new CPIntervalVar[0]);
             seqVars[m] = nonOverlapSequence(machineIntervals[m]);
             //cp.post(new HeadTailConstraint(machineIntervals[m]));
+            cp.post(new NoOverlapHeadTail(machineIntervals[m]));
         }
 
 
@@ -93,6 +93,7 @@ public class JobShopSeqVar {
         CPIntVar makespan = CPFactory.makespan(lasts);
 
         Objective obj = cp.minimize(makespan);
+        cp.post(CPFactory.le(makespan, 900));
 
 
         // ------- search on seq vars ------
