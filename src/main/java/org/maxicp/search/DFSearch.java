@@ -128,4 +128,12 @@ public class DFSearch extends RunnableSearchMethod {
         setDFSListener(EMPTY_LISTENER);
         return stats;
     }
+
+    public SearchStatistics optimizeSubjectTo(Objective objToTighten, DFSListener dfsListener, Predicate<SearchStatistics> limit, Runnable subjectTo) {
+        dfsListener.clear();
+        setDFSListener(dfsListener);
+        SearchStatistics stats = super.optimizeSubjectTo(objToTighten, limit, subjectTo);
+        setDFSListener(EMPTY_LISTENER);
+        return stats;
+    }
 }
