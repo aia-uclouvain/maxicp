@@ -87,7 +87,7 @@ public class HeadTailLeftToRight {
                 Operation op = operations.poll(); // remove from the queue
                 if (delayed[op.id]) {
                     startMin[op.id]++;
-                    if (startMin[op.id] > endMax[op.id]) {
+                    if (startMin[op.id] + duration[op.id]  > endMax[op.id]) {
                         return Outcome.INCONSISTENCY;
                     }
                     outcome = Outcome.CHANGE;
@@ -138,7 +138,7 @@ public class HeadTailLeftToRight {
                             if (sc.p < psc &&
                                     startMin[sc.id] + psc > startMin[c.id] &&
                                     startMin[c.id] + pc + psc > endMax[sc.id]) {
-                                startMin[c.id] = startMin[c.id] + psc;
+                                startMin[c.id] = max(startMin[sc.id] + psc, startMin[c.id]);
                                 if (startMin[c.id] + duration[c.id] > endMax[c.id]) {
                                     return Outcome.INCONSISTENCY;
                                 }

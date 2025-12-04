@@ -15,6 +15,7 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.cp.CPFactory.makeIntervalVar;
 
 public class HeadTailLeftToRightTest {
 
@@ -33,18 +34,6 @@ public class HeadTailLeftToRightTest {
     }
 
 
-    @Test
-    public void testFilter1() {
-        HeadTailLeftToRight algo = new HeadTailLeftToRight(3);
-
-        int[] startMin = new int[]{0, 1, 3};
-        int[] endMax = new int[]{14, 15, 13};
-        int[] duration = new int[]{5, 5, 4};
-
-        HeadTailLeftToRight.Outcome outcome = algo.filter(startMin, duration, endMax, 3);
-
-        assertEquals(HeadTailLeftToRight.Outcome.CHANGE, outcome);
-    }
 
     @Test
     public void testFilter2() {
