@@ -116,7 +116,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
         }
 
         numNodes = nValues + nVars + 2; // source, variables, values, sink
-        minCostMaxFlow = new MinCostMaxFlow(H.max(), numNodes);
+        minCostMaxFlow = new MinCostMaxFlow(numNodes);
         scc = new SCC(numNodes);
 
         costNetworkFlow = new int[numNodes][numNodes];
@@ -174,7 +174,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);
 
-        minCostMaxFlow.run(0, numNodes-1, capMaxNetworkFlow, costNetworkFlow);
+        minCostMaxFlow.run(H.max(), 0, numNodes-1, capMaxNetworkFlow, costNetworkFlow);
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
