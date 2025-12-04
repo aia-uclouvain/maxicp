@@ -115,11 +115,11 @@ public class IsSubset extends AbstractCPConstraint {
         }
 
         if (b.isTrue()) {
+            setActive(false);
             getSolver().post(subsetConstraint, false);
-            setActive(false);
         } else if (b.isFalse()) {
-            getSolver().post(notSubsetConstraint, false);
             setActive(false);
+            getSolver().post(notSubsetConstraint, false);
         }
     }
 }
