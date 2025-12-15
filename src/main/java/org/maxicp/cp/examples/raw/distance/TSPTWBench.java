@@ -1,107 +1,69 @@
 package org.maxicp.cp.examples.raw.distance;
 
+import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.Factory;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.maxicp.util.io.InputReader;
 
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
 import java.util.Arrays;
-import java.util.OptionalInt;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+import static org.maxicp.cp.CPFactory.makeIntVar;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
-public class OTSPBench extends Benchmark {
+public class TSPTWBench extends Benchmark {
 
-    private static class OptionalTSPInstance {
+    private record TimeWindow(int earliest, int latest) {}
+
+    private static class TSPTWInstance {
 
         public int nNodes;
-        public int start;
-        public int nRequired;
+        public int start = 0;
         public int[][] travelCosts;
+        public TimeWindow[] timeWindows;
 
-        /**
-         * Read TSP Instance from xml
-         * See http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/XML-TSPLIB/Description.pdf
-         *
-         * @param xmlPath path to the file
-         */
-        public OptionalTSPInstance(String xmlPath) {
-            // Instantiate the Factory
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            try {
-
-                // optional, but recommended
-                // process XML securely, avoid attacks like XML External Entities (XXE)
-                dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-
-                // parse XML file
-                DocumentBuilder db = dbf.newDocumentBuilder();
-
-                Document doc = db.parse(new File(xmlPath));
-                doc.getDocumentElement().normalize();
-
-                NodeList nRequiredList = doc.getElementsByTagName("nRequired");
-                nRequired = Integer.parseInt(nRequiredList.item(0).getTextContent());
-
-                NodeList list = doc.getElementsByTagName("vertex");
-
-                nNodes = list.getLength();
-                travelCosts = new int[nNodes][nNodes];
-                start = 0;
-
-                for (int i = 0; i < nNodes; i++) {
-                    NodeList edgeList = list.item(i).getChildNodes();
-                    for (int v = 0; v < edgeList.getLength(); v++) {
-
-                        Node node = edgeList.item(v);
-                        if (node.getNodeType() == Node.ELEMENT_NODE) {
-                            Element element = (Element) node;
-                            String cost = element.getAttribute("cost");
-                            String adjacentNode = element.getTextContent();
-                            int j = Integer.parseInt(adjacentNode);
-                            travelCosts[i][j] = (int) Math.rint(Double.parseDouble(cost));
-                        }
-                    }
+        public TSPTWInstance(String instancePath) {
+            InputReader reader = new InputReader(instancePath);
+            nNodes = reader.getInt();
+            travelCosts = new int[nNodes][nNodes];
+            for (int i = 0; i < nNodes; i++) {
+                for (int j = 0; j < nNodes; j++) {
+                    travelCosts[i][j] = reader.getInt();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            }
+            timeWindows = new TimeWindow[nNodes];
+
+            for (int i = 0; i < nNodes; i++) {
+                int earliest = reader.getInt();
+                int latest = reader.getInt();
+                timeWindows[i] = new TimeWindow(earliest, latest);
             }
         }
 
     }
 
-    OptionalTSPInstance instance;
+    TSPTWInstance instance;
     CPSolver cp;
     CPSeqVar tour;
     int nNodes;
     int start;
     int end;
-    int nRequired;
     int[][] distance;
     CPIntVar totDistance;
+    CPIntVar[] time;
 
-    public OTSPBench(String[] args) {
+    public TSPTWBench(String[] args) {
         super(args);
     }
 
     @Override
     protected DFSearch makeDFSearch() {
-        // TODO: try to tie-break using the min detour instead of the node id?
         int[] nodes = new int[nNodes];
         return makeDfs(cp,
                 // each decision in the search tree will minimize the detour of adding a new node to the path
@@ -145,11 +107,10 @@ public class OTSPBench extends Benchmark {
 
         // ===================== read & preprocessing =====================
 
-        instance = new OptionalTSPInstance(instancePath);
+        instance = new TSPTWInstance(instancePath);
         start = instance.start;
         nNodes = instance.nNodes;
         end = nNodes;
-        nRequired = instance.nRequired;
         // a SeqVar needs both a start and an end node, duplicate the start
         distance = new int[nNodes + 1][nNodes + 1];
         int lengthUpperBound = 0;
@@ -166,28 +127,38 @@ public class OTSPBench extends Benchmark {
         cp = makeSolver();
         // route for the traveler
         tour = makeSeqVar(cp, nNodes + 1, start, end);
+        // all nodes must be visited
+        for (int node = 0 ; node < nNodes ; node++) {
+            tour.require(node);
+        }
         // distance traveled
         totDistance = makeIntVar(cp, 0, lengthUpperBound);
+        // time at which the departure of each node occurs
+        time = new CPIntVar[nNodes + 1];
+        for (int node = 0; node < nNodes; node++) {
+            int earliest = instance.timeWindows[node].earliest;
+            int latest = instance.timeWindows[node].latest;
+            time[node] = makeIntVar(cp, earliest, latest);
+        }
+        time[end] = makeIntVar(cp, instance.timeWindows[start].earliest, instance.timeWindows[start].latest);
 
         // ===================== constraints =====================
 
-        // require a given number of nodes to be visited
-        CPIntVar[] isNodeRequired = new CPIntVar[nNodes];
-        for (int node = 0 ; node < nNodes ; node++) {
-            isNodeRequired[node] = tour.isNodeRequired(node);
-        }
-        cp.post(sum(isNodeRequired, nRequired));
-
+        // time windows
+        cp.post(new TransitionTimes(tour, time, distance));
         // tracks the distance over the sequence
         addDistanceConstraint(tour, distance, totDistance);
     }
 
     /**
      * Example of usage:
-     * -f "data/OTSP/instance_30_30.xml" -m original
+     * -f "data/TSPTW/Dumas/n60w20.001.txt" -m original
      * @param args
      */
     public static void main(String[] args) {
-        new OTSPBench(args).solve();
+        new TSPTWBench(args).solve();
     }
+
 }
+
+// TSPTWBench | data/TSPTW/Dumas/n60w20.001.txt | ORIGINAL | 551.000 | 60.000 | 0.142 | 4560 | 2269 | 12 | true | [(t=0.060; nodes=24; fails=2; obj=571.000) (t=0.065; nodes=25; fails=2; obj=570.000) (t=0.065; nodes=28; fails=2; obj=560.000) (t=0.065; nodes=29; fails=2; obj=559.000) (t=0.066; nodes=39; fails=6; obj=558.000) (t=0.066; nodes=52; fails=12; obj=557.000) (t=0.069; nodes=109; fails=40; obj=556.000) (t=0.075; nodes=278; fails=124; obj=555.000) (t=0.086; nodes=785; fails=376; obj=554.000) (t=0.088; nodes=954; fails=460; obj=553.000) (t=0.098; nodes=1555; fails=759; obj=552.000) (t=0.101; nodes=1734; fails=848; obj=551.000)] | -f data/TSPTW/Dumas/n60w20.001.txt -m original

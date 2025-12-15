@@ -76,20 +76,6 @@ public class PCTSPBench extends Benchmark {
         );
     }
 
-    /**
-     * Select min with tie breaks using the smallest int value
-     */
-    private static<N extends Comparable<N>> OptionalInt selectMin(int[] x, int n, Predicate<Integer> p, Function<Integer, N> f) {
-        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -> {
-            int comparison = f.apply(i).compareTo(f.apply(j));
-            if (comparison == 0) {
-                return Math.min(i, j);
-            } else {
-                return comparison < 0 ? i : j;
-            }
-        });
-    }
-
     @Override
     protected Objective makeObjective() {
         return cp.minimize(objVar);

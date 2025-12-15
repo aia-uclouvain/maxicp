@@ -12,6 +12,9 @@ import org.maxicp.util.exception.NotImplementedException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -136,6 +139,20 @@ public abstract class Benchmark {
             }
             case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new NotImplementedException("not yet implemented");
         }
+    }
+
+    /**
+     * Select min with tie breaks using the smallest int value
+     */
+    protected static<N extends Comparable<N>> OptionalInt selectMin(int[] x, int n, Predicate<Integer> p, Function<Integer, N> f) {
+        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -> {
+            int comparison = f.apply(i).compareTo(f.apply(j));
+            if (comparison == 0) {
+                return Math.min(i, j);
+            } else {
+                return comparison < 0 ? i : j;
+            }
+        });
     }
 
     public void addSearchListeners(DFSearch search) {
