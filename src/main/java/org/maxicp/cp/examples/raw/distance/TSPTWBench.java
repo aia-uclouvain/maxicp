@@ -160,5 +160,3 @@ public class TSPTWBench extends Benchmark {
     }
 
 }
-
-// TSPTWBench | data/TSPTW/Dumas/n60w20.001.txt | ORIGINAL | 551.000 | 60.000 | 0.142 | 4560 | 2269 | 12 | true | [(t=0.060; nodes=24; fails=2; obj=571.000) (t=0.065; nodes=25; fails=2; obj=570.000) (t=0.065; nodes=28; fails=2; obj=560.000) (t=0.065; nodes=29; fails=2; obj=559.000) (t=0.066; nodes=39; fails=6; obj=558.000) (t=0.066; nodes=52; fails=12; obj=557.000) (t=0.069; nodes=109; fails=40; obj=556.000) (t=0.075; nodes=278; fails=124; obj=555.000) (t=0.086; nodes=785; fails=376; obj=554.000) (t=0.088; nodes=954; fails=460; obj=553.000) (t=0.098; nodes=1555; fails=759; obj=552.000) (t=0.101; nodes=1734; fails=848; obj=551.000)] | -f data/TSPTW/Dumas/n60w20.001.txt -m original

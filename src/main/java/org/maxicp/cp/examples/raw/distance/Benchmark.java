@@ -7,6 +7,7 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
 
 import java.util.ArrayList;
@@ -180,7 +181,15 @@ public abstract class Benchmark {
         try {
             initialTimeMS = System.currentTimeMillis();
             // initialize the model
-            makeModel(instancePath);
+            try {
+                makeModel(instancePath);
+            } catch (InconsistencyException inconsistency) {
+                // inconsistency was thrown when creating the model, meaning that the instance is infeasible
+                statistics = new SearchStatistics();
+                statistics.setCompleted();
+                System.out.println(this);
+                return;
+            }
             // make the search and add listeners
             DFSearch search = makeDFSearch();
             Objective objective = makeObjective();
@@ -250,7 +259,7 @@ public abstract class Benchmark {
 
     private String bestSolutionString() {
         if (solutions == null || solutions.isEmpty()) {
-            return "";
+            return "NaN";
         } else {
             return String.format("%.3f", solutions.getLast().objective());
         }
