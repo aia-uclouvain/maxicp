@@ -27,17 +27,9 @@ public class MinCostMaxFlow {
 
     private final int[] result = new int[2];
 
-
-    public MinCostMaxFlow(int H, int numNodes) {
-        this.numNodes = numNodes;
-        this.H = H;
-
-        this.found = new boolean[numNodes];
-        this.flow = new int[numNodes][numNodes];
-        this.dist = new int[numNodes + 1];
-        this.dad = new int[numNodes];
-        this.pi = new int[numNodes];
-    }
+    private boolean linkedDefined;
+    private int[] linkedPred;
+    private int[] linkedSucc;
 
     public MinCostMaxFlow(int numNodes) {
         this.numNodes = numNodes;
@@ -47,17 +39,17 @@ public class MinCostMaxFlow {
         this.dist = new int[numNodes + 1];
         this.dad = new int[numNodes];
         this.pi = new int[numNodes];
+        this.linkedPred = new int[numNodes];
+        this.linkedSucc = new int[numNodes];
     }
 
     public boolean run(int H, int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
         this.H = H;
-        return run(source, dest, capMaxNetworkFlow, costNetworkFlow);
-    }
-
-
-    public boolean run(int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
         this.cost = costNetworkFlow;
         this.capMax = capMaxNetworkFlow;
+        linkedDefined = false;
+        Arrays.fill(linkedPred, -1);
+        Arrays.fill(linkedSucc, -1);
         getMaxFlowByMaxCapacity(source, dest, numNodes);
 
         totalFlow = result[0];
@@ -75,6 +67,7 @@ public class MinCostMaxFlow {
 
         // Initialise the dist[] to INF
         Arrays.fill(dist, INF);
+
 
         // Distance from the source node
         dist[source] = 0;
@@ -200,5 +193,34 @@ public class MinCostMaxFlow {
 
     public int[][] getFlow() {
         return flow;
+    }
+
+    private void initLinks() {
+        linkedDefined = true;
+        for (int i = 1; i < numNodes; i++) {
+            for (int k = 0; k < numNodes; k++) {
+                if (flow[i][k] != 0) {
+                    linkedPred[k] = i;
+                }
+                if (flow[k][i] != 0) {
+                    linkedSucc[k] = i;
+                }
+            }
+        }
+    }
+
+    public int[] getLinkedPred() {
+        if (!linkedDefined) {
+            initLinks();
+        }
+        return linkedPred;
+
+    }
+
+    public int[] getLinkedSucc() {
+        if (!linkedDefined) {
+            initLinks();
+        }
+        return linkedSucc;
     }
 }

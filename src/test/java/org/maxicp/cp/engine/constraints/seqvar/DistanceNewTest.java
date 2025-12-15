@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
 import static org.maxicp.search.Searches.*;
 
 public class DistanceNewTest extends CPSolverTest {
@@ -271,6 +272,74 @@ public class DistanceNewTest extends CPSolverTest {
         cp.getStateManager().saveState();
         StatsAndSolution resultsNoBounds = searchWith(seqVar, distance, transitions,
                 () -> cp.post(new Distance(seqVar, transitions, distance)));
+        cp.getStateManager().restoreState();
+
+        // search using bound computation
+        StatsAndSolution resultsWithBounds = searchWith(seqVar, distance, transitions,
+                () -> cp.post(new DistanceNew(seqVar, transitions, distance)));
+        // compare the 2 searches
+
+        assertEquals(resultsNoBounds.cost, resultsWithBounds.cost, "The optimal solutions must be the same no matter the constraint used");
+        assertTrue(resultsWithBounds.stats.numberOfNodes() <= resultsNoBounds.stats.numberOfNodes(),
+                "The search should explore strictly less nodes when using bound computation (in optimization)");
+        System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
+                "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
+    }
+
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+            nNodes, seed
+                7, 3
+            """)
+    public void testTSPLessSearchNodesUsingBound1(int nNodes, int seed) {
+        // instance data
+        Random random = new Random(seed);
+        int[][] transitions = randomTransitions(random, nNodes);
+        int roughUpperBound = Arrays.stream(transitions).mapToInt(arr -> Arrays.stream(arr).max().getAsInt()).sum();
+        // model
+        CPSolver cp = makeSolver();
+        CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, nNodes - 2, nNodes - 1);
+        for (int node = 0; node < nNodes; node++)
+            seqVar.require(node);
+
+
+        seqVar.insert(5, 0);
+//        seqVar.insert(0, 1);
+//        seqVar.notBetween(0, 2, 1);
+//        seqVar.notBetween(5, 2, 0);
+//        seqVar.notBetween(5, 3, 0);
+//        seqVar.notBetween(1, 3, 6);
+
+        int[][] succs = new int[nNodes][nNodes];
+        int[][] preds = new int[nNodes][nNodes];
+        int[] numSuccs = new int[nNodes];
+        int[] numPreds = new int[nNodes];
+        int[] nextMember = new int[nNodes];
+        for (int i = 0; i < nNodes; i++) { // from variables to values
+            numSuccs[i] = seqVar.fillSucc(i, succs[i]);
+            numPreds[i] = seqVar.fillPred(i, preds[i]);
+            if (seqVar.isNode(i, MEMBER)) {
+                nextMember[i] = seqVar.memberAfter(i);
+            }
+        }
+
+        System.out.println(Arrays.toString(numSuccs));
+        System.out.println(Arrays.deepToString(succs));
+
+        CostAndSequence best = bestCostFor(seqVar, transitions, roughUpperBound);
+
+        System.out.println("Best cost: " + best.cost);
+        System.out.println("Best sequence: " + Arrays.toString(best.sequence));
+
+
+        CPIntVar distance = CPFactory.makeIntVar(cp, 0, roughUpperBound);
+
+
+        // search without using bound computation
+        cp.getStateManager().saveState();
+        StatsAndSolution resultsNoBounds = searchWith(seqVar, distance, transitions,
+                () -> cp.post(new Distance(seqVar, transitions, distance)));
+
         cp.getStateManager().restoreState();
 
         // search using bound computation

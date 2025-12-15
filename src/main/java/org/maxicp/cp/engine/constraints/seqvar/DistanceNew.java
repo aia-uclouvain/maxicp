@@ -53,8 +53,8 @@ public class DistanceNew extends AbstractCPConstraint {
     private boolean useMST = false;
     private boolean useMinArborescence = false;
     private boolean usePredMin = false;
-    private boolean useDetourMin = true;
-    private boolean useMatching = false;
+    private boolean useDetourMin = false;
+    private boolean useMatching = true;
 
 
     public DistanceNew(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
@@ -135,6 +135,8 @@ public class DistanceNew extends AbstractCPConstraint {
             d += dist[nodes[i]][nodes[i + 1]];
         }
         if (seqVar.isFixed()) {
+            System.out.println("&&&&&&&&&&&&&&&&&&&&");
+            System.out.println(seqVar);
             totalDist.fix(d);
             setActive(false);
             return;
@@ -164,8 +166,6 @@ public class DistanceNew extends AbstractCPConstraint {
 
         int maxDetour = totalDist.max() - d;
         // filter invalid insertions
-//        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@");
-//        System.out.println(seqVar);
         int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
         for (int i = 0; i < nInsertable; i++) {
             int node = nodes[i];
@@ -206,6 +206,13 @@ public class DistanceNew extends AbstractCPConstraint {
     }
 
     private int updateLowerBoundMatching() {
+
+        for (int i = 0; useMatching && i < numNodesInMatching; i++) {
+            Arrays.fill(capMaxNetworkFlow[i], 0);
+            Arrays.fill(costNetworkFlow[i], 0);
+            Arrays.fill(capMaxResidualGraph[i], 0);
+            Arrays.fill(costResidualGraph[i], 0);
+        }
 
         for (int i = 0; i < numNodes; i++) {
             capMaxNetworkFlow[0][i + 1] = 1; // source to first layer
@@ -418,8 +425,8 @@ public class DistanceNew extends AbstractCPConstraint {
                 }
             }
         }
-//        System.out.println("prev "+src);
-//        System.out.println(Arrays.toString(prev));
+        System.out.println("prev " + src);
+        System.out.println(Arrays.toString(prev));
 //        System.out.println(Arrays.toString(costPrev));
 
     }
@@ -434,60 +441,90 @@ public class DistanceNew extends AbstractCPConstraint {
 
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
-//                System.out.println("0 not between " + pred + " " + node + " " + succ);
+                System.out.println("0 not between " + pred + " " + node + " " + succ);
+                return;
             } else if (seqVar.isNode(node, REQUIRED)) {
                 if (usePredMin && LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-//                    System.out.println("1R not between " + pred + " " + node + " " + succ);
+                    System.out.println("1R not between " + pred + " " + node + " " + succ);
+                    return;
                 } else if (useDetourMin && LBDetourMin - minDetour[node] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-//                    System.out.println("2R not between " + pred + " " + node + " " + succ);
+                    System.out.println("2R not between " + pred + " " + node + " " + succ);
+                    return;
                 }
             } else {
                 if (usePredMin && LBPredMin - costMinPred[succ] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-//                    System.out.println("1O not between " + pred + " " + node + " " + succ);
+                    System.out.println("1O not between " + pred + " " + node + " " + succ);
+                    return;
                 } else if (useDetourMin && LBDetourMin + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-//                    System.out.println("2O not between " + pred + " " + node + " " + succ);
+                    System.out.println("2O not between " + pred + " " + node + " " + succ);
+                    return;
                 }
             }
             //TODO: filtrage matching
             if (useMatching) {
-                builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
-
-                createListOfEdges();
-
-
-                int nPred = pred + 1;
-                int nNode = numNodes + 1 + node;
-
-//                System.out.println("filtrage "+pred+" "+node+" "+succ);
-
-                if (minCostMaxFlow.getFlow()[nPred][nNode] > 0)
-                    return; // skip if already assigned
-
-                long[] SP = new long[numNodesInMatching];
-
-                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP);
-
-
-                // Check if the arc (nPred, nNode) is consistent with Régin 2002
-                if (SP[nPred] > totalDist.max() - LBMatching - costResidualGraph[nPred][nNode]) {
-                    // Arc is not consistent, remove it
-
-                    seqVar.notBetween(pred, node, succ);
-//                    if (nNode==11 ) {
-//                        System.out.println("3 not between " + pred + " " + node + " " + succ);
-//                        System.out.println("residual graph");
-//                        System.out.println(Arrays.deepToString(capMaxResidualGraph));
-//                        System.out.println(Arrays.deepToString(costResidualGraph));
-//                        System.out.println("shortest path from " + nNode + " to " + nPred + " is " + SP[nPred]);  //TODO: problem with overflow
-//                        System.out.println(Arrays.toString(SP));
-//                        System.out.println("totalDist.max() " + totalDist.max() + " LBMatching " + LBMatching + " costResidualGraph[nPred][nNode] " + costResidualGraph[nPred][nNode]);
-////                    }
+                if (node == 6) {
+                    System.out.println(Arrays.toString(minCostMaxFlow.getLinkedPred()));
+                    System.out.println(node);
+                    System.out.println("pred " + (node + numNodes + 1));
+                    System.out.println("succ " + (node + 1));
+                    System.out.println(minCostMaxFlow.getLinkedPred()[node + numNodes + 1]);
+                    System.out.println(minCostMaxFlow.getLinkedSucc()[node + 1]);
+                    System.out.println(Arrays.deepToString(minCostMaxFlow.getFlow()));
                 }
+                int nx1 = node + 1;
+                int nx2 = node + numNodes + 1;
+
+                builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
+                createListOfEdges();
+                long[] SP = new long[numNodesInMatching];
+                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nx2, SP);
+
+                System.out.println(Arrays.toString(SP));
+                System.out.println("SP "+SP[nx1]);
+                System.out.println(-dist[minCostMaxFlow.getLinkedPred()[nx2] - 1][node] - dist[node][minCostMaxFlow.getLinkedSucc()[nx1] - numNodes - 1]);
+                System.out.println(detour);
+                if (LBMatching + SP[nx1] + detour > totalDist.max()) {
+                    seqVar.notBetween(pred, node, succ);
+                    System.out.println("3 not between " + pred + " " + node + " " + succ);
+                }
+//                if (LBMatching - dist[minCostMaxFlow.getLinkedPred()[nx2] - 1][node] - dist[node][minCostMaxFlow.getLinkedSucc()[nx1] - numNodes - 1] + detour > totalDist.max()) {
+//                    seqVar.notBetween(pred, node, succ);
+//                    System.out.println("3 not between " + pred + " " + node + " " + succ);
+//                }
             }
+//            if (useMatching) {
+//                builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
+//
+//                createListOfEdges();
+//
+//
+//                int nPred = pred + 1;
+//                int nNode = numNodes + 1 + node;
+//
+////                System.out.println("filtrage "+pred+" "+node+" "+succ);
+//
+//                if (minCostMaxFlow.getFlow()[nPred][nNode] > 0)
+//                    return; // skip if already assigned
+//
+//                long[] SP = new long[numNodesInMatching];
+//
+//                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP);
+//
+//
+//                // Check if the arc (nPred, nNode) is consistent with Régin 2002
+//                if (SP[nPred] > totalDist.max() - LBMatching - costResidualGraph[nPred][nNode]) {
+//                    // Arc is not consistent, remove it
+//
+//
+//                    seqVar.notBetween(pred, node, succ);
+//                    System.out.println("3 not between " + pred + " " + node + " " + succ);
+//
+//                }
+//            }
         }
 
     }
