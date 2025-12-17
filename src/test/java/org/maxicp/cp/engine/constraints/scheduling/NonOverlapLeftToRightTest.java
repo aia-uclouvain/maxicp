@@ -125,6 +125,25 @@ public class NonOverlapLeftToRightTest {
         assertTrue(failed);
     }
 
+    @Test
+    public void testEdgeFinder3() {
+        // example p26 of Petr Vilim's thesis
+        NoOverlapLeftToRight algo = new NoOverlapLeftToRight(6);
+
+        int[] startMin = new int[]{4, 0, 9, 15, 20, 21};
+        int[] endMax = new int[] {32, 27, 22, 43, 38, 36};
+        int[] duration = new int[]{6, 8, 4, 5, 8, 8};
+
+        algo.update(startMin, duration, endMax, 6);
+        boolean failed = false;
+        try {
+            algo.edgeFinding();
+        } catch (InconsistencyException e) {
+            failed = true;
+        }
+        assertFalse(failed);
+        assertArrayEquals( new int[]{4, 0, 9, 36, 20, 21}, algo.startMin);
+    }
 
     @Test
     public void testFilter1() {
