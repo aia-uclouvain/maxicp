@@ -170,10 +170,10 @@ public class ThetaLambdaTree {
             // sump update
             node.thetaSump = left.thetaSump + right.thetaSump;
             if (left.thetaLambdaSump + right.thetaSump > left.thetaSump + right.thetaLambdaSump) {
-                nodes[pos].thetaLambdaSump = left.thetaSump + right.thetaLambdaSump;
+                nodes[pos].thetaLambdaSump = left.thetaLambdaSump + right.thetaSump;
                 nodes[pos].responsibleThetaLambdaSump = left.responsibleThetaLambdaSump;
             } else {
-                nodes[pos].thetaLambdaSump = left.thetaLambdaSump + right.thetaSump;
+                nodes[pos].thetaLambdaSump = left.thetaSump + right.thetaLambdaSump;
                 nodes[pos].responsibleThetaLambdaSump = right.responsibleThetaLambdaSump;
             }
 
