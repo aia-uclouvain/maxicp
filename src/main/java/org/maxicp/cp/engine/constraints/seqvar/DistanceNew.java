@@ -53,8 +53,8 @@ public class DistanceNew extends AbstractCPConstraint {
     private boolean useMST = false;
     private boolean useMinArborescence = false;
     private boolean usePredMin = false;
-    private boolean useDetourMin = false;
-    private boolean useMatching = true;
+    private boolean useDetourMin = true;
+    private boolean useMatching = false;
 
 
     public DistanceNew(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
@@ -135,8 +135,6 @@ public class DistanceNew extends AbstractCPConstraint {
             d += dist[nodes[i]][nodes[i + 1]];
         }
         if (seqVar.isFixed()) {
-            System.out.println("&&&&&&&&&&&&&&&&&&&&");
-            System.out.println(seqVar);
             totalDist.fix(d);
             setActive(false);
             return;
@@ -425,9 +423,6 @@ public class DistanceNew extends AbstractCPConstraint {
                 }
             }
         }
-        System.out.println("prev " + src);
-        System.out.println(Arrays.toString(prev));
-//        System.out.println(Arrays.toString(costPrev));
 
     }
 
@@ -441,40 +436,26 @@ public class DistanceNew extends AbstractCPConstraint {
 
             if (detour > maxDetour) { // detour is too long
                 seqVar.notBetween(pred, node, succ);
-                System.out.println("0 not between " + pred + " " + node + " " + succ);
                 return;
             } else if (seqVar.isNode(node, REQUIRED)) {
                 if (usePredMin && LBPredMin - costMinPred[node] - costMinPred[succ] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-                    System.out.println("1R not between " + pred + " " + node + " " + succ);
                     return;
                 } else if (useDetourMin && LBDetourMin - minDetour[node] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-                    System.out.println("2R not between " + pred + " " + node + " " + succ);
                     return;
                 }
             } else {
                 if (usePredMin && LBPredMin - costMinPred[succ] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-                    System.out.println("1O not between " + pred + " " + node + " " + succ);
                     return;
                 } else if (useDetourMin && LBDetourMin + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-                    System.out.println("2O not between " + pred + " " + node + " " + succ);
                     return;
                 }
             }
             //TODO: filtrage matching
             if (useMatching) {
-                if (node == 6) {
-                    System.out.println(Arrays.toString(minCostMaxFlow.getLinkedPred()));
-                    System.out.println(node);
-                    System.out.println("pred " + (node + numNodes + 1));
-                    System.out.println("succ " + (node + 1));
-                    System.out.println(minCostMaxFlow.getLinkedPred()[node + numNodes + 1]);
-                    System.out.println(minCostMaxFlow.getLinkedSucc()[node + 1]);
-                    System.out.println(Arrays.deepToString(minCostMaxFlow.getFlow()));
-                }
                 int nx1 = node + 1;
                 int nx2 = node + numNodes + 1;
 
@@ -483,13 +464,8 @@ public class DistanceNew extends AbstractCPConstraint {
                 long[] SP = new long[numNodesInMatching];
                 bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nx2, SP);
 
-                System.out.println(Arrays.toString(SP));
-                System.out.println("SP "+SP[nx1]);
-                System.out.println(-dist[minCostMaxFlow.getLinkedPred()[nx2] - 1][node] - dist[node][minCostMaxFlow.getLinkedSucc()[nx1] - numNodes - 1]);
-                System.out.println(detour);
                 if (LBMatching + SP[nx1] + detour > totalDist.max()) {
                     seqVar.notBetween(pred, node, succ);
-                    System.out.println("3 not between " + pred + " " + node + " " + succ);
                 }
 //                if (LBMatching - dist[minCostMaxFlow.getLinkedPred()[nx2] - 1][node] - dist[node][minCostMaxFlow.getLinkedSucc()[nx1] - numNodes - 1] + detour > totalDist.max()) {
 //                    seqVar.notBetween(pred, node, succ);

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-#filename = "../results/pctsp/pctsp-2025-11-17_10-23-19-0ee3f57b1"  # arc consistent edge estimator
+# filename = "../results/pctsp/pctsp-2025-11-17_10-23-19-0ee3f57b1"  # arc consistent edge estimator
 filename = "../results/pctsp/pctsp-2025-11-17_10-29-07-0ee3f57b1"  # pure sequence edge estimator
 transpose = True  # if true, rows are the methods and columns are the instances
 
