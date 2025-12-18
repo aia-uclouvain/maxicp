@@ -15,21 +15,16 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.ArrayList;
 
 /**
- * NoOverlap constraint, ensures that a set of interval variables do not overlap in time.
- * The filtering algorithm implemented are:
- * - Overload checking
- * - Detectable precedences
- * - Not-First, Not-Last
- * - Edge-finding
+ * Bound Consistency filtering for the NoOverlap constraint
  *
- * @author Pierre Schaus, with the valuable contribution of Emma Legrand and Roger Kameugne for debugging
+ * @author Pierre Schaus
  */
-public class NoOverlap extends AbstractCPConstraint {
+public class NoOverlapBC extends AbstractCPConstraint {
 
     final CPIntervalVar[] vars;
     private CPBoolVar[] precedences;
 
-    public NoOverlap(CPIntervalVar... vars) {
+    public NoOverlapBC(CPIntervalVar... vars) {
         super(vars[0].getSolver());
         this.vars = vars;
     }
@@ -37,6 +32,7 @@ public class NoOverlap extends AbstractCPConstraint {
     @Override
     public void post() {
         ArrayList<CPBoolVar> precedences = new ArrayList<>();
+
         for (int i = 0; i < vars.length; i++) {
             for (int j = i + 1; j < vars.length; j++) {
                 NoOverlapBinary binary = new NoOverlapBinary(vars[i], vars[j]);
@@ -45,7 +41,8 @@ public class NoOverlap extends AbstractCPConstraint {
             }
         }
         this.precedences = precedences.toArray(new CPBoolVar[0]);
-        getSolver().post(new NoOverlapGlobal(vars));
+
+        getSolver().post(new NoOverlapBCGlobal(vars));
     }
 
     /**
@@ -60,7 +57,7 @@ public class NoOverlap extends AbstractCPConstraint {
 }
 
 
-class NoOverlapGlobal extends AbstractCPConstraint {
+class NoOverlapBCGlobal extends AbstractCPConstraint {
     StateSparseSet activities;
     CPIntervalVar[] intervals;
     int[] iterator;
@@ -72,9 +69,9 @@ class NoOverlapGlobal extends AbstractCPConstraint {
 
     int n;
 
-    NoOverlapLeftToRight globalFilter;
+    NoOverlapBCLeftToRight globalFilter;
 
-    NoOverlapGlobal(CPIntervalVar... vars) {
+    NoOverlapBCGlobal(CPIntervalVar... vars) {
         super(vars[0].getSolver());
         this.intervals = vars;
         activities = new StateSparseSet(getSolver().getStateManager(), vars.length, 0);
@@ -83,7 +80,7 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         endMax = new int[vars.length];
         duration = new int[vars.length];
         isOptional = new boolean[vars.length];
-        globalFilter = new NoOverlapLeftToRight(vars.length);
+        globalFilter = new NoOverlapBCLeftToRight(vars.length);
     }
 
     private void update() {
@@ -98,7 +95,6 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         n = activities.fillArray(iterator);
         for (int iter = 0; iter < n; iter++) {
             int i = iterator[iter];
-            ;
             CPIntervalVar act = intervals[i];
             startMin[iter] = act.startMin();
             endMax[iter] = act.endMax();
@@ -133,10 +129,10 @@ class NoOverlapGlobal extends AbstractCPConstraint {
                 endMax[i] = 1000000;
             }
         }
-        NoOverlapLeftToRight.Outcome oc = globalFilter.filter(startMin, duration, endMax, n);
-        if (oc == NoOverlapLeftToRight.Outcome.INCONSISTENCY) {
+        NoOverlapBCLeftToRight.Outcome oc = globalFilter.filter(startMin, duration, endMax, n);
+        if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {
             throw InconsistencyException.INCONSISTENCY;
-        } else if (oc == NoOverlapLeftToRight.Outcome.CHANGE) {
+        } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {
             // update startMin and endMax bounds
             for (int i = 0; i < n; i++) {
                 CPIntervalVar interval = intervals[iterator[i]];
@@ -161,9 +157,9 @@ class NoOverlapGlobal extends AbstractCPConstraint {
             endMax[i] = isOptional[i] ? 1000000 : -startMinOld;
         }
         oc = globalFilter.filter(startMin, duration, endMax, n);
-        if (oc == NoOverlapLeftToRight.Outcome.INCONSISTENCY) {
+        if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {
             throw InconsistencyException.INCONSISTENCY;
-        } else if (oc == NoOverlapLeftToRight.Outcome.CHANGE) {
+        } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {
             // update endMax variables
             for (int i = 0; i < n; i++) {
                 CPIntervalVar interval = intervals[iterator[i]];
@@ -173,8 +169,8 @@ class NoOverlapGlobal extends AbstractCPConstraint {
                         activities.remove(iterator[i]);
                     }
                 } else {
-                    intervals[iterator[i]].setEndMax(-globalFilter.startMin[i]);
-                    intervals[iterator[i]].setStartMin(-globalFilter.endMax[i]);
+                    intervals[iterator[i]].setEndMax(-startMin[i]);
+                    intervals[iterator[i]].setStartMin(-endMax[i]);
                 }
             }
         }

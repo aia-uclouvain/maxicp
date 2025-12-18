@@ -57,7 +57,7 @@ public class NoOverlapLeftToRight {
      * @param n        a number between 0 and startMin.length-1, is the number of activities to consider (prefix),
      *                 The other ones are just ignored
      * @return the outcome of the filtering, either NO_CHANGE, CHANGE or INCONSISTENCY.
-     * If a change is detected, the time windows (startMin and endMax) are reduced.
+     * If a change is detected, the time windows of the instance variables (startMin and endMax) are reduced.
      */
     public Outcome filter(int[] startMin, int[] duration, int[] endMax, int n) {
         update(startMin, duration, endMax, n);

@@ -108,7 +108,6 @@ public class NonOverlapLeftToRightTest {
 
     @Test
     public void testEdgeFinder2() {
-        // example p26 of Petr Vilim's thesis
         NoOverlapLeftToRight algo = new NoOverlapLeftToRight(8);
 
         int[] startMin = new int[]{45, 128, 130,  0, 38, 50, 70, 33};
@@ -127,7 +126,6 @@ public class NonOverlapLeftToRightTest {
 
     @Test
     public void testEdgeFinder3() {
-        // example p26 of Petr Vilim's thesis
         NoOverlapLeftToRight algo = new NoOverlapLeftToRight(6);
 
         int[] startMin = new int[]{4, 0, 9, 15, 20, 21};
