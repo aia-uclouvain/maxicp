@@ -7,11 +7,15 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.OptionalInt;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -138,6 +142,20 @@ public abstract class Benchmark {
         }
     }
 
+    /**
+     * Select min with tie breaks using the smallest int value
+     */
+    protected static<N extends Comparable<N>> OptionalInt selectMin(int[] x, int n, Predicate<Integer> p, Function<Integer, N> f) {
+        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -> {
+            int comparison = f.apply(i).compareTo(f.apply(j));
+            if (comparison == 0) {
+                return Math.min(i, j);
+            } else {
+                return comparison < 0 ? i : j;
+            }
+        });
+    }
+
     public void addSearchListeners(DFSearch search) {
         search.onSolution(s -> {
             double time = elapsedSeconds();
@@ -163,7 +181,15 @@ public abstract class Benchmark {
         try {
             initialTimeMS = System.currentTimeMillis();
             // initialize the model
-            makeModel(instancePath);
+            try {
+                makeModel(instancePath);
+            } catch (InconsistencyException inconsistency) {
+                // inconsistency was thrown when creating the model, meaning that the instance is infeasible
+                statistics = new SearchStatistics();
+                statistics.setCompleted();
+                System.out.println(this);
+                return;
+            }
             // make the search and add listeners
             DFSearch search = makeDFSearch();
             Objective objective = makeObjective();
@@ -233,7 +259,7 @@ public abstract class Benchmark {
 
     private String bestSolutionString() {
         if (solutions == null || solutions.isEmpty()) {
-            return "";
+            return "NaN";
         } else {
             return String.format("%.3f", solutions.getLast().objective());
         }
