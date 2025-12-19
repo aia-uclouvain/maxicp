@@ -169,8 +169,8 @@ class NoOverlapBCGlobal extends AbstractCPConstraint {
                         activities.remove(iterator[i]);
                     }
                 } else {
-                    intervals[iterator[i]].setEndMax(-startMin[i]);
-                    intervals[iterator[i]].setStartMin(-endMax[i]);
+                    intervals[iterator[i]].setEndMax(-globalFilter.startMin[i]);
+                    intervals[iterator[i]].setStartMin(-globalFilter.endMax[i]);
                 }
             }
         }
