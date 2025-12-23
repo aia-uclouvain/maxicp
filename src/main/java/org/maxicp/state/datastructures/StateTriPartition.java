@@ -274,6 +274,14 @@ public class StateTriPartition {
         return size;
     }
 
+
+    public int fillIncluded(Integer[] dest) {
+        int size = i.value();
+        for (int i = 0; i < size ; ++i)
+            dest[i] = elems[i] + ofs;
+        return size;
+    }
+
     /**
      * Sets the first values of <code>dest</code> to the included ones
      * that also satisfy the given filter predicate
