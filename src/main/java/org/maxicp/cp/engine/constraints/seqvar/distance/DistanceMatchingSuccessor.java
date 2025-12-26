@@ -250,11 +250,11 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - nNodes;
 
         if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
-            seqVar.notBetween(seqVar.start(), node, predNode);
+            seqVar.exclude(node);
         }
 
-        if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
-            seqVar.notBetween(succNode, node, seqVar.end());
+        else if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+            seqVar.exclude(node);
         }
 
         checkConsistency[node] = true;
