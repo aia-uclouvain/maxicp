@@ -12,23 +12,24 @@ import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
 public class DistanceMatchingSuccessor extends AbstractDistance {
 
-    private final int[][] succs;
-    private final int[] numSuccs;
-    private final MinCostMaxFlow minCostMaxFlow;
-    private final int numNodesInMatching;
-    private final int[][] capMaxNetworkFlow;
-    private final int[][] costNetworkFlow;
-    private boolean initResidualGraph;
-    private final int[][] capMaxResidualGraph;
-    private final int[][] costResidualGraph;
+    protected final int[][] succs;
+    protected final int[] numSuccs;
+    protected MinCostMaxFlow minCostMaxFlow;
+    protected final int numNodesInMatching;
+    protected final int[][] capMaxNetworkFlow;
+    protected final int[][] costNetworkFlow;
+    protected boolean initResidualGraph;
+    protected final int[][] capMaxResidualGraph;
+    protected final int[][] costResidualGraph;
     private int numEdgesResidualGraph;
     private final int[][] edgesResidualGraph;
 
-    private final long[] SP;
+    private final boolean[] SPCompute;
+    private final long[][] SP;
 
-    private final EdgeIterator edgeIterator;
+    protected final EdgeIterator edgeIterator;
 
-    private final boolean[] checkConsistency;
+    protected final boolean[] checkConsistency;
 
     public DistanceMatchingSuccessor(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
@@ -42,7 +43,8 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         this.costResidualGraph = new int[numNodesInMatching][numNodesInMatching];
         this.edgesResidualGraph = new int[numNodesInMatching * numNodesInMatching][3];
         this.checkConsistency = new boolean[nNodes];
-        this.SP = new long[numNodesInMatching];
+        this.SPCompute = new boolean[numNodesInMatching];
+        this.SP = new long[numNodesInMatching][numNodesInMatching];
         edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
@@ -51,6 +53,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         edgeIterator.update();
         initResidualGraph = false;
         Arrays.fill(checkConsistency, false);
+        Arrays.fill(SPCompute, false);
         for (int i = 0; i < numNodesInMatching; i++) {
             Arrays.fill(capMaxNetworkFlow[i], 0);
             Arrays.fill(costNetworkFlow[i], 0);
@@ -83,6 +86,51 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         minCostMaxFlow.run(totalDist.max(), 0, numNodesInMatching - 1, capMaxNetworkFlow, costNetworkFlow);
 
         totalDist.removeBelow(minCostMaxFlow.getTotalCost());
+    }
+
+    @Override
+    public void filterDetourForRequired(int pred, int node, int succ, int detour) {
+        if (checkConsistency[node]) {
+            return;
+        }
+
+        int predNode = minCostMaxFlow.getLinkedPred()[nNodes + 1 + node] - 1;
+        int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - nNodes;
+
+        initResidualGraph();
+
+        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
+            seqVar.notBetween(seqVar.start(), node, predNode);
+        }
+
+        if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+            seqVar.notBetween(succNode, node, seqVar.end());
+        }
+
+        checkConsistency[node] = true;
+    }
+
+    @Override
+    public void filterDetourForOptional(int pred, int node, int succ, int detour) {
+        if (checkConsistency[node]) {
+            return;
+        }
+
+        int predNode = minCostMaxFlow.getLinkedPred()[nNodes + 1 + node] - 1;
+        int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - nNodes;
+
+        initResidualGraph();
+
+        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
+            seqVar.exclude(node);
+        }
+
+        else if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+            seqVar.exclude(node);
+        }
+
+        checkConsistency[node] = true;
+
     }
 
     private void builResidualGraph(int[][] capMaxNF, int[][] costNF, int[][] flow, int[][] capMaxRG, int[][] costRG) {
@@ -121,15 +169,9 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
     private void bellmanFord(int edgeCount, int[][] edges, int src, long[] shortestPath) {
 
-        // Initially distance from source to all other vertices
-        // is not known(Infinite).
         int INF = Integer.MAX_VALUE;
         Arrays.fill(shortestPath, INF);
         shortestPath[src] = 0;
-//        int[] prev = new int[numNodesInMatching];
-//        Arrays.fill(prev, -1);
-//        int[] costPrev = new int[numNodesInMatching];
-//        Arrays.fill(costPrev, INF);
         // Relaxation of all the edges V times, not (V - 1) as we
         // need one additional relaxation to detect negative cycle
         for (int i = 0; i < numNodesInMatching; i++) {
@@ -144,38 +186,15 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
                     }
                     // Update shortest distance to node v
                     shortestPath[v] = shortestPath[u] + wt;
-//                    prev[v] = u;
-//                    costPrev[v] = wt;
                 }
             }
         }
-//        System.out.println("prev " + src);
-//        System.out.println(Arrays.toString(prev));
-//        System.out.println(Arrays.toString(costPrev));
 
     }
 
-    @Override
-    public void filterDetourForRequired(int pred, int node, int succ, int detour) {
-        if (checkConsistency[node]) {
-            return;
-        }
 
-        int predNode = minCostMaxFlow.getLinkedPred()[nNodes + 1 + node] - 1;
-        int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - nNodes;
 
-        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
-            seqVar.notBetween(seqVar.start(), node, predNode);
-        }
-
-        if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
-            seqVar.notBetween(succNode, node, seqVar.end());
-        }
-
-        checkConsistency[node] = true;
-    }
-
-    private void initResidualGraph() {
+    protected void initResidualGraph() {
         if (!initResidualGraph) {
             builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
             createListOfEdges();
@@ -188,8 +207,11 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         int nPred;
         int nNode = nNodes + 1 + node;
 
-        initResidualGraph();
-        bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP);
+
+        if (!SPCompute[nNode]) {
+            bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP[nNode]);
+            SPCompute[nNode]=true;
+        }
 
         for (int pred = 0; pred < nNodes; pred++) {
 
@@ -200,7 +222,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
             }
 
             // Check if the arc (nPred, nNode) is consistent with Régin 2002
-            if (SP[nPred] != Integer.MAX_VALUE && SP[nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nNode]) {
+            if (SP[nNode][nPred] != Integer.MAX_VALUE && SP[nNode][nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nNode]) {
                 // Arc is consistent
                 onlyOnePossiblePred = false;
                 break;
@@ -215,8 +237,6 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         int nSucc;
         int nNode = node + 1;
 
-        initResidualGraph();
-
         for (int succ = 0; succ < nNodes; succ++) {
 
             nSucc = succ + 1 + nNodes;
@@ -226,10 +246,13 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
             }
 
 
-            bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nSucc, SP);
+            if (!SPCompute[nSucc]) {
+                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nSucc, SP[nSucc]);
+                SPCompute[nSucc]=true;
+            }
 
             // Check if the arc (nPred, nNode) is consistent with Régin 2002
-            if (SP[nNode] != Integer.MAX_VALUE && SP[nNode] <= totalDist.max() - totalDist.min() - costResidualGraph[nNode][nSucc]) {
+            if (SP[nSucc][nNode] != Integer.MAX_VALUE && SP[nSucc][nNode] <= totalDist.max() - totalDist.min() - costResidualGraph[nNode][nSucc]) {
                 // Arc is consistent
                 onlyOnePossibleSucc = false;
                 break;
@@ -240,24 +263,5 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
     }
 
 
-    @Override
-    public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        if (checkConsistency[node]) {
-            return;
-        }
 
-        int predNode = minCostMaxFlow.getLinkedPred()[nNodes + 1 + node] - 1;
-        int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - nNodes;
-
-        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
-            seqVar.exclude(node);
-        }
-
-        else if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
-            seqVar.exclude(node);
-        }
-
-        checkConsistency[node] = true;
-
-    }
 }

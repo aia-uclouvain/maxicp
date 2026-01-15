@@ -3,6 +3,8 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
+import java.util.Arrays;
+
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
 public class DistanceMinDetourSum extends AbstractDistance{
@@ -11,7 +13,6 @@ public class DistanceMinDetourSum extends AbstractDistance{
     private final int[] preds;
     private final int[] succs;
     private final int[] minDetour;
-    private final int[] inserts;
 
     private EdgeIterator edgeIterator;
 
@@ -20,7 +21,6 @@ public class DistanceMinDetourSum extends AbstractDistance{
         this.preds = new int[nNodes];
         this.succs = new int[nNodes];
         this.minDetour = new int[nNodes];
-        this.inserts = new int[nNodes];
         edgeIterator = new SeqvarEdgeIterator(seqVar);
     }
 
@@ -35,13 +35,13 @@ public class DistanceMinDetourSum extends AbstractDistance{
             minDetour[node] = Integer.MAX_VALUE;
             int nInsert = seqVar.fillInsert(node, inserts);
             // update with the detours currently in the sequence
-            for (int i = 0 ; i < nInsert ; i++)
+            for (int i = 0 ; i < nInsert ; i++) //(member, insertable, member)
                 updateMinDetour(inserts[i], node, seqVar.memberAfter(inserts[i]));
             for (int j = 0 ; j < nInsertable ; j++) {
                 if (j == n)
                     continue;
                 // detours on the edges within the sequence
-                for (int i = 0 ; i < nInsert ; i++) {
+                for (int i = 0 ; i < nInsert ; i++) { //(member, insertable, insertable) ET (insertable, insertable, member)
                     int pred = inserts[i];
                     int otherInsertable = nodes[j];
                     if (seqVar.hasEdge(pred, otherInsertable)) { // a chain pred -> otherInsertable -> next(pred) can be formed
@@ -50,7 +50,7 @@ public class DistanceMinDetourSum extends AbstractDistance{
                     }
                 }
                 // detours with insertable nodes
-                for (int k = j+1 ; k < nInsertable ; k++) {
+                for (int k = j+1 ; k < nInsertable ; k++) {  //(insertable, insertable, insertable)
                     if (k == n)
                         continue;
                     updateMinDetour(nodes[j], node, nodes[k]);
@@ -64,7 +64,7 @@ public class DistanceMinDetourSum extends AbstractDistance{
 
         // remove the lower bound on the total distance
         lowerBound = currentDist + totalMinDetour;
-        totalDist.removeBelow(currentDist + totalMinDetour);
+        totalDist.removeBelow(lowerBound);
     }
 
     public void updateMinDetour(int pred, int node, int succ) {

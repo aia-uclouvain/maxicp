@@ -251,12 +251,14 @@ public abstract class DistanceTest extends CPSolverTest {
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
             nNodes, seed
                 7, 3
+                7, 32
                 6,      10
                 10, 3
-                10, 6
+                10, 7
                 25,     1
                 25,     2
                 25,     42
+                
             """)
     public void testTSPLessSearchNodesUsingBound(int nNodes, int seed) {
         // instance data

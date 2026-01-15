@@ -6,7 +6,10 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
@@ -49,6 +52,18 @@ public class DistanceNew extends AbstractCPConstraint {
     private int numEdgesResidualGraph;
     private int[][] edgesResidualGraph;
 
+    //for find cycle
+    private List[] adjacencyList;
+    private int[] dfs;
+    private int[] Low;
+    private boolean[] inStack;
+    private Stack<Integer> stack=new Stack<>();
+    private int time = 0;
+    private int n;
+    private List<Integer> cycle=new ArrayList<>();
+
+    private final boolean[] checkConsistency;
+
     private boolean useMSTDetour = false;
     private boolean useMST = false;
     private boolean useMinArborescence = false;
@@ -86,6 +101,8 @@ public class DistanceNew extends AbstractCPConstraint {
         this.capMaxResidualGraph = new int[numNodesInMatching][numNodesInMatching];
         this.costResidualGraph = new int[numNodesInMatching][numNodesInMatching];
         this.edgesResidualGraph = new int[numNodesInMatching * numNodesInMatching][3];
+
+        this.checkConsistency=new boolean[numNodes];
 
         costForMST = new int[numNodes][numNodes];
         for (int i = 0; i < numNodes; i++) {
@@ -321,9 +338,13 @@ public class DistanceNew extends AbstractCPConstraint {
         }
 
         // remove the lower bound on the total distance
+        System.out.println(Arrays.toString(minDetour));
+        System.out.println((currentDist + totalMinDetour));
         totalDist.removeBelow(currentDist + totalMinDetour);
         return currentDist + totalMinDetour;
     }
+
+
 
     /**
      * Updates the lower bound on the distance, based on the current sequence variable
@@ -426,6 +447,129 @@ public class DistanceNew extends AbstractCPConstraint {
 
     }
 
+    private void findCycle(){
+        cycle.clear();
+        stack.clear();
+        createAdjacencyList();
+        n = adjacencyList.length;
+
+        dfs = new int[n];
+        Low = new int[n];
+        inStack = new boolean[n];
+
+
+        n -= 1;
+
+        DFS(0, 0);
+    }
+
+    private void createAdjacencyList() {
+        adjacencyList=new ArrayList[numNodesInMatching];
+
+        for (int i=0; i<=numNodesInMatching; i++){
+            adjacencyList[i]=new ArrayList();
+            for (int j=0; j<=numNodesInMatching; j++){
+                if (capMaxResidualGraph[i][j]>0){
+                    adjacencyList[i].add(j);
+                }
+            }
+        }
+    }
+
+    private void DFS(int start, int u) {
+        dfs[u] = time;
+        Low[u] = time;
+        time++;
+        stack.push(u);
+        inStack[u] = true;
+        List<Integer> temp = adjacencyList[u]; // get the list of edges from the node.
+
+        if (temp == null)
+            return;
+
+        for (int v : temp) {
+            if (dfs[v] == -1) //If v is not visited
+            {
+                DFS(start, v);
+                Low[u] = Math.min(Low[u], Low[v]);
+            }
+            else if (inStack[v]) //Back-edge case
+                Low[u] = Math.min(Low[u], dfs[v]);
+        }
+
+        if (Low[u] == dfs[u]) {
+            List<Integer> tmp = new ArrayList<>();
+            while (stack.peek() != u) {
+                adjacencyList[stack.peek()].clear();
+                tmp.add(stack.peek());
+                inStack[stack.peek()] = false;
+                stack.pop();
+            }
+            tmp.add(stack.peek());
+            if (tmp.size() > 1) {
+                cycle=tmp;
+                return;
+            }
+            inStack[stack.peek()] = false;
+            stack.pop();
+        }
+    }
+
+
+    private boolean checkOnlyOnePossiblePred(int node) {
+        boolean onlyOnePossiblePred = true;
+        int nPred;
+        int nNode = numNodes + 1 + node;
+
+        long[]SP=new long[numNodesInMatching];
+        bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP);
+
+        for (int pred = 0; pred < numNodes; pred++) {
+
+            nPred = pred + 1;
+
+            if (node == pred || minCostMaxFlow.getFlow()[nPred][nNode] > 0) {
+                continue; // skip if already assigned
+            }
+
+            // Check if the arc (nPred, nNode) is consistent with Régin 2002
+            if (SP[nPred] != Integer.MAX_VALUE && SP[nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nNode]) {
+                // Arc is consistent
+                onlyOnePossiblePred = false;
+                break;
+            }
+        }
+
+        return onlyOnePossiblePred;
+    }
+
+    private boolean checkOnlyOnePossibleSucc(int node) {
+        boolean onlyOnePossibleSucc = true;
+        int nSucc;
+        int nNode = node + 1;
+
+        for (int succ = 0; succ < numNodes; succ++) {
+
+            nSucc = succ + 1 + numNodes;
+
+            if (node == succ || minCostMaxFlow.getFlow()[nNode][nSucc] > 0) {
+                continue; // skip if already assigned
+            }
+
+            long[]SP=new long[numNodesInMatching];
+            bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nSucc, SP);
+
+            // Check if the arc (nPred, nNode) is consistent with Régin 2002
+            if (SP[nNode] != Integer.MAX_VALUE && SP[nNode] <= totalDist.max() - totalDist.min() - costResidualGraph[nNode][nSucc]) {
+                // Arc is consistent
+                onlyOnePossibleSucc = false;
+                break;
+            }
+        }
+
+        return onlyOnePossibleSucc;
+    }
+
 
     private void filterEdge(int pred, int node, int maxDetour) {
         if (seqVar.isNode(pred, MEMBER) && nextMember[pred] != -1) {
@@ -454,53 +598,27 @@ public class DistanceNew extends AbstractCPConstraint {
                     return;
                 }
             }
-            //TODO: filtrage matching
             if (useMatching) {
-                int nx1 = node + 1;
-                int nx2 = node + numNodes + 1;
+                if (checkConsistency[node]) {
+                    return;
+                }
 
                 builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
                 createListOfEdges();
-                long[] SP = new long[numNodesInMatching];
-                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nx2, SP);
 
-                if (LBMatching + SP[nx1] + detour > totalDist.max()) {
-                    seqVar.notBetween(pred, node, succ);
+                int predNode = minCostMaxFlow.getLinkedPred()[numNodes + 1 + node] - 1;
+                int succNode = minCostMaxFlow.getLinkedSucc()[node + 1] - 1 - numNodes;
+
+                if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
+                    seqVar.notBetween(seqVar.start(), node, predNode);
                 }
-//                if (LBMatching - dist[minCostMaxFlow.getLinkedPred()[nx2] - 1][node] - dist[node][minCostMaxFlow.getLinkedSucc()[nx1] - numNodes - 1] + detour > totalDist.max()) {
-//                    seqVar.notBetween(pred, node, succ);
-//                    System.out.println("3 not between " + pred + " " + node + " " + succ);
-//                }
+
+                if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+                    seqVar.notBetween(succNode, node, seqVar.end());
+                }
+
+                checkConsistency[node] = true;
             }
-//            if (useMatching) {
-//                builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
-//
-//                createListOfEdges();
-//
-//
-//                int nPred = pred + 1;
-//                int nNode = numNodes + 1 + node;
-//
-////                System.out.println("filtrage "+pred+" "+node+" "+succ);
-//
-//                if (minCostMaxFlow.getFlow()[nPred][nNode] > 0)
-//                    return; // skip if already assigned
-//
-//                long[] SP = new long[numNodesInMatching];
-//
-//                bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP);
-//
-//
-//                // Check if the arc (nPred, nNode) is consistent with Régin 2002
-//                if (SP[nPred] > totalDist.max() - LBMatching - costResidualGraph[nPred][nNode]) {
-//                    // Arc is not consistent, remove it
-//
-//
-//                    seqVar.notBetween(pred, node, succ);
-//                    System.out.println("3 not between " + pred + " " + node + " " + succ);
-//
-//                }
-//            }
         }
 
     }
