@@ -76,7 +76,7 @@ public class DARPSeqVar {
             nodes = nodeList.toArray(new DARPNode[0]);
             nRequest = nodes.length / 2;
 
-            // compute the distance matrix
+            // computeLowerBound the distance matrix
             int n = nVehicle * 2 + nRequest * 2;
             distMatrix = new int[n][n];
             for (int i = 0; i < n; ++i) {

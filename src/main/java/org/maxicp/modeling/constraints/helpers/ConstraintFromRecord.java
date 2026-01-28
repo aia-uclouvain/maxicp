@@ -15,7 +15,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 
 /**
- * Utility class to automagically compute the scope of a record constraint.
+ * Utility class to automagically computeLowerBound the scope of a record constraint.
  * Only works with some basic types:
  * - {@code Expressions} and derivatives
  * - {@code Collection<Expression>} and derivatives

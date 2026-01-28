@@ -459,7 +459,7 @@ public class SoftCardinalityDC extends AbstractCPConstraint{
     //computes and returns the best over flow
     private int findBestOverFlow(){
         //in order to have the best overflow AND underflow, I start from the
-        //best under flow to compute the best overflow (very important for the methods hasValInBestAssignment/getValInBestAssignment)
+        //best under flow to computeLowerBound the best overflow (very important for the methods hasValInBestAssignment/getValInBestAssignment)
 
         for(int i = minval; i <= maxval; i++){
             flow_of[i-minval] = flow_uf[i-minval];
@@ -813,7 +813,7 @@ public class SoftCardinalityDC extends AbstractCPConstraint{
             return; //the constraint is GAC
         }
 
-        //we compute the SCC in Gu and Go and also if a variable is matched in every maximum matching in Gu and Go
+        //we computeLowerBound the SCC in Gu and Go and also if a variable is matched in every maximum matching in Gu and Go
 
         //source of inefficiency to create the table (memory)?
         int  [] varComponent_uf = new int[x.length];

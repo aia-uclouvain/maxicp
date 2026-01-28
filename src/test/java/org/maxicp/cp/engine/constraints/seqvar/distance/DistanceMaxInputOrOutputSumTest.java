@@ -206,140 +206,145 @@ class DistanceMaxInputOrOutputSumTest extends DistanceTest {
 //    }
 //
 //
-//    @ParameterizedTest
-//    @CsvSource(useHeadersInDisplayName = true, textBlock = """
-//            nNodes, seed
-//                5,     1
-//                5,     2
-//                5,     3
-//                5,     4
-//                5,     5
-//                5,     6
-//                5,     7
-//                5,     8
-//                5,     9
-//                5,     10
-//                5,     11
-//                5,     12
-//                5,     13
-//                5,     14
-//                5,     15
-//                5,     16
-//                5,     17
-//                5,     18
-//                5,     19
-//                5,     20
-//                8,     1
-//                8,     2
-//                8,     3
-//                8,     4
-//                8,     5
-//                8,     6
-//                8,     7
-//                8,     8
-//                8,     9
-//                8,     10
-//                8,     11
-//                8,     12
-//                8,     13
-//                8,     14
-//                8,     15
-//                8,     16
-//                8,     17
-//                8,     18
-//                8,     19
-//                8,     20
-//                10,    1
-//                10,    2
-//                10,    3
-//                10,    4
-//                10,    5
-//                10,    6
-//                10,    7
-//                10,    8
-//                10,    9
-//                10,   10
-//                10,   11
-//                10,   12
-//                10,   13
-//                10,   14
-//                10,   15
-//                10,   16
-//                10,   17
-//                10,   18
-//                10,   19
-//                10,   20
-//                15,   1
-//                15,   2
-//                15,   3
-//                15,   4
-//                15,   5
-//                15,   6
-//                15,   7
-//                15,   8
-//                15,   9
-//                15,   10
-//                20,   1
-//                20,   2
-//                20,   3
-//                20,   4
-//                20,   5
-//                20,   6
-//                20,   7
-//                20,   8
-//                20,   9
-//                20,   10
-//
-//            """)
-//    public void testTSPVersus(int nNodes, int seed) {
-//
-//        List<String> methods = new ArrayList<>();
-//        methods.add("MinDetourSum");
-//        methods.add("MaxInputOrOutputSum");
-//        methods.add("MinRestriqtedDetourSum");
-//        List<Integer> lowerBounds = new ArrayList<>();
-//
-//        // instance data
-//        Random random = new Random(seed);
-//        int[][] transitions = randomTransitions(random, nNodes);
-//        int roughUpperBound = Arrays.stream(transitions).mapToInt(arr -> Arrays.stream(arr).max().getAsInt()).sum();
-//
-//        for(String method : methods){
-//            int[][] transitionsUsed = new int[transitions.length][transitions[0].length];
-//
-//            for (int i = 0; i < transitions.length; i++) {
-//                System.arraycopy(transitions[i], 0, transitionsUsed[i], 0, transitions[i].length);
-//            }
-//
-//            // model
-//            CPSolver cp = makeSolver();
-//            CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, nNodes - 2, nNodes - 1);
-//
-//            for (int node = 0; node < nNodes; node++) {
-//                seqVar.require(node);
-//            }
-//            CPIntVar distance = CPFactory.makeIntVar(cp, 0, roughUpperBound);
-//
-//            // ===================== constraints =====================
-//
-//            if(method.equals("MinDetourSum")){
-//                cp.post(new DistanceMinDetourSum(seqVar, transitions, distance));
-//            } else if(method.equals("MaxInputOrOutputSum")){
-//                cp.post(new DistanceMaxInputOrOutputSum(seqVar, transitions, distance));
-//            } else if(method.equals("MinRestriqtedDetourSum")){
-//                cp.post(new DistanceMSTDetour(seqVar, transitions, distance));
-//            }
-//
-//            lowerBounds.add(distance.min());
-//        }
-//
-////        System.out.println(lowerBounds);
-////        int LBMax = Collections.max(lowerBounds);
-////        System.out.println(LBMax);
-////        System.out.println(methods.get(lowerBounds.indexOf(LBMax)));
-//
-////        assertTrue(distance1.min() >= distance2.min());
-//    }
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+            nNodes, seed
+                5,     1
+                5,     2
+                5,     3
+                5,     4
+                5,     5
+                5,     6
+                5,     7
+                5,     8
+                5,     9
+                5,     10
+                5,     11
+                5,     12
+                5,     13
+                5,     14
+                5,     15
+                5,     16
+                5,     17
+                5,     18
+                5,     19
+                5,     20
+                8,     1
+                8,     2
+                8,     3
+                8,     4
+                8,     5
+                8,     6
+                8,     7
+                8,     8
+                8,     9
+                8,     10
+                8,     11
+                8,     12
+                8,     13
+                8,     14
+                8,     15
+                8,     16
+                8,     17
+                8,     18
+                8,     19
+                8,     20
+                10,    1
+                10,    2
+                10,    3
+                10,    4
+                10,    5
+                10,    6
+                10,    7
+                10,    8
+                10,    9
+                10,   10
+                10,   11
+                10,   12
+                10,   13
+                10,   14
+                10,   15
+                10,   16
+                10,   17
+                10,   18
+                10,   19
+                10,   20
+                15,   1
+                15,   2
+                15,   3
+                15,   4
+                15,   5
+                15,   6
+                15,   7
+                15,   8
+                15,   9
+                15,   10
+                20,   1
+                20,   2
+                20,   3
+                20,   4
+                20,   5
+                20,   6
+                20,   7
+                20,   8
+                20,   9
+                20,   10
+
+            """)
+    public void testTSPVersus(int nNodes, int seed) {
+
+        List<String> methods = new ArrayList<>();
+        methods.add("noLowerBound");
+        methods.add("MinDetourSum");
+        methods.add("MaxInputOrOutputSum");
+        methods.add("MinRestriqtedDetourSum");
+        List<Integer> lowerBounds = new ArrayList<>();
+
+        // instance data
+        Random random = new Random(seed);
+        int[][] transitions = randomTransitions(random, nNodes);
+        int roughUpperBound = Arrays.stream(transitions).mapToInt(arr -> Arrays.stream(arr).max().getAsInt()).sum();
+
+        for(String method : methods){
+            int[][] transitionsUsed = new int[transitions.length][transitions[0].length];
+
+            for (int i = 0; i < transitions.length; i++) {
+                System.arraycopy(transitions[i], 0, transitionsUsed[i], 0, transitions[i].length);
+            }
+
+            // model
+            CPSolver cp = makeSolver();
+            CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, nNodes - 2, nNodes - 1);
+
+            for (int node = 0; node < nNodes; node++) {
+                seqVar.require(node);
+            }
+            CPIntVar distance = CPFactory.makeIntVar(cp, 0, roughUpperBound);
+
+            // ===================== constraints =====================
+
+            if(method.equals("MinDetourSum")){
+                cp.post(new DistanceMinDetourSum(seqVar, transitions, distance));
+            } else if(method.equals("MaxInputOrOutputSum")){
+                cp.post(new DistanceMaxInputOrOutputSum(seqVar, transitions, distance));
+            } else if(method.equals("MinRestriqtedDetourSum")){
+                cp.post(new DistanceMSTDetour(seqVar, transitions, distance));
+            } else if(method.equals("noLowerBound")){
+//                cp.post(new DistanceNoLowerBound(seqVar, transitions, distance));
+            } else {
+                throw new IllegalArgumentException("Unknown method: " + method);
+            }
+
+            lowerBounds.add(distance.min());
+        }
+
+//        System.out.println(lowerBounds);
+        int LBMax = Collections.max(lowerBounds);
+//        System.out.println(LBMax);
+        System.out.println(methods.get(lowerBounds.indexOf(LBMax)));
+
+//        assertTrue(distance1.min() >= distance2.min());
+    }
 
 
 }

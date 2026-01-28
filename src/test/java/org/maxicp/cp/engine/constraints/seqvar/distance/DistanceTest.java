@@ -7,7 +7,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
-import org.maxicp.cp.engine.core.*;
+import org.maxicp.cp.engine.core.CPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
@@ -21,11 +24,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.cp.CPFactory.notBetween;
 import static org.maxicp.search.Searches.*;
 
 public abstract class DistanceTest extends CPSolverTest {
@@ -250,15 +249,23 @@ public abstract class DistanceTest extends CPSolverTest {
     @ParameterizedTest
     @CsvSource(useHeadersInDisplayName = true, textBlock = """
             nNodes, seed
+                7, 1
+                7, 2
                 7, 3
-                7, 32
-                6,      10
+                7, 4
+                7, 5
+                7, 6
+                7, 7
+                7, 8
+                10, 1
+                10, 2
                 10, 3
-                10, 7
+                10, 4
+                10, 5
                 25,     1
                 25,     2
                 25,     42
-                
+            
             """)
     public void testTSPLessSearchNodesUsingBound(int nNodes, int seed) {
         // instance data

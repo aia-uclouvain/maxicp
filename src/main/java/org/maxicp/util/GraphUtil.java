@@ -69,7 +69,7 @@ public class GraphUtil {
 
     /**
      * Computes the strongly connected components of the graph
-     * @param graph the input graph on which to compute the strongly
+     * @param graph the input graph on which to computeLowerBound the strongly
      *              connected components
      * @return for each node id, an id of the strongly connected
      *          components it belongs to

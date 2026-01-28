@@ -37,7 +37,7 @@ public interface CPSolver extends StateManaged {
      * A {@link InconsistencyException} is thrown
      * if by posting the constraint it is proven that there is no solution.
      * @param c the constraint to be posted
-     * @param enforceFixPoint is one wants to compute the fix-point after
+     * @param enforceFixPoint is one wants to computeLowerBound the fix-point after
      */
     void post(CPConstraint c, boolean enforceFixPoint);
 

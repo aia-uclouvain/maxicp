@@ -23,8 +23,7 @@ public class CreateNonDominatedBoundsMatrix {
 
         for (int iter = 0; iter < 1000; iter++) {
 
-
-            Random rand = new Random(0);
+            Random rand = new Random(iter);
 
 
             int n = 10;

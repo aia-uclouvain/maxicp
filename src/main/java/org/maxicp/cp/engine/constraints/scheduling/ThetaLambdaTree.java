@@ -86,7 +86,7 @@ public class ThetaLambdaTree {
         node.thetaLambdaSump = dur;
         node.responsibleThetaLambdaEct = UNDEF;
         node.responsibleThetaLambdaSump = UNDEF;
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
 
@@ -107,7 +107,7 @@ public class ThetaLambdaTree {
         node.thetaLambdaSump = dur;
         node.responsibleThetaLambdaEct = activityIndex;
         node.responsibleThetaLambdaSump = activityIndex;
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
     /**
@@ -122,7 +122,7 @@ public class ThetaLambdaTree {
         node.responsibleThetaLambdaEct = activityIndex;
         node.thetaEct = Integer.MIN_VALUE;
         node.thetaSump = 0;
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
     /**
@@ -134,7 +134,7 @@ public class ThetaLambdaTree {
         int currPos = isize + activityIndex;
         Node node = nodes[currPos];
         node.reset();
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
     public int getThetaEct() {

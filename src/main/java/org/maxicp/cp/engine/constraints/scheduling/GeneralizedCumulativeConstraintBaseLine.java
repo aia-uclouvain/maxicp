@@ -304,7 +304,7 @@ public class GeneralizedCumulativeConstraintBaseLine extends AbstractCPConstrain
                         }
                     } else {
                         // Last time at which the act can start and span until now without obstruction:
-                        // (used to compute max length)
+                        // (used to computeLowerBound max length)
                         int currentStart = act.getStartMin();
                         int maxL = 0; //Current maximum length
 
@@ -396,7 +396,7 @@ public class GeneralizedCumulativeConstraintBaseLine extends AbstractCPConstrain
     }
 
     /**
-     * Represents a task event. Used to compute profile
+     * Represents a task event. Used to computeLowerBound profile
      */
     public class Event {
         private int act;

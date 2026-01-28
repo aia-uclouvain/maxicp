@@ -100,7 +100,7 @@ public class DARPSeqVar {
             for (int v = 0; v < nVehicle * 2; v++) {
                 nodeData.add(depot);
             }
-            // compute the distance matrix
+            // computeLowerBound the distance matrix
             int n = nVehicle * 2 + nRequest * 2;
             distMatrix = new int[n][n];
             for (int i = 0; i < n; i++) {

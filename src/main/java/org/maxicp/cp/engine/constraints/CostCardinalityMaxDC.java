@@ -228,7 +228,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         selectPivotBySCC();
 
-        // For each SCC, compute the shortest path from the pivot to all other nodes and from all nodes to the pivot
+        // For each SCC, computeLowerBound the shortest path from the pivot to all other nodes and from all nodes to the pivot
         for (int indexSCC = 0; indexSCC < numSCC; indexSCC++) {
             int pivot = pivots[indexSCC];
             bellmanFord(edgeCount, edges, pivot, dist[pivot]); // Compute shortest path from pivot to all nodes
@@ -277,7 +277,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                     continue;
                 }
 
-                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it
+                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, computeLowerBound it
                     bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);
                 }
                 // Check if the arc (varNode, valueNode) is consistent with Régin 2002
@@ -303,7 +303,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 if (assignment[i].value() == domain[i][j])
                     continue; // skip if already assigned
 
-                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it
+                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, computeLowerBound it
                     bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);
                 }
                 // Check if the arc (varNode, valueNode) is consistent with Régin 2002

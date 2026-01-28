@@ -48,7 +48,7 @@ public class DARP {
                 {10,5}
         };
 
-        // compute the symmetrical transition times as Euclidian distances
+        // computeLowerBound the symmetrical transition times as Euclidian distances
         int [][] transitions = new int[coords.length][coords.length];
         for (int i = 0; i < coords.length; i++) {
             for (int j = 0; j < coords.length; j++) {

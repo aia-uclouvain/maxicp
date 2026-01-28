@@ -580,7 +580,7 @@ public final class CPFactory {
      * This relation is enforced by the {@link Maximum} constraint
      * posted by calling this method.
      *
-     * @param x the variables on which to compute the maximum
+     * @param x the variables on which to computeLowerBound the maximum
      * @return a variable that represents the maximum on x
      * @see CPFactory#minimum(CPIntVar...)
      */
@@ -598,7 +598,7 @@ public final class CPFactory {
      * This relation is enforced by the {@link Maximum} constraint
      * posted by calling this method.
      *
-     * @param x the variables on which to compute the minimum
+     * @param x the variables on which to computeLowerBound the minimum
      * @return a variable that represents the minimum on x
      * @see CPFactory#max(CPIntVar...) (IntVar...)
      */

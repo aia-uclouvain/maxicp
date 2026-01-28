@@ -77,7 +77,7 @@ public class ThetaTree {
         Node node = nodes[currPos];
         node.ect = est + dur;
         node.sump = dur;
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
     /**
@@ -90,7 +90,7 @@ public class ThetaTree {
         int currPos = isize + pos;
         Node node = nodes[currPos];
         node.reset();
-        reCompute(currPos >> 1); // re-compute from the parent node
+        reCompute(currPos >> 1); // re-computeLowerBound from the parent node
     }
 
     /**

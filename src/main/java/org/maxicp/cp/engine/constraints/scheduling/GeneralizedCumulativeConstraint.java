@@ -300,7 +300,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                         long minH = tpForward > 0 ? minCapacity - ((long) profileMax[tpForward-1] - Math.max(act.getHeightMax(), 0L)) : Long.MAX_VALUE;
 
                         // Last time at which the act can start and span until now without obstruction:
-                        // (used to compute max length)
+                        // (used to computeLowerBound max length)
                         int currentStart = act.getStartMin();
                         int maxL = 0; //Current maximum length
 
@@ -399,7 +399,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
     }
 
     /**
-     * Represents a task event. Used to compute profile
+     * Represents a task event. Used to computeLowerBound profile
      */
     public class Event {
         private int act;

@@ -11,7 +11,7 @@ public class CartesianSpaceEvaluator {
     /**
      * Computes the logarithm of the size of the cartesian product of all the variables' domains.
      *
-     * @param vars IntVars on which to compute the cartesian product
+     * @param vars IntVars on which to computeLowerBound the cartesian product
      * @return the log of the space of all possible solutions (without constraints)
      */
     public static double evaluate(IntVar[] vars) {

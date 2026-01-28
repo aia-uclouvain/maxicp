@@ -33,7 +33,7 @@ public class ExpressionsTopoSort {
         allEntries.addAll(graph.keySet());
         allEntries.addAll(graphRepr.values());
 
-        //compute number of inbound edges for each node
+        //computeLowerBound number of inbound edges for each node
         LinkedHashMap<T, Integer> inSize = new LinkedHashMap<>();
         for(T entry: allEntries)
             for(T nei: graph.get(entry))

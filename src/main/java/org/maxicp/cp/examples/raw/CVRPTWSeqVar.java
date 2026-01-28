@@ -183,7 +183,7 @@ public class CVRPTWSeqVar {
             }
             requestNode = nodeList.toArray(new CVRPTWNode[0]);
             nRequest = requestNode.length;
-            // compute the distance matrix
+            // computeLowerBound the distance matrix
             int n = nRequest + 2 * nVehicle;
             distMatrix = new int[n][n];
             for (int i = 0; i < n; ++i) {

@@ -55,7 +55,7 @@ public class StateSparseBitSet {
 
     /**
      * Temporary bitset used to hold temporary value.
-     * Optimized to compute elements only on active words.
+     * Optimized to computeLowerBound elements only on active words.
      */
     public class CollectionBitSet extends BitSet {
 

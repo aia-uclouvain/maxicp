@@ -62,7 +62,7 @@ public abstract class XCallbacksDecomp implements XCallbacks2 {
                 }
             }
 
-            // compute the effective domain
+            // computeLowerBound the effective domain
             int[] domain = Arrays.stream(values).mapToInt(v -> symbolicValues.get(v)).toArray();
 
             // create a std XVarInteger
