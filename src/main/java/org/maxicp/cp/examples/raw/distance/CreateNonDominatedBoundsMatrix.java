@@ -18,11 +18,10 @@ public class CreateNonDominatedBoundsMatrix {
     public static void main(String[] args) {
 
 
-        boolean[][] dominated = new boolean[5][5];
+        boolean[][] dominated = new boolean[6][6];
 
 
         for (int iter = 0; iter < 1000; iter++) {
-
             Random rand = new Random(iter);
 
 
@@ -74,6 +73,7 @@ public class CreateNonDominatedBoundsMatrix {
                     new DistanceMinDetourSum(tour, dist, totDistance),
                     new DistanceSubsequenceSplit(tour, dist, totDistance),
                     new DistanceMaxInputOrOutputSum(tour, dist, totDistance),
+                    new DistanceMinInputAndOutputSum(tour, dist, totDistance),
             };
 
 
