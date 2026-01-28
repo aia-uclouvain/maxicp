@@ -338,8 +338,6 @@ public class DistanceNew extends AbstractCPConstraint {
         }
 
         // remove the lower bound on the total distance
-        System.out.println(Arrays.toString(minDetour));
-        System.out.println((currentDist + totalMinDetour));
         totalDist.removeBelow(currentDist + totalMinDetour);
         return currentDist + totalMinDetour;
     }

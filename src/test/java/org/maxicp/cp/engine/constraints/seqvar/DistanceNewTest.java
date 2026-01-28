@@ -323,9 +323,6 @@ public class DistanceNewTest extends CPSolverTest {
             }
         }
 
-        System.out.println(Arrays.toString(numSuccs));
-        System.out.println(Arrays.deepToString(succs));
-
         CostAndSequence best = bestCostFor(seqVar, transitions, roughUpperBound);
 
         System.out.println("Best cost: " + best.cost);

@@ -3,19 +3,18 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-import java.util.Arrays;
-
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
-public class DistanceMinInputAndOutputSum extends AbstractDistance {
+public class DistanceMaxInputOrOutputSum extends AbstractDistance {
 
     protected final int[] costMinRequiredPred; //  minimum cost of edges from required predecessors
     protected final int[] costMinRequiredSucc; //  minimum cost of edges from required successors
     protected final int[] costMin;
     private int lowerBound; // lower bound computed with this method
     private EdgeIterator edgeIterator;
+    private boolean choosePred;
 
-    public DistanceMinInputAndOutputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
+    public DistanceMaxInputOrOutputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         costMinRequiredPred = new int[nNodes];
         costMinRequiredSucc = new int[nNodes];
@@ -27,27 +26,21 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
     public void updateLowerBound() {
         edgeIterator.update();
         int totalCost = 0;
-
+        int costPred = 0;
+        int costSucc = 0;
 
         int nRequired = seqVar.fillNode(nodes, REQUIRED);
         for (int i = 0; i < nRequired; i++) {
             int node = nodes[i];
             costMinRequiredPred[node] = Integer.MAX_VALUE;
             costMinRequiredSucc[node] = Integer.MAX_VALUE;
-            int bestP = -1;
-            int bestS = -1;
-            int nextBestP = -1;
-            int nextBestS = -1;
-
             //int nPred = seqVar.fillPred(node, inserts, REQUIRED); // gets all required predecessors
             int nPred = edgeIterator.fillPred(node, inserts, REQUIRED); // gets all required predecessors
             for (int j = 0; j < nPred; j++) {
                 int pred = inserts[j];
                 // update minimum cost for the predecessors
-                if (bestP == -1 || dist[pred][node] < dist[bestP][node]) {
-//                    costMinRequiredPred[node] = dist[pred][node];
-                    nextBestP= bestP;
-                    bestP = pred;
+                if (dist[pred][node] < costMinRequiredPred[node]) {
+                    costMinRequiredPred[node] = dist[pred][node];
                 }
             }
             //int nSucc = seqVar.fillSucc(node, inserts, REQUIRED); // gets all required successors
@@ -55,25 +48,29 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
             for (int j = 0; j < nSucc; j++) {
                 int succ = inserts[j];
                 // update minimum cost for the successors
-                if (bestS == -1 || dist[node][succ] < dist[node][bestS]) {
-//                    costMinRequiredSucc[node] = dist[node][succ];
-                    nextBestS= bestS;
-                    bestS = succ;
+                if (dist[node][succ] < costMinRequiredSucc[node]) {
+                    costMinRequiredSucc[node] = dist[node][succ];
                 }
             }
 
-            int cost = 0;
-            if (bestP != -1) {
-                costMinRequiredPred[node] = dist[bestP][node];
-                cost += costMinRequiredPred[node];
+            if (costMinRequiredPred[node] < Integer.MAX_VALUE) {
+                costPred += costMinRequiredPred[node];
             }
-            if (bestS != -1) {
-                costMinRequiredSucc[node] = dist[node][bestS];
-                cost += costMinRequiredSucc[node];
+            if  (costMinRequiredSucc[node] < Integer.MAX_VALUE) {
+                costSucc += costMinRequiredSucc[node];
             }
-            cost = cost / 2;
-            costMin[node] = cost;
-            totalCost += cost;
+//            cost = cost / 2;
+//            costMin[node] = cost;
+//            totalCost += cost;
+        }
+
+        if(costPred>costSucc){
+            totalCost=costPred;
+            choosePred =true;
+        }
+        else {
+            totalCost=costSucc;
+            choosePred =false;
         }
 
         // remove the lower bound on the total distance
@@ -83,16 +80,28 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
 
     @Override
     public void filterDetourForRequired(int pred, int node, int succ, int detour) {
-        if (lowerBound - costMinRequiredSucc[pred] / 2 - costMin[node] - costMinRequiredPred[succ] / 2 + detour > totalDist.max()) {
-            seqVar.notBetween(pred, node, succ);
+        if(this.choosePred) {
+            if (lowerBound - costMinRequiredPred[node] - costMinRequiredPred[succ] + detour > totalDist.max()) {
+                seqVar.notBetween(pred, node, succ);
+            }
+        }
+        else {
+            if (lowerBound - costMinRequiredSucc[pred]  - costMinRequiredSucc[node] + detour > totalDist.max()) {
+                seqVar.notBetween(pred, node, succ);
+            }
         }
     }
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        if (lowerBound - costMinRequiredSucc[pred] / 2 - costMinRequiredPred[succ] / 2 + detour > totalDist.max())
-            seqVar.notBetween(pred, node, succ);
+        if(this.choosePred) {
+            if (lowerBound - costMinRequiredPred[succ] + detour > totalDist.max())
+                seqVar.notBetween(pred, node, succ);
+        }
+        else {
+            if (lowerBound - costMinRequiredSucc[pred] + detour > totalDist.max())
+                seqVar.notBetween(pred, node, succ);
+        }
     }
 
 }
-

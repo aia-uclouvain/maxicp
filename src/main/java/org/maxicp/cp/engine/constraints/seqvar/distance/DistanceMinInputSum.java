@@ -51,7 +51,7 @@ public class DistanceMinInputSum extends AbstractDistance {
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        if (lowerBound + detour > totalDist.max())
+        if (lowerBound - costMinRequiredPred[succ] + detour > totalDist.max())
             seqVar.notBetween(pred, node, succ);
     }
 }

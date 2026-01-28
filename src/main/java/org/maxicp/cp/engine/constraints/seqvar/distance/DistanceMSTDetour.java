@@ -4,6 +4,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
 import java.util.OptionalInt;
+import java.util.Random;
 import java.util.stream.IntStream;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
@@ -71,25 +72,24 @@ public class DistanceMSTDetour extends AbstractDistance {
 
     @Override
     public void filterDetourForRequired(int pred, int node, int succ, int detour) {
-        /*
+
         // This filters but apparently creates larger search trees to solve problems?
         // It is slow, seems better to remove it anyway :-)
         int mstKey = minimumSpanningTree.minDetour[node];
         int minDetour = minDetourBetween(pred, node, succ);
         if (minimumSpanningTree.cost() - mstKey + minDetour > totalDist.max()) {
             seqVar.notBetween(pred, node, succ);
-         */
+        }
+
     }
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        /*
         // This filters but apparently creates larger search trees to solve problems?
         // It is slow, seems better to remove it anyway :-)
         int minDetour = minDetourBetween(pred, node, succ);
         if (minimumSpanningTree.cost() + minDetour > totalDist.max())
             seqVar.notBetween(pred, node, succ);
-         */
     }
 
     /**
@@ -180,7 +180,7 @@ public class DistanceMSTDetour extends AbstractDistance {
                 // required[nRequiredRemaining..nRequiredRemainingInit] = insertable nodes that have already been added to the MST
                 while (nRequiredRemaining > 0) {
                     int id = maxKeyIdx(nRequiredRemaining); //minKeyIdx(nRequiredRemaining);
-                    // selected the node at required[id]
+//                     selected the node at required[id]
                     // swap it with the node at required[nRequiredRemaining-1]
                     // this way the nodes that are not belonging to the MST are only located in required[0..nRequiredRemaining]
                     int toSwapIdx = nRequiredRemaining - 1;
