@@ -44,7 +44,7 @@ public class JobShop {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-9-9-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;

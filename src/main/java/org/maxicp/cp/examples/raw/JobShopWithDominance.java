@@ -13,16 +13,18 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.search.Searches.branch;
 import static org.maxicp.search.Searches.setTimes;
 
 /**
@@ -38,7 +40,7 @@ public class JobShopWithDominance {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-9-9-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -46,6 +48,13 @@ public class JobShopWithDominance {
         int[][] machine = instance.machine;
 
         CPSolver cp = CPFactory.makeSolver();
+
+        StateInt[] currentTask = new StateInt[nJobs];
+        StateInt currentMakespan = cp.getStateManager().makeStateInt(0);
+
+        for (int j = 0; j < nJobs; j++) {
+            currentTask[j] = cp.getStateManager().makeStateInt(0);
+        }
 
         // create activities
         CPIntervalVar[][] activities = new CPIntervalVar[nJobs][nMachines];
@@ -85,7 +94,43 @@ public class JobShopWithDominance {
 
         CPIntervalVar[] allActivities = flatten(activities);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
+        DFSearch dfs = CPFactory.makeDfs(cp,() -> {
+            // find the job with the smallest current task end time
+
+            record Alternative(int makespan, Runnable action) {}
+
+            List<Alternative> branches = new LinkedList<>();
+
+            boolean allJobsDone = true;
+            for (int j = 0; j < nJobs; j++) {
+                final int job = j;
+                int taskIdx = currentTask[job].value();
+                if (taskIdx < nMachines) {
+                    CPIntervalVar task = activities[job][taskIdx];
+                    if (task.endMin() >= currentMakespan.value()) {
+                        branches.add(new Alternative(task.endMin(), () -> {
+                            // assign the start time to its minimum
+                            task.setStart(task.startMin());
+                            cp.fixPoint();
+                            // update current task and makespan
+                            currentMakespan.setValue(Math.max(currentMakespan.value(), task.endMin()));
+                            currentTask[job].increment();
+                        }));
+                    }
+                    allJobsDone = false;
+                }
+            }
+            branches.sort(Comparator.comparingInt(Alternative::makespan));
+            Runnable[] branchesArray =
+                    branches.stream()
+                            .map(Alternative::action)
+                            .toArray(Runnable[]::new);
+            if (branchesArray.length == 0 && !allJobsDone) {
+                throw InconsistencyException.INCONSISTENCY;
+            }
+           return branchesArray;
+
+        });
 
         // for each job, I can tell at what task I am and the current makespan
 
