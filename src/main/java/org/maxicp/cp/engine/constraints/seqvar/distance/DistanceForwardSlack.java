@@ -79,7 +79,7 @@ public class DistanceForwardSlack extends AbstractDistance{
                         dBestSucc = dSucc;
                         maxD[node] = maxD[succ] - dist[node][succ];
                     }
-                    int detour = dist[pred][node] + dist[succ][node] - dist[pred][succ];
+                    int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
                     minDetour = Math.min(minDetour, detour);
                 }
                 // a cost of minDetour needs to occur between earliestPred[node] and latestSucc[node]

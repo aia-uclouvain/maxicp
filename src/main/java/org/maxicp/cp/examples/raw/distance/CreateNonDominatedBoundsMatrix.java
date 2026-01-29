@@ -6,6 +6,7 @@ import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -18,14 +19,14 @@ public class CreateNonDominatedBoundsMatrix {
     public static void main(String[] args) {
 
 
-        boolean[][] dominated = new boolean[6][6];
+        boolean[][] dominated = new boolean[5][5];
 
 
         for (int iter = 0; iter < 1000; iter++) {
             Random rand = new Random(iter);
 
 
-            int n = 10;
+            int n = 5;
 
             int[][] dist = new int[n][n];
             for (int i = 0; i < n; i++) {
@@ -42,7 +43,7 @@ public class CreateNonDominatedBoundsMatrix {
             CPSeqVar tour = makeSeqVar(cp, n, 0, n - 1);
             // all nodes must be visited
             for (int node = 0; node < n; node++) {
-                if (node != 3) // one optional node
+//                if (node != 2) // one optional node
                     tour.require(node);
             }
             // distance traveled
@@ -53,8 +54,8 @@ public class CreateNonDominatedBoundsMatrix {
                 tMin[i] = tMax[i] = i * 100;
             }
             for (int i = 1; i < n; i++) {
-                tMin[i] = Math.max(0, tMin[i] - rand.nextInt(100));
-                tMax[i] = tMax[i] + rand.nextInt(100);
+                tMin[i] = Math.max(0, tMin[i] - rand.nextInt(200));
+                tMax[i] = tMax[i] + rand.nextInt(200);
             }
 
             // time at which the departure of each node occurs
@@ -67,18 +68,22 @@ public class CreateNonDominatedBoundsMatrix {
             cp.post(new TransitionTimes(tour, time, dist));
             // tracks the distance over the sequence
 
+            if (tour.fillNode(new int[n], SeqStatus.MEMBER)==n){
+                continue;
+            }
+
             CPConstraint[] distanceConstraints = new CPConstraint[]{
                     new DistanceOriginal(tour, dist, totDistance),
-                    new DistanceMSTDetour(tour, dist, totDistance),
-                    new DistanceMinDetourSum(tour, dist, totDistance),
-                    new DistanceSubsequenceSplit(tour, dist, totDistance),
-                    new DistanceMaxInputOrOutputSum(tour, dist, totDistance),
-                    new DistanceMinInputAndOutputSum(tour, dist, totDistance),
+                    new DistanceMSTDetour(tour, dist, totDistance), //24
+                    new DistanceMinDetourSum(tour, dist, totDistance), //126
+                    new DistanceSubsequenceSplit(tour, dist, totDistance), //5
+                    new DistanceMaxInputOrOutputSum(tour, dist, totDistance), //89
+//                    new DistanceForwardSlack(tour, dist, totDistance) //
             };
 
 
             for (int i = 0; i < distanceConstraints.length; i++) {
-                for (int j = i + 1; j < distanceConstraints.length; j++) {
+                for (int j = i+1; j < distanceConstraints.length; j++) {
 
                     cp.getStateManager().saveState();
                     cp.post(distanceConstraints[i]);
@@ -90,12 +95,15 @@ public class CreateNonDominatedBoundsMatrix {
                     int lb_j = totDistance.min();
                     cp.getStateManager().restoreState();
 
+
                     if (lb_i < lb_j) {
                         dominated[i][j] = true;
-                    } else if (lb_j < lb_i) {
+                    }
+                    else if (lb_j < lb_i) {
                         dominated[j][i] = true;
                     }
                 }
+
             }
 
         } // end iter

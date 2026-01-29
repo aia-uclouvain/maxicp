@@ -3,6 +3,8 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
+import java.util.Arrays;
+
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
 public class DistanceSubsequenceSplit extends AbstractDistance {
@@ -76,7 +78,7 @@ public class DistanceSubsequenceSplit extends AbstractDistance {
                         dBestSucc = dSucc;
                         distFromEnd[node] = distFromEnd[succ] + dist[node][succ];
                     }
-                    int detour = dist[pred][node] + dist[succ][node] - dist[pred][succ];
+                    int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
                     minDetour = Math.min(minDetour, detour);
                 }
                 // a cost of minDetour needs to occur between earliestPred[node] and latestSucc[node]
@@ -93,6 +95,8 @@ public class DistanceSubsequenceSplit extends AbstractDistance {
                 distanceIncrement = Math.max(distanceIncrement, offsetToAddForward[node]);
                 offsetToAddForward[node] = distanceIncrement;
             }
+
+
             totalDist.removeBelow(distFromStart[seqVar.end()] + offsetToAddForward[seqVar.end()]);
             // add to distance from end
             distanceIncrement = 0;

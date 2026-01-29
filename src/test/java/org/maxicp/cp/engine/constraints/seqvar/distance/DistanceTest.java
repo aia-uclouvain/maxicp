@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.CPSolverTest;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
+import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
 import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -404,6 +405,124 @@ public abstract class DistanceTest extends CPSolverTest {
         cp.post(getDistanceConstraint(seqVar, distMatrix, distance));
         assertTrue(distance.min() <= bestCost,
                 "The best solution is " + bestCost + " but the lower bound was " + distance.min());
+    }
+
+    @Test
+    public void testTSPTW() {
+        int iter = 89;
+        Random rand = new Random(iter);
+
+        int n = 5;
+
+        int[][] dist = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i != j) {
+                    dist[i][j] = rand.nextInt(100);
+                }
+            }
+        }
+        makeTriangularInequality(dist);
+
+        CPSolver cp = makeSolver();
+        // route for the traveler
+        CPSeqVar tour = makeSeqVar(cp, n, 0, n - 1);
+        // all nodes must be visited
+        for (int node = 0; node < n; node++) {
+//                if (node != 2) // one optional node
+            tour.require(node);
+        }
+        // distance traveled
+        CPIntVar totDistance = makeIntVar(cp, 0, n * 100);
+        int[] tMin = new int[n];
+        int[] tMax = new int[n];
+        for (int i = 0; i < n; i++) {
+            tMin[i] = tMax[i] = i * 100;
+        }
+        for (int i = 1; i < n; i++) {
+            tMin[i] = Math.max(0, tMin[i] - rand.nextInt(200));
+            tMax[i] = tMax[i] + rand.nextInt(200);
+        }
+
+        // time at which the departure of each node occurs
+        CPIntVar[] time = new CPIntVar[n];
+        for (int i = 0; i < n; i++) {
+            time[i] = makeIntVar(cp, tMin[i], tMax[i]);
+        }
+
+        // time windows
+        cp.post(new TransitionTimes(tour, time, dist));
+        // tracks the distance over the sequence
+
+        // search without using bound computation
+        cp.getStateManager().saveState();
+        StatsAndSolution resultsNoBounds = searchWith(tour, totDistance, dist,
+                () -> cp.post(new Distance(tour, dist, totDistance)));
+        cp.getStateManager().restoreState();
+
+        // search using bound computation
+        StatsAndSolution resultsWithBounds = searchWith(tour, totDistance, dist,
+                () -> cp.post(getDistanceConstraint(tour, dist, totDistance)));
+        // compare the 2 searches
+
+        assertEquals(resultsNoBounds.cost, resultsWithBounds.cost, "The optimal solutions must be the same no matter the constraint used");
+        assertTrue(resultsWithBounds.stats.numberOfNodes() <= resultsNoBounds.stats.numberOfNodes(),
+                "The search should explore less nodes when using bound computation (in optimization)");
+        System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
+                "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
+
+
+    }
+
+
+    public void makeTriangularInequality(int[][] distance) {
+        int n = distance.length;
+        int[][] edges = new int[n * n][3];
+        int edgeCount = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                edges[edgeCount][0] = i;
+                edges[edgeCount][1] = j;
+                edges[edgeCount][2] = distance[i][j];
+                edgeCount++;
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            long[] dist = new long[n];
+            try {
+                bellmanFord(n, edgeCount, edges, i, dist);
+                for (int j = 0; j < n; j++) {
+                    distance[i][j] = (int) dist[j];
+                }
+            } catch (Exception e) {
+                System.out.println("negative cycle");
+            }
+        }
+    }
+
+    private void bellmanFord(int numNodes, int edgeCount, int[][] edges, int src, long[] dist) throws Exception {
+        // Initially distance from source to all other vertices
+        // is not known(Infinite).
+        int INF = Integer.MAX_VALUE;
+        Arrays.fill(dist, INF);
+        dist[src] = 0;
+        // Relaxation of all the edges V times, not (V - 1) as we
+        // need one additional relaxation to detect negative cycle
+        for (int i = 0; i < numNodes; i++) {
+            for (int ne = 0; ne < edgeCount; ne++) {
+                int u = edges[ne][0];
+                int v = edges[ne][1];
+                int wt = edges[ne][2];
+                if (dist[u] != INF && dist[u] + wt < dist[v]) {
+                    // V_th relaxation => negative cycle
+                    if (i == numNodes - 1) {
+                        throw new Exception();
+                    }
+                    // Update shortest distance to node v
+                    dist[v] = dist[u] + wt;
+                }
+            }
+        }
     }
 
     /**
