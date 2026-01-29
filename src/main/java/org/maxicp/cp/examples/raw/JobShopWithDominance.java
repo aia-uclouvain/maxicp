@@ -116,6 +116,9 @@ public class JobShopWithDominance {
                             currentMakespan.setValue(Math.max(currentMakespan.value(), task.endMin()));
                             currentTask[job].increment();
                         }));
+                    } else {
+                        task.setStartMin(currentMakespan.value());
+                        cp.fixPoint();
                     }
                     allJobsDone = false;
                 }
