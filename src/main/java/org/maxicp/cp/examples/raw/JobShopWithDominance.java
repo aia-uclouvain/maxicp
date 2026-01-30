@@ -102,6 +102,7 @@ public class JobShopWithDominance {
             List<Alternative> branches = new LinkedList<>();
 
             boolean allJobsDone = true;
+
             for (int j = 0; j < nJobs; j++) {
                 final int job = j;
                 int taskIdx = currentTask[job].value();
@@ -116,7 +117,8 @@ public class JobShopWithDominance {
                             currentMakespan.setValue(Math.max(currentMakespan.value(), task.endMin()));
                             currentTask[job].increment();
                         }));
-                    } else {
+                    }
+                    else {
                         task.setStartMin(currentMakespan.value());
                         cp.fixPoint();
                     }
