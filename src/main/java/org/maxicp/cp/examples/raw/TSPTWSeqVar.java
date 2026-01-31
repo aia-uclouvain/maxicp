@@ -15,9 +15,11 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.Factory;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
+import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
@@ -36,6 +38,10 @@ public class TSPTWSeqVar {
 
         CPSeqVar tour = CPFactory.makeSeqVar(cp, instance.n, 0, instance.n-1);
 
+        for (int i = 0; i < instance.n; i++) {
+            tour.require(i);
+        }
+
         CPIntVar[] timeWindows = makeIntVarArray(cp, instance.n, instance.horizon);
         CPIntVar totTransition = makeIntVar(cp, 0 , 100000);
 
@@ -46,6 +52,8 @@ public class TSPTWSeqVar {
         cp.post(new TransitionTimes(tour, timeWindows, instance.distMatrix));
 
         cp.post(new Distance(tour,instance.distMatrix, totTransition));
+
+        Objective obj = cp.minimize(totTransition);
 
         // ===================== search =====================
 
@@ -74,6 +82,15 @@ public class TSPTWSeqVar {
                             () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
                 }
         );
+
+        dfs.onSolution(() -> {;
+            System.out.println("tour: " + tour);
+            System.out.println("total distance: " + totTransition);
+        });
+
+        SearchStatistics stats = dfs.optimize(obj);
+
+        System.out.println(stats);
 
     }
 
@@ -128,6 +145,7 @@ public class TSPTWSeqVar {
             distMatrix = newDistMatrix;
             earliest = newEarliest;
             latest = newLatest;
+            DistanceMatrix.enforceTriangularInequality(newDistMatrix);
             n = n + 1;
         }
 

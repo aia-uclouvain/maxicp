@@ -13,6 +13,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
+import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
@@ -59,7 +60,6 @@ public class TSPTW {
         }
 
         CPIntVar distance = sum(transition);
-
 
         DFSearch search = makeDfs(cp, Searches.firstFail(x));
 
@@ -109,28 +109,8 @@ public class TSPTW {
                 horizon = Math.max(horizon, latest[i] + 1);
             }
 
-            // dupplicate the depot at the end
-            int[][] newDistMatrix = new int[n+1][n+1];
-            int[] newEarliest = new int[n+1];
-            int[] newLatest = new int[n+1];
-            for (int i = 0; i < n; i++) {
-                newEarliest[i] = earliest[i];
-                newLatest[i] = latest[i];
-                for (int j = 0; j < n; j++) {
-                    newDistMatrix[i][j] = distMatrix[i][j];
-                }
-            }
-            // depot
-            newEarliest[n] = earliest[0];
-            newLatest[n] = latest[0];
-            for (int j = 0; j < n; j++) {
-                newDistMatrix[n][j] = distMatrix[0][j];
-                newDistMatrix[j][n] = distMatrix[j][0];
-            }
-            distMatrix = newDistMatrix;
-            earliest = newEarliest;
-            latest = newLatest;
-            n = n + 1;
+            DistanceMatrix.enforceTriangularInequality(distMatrix);
+
         }
 
         private TSPTWInstance(int[][] distMatrix, int[] E, int[] L) {
