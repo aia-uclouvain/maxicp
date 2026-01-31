@@ -29,30 +29,43 @@ import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
+/**
+ * Traveling salesman problem with time windows.
+ *
+ * Instances from: https://lopez-ibanez.eu/tsptw-instances
+ */
 public class TSPTWSeqVar {
     public static void main(String[] args) {
 
+        // In the instance representation, the depot is duplicated at the end of the instance.
+        // So we don't seek for a tour but for a path from the depot to its duplicate at the end
         TSPTWInstance instance = new TSPTWInstance("data/TSPTW/Dumas/n40w20.001.txt");
 
         CPSolver cp = makeSolver();
 
+        // Sequence variable representing the path from depot to its duplicate
         CPSeqVar tour = CPFactory.makeSeqVar(cp, instance.n, 0, instance.n-1);
 
+        // All nodes must be visited (by default they are optional in seq var)
         for (int i = 0; i < instance.n; i++) {
             tour.require(i);
         }
 
+        // Time window vars that represent when nodes are visited
         CPIntVar[] timeWindows = makeIntVarArray(cp, instance.n, instance.horizon);
-        CPIntVar totTransition = makeIntVar(cp, 0 , 100000);
-
-        for (int i = 0; i < instance.n; i++) {
+        cp.post(eq(timeWindows[0],0)); // start at time 0 in depot
+        for (int i = 1; i < instance.n; i++) {
             timeWindows[i].removeAbove(instance.latest[i]);
             timeWindows[i].removeBelow(instance.earliest[i]);
         }
+        // Link time windows and distances in the tour
         cp.post(new TransitionTimes(tour, timeWindows, instance.distMatrix));
 
+        // Total distance of the tour
+        CPIntVar totTransition = makeIntVar(cp, 0 , 100000);
         cp.post(new Distance(tour,instance.distMatrix, totTransition));
 
+        // Objective: minimize total distance
         Objective obj = cp.minimize(totTransition);
 
         // ===================== search =====================
@@ -63,10 +76,10 @@ public class TSPTWSeqVar {
                 () -> {
                     if (tour.isFixed())
                         return EMPTY;
-                    // select node with minimum number of insertions points
+                    // Select node with minimum number of insertions points
                     int nUnfixed = tour.fillNode(nodes, INSERTABLE);
                     int node = Searches.selectMin(nodes, nUnfixed, i -> true, tour::nInsert).getAsInt();
-                    // get the insertion of the node with the smallest detour cost
+                    // Get the insertion of the node with the smallest detour cost
                     int nInsert = tour.fillInsert(node, nodes);
                     int bestPred = Searches.selectMin(nodes, nInsert, pred -> true,
                             pred -> {
@@ -75,9 +88,9 @@ public class TSPTWSeqVar {
                                         instance.distMatrix[node][succ] -
                                         instance.distMatrix[pred][succ];
                             }).getAsInt();
-                    // successor of the insertion
+                    // Successor of the insertion
                     int succ = tour.memberAfter(bestPred);
-                    // either use the insertion to form bestPred -> node -> succ, or remove the detour
+                    // Either use the insertion to form bestPred -> node -> succ, or remove the detour
                     return branch(() -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
                             () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
                 }
@@ -97,7 +110,8 @@ public class TSPTWSeqVar {
     /**
      * A TSP with Time Windows instance.
      * The depot is duplicated at the end of the instance.
-     * So we don't seek for a tour but for a path from the depot to its duplicate at the end
+     * So we don't seek for a tour but for a path
+     * from the depot to its duplicate at the end
      */
     static class TSPTWInstance {
 
