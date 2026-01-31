@@ -6,9 +6,14 @@
 
 package org.maxicp.cp.examples.raw;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.AllDifferentDC;
+import org.maxicp.cp.engine.constraints.seqvar.Distance;
+import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
 import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.Factory;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
@@ -18,64 +23,57 @@ import org.maxicp.util.io.InputReader;
 import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
 
-public class TSPTW {
+public class TSPTWSeqVar {
     public static void main(String[] args) {
 
         TSPTWInstance instance = new TSPTWInstance("data/TSPTW/Dumas/n40w20.001.txt");
 
         CPSolver cp = makeSolver();
 
-        CPIntVar [] arrival = makeIntVarArray(cp,instance.n+1, instance.horizon);
+        CPSeqVar tour = CPFactory.makeSeqVar(cp, instance.n, 0, instance.n-1);
 
-        // x[i] is the node visited at position i
-        CPIntVar [] x = makeIntVarArray(cp,instance.n+1, instance.n);
-
-        CPIntVar [] transition = new CPIntVar[instance.n];
-
-        // every node is visited exactly once (except last one)
-        cp.post(allDifferent(Arrays.copyOf(x,instance.n)));
-        cp.post(new AllDifferentDC(Arrays.copyOf(x,instance.n)));
-
-        // the time starts at 0 in the depot (i.e. node 0)
-        cp.post(eq(arrival[0],0));
-        cp.post(eq(x[0], 0));
-
-        // the last node is the depot
-        cp.post(eq(x[instance.n], 0));
-
-
-        for (int i = 0; i < instance.n+1; i++) {
-            CPIntVar earliest = element(instance.earliest,x[i]); // earliest[i] = instance.earliest[x[i]]
-            CPIntVar latest = element(instance.latest, x[i]); // latest[i] = instance.latest[x[i]]
-            cp.post(le(arrival[i],latest)); // arrival[i] <= latest[i]
-            cp.post(le(earliest,arrival[i])); // earliest[i] <= arrival[i]
-        }
+        CPIntVar[] timeWindows = makeIntVarArray(cp, instance.n, instance.horizon);
+        CPIntVar totTransition = makeIntVar(cp, 0 , 100000);
 
         for (int i = 0; i < instance.n; i++) {
-            transition[i] = element(instance.distMatrix,x[i],x[i+1]); // transition time between x[i] and x[i+1]
-            CPIntVar arrivalPlusTransition = sum(arrival[i], transition[i]); // arrivalPlusTransition[i] = arrival[i] + transition[i]
-            cp.post(le(arrivalPlusTransition,arrival[i+1])); // arrivalPlusTransition[i] <= arrival[i+1]
+            timeWindows[i].removeAbove(instance.latest[i]);
+            timeWindows[i].removeBelow(instance.earliest[i]);
         }
+        cp.post(new TransitionTimes(tour, timeWindows, instance.distMatrix));
 
-        CPIntVar distance = sum(transition);
+        cp.post(new Distance(tour,instance.distMatrix, totTransition));
 
+        // ===================== search =====================
 
-        DFSearch search = makeDfs(cp, Searches.firstFail(x));
-
-        search.onSolution(() -> {
-            System.out.println(Arrays.toString(x));
-            System.out.println("solution found distance:"+distance);
-        });
-
-        long time = TimeIt.run(() -> {
-            SearchStatistics stats = search.optimize(cp.minimize(distance));
-            System.out.println(stats);
-        });
-
-        System.out.println("Time (s): " + (time/1000000000.));
-
-
+        int[] nodes = new int[instance.n];
+        DFSearch dfs = makeDfs(cp,
+                // each decision in the search tree will minimize the detour of adding a new node to the path
+                () -> {
+                    if (tour.isFixed())
+                        return EMPTY;
+                    // select node with minimum number of insertions points
+                    int nUnfixed = tour.fillNode(nodes, INSERTABLE);
+                    int node = Searches.selectMin(nodes, nUnfixed, i -> true, tour::nInsert).getAsInt();
+                    // get the insertion of the node with the smallest detour cost
+                    int nInsert = tour.fillInsert(node, nodes);
+                    int bestPred = Searches.selectMin(nodes, nInsert, pred -> true,
+                            pred -> {
+                                int succ = tour.memberAfter(node);
+                                return instance.distMatrix[pred][node] +
+                                        instance.distMatrix[node][succ] -
+                                        instance.distMatrix[pred][succ];
+                            }).getAsInt();
+                    // successor of the insertion
+                    int succ = tour.memberAfter(bestPred);
+                    // either use the insertion to form bestPred -> node -> succ, or remove the detour
+                    return branch(() -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
+                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
+                }
+        );
 
     }
 
