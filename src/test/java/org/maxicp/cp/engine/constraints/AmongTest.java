@@ -9,10 +9,13 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.maxicp.cp.CPFactory.eq;
+import static org.maxicp.cp.CPFactory.neq;
 import static org.maxicp.search.Searches.firstFail;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -109,6 +112,28 @@ public class AmongTest extends CPSolverTest {
         });
         SearchStatistics stats = dfs.solve();
         assertEquals(15, stats.numberOfSolutions());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void amongTest4(CPSolver cp) {
+        // assert that when N is fixed because of the values of the variables, the constraint does not fail when trying to remove values
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 5, 5);
+        CPIntVar lim = CPFactory.makeIntVar(cp,1,3);
+        cp.post(new Among(x, new HashSet<>(Arrays.asList(0,1)), lim));
+        cp.post(eq(x[0],0));
+        cp.post(eq(x[1],0));
+
+        cp.post(neq(x[2],0));
+        cp.post(neq(x[2],1));
+        cp.post(eq(x[2],2));
+
+        cp.post(neq(x[3],0));
+        cp.post(neq(x[3],1));
+        cp.post(eq(x[3],2));
+
+        cp.post(neq(x[4],0));
+        assertDoesNotThrow(() -> cp.post(neq(x[4],1)));
     }
 
 }
