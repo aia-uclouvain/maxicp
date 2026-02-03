@@ -3,27 +3,22 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.seqvar.Distance;
-import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
 import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.cp.examples.raw.distance.TSPTWBench;
-import org.maxicp.modeling.algebra.sequence.SeqStatus;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.maxicp.cp.CPFactory.makeIntVar;
 import static org.maxicp.cp.CPFactory.makeSolver;
 
-class DistanceMaxInputOrOutputSumTest extends DistanceTest {
+class DistanceMaxInputOrOutputTest extends DistanceTest {
     @Override
     protected CPConstraint getDistanceConstraint(CPSeqVar seqVar, int[][] transitions, CPIntVar distance) {
-        return new DistanceMaxInputOrOutputSum(seqVar, transitions, distance);
+        return new DistanceMaxInputOrOutput(seqVar, transitions, distance);
     }
 
 //    @ParameterizedTest
@@ -324,11 +319,11 @@ class DistanceMaxInputOrOutputSumTest extends DistanceTest {
             // ===================== constraints =====================
 
             if(method.equals("MinDetourSum")){
-                cp.post(new DistanceMinDetourSum(seqVar, transitions, distance));
+                cp.post(new DistanceMinDetour(seqVar, transitions, distance));
             } else if(method.equals("MaxInputOrOutputSum")){
-                cp.post(new DistanceMaxInputOrOutputSum(seqVar, transitions, distance));
+                cp.post(new DistanceMaxInputOrOutput(seqVar, transitions, distance));
             } else if(method.equals("MinRestriqtedDetourSum")){
-                cp.post(new DistanceMSTDetour(seqVar, transitions, distance));
+                cp.post(new DistanceMinRestrictedDetour(seqVar, transitions, distance));
             } else if(method.equals("noLowerBound")){
 //                cp.post(new DistanceNoLowerBound(seqVar, transitions, distance));
             } else {

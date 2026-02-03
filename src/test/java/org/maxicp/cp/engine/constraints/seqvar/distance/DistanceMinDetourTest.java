@@ -4,9 +4,9 @@ import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-public class DistanceMinDetourSumTest extends DistanceTest{
+public class DistanceMinDetourTest extends DistanceTest{
     @Override
     protected CPConstraint getDistanceConstraint(CPSeqVar seqVar, int[][] transitions, CPIntVar distance) {
-        return new DistanceMinDetourSum(seqVar, transitions, distance);
+        return new DistanceMinDetour(seqVar, transitions, distance);
     }
 }

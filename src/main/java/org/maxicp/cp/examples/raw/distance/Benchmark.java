@@ -118,12 +118,12 @@ public abstract class Benchmark {
     public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength, Variant variant) {
         switch (variant) {
             case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
-            case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputSum(seqVar, distance, totLength));
-            case MEAN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputAndOutputSum(seqVar, distance, totLength));
-            case MIN_DETOUR -> seqVar.getSolver().post(new DistanceMinDetourSum(seqVar, distance, totLength));
+            case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInput(seqVar, distance, totLength));
+            case MEAN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputAndOutput(seqVar, distance, totLength));
+            case MIN_DETOUR -> seqVar.getSolver().post(new DistanceMinDetour(seqVar, distance, totLength));
             case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));
             case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
-            case MST_DETOUR -> seqVar.getSolver().post(new DistanceMSTDetour(seqVar, distance, totLength));
+            case MST_DETOUR -> seqVar.getSolver().post(new DistanceMinRestrictedDetour(seqVar, distance, totLength));
             case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
             case FORWARD_SLACK -> seqVar.getSolver().post(new DistanceForwardSlack(seqVar, distance, totLength));
             case SUBSEQUENCE_SPLIT -> seqVar.getSolver().post(new DistanceSubsequenceSplit(seqVar, distance, totLength));

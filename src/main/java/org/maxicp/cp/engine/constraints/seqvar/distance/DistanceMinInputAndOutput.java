@@ -3,11 +3,9 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-import java.util.Arrays;
-
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
-public class DistanceMinInputAndOutputSum extends AbstractDistance {
+public class DistanceMinInputAndOutput extends AbstractDistance {
 
     protected final int[] costMinRequiredPred; //  minimum cost of edges from required predecessors
     protected final int[] costMinRequiredSucc; //  minimum cost of edges from required successors
@@ -15,7 +13,7 @@ public class DistanceMinInputAndOutputSum extends AbstractDistance {
     private int lowerBound; // lower bound computed with this method
     private EdgeIterator edgeIterator;
 
-    public DistanceMinInputAndOutputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
+    public DistanceMinInputAndOutput(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         costMinRequiredPred = new int[nNodes];
         costMinRequiredSucc = new int[nNodes];

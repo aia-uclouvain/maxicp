@@ -9,7 +9,7 @@ import java.util.stream.IntStream;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 import static org.maxicp.search.Searches.selectMin;
 
-public class DistanceMSTDetour extends AbstractDistance {
+public class DistanceMinRestrictedDetour extends AbstractDistance {
 
     private EdgeIterator edgeIterator;
 
@@ -24,7 +24,7 @@ public class DistanceMSTDetour extends AbstractDistance {
     protected int[] member;
     protected int nMember;
 
-    public DistanceMSTDetour(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
+    public DistanceMinRestrictedDetour(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         this.seqVar = seqVar;
         this.dist = dist;

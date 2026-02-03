@@ -3,11 +3,9 @@ package org.maxicp.cp.engine.constraints.seqvar.distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-import java.util.Arrays;
-
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
-public class DistanceMinDetourSum extends AbstractDistance{
+public class DistanceMinDetour extends AbstractDistance{
 
     private int lowerBound;
     private final int[] preds;
@@ -16,7 +14,7 @@ public class DistanceMinDetourSum extends AbstractDistance{
 
     private EdgeIterator edgeIterator;
 
-    public DistanceMinDetourSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
+    public DistanceMinDetour(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         this.preds = new int[nNodes];
         this.succs = new int[nNodes];

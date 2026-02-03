@@ -74,10 +74,10 @@ public class CreateNonDominatedBoundsMatrix {
 
             CPConstraint[] distanceConstraints = new CPConstraint[]{
                     new DistanceOriginal(tour, dist, totDistance),
-                    new DistanceMSTDetour(tour, dist, totDistance), //24
-                    new DistanceMinDetourSum(tour, dist, totDistance), //126
+                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
+                    new DistanceMinDetour(tour, dist, totDistance), //126
                     new DistanceSubsequenceSplit(tour, dist, totDistance), //5
-                    new DistanceMaxInputOrOutputSum(tour, dist, totDistance), //89
+                    new DistanceMaxInputOrOutput(tour, dist, totDistance), //89
 //                    new DistanceForwardSlack(tour, dist, totDistance) //
             };
 

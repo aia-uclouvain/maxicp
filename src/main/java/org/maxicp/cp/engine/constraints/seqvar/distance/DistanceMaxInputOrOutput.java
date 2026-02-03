@@ -5,7 +5,7 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
-public class DistanceMaxInputOrOutputSum extends AbstractDistance {
+public class DistanceMaxInputOrOutput extends AbstractDistance {
 
     protected final int[] costMinRequiredPred; //  minimum cost of edges from required predecessors
     protected final int[] costMinRequiredSucc; //  minimum cost of edges from required successors
@@ -14,7 +14,7 @@ public class DistanceMaxInputOrOutputSum extends AbstractDistance {
     private EdgeIterator edgeIterator;
     private boolean choosePred;
 
-    public DistanceMaxInputOrOutputSum(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
+    public DistanceMaxInputOrOutput(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar, dist, totalDist);
         costMinRequiredPred = new int[nNodes];
         costMinRequiredSucc = new int[nNodes];
