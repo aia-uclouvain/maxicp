@@ -46,6 +46,35 @@ public class Rank {
     }
 
     public Runnable[] alternatives_() {
+        if (rankers[currentRanker.value()].isRanked()) {
+            // need to find a new ranked
+            int bestRankerId = -1;
+            int bestSlack = Integer.MAX_VALUE;
+            int nNotRanked = notRanked.fillArray(notRankedIterator);
+            for (int i = 0; i < nNotRanked; i++) {
+                if (rankers[notRankedIterator[i]].isRanked()) {
+                    notRanked.remove(notRankedIterator[i]);
+                    continue;
+                }
+                int rankerId = notRankedIterator[i];
+                int slack = rankers[rankerId].slack();
+                if (slack < bestSlack) {
+                    bestSlack = slack;
+                    bestRankerId = rankerId;
+                }
+            }
+            if (bestRankerId == -1) {
+                return Searches.EMPTY;
+            } else {
+                return rankers[currentRanker.value()].alternatives();
+            }
+
+
+        } else {
+            return rankers[currentRanker.value()].alternatives();
+        }
+
+        /*
         int nNotRanked = notRanked.fillArray(notRankedIterator);
         // find the ranker with the least slack
         int bestRankerId = -1;
@@ -67,7 +96,7 @@ public class Rank {
         } else {
             Ranker bestRanker = rankers[bestRankerId];
             return bestRanker.alternatives();
-        }
+        }*/
 
     }
 
