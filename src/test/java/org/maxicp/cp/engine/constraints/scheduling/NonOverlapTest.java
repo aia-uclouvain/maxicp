@@ -7,20 +7,15 @@
 package org.maxicp.cp.engine.constraints.scheduling;
 
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
 
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPBoolVar;
-import org.maxicp.cp.engine.core.CPIntervalVarImpl;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.algebra.VariableNotFixedException;
-import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
@@ -30,11 +25,9 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.StringJoiner;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
 
 class NonOverlapTest extends CPSolverTest {

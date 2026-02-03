@@ -7,16 +7,13 @@ package org.maxicp.cp.engine.constraints;
 
 import be.uclouvain.solvercheck.WithSolverCheck;
 import be.uclouvain.solvercheck.core.data.Domain;
-import be.uclouvain.solvercheck.core.data.PartialAssignment;
-import be.uclouvain.solvercheck.core.task.Checker;
 import be.uclouvain.solvercheck.core.task.Filter;
 import be.uclouvain.solvercheck.core.task.StatefulFilter;
 import be.uclouvain.solvercheck.generators.GeneratorsDSL;
-import be.uclouvain.solvercheck.generators.PartialAssignmentGenerator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
@@ -26,9 +23,7 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.search.Searches.*;

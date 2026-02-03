@@ -6,21 +6,13 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public interface SearchMethod {
-    /**
-     * Adds a listener that is called on each solution.
-     *
-     * @param listener the closure to be called whenever a solution is found
-     */
-    void onSolution(Consumer<SearchStatistics> listener);
 
     /**
      * Adds a listener that is called on each solution.
      *
      * @param listener the closure to be called whenever a solution is found
      */
-    default void onSolution(Runnable listener) {
-        onSolution(s -> listener.run());
-    }
+    void onSolution(Runnable listener);
 
     /**
      * Adds a listener that is called whenever a failure occurs

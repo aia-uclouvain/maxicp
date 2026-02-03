@@ -3,7 +3,7 @@
  * Copyright (c)  2023 UCLouvain
  */
 
-package org.maxicp.cp.engine;
+package org.maxicp.cp;
 
 
 import org.junit.jupiter.params.provider.Arguments;

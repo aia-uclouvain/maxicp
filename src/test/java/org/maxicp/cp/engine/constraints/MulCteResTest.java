@@ -8,10 +8,9 @@ package org.maxicp.cp.engine.constraints;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.util.exception.InconsistencyException;
 
 import static org.junit.jupiter.api.Assertions.*;
 

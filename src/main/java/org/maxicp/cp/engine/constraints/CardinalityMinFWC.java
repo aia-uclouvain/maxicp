@@ -88,7 +88,7 @@ public class CardinalityMinFWC extends AbstractCPConstraint {
                 int deltaSize = delta.fillArray(iterValues);
                 for (int iter = 0; iter < deltaSize; iter++) {
                     int v = iterValues[iter];
-                    if (0 < v && v < nValues) { // possible that domain of x vars is larger than 0..nValues-1 initially
+                    if (0 <= v && v < nValues) { // possible that domain of x vars is larger than 0..nValues-1 initially
                         possibleVars[v].remove(finalI);
                         if (possibleVars[v].size() == lower[v]) {
                             fixPossibles(possibleVars[v],v);

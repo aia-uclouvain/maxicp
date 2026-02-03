@@ -20,7 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;

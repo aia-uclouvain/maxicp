@@ -70,11 +70,11 @@ public abstract class Benchmark {
     /**
      * A solution found during the resolution
      */
-    public record CompactSolution(double timeSeconds, int nNodes, int nFailures, double objective) {
+    public record CompactSolution(double timeSeconds, double objective) {
 
         @Override
         public String toString() {
-            return String.format("(t=%.3f; nodes=%d; fails=%d; obj=%.3f)", timeSeconds, nNodes, nFailures, objective);
+            return String.format("(t=%.3f; nodes=%d; fails=%d; obj=%.3f)", timeSeconds, objective);
         }
     };
 
@@ -157,12 +157,10 @@ public abstract class Benchmark {
     }
 
     public void addSearchListeners(DFSearch search) {
-        search.onSolution(s -> {
+        search.onSolution(() -> {
             double time = elapsedSeconds();
-            int nNodes = s.numberOfNodes();
-            int nFailures = s.numberOfFailures();
             double objective = getObjectiveValue();
-            solutions.add(new CompactSolution(time, nNodes, nFailures, objective));
+            solutions.add(new CompactSolution(time, objective));
         });
         if (verbosity >= 1) {
             search.onSolution(() -> System.out.println(solutions.getLast()));

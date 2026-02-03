@@ -7,7 +7,7 @@ package org.maxicp.cp.engine.core;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;

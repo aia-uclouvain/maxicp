@@ -26,7 +26,7 @@ public class Minimize implements IntObjective {
     }
 
     public Minimize(CPIntVar x) {
-        this(x, new AtomicInteger(Integer.MAX_VALUE-1));
+        this(x, new AtomicInteger(Integer.MAX_VALUE - 1));
     }
 
     @Override
@@ -49,7 +49,7 @@ public class Minimize implements IntObjective {
 
     @Override
     public void relax() {
-        bound.set(Integer.MAX_VALUE);
+        bound.set(Integer.MAX_VALUE - 1);
     }
 
     @Override

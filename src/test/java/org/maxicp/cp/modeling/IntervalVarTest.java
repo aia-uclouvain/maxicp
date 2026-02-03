@@ -10,7 +10,7 @@ package org.maxicp.cp.modeling;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.maxicp.ModelDispatcher;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
@@ -18,8 +18,6 @@ import org.maxicp.modeling.algebra.scheduling.CumulFunction;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
-
-import java.util.Arrays;
 
 import static org.maxicp.modeling.Factory.*;
 

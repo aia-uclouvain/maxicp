@@ -13,7 +13,7 @@ import org.maxicp.cp.CPFactory;
 
 import static org.maxicp.cp.CPFactory.*;
 
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;

@@ -5,26 +5,32 @@
 
 package org.maxicp.search;
 
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPVar;
 import org.maxicp.modeling.concrete.ConcreteModel;
+import org.maxicp.state.State;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
  * An abstract search method, implementing all the parts needed, but the search method itself.
+ *
  * @param <T> the type of the branching
  */
 public abstract class AbstractSearchMethod<T> implements SearchMethod {
     protected Supplier<T[]> branching;
     protected StateManager sm;
 
-    protected List<Consumer<SearchStatistics>> solutionListeners = new LinkedList<Consumer<SearchStatistics>>();
+    protected List<Runnable> solutionListeners = new LinkedList<Runnable>();
     protected List<Runnable> failureListeners = new LinkedList<Runnable>();
 
     public AbstractSearchMethod(StateManager sm, Supplier<T[]> branching) {
@@ -37,7 +43,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      *
      * @param listener the closure to be called whenever a solution is found
      */
-    public void onSolution(Consumer<SearchStatistics> listener) {
+    public void onSolution(Runnable listener) {
         solutionListeners.add(listener);
     }
 
@@ -54,8 +60,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         failureListeners.add(listener);
     }
 
-    protected void notifySolution(SearchStatistics stats) {
-        solutionListeners.forEach(c -> c.accept(stats));
+    protected void notifySolution() {
+        solutionListeners.forEach(Runnable::run);
     }
 
     protected void notifyFailure() {
@@ -90,7 +96,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      */
     public SearchStatistics solve() {
         SearchStatistics statistics = new SearchStatistics();
-        return solve(statistics, stats -> false, () -> {});
+        return solve(statistics, stats -> false, () -> {
+        });
     }
 
     /**
@@ -102,7 +109,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      */
     public SearchStatistics solve(DFSListener listener) {
         SearchStatistics statistics = new SearchStatistics();
-        return solve(statistics, stats -> false, () -> {});
+        return solve(statistics, stats -> false, () -> {
+        });
     }
 
     /**
@@ -111,12 +119,13 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      * to stop the search when it becomes true.
      *
      * @param limit a predicate called at each node
-     *             that stops the search when it becomes true
+     *              that stops the search when it becomes true
      * @return an object with the statistics on the search
      */
     public SearchStatistics solve(Predicate<SearchStatistics> limit) {
         SearchStatistics statistics = new SearchStatistics();
-        return solve(statistics, limit, () -> {});
+        return solve(statistics, limit, () -> {
+        });
     }
 
 
@@ -130,8 +139,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      * Any {@link InconsistencyException} that may
      * be throw when executing the closure is also catched.
      *
-     * @param limit a predicate called at each node
-     *             that stops the search when it becomes true
+     * @param limit     a predicate called at each node
+     *                  that stops the search when it becomes true
      * @param subjectTo the closure to execute prior to the search starts
      * @return an object with the statistics on the search
      */
@@ -140,12 +149,103 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         sm.withNewState(() -> {
             try {
                 subjectTo.run();
-                solve(statistics, limit, () -> {});
+                solve(statistics, limit, () -> {
+                });
             } catch (InconsistencyException ignored) {
             }
         });
         return statistics;
     }
+
+    public boolean allFixed(CPVar[] vars) {
+        for (CPVar v : vars) {
+            if (!v.isFixed()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static class IntRef {
+        public int value;
+    }
+
+    public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Objective obj) {
+        Runnable toTighten = obj::tighten;
+        onSolution(toTighten);
+        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, obj::filter);
+        solutionListeners.remove(toTighten);
+        return stats;
+    }
+
+
+    private long panic(BooleanSupplier stoppingCondition,
+                       DFSLinearizer linearizer,
+                       IntRef index) {
+        long t0 = System.currentTimeMillis();
+        if (index.value >= linearizer.size() - 1) return 0;
+        do {
+            index.value++;
+            Action next = linearizer.get(index.value);
+            if (!(next instanceof BranchingAction)) next.run(); // only do push/pop
+        } while (!stoppingCondition.getAsBoolean() && index.value < linearizer.size() - 1);
+        return System.currentTimeMillis() - t0;
+    }
+
+    public SearchStatistics replay(DFSLinearizer linearizer, CPVar[] variables) {
+        return replaySubjectTo(linearizer, variables, () -> {
+        });
+    }
+
+    public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo) {
+        return replaySubjectTo(linearizer, variables, subjectTo, () -> {});
+    }
+
+    public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Runnable onNodeVisit) {
+        SearchStatistics statistics = new SearchStatistics();
+
+        sm.withNewState(() -> {
+            try {
+                subjectTo.run();
+                State<Boolean> consistentState = sm.makeStateRef(true);
+                IntRef index = new IntRef();
+                index.value = 0;
+                long t0 = System.currentTimeMillis();
+                long panicTime = 0;
+                while (index.value < linearizer.size()) {
+                    Action action = linearizer.get(index.value);
+                    try {
+                        if (action instanceof BranchingAction) {
+                            statistics.incrNodes();
+                            onNodeVisit.run(); // filter the objective
+                        }
+                        action.run();
+                    } catch (InconsistencyException e) {
+                        consistentState.setValue(false);
+                    }
+                    if (!consistentState.value()) {
+                        // failure => apply trail operations only until consistency is restored
+                        statistics.incrFailures();
+                        notifyFailure();
+                        panicTime += panic(consistentState::value, linearizer, index);
+                    } else if (allFixed(variables)) {
+                        // all variables are fixed => apply trail operations only until not all variables are fixed anymore
+                        statistics.incrSolutions();
+                        notifySolution();
+                        panicTime += panic(() -> !allFixed(variables), linearizer, index);
+                    }
+                    index.value++;
+                }
+                statistics.setTimeInMillis(System.currentTimeMillis() - t0 - panicTime);
+                if (index.value == linearizer.size()) {
+                    statistics.setCompleted();
+                }
+            } catch (InconsistencyException ignored) {
+            }
+        });
+        return statistics;
+    }
+
 
     /**
      * Start the solving process with a given objective.
@@ -178,9 +278,9 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      * to stop the search when it becomes true.
      *
      * @param toTighten the objective to optimize that is tightened each
-     *            time a new solution is found
-     * @param limit a predicate called at each node
-     *             that stops the search when it becomes true
+     *                  time a new solution is found
+     * @param limit     a predicate called at each node
+     *                  that stops the search when it becomes true
      * @return an object with the statistics on the search
      */
     public SearchStatistics optimize(Objective toTighten, Predicate<SearchStatistics> limit) {
@@ -188,9 +288,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         Runnable tighten = toTighten::tighten;
         onSolution(tighten);
         try {
-            solve(statistics, limit, () -> toTighten.filter());
-        }
-        catch (InconsistencyException ignored) {
+            solve(statistics, limit, toTighten::filter);
+        } catch (InconsistencyException ignored) {
             ignored.printStackTrace();
         }
         solutionListeners.remove(tighten); // make sure we don't keep the objective active
@@ -210,10 +309,10 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      * be thrown when executing the closure is also catched.
      *
      * @param objToTighten the objective to optimize that is tightened each
-     *            time a new solution is found
-     * @param limit a predicate called at each node
-     *             that stops the search when it becomes true
-     * @param subjectTo the closure to execute prior to the search starts
+     *                     time a new solution is found
+     * @param limit        a predicate called at each node
+     *                     that stops the search when it becomes true
+     * @param subjectTo    the closure to execute prior to the search starts
      * @return an object with the statistics on the search
      */
     public SearchStatistics optimizeSubjectTo(Objective objToTighten, Predicate<SearchStatistics> limit, Runnable subjectTo) {
@@ -222,8 +321,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
             try {
                 subjectTo.run();
                 statistics.set(optimize(objToTighten, limit));
-            }
-            catch (InconsistencyException ignored) {
+            } catch (InconsistencyException ignored) {
             }
 
         });
@@ -237,8 +335,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
             try {
                 subjectTo.run();
                 statistics.set(optimize(objToTighten, limit));
-            }
-            catch (InconsistencyException ignored) {
+            } catch (InconsistencyException ignored) {
             }
 
         });
@@ -247,7 +344,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
 
     /**
      * Start the solving process.
-     *
+     * <p>
      * This method must be implemented by subclasses and do the heavy work.
      * It must call notifySolution/notifyFailure when a solution is found or a failure occurs.
      *

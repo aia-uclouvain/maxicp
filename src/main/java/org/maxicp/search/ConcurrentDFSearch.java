@@ -82,7 +82,7 @@ public class ConcurrentDFSearch extends AbstractConcurrentSearchMethod {
         SymbolicModel[] alts = branching.get();
         if (alts.length == 0) {
             statistics.incrSolutions();
-            notifySolution(statistics);
+            notifySolution();
         }
         else {
             boolean first = true;

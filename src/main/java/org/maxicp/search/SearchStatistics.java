@@ -19,12 +19,14 @@ public class SearchStatistics {
     private int nNodes = 0;
     private int nSolutions = 0;
     private boolean completed = false;
+    private long timeInMillis = 0;
 
     public String toString() {
         return "\n\t#choice: " + nNodes
                 + "\n\t#fail: " + nFailures
                 + "\n\t#sols : " + nSolutions
-                + "\n\tcompleted : " + completed + "\n";
+                + "\n\tcompleted : " + completed
+                + "\n\ttime(ms) : " + timeInMillis + "\n";
     }
 
     public void incrFailures() {
@@ -57,6 +59,14 @@ public class SearchStatistics {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public void setTimeInMillis(long timeInMillis) {
+        this.timeInMillis = timeInMillis;
+    }
+
+    public long timeInMillis() {
+        return timeInMillis;
     }
 
     @Override

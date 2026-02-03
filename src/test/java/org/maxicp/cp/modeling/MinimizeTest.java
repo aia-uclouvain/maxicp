@@ -8,7 +8,7 @@ package org.maxicp.cp.modeling;
 
 
 import org.junit.jupiter.api.Test;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.ModelDispatcher;

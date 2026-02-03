@@ -5,21 +5,13 @@
 
 package org.maxicp.cp.engine.constraints;
 
-import org.junit.Rule;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.rules.ExpectedException;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.CPSolverTest;
-import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
-
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.search.Searches.firstFail;

@@ -57,7 +57,7 @@ public class BestFirstSearch<T extends Comparable<T>> extends RunnableSearchMeth
 
             if (alts.length == 0) {
                 statistics.incrSolutions();
-                notifySolution(statistics);
+                notifySolution();
             } else {
                 for (Runnable b : alts) {
                     sm.saveState();

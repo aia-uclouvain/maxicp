@@ -9,7 +9,7 @@ package org.maxicp.cp.engine.examples.modeling;
 
 import org.junit.jupiter.api.Test;
 import org.maxicp.ModelDispatcher;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;

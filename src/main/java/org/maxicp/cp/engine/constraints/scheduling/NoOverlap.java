@@ -15,9 +15,14 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.ArrayList;
 
 /**
- * TODO
+ * NoOverlap constraint, ensures that a set of interval variables do not overlap in time.
+ * The filtering algorithm implemented are:
+ * - Overload checking
+ * - Detectable precedences
+ * - Not-First, Not-Last
+ * - Edge-finding
  *
- * @author Pierre Schaus
+ * @author Pierre Schaus, with the valuable contribution of Emma Legrand and Roger Kameugne for debugging
  */
 public class NoOverlap extends AbstractCPConstraint {
 
@@ -151,8 +156,9 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         update();
         // mirror the activities
         for (int i = 0; i < n; i++) {
+            int startMinOld = startMin[i];
             startMin[i] = -endMax[i];
-            endMax[i] = isOptional[i] ? 1000000 : -startMin[i];
+            endMax[i] = isOptional[i] ? 1000000 : -startMinOld;
         }
         oc = globalFilter.filter(startMin, duration, endMax, n);
         if (oc == NoOverlapLeftToRight.Outcome.INCONSISTENCY) {

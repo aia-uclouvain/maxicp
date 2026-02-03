@@ -3,21 +3,16 @@ package org.maxicp.cp.engine.constraints.setvar;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.CPSolverTest;
+import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.*;
-import org.maxicp.modeling.algebra.bool.Eq;
-import org.maxicp.modeling.algebra.bool.NotEq;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Random;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.exclude;
-import static org.maxicp.cp.CPFactory.include;
-import static org.maxicp.search.Searches.*;
 
 public class SubsetTest extends CPSolverTest {
 
