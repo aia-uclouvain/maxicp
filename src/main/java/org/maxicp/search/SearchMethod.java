@@ -12,7 +12,16 @@ public interface SearchMethod {
      *
      * @param listener the closure to be called whenever a solution is found
      */
-    void onSolution(Runnable listener);
+    void onSolution(Consumer<SearchStatistics> listener);
+
+    /**
+     * Adds a listener that is called on each solution.
+     *
+     * @param listener the closure to be called whenever a solution is found
+     */
+    default void onSolution(Runnable listener) {
+        onSolution(s -> listener.run());
+    }
 
     /**
      * Adds a listener that is called whenever a failure occurs
