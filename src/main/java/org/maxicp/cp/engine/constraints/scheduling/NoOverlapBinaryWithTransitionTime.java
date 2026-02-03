@@ -11,17 +11,21 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
-public class NoOverlapBinary extends AbstractCPConstraint {
+public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
     final CPBoolVar before;
     final CPBoolVar after;
     final CPIntervalVar A, B;
+    final int transitionTimeAB;
+    final int transitionTimeBA;
 
-    public NoOverlapBinary(CPIntervalVar A, CPIntervalVar B) {
+    public NoOverlapBinaryWithTransitionTime(CPIntervalVar A, CPIntervalVar B, int transitionTimeAB, int transitionTimeBA) {
         super(A.getSolver());
         this.A = A;
         this.B = B;
         this.before = CPFactory.makeBoolVar(getSolver());
         this.after = CPFactory.not(before);
+        this.transitionTimeAB = transitionTimeAB;
+        this.transitionTimeBA = transitionTimeBA;
     }
 
     @Override
@@ -37,19 +41,17 @@ public class NoOverlapBinary extends AbstractCPConstraint {
     @Override
     public void propagate() {
         if (A.isPresent() && B.isPresent()) {
-            if (A.endMin() > B.startMax() || before.isFalse()) {
-                // B << A
+            if (A.endMin() + transitionTimeAB > B.startMax() || before.isFalse()) {
+                // B + transitionTimeBA << A
                 before.fix(false);
-                A.setStartMin(B.endMin());
-                B.setEndMax(A.startMax());
+                A.setStartMin(B.endMin() + transitionTimeBA);
+                B.setEndMax(A.startMax() - transitionTimeBA);
             }
             if (B.endMin() > A.startMax() || before.isTrue()) {
-                // A << B
-                // A = [5..10] -> [10..15]
-                // B = [12..13] -> [13..14]
+                // A + transitionTimeAB << B
                 before.fix(true);
-                B.setStartMin(A.endMin());
-                A.setEndMax(B.startMax());
+                B.setStartMin(A.endMin() + transitionTimeAB);
+                A.setEndMax(B.startMax() - transitionTimeAB);
             }
         }
         if (A.isAbsent() || B.isAbsent()) {
