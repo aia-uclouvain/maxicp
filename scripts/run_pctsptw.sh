@@ -1,4 +1,6 @@
 #!/bin/bash
+# export JAVA_HOME=$(/usr/libexec/java_home -v 25)
+# export PATH=$JAVA_HOME/bin:$PATH
 
 timeout=900  # timeout in seconds
 iter=1   # number of iterations per config, to take randomness into account
@@ -12,7 +14,8 @@ currentDate=$(date +%Y-%m-%d_%H-%M-%S);
 gitShortHash=$(git rev-parse --short HEAD)
 outFileOpt="results/pctsptw/pctsptw-${currentDate}-${gitShortHash}"
 # declare -a distanceType=("ORIGINAL" "MIN_INPUT_SUM" "MEAN_INPUT_AND_OUTPUT_SUM" "MIN_DETOUR" "MST" "MATCHING_SUCCESSOR" "MST_DETOUR" "SCHEDULING" "ALL", "FORWARD_SLACK", "SUBSEQUENCE_SPLIT")  # -m, each type of distance constraint to try
-declare -a distanceType=("ORIGINAL")  # -m, each type of distance constraint to try
+# declare -a distanceType=("ORIGINAL")  # -m, each type of distance constraint to try
+declare -a distanceType=("MIN_INPUT_AND_OUTPUT_SUM" "MIN_DETOUR" "MST_DETOUR")  # -m, each type of distance constraint to try
 mkdir -p "results/pctsptw"  # where the results will be written
 rm -f $outFileOpt  # delete filename of the results if it already existed (does not delete past results, unless their datetime is the same)
 # the solver must print only one line when it is finished, otherwise we won't get a CSV at the end

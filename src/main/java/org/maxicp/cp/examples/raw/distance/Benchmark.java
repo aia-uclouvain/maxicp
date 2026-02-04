@@ -119,6 +119,7 @@ public abstract class Benchmark {
         switch (variant) {
             case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
             case MIN_INPUT_SUM -> seqVar.getSolver().post(new DistanceMinInput(seqVar, distance, totLength));
+            case MIN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMaxInputOrOutput(seqVar, distance, totLength));
             case MEAN_INPUT_AND_OUTPUT_SUM -> seqVar.getSolver().post(new DistanceMinInputAndOutput(seqVar, distance, totLength));
             case MIN_DETOUR -> seqVar.getSolver().post(new DistanceMinDetour(seqVar, distance, totLength));
             case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));

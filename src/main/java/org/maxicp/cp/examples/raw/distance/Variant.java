@@ -6,6 +6,7 @@ package org.maxicp.cp.examples.raw.distance;
 public enum Variant {
     ORIGINAL, // lb = partial tour
     MIN_INPUT_SUM, // lb = sum of incoming edges
+    MIN_INPUT_AND_OUTPUT_SUM, // lb = sum of (max(min(incoming edge), min(outgoing edge)))
     MEAN_INPUT_AND_OUTPUT_SUM, // lb = sum of (min(incoming edge) + min(outgoing edge)) / 2
     MIN_DETOUR, // lb = sum of min detours (assume future detours not yet available for the API)
     MST, // lb = minimum spanning tree on the edges
