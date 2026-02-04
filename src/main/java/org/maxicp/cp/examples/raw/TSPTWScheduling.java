@@ -7,20 +7,16 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.Element1DDC;
 import org.maxicp.cp.engine.constraints.Element1DVar;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlapBinaryWithTransitionTime;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
-import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.cp.engine.core.CPSeqVar;
-import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.examples.raw.amaury.PositionBasedDisjunctive;
 import org.maxicp.modeling.Factory;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.Objective;
-import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
+import org.maxicp.modeling.IntVar;
+import org.maxicp.search.*;
 import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
@@ -60,10 +56,22 @@ public class TSPTWScheduling {
         cp.post(allDifferent(taskInPosition));
 
         // link disjunctive constraint and position-based representation
-        cp.post(new PositionBasedDisjunctive(positionOfNode, visits));
+        //cp.post(new PositionBasedDisjunctive(positionOfNode, visits));
+        cp.post(allDifferent(positionOfNode));
+        cp.post(nonOverlap(visits));
+
+        for (int i = 0; i < instance.n; i++) {
+            for (int j = i+1; j < instance.n; j++) {
+                CPBoolVar iBeforej = CPFactory.isLe(positionOfNode[i], positionOfNode[j]);
+                cp.post(new NoOverlapBinaryWithTransitionTime(iBeforej, visits[i], visits[j], instance.distMatrix[i][j], instance.distMatrix[j][i]));
+            }
+            cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
+        }
+
 
         cp.post(eq(positionOfNode[0],0)); // start at depot
         cp.post(eq(taskInPosition[0],0));
+        cp.post(startAt(visits[0],0 ));
 
         cp.post(eq(positionOfNode[instance.n-1],instance.n-1)); // end at depot duplicate
         cp.post(eq(taskInPosition[instance.n-1],instance.n-1));
@@ -80,19 +88,43 @@ public class TSPTWScheduling {
         // link positionOfNode and taskInPosition
         for (int i = 0; i < instance.n; i++) {
             cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
+            cp.post(new Element1DVar(taskInPosition,positionOfNode[i],CPFactory.makeIntVar(cp,i,i)));
+
         }
+
+
+        int[] solution = new int[]{0, 7, 13, 16, 6, 15, 37, 12, 39, 2, 25, 35, 4, 23, 32, 3, 8, 1, 38, 18, 33, 14, 5, 36, 10, 22, 31, 21, 9, 11, 19, 26, 29, 27, 34, 28, 24, 20, 17, 30, 40, 41};
+        cp.post(eq(taskInPosition[1],7));
+        cp.post(eq(taskInPosition[2],13));
+
+        System.out.println(instance.earliest[7]+","+instance.latest[7]);
+        System.out.println(instance.earliest[13]+","+instance.latest[13]);
+        System.out.println("position of 0:"+positionOfNode[0]);
+        System.out.println("position of 7:"+positionOfNode[7]);
+        System.out.println("position of 13:"+positionOfNode[13]);
+        System.out.println("distances:" + instance.distMatrix[7][13]+" "+instance.distMatrix[13][7]);
+        System.out.println("transition times:"+transitionTimes[0]+" "+transitionTimes[1]);
+        System.out.println("tot transition time"+totTransition);
+        System.out.println(visits[0]+" :::: "+visits[7]+" :::: "+visits[13]);
+        System.out.println("here");
 
         Objective obj = cp.minimize(totTransition);
 
         // ===================== search =====================
 
-        // DFSearch dfs = makeDfs(cp,firstFail(taskInPosition));
-        DFSearch dfs = makeDfs(cp,setTimes(visits));
+        DFSearch dfs = makeDfs(cp,conflictOrderingSearch(minDomVariableSelector(taskInPosition), x -> x.min()));
 
         dfs.onSolution(() -> {;
             System.out.println("tour: " + Arrays.toString(taskInPosition));
             System.out.println("distances: "+ Arrays.toString(transitionTimes));
             System.out.println("total distance: " + totTransition);
+            // check solution
+            int[] tour = new int[instance.n];
+            for (int i = 0; i < instance.n; i++) {
+                tour[i] = taskInPosition[i].min();
+            }
+            boolean ok = instance.checkSolution(tour, totTransition.min());
+            System.out.println("solution valid: " + ok);
         });
 
         SearchStatistics stats = dfs.optimize(obj);
@@ -100,6 +132,8 @@ public class TSPTWScheduling {
         System.out.println(stats);
 
     }
+
+
 
     /**
      * A TSP with Time Windows instance.
@@ -131,7 +165,7 @@ public class TSPTWScheduling {
                 horizon = Math.max(horizon, latest[i] + 1);
             }
 
-            // dupplicate the depot at the end
+            // duplicate the depot at the end
             int[][] newDistMatrix = new int[n+1][n+1];
             int[] newEarliest = new int[n+1];
             int[] newLatest = new int[n+1];
@@ -175,6 +209,30 @@ public class TSPTWScheduling {
                     ", L=" + Arrays.toString(latest) + "\n" +
                     ", horizon=" + horizon +
                     '}';
+        }
+
+        public boolean checkSolution(int[] tour, int totalDistance) {
+            // check time windows
+            int time = 0;
+            int computedDistance = 0;
+            for (int i = 0; i < tour.length - 1; i++) {
+                int from = tour[i];
+                int to = tour[i + 1];
+                time += distMatrix[from][to];
+                computedDistance += distMatrix[from][to];
+                // can wait if arrive early
+                if (time < earliest[to]) {
+                    time = earliest[to];
+                }
+                if (time < earliest[to] || time > latest[to]) {
+                    System.out.println("time window violated at node " + to + ": arrival time " + time +", window [" + earliest[to] + "," + latest[to] + "]");
+                    return false;
+                }
+            }
+            if (computedDistance != totalDistance) {
+                return false;
+            }
+            return true;
         }
     }
 

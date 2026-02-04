@@ -101,7 +101,6 @@ public class JobShop {
 
         //DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
 
-
         dfs.onSolution(() -> {
             System.out.println("=========================>makespan:" + makespan);
         });

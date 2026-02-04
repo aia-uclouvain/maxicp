@@ -366,7 +366,7 @@ public final class Searches {
      * In International conference on principles and practice of constraint programming (pp. 140-148).
      * Springer.
      *
-     * @param variableSelector returns the next variable to bind
+     * @param variableSelector returns the next variable to bind (fall back euristic)
      * @param valueSelector    given a variable, returns the value to which
      *                         it must be assigned on the left branch (and excluded on the right)
      */
@@ -403,6 +403,24 @@ public final class Searches {
             }
         };
     }
+
+    /**
+     * Conflict Ordering Search with default variable selector (first-fail min dom)
+     * and value selector (min value).
+     * <p>
+     * Gay, S., Hartert, R., Lecoutre, C.,  Schaus, P. (2015).
+     * Conflict ordering search for scheduling problems.
+     * In International conference on principles and practice of constraint programming (pp. 140-148).
+     * Springer.
+     *
+     */
+    public static Supplier<Runnable[]> conflictOrderingSearch(IntExpression... xs) {
+        return conflictOrderingSearch(
+                minDomVariableSelector(xs),
+                xi -> xi.min()
+        );
+    }
+
 
     public static Supplier<Runnable[]> firstFail(SeqVar... seqVars) {
         int nNodes = Arrays.stream(seqVars).map(SeqVar::nNode).max(Integer::compareTo).get();

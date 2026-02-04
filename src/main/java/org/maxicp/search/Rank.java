@@ -24,7 +24,12 @@ public class Rank {
 
     public static Supplier<Runnable[]> rank(CPIntervalVar[][] intervals) {
         Rank rank = new Rank(intervals);
-        return rank::alternatives;
+        return rank::alternatives_;
+    }
+
+    public static Supplier<Runnable[]> rank(CPIntervalVar[] intervals) {
+        Ranker ranker = new Ranker(intervals);
+        return ranker::alternatives;
     }
 
     CPIntervalVar[][] intervals;
@@ -38,15 +43,16 @@ public class Rank {
         this.rankers = new Ranker[intervals.length];
         CPSolver cp = intervals[0][0].getSolver();
         this.notRanked = new StateSparseSet(cp.getStateManager(), intervals.length, 0);
-
+        this.currentRanker = cp.getStateManager().makeStateInt(-1);
         this.notRankedIterator = new int[intervals.length];
         for (int i = 0; i < intervals.length; i++) {
             rankers[i] = new Ranker(intervals[i]);
         }
     }
 
+
     public Runnable[] alternatives_() {
-        if (rankers[currentRanker.value()].isRanked()) {
+        if (currentRanker.value() == -1 || rankers[currentRanker.value()].isRanked()) {
             // need to find a new ranked
             int bestRankerId = -1;
             int bestSlack = Integer.MAX_VALUE;
@@ -66,38 +72,12 @@ public class Rank {
             if (bestRankerId == -1) {
                 return Searches.EMPTY;
             } else {
+                currentRanker.setValue(bestRankerId);
                 return rankers[currentRanker.value()].alternatives();
             }
-
-
         } else {
             return rankers[currentRanker.value()].alternatives();
         }
-
-        /*
-        int nNotRanked = notRanked.fillArray(notRankedIterator);
-        // find the ranker with the least slack
-        int bestRankerId = -1;
-        int bestSlack = Integer.MAX_VALUE;
-        for (int i = 0; i < nNotRanked; i++) {
-            if (rankers[notRankedIterator[i]].isRanked()) {
-                notRanked.remove(notRankedIterator[i]);
-                continue;
-            }
-            int rankerId = notRankedIterator[i];
-            int slack = rankers[rankerId].slack();
-            if (slack < bestSlack) {
-                bestSlack = slack;
-                bestRankerId = rankerId;
-            }
-        }
-        if (bestRankerId == -1) {
-            return Searches.EMPTY;
-        } else {
-            Ranker bestRanker = rankers[bestRankerId];
-            return bestRanker.alternatives();
-        }*/
-
     }
 
     public Runnable[] alternatives() {
@@ -123,7 +103,6 @@ public class Rank {
             Ranker bestRanker = rankers[bestRankerId];
             return bestRanker.alternatives();
         }
-
     }
 
 
@@ -154,7 +133,8 @@ public class Rank {
                 minEst = Integer.min(minEst, interval.startMin());
                 maxLct = Integer.max(maxLct, interval.endMax());
             }
-            return (maxLct - minEst) - Arrays.stream(notRankedIterator, 0, nNotRanked).map(i -> intervals[i].lengthMin()).sum();
+            return (maxLct - minEst) -
+                    Arrays.stream(notRankedIterator, 0, nNotRanked).map(i -> intervals[i].lengthMin()).sum();
         }
 
         boolean isRanked() {
@@ -173,7 +153,9 @@ public class Rank {
                 int i_ = i;
                 int taskId = notRankedIterator[i];
                 int priority1 = intervals[taskId].startMin();
-                int priority2 = -intervals[taskId].lengthMin();
+                int priority2 = intervals[taskId].startMax();
+
+
                 branches[i] = new RunnableWithPriority(priority1, priority2, () -> {
                     notRanked.remove(taskId);
                     for (int j = 0; j < nNotRanked; j++) {
