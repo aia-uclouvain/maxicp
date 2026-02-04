@@ -28,6 +28,16 @@ public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
         this.transitionTimeBA = transitionTimeBA;
     }
 
+    public NoOverlapBinaryWithTransitionTime(CPBoolVar AprecedesB, CPIntervalVar A, CPIntervalVar B, int transitionTimeAB, int transitionTimeBA) {
+        super(A.getSolver());
+        this.A = A;
+        this.B = B;
+        this.before = AprecedesB;
+        this.after = CPFactory.not(before);
+        this.transitionTimeAB = transitionTimeAB;
+        this.transitionTimeBA = transitionTimeBA;
+    }
+
     @Override
     public void post() {
         if (!A.isAbsent() && !B.isAbsent()) {
