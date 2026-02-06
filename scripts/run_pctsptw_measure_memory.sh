@@ -2,7 +2,7 @@
 # export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 # export PATH=$JAVA_HOME/bin:$PATH
 
-timeout=20  # timeout in seconds
+timeout=100  # timeout in seconds
 iter=1   # number of iterations per config, to take randomness into account
 # compile the project and run the unit tests
 echo "compiling and running tests..."
