@@ -80,6 +80,7 @@ public class MinimumArborescence {
             if (start == i) continue;
             for (int j = 0; j < numPreds[i]; j++) {
                 int pred = preds[i][j];
+                if (pred==-1) continue; // not a possible predecessor
                 if (cost[pred][i] < costZeroPredMin[i]) {
                     costZeroPredMin[i] = cost[pred][i];
                 }
@@ -104,6 +105,7 @@ public class MinimumArborescence {
             if (start == i) continue; // skip the start node
             for (int j = 0; j < numPreds[i]; j++) {
                 int pred = preds[i][j];
+                if (pred==-1) continue; // not a possible predecessor
                 if (costZero[pred][i] == 0) {
                     predTree[i] = pred;
                     costMinimumArborescence += cost[pred][i];
@@ -153,6 +155,7 @@ public class MinimumArborescence {
         for (int i = 0; i < numNodes; i++) {
             for (int j = 0; j < numPreds[i]; j++) {
                 int pred = preds[i][j];
+                if (pred==-1) continue; // not a possible predecessor
                 if (numCycleByNode[i] == -1) continue; // node not in a cycle
                 if (numCycleByNode[i] == numCycleByNode[pred]) continue; // both in the same cycle
                 if (costZero[pred][i] < costInputMinByCycle[numCycleByNode[i]]) { // attention il ne faut pas prendre l'arc deja dans le cycle

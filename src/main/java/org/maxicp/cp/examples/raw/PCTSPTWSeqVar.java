@@ -45,11 +45,6 @@ public class PCTSPTWSeqVar {
         // Sequence variable representing the path from depot to its duplicate
         CPSeqVar tour = CPFactory.makeSeqVar(cp, instance.n, 0, instance.n - 1);
 
-        // All nodes must be visited (by default they are optional in seq var)
-        for (int i = 0; i < instance.n; i++) {
-            tour.require(i);
-        }
-
         // Time window vars that represent when nodes are visited
         CPIntVar[] timeWindows = makeIntVarArray(cp, instance.n, instance.horizon);
         cp.post(eq(timeWindows[0], 0)); // start at time 0 in depot
