@@ -2,7 +2,7 @@
 # export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 # export PATH=$JAVA_HOME/bin:$PATH
 
-timeout=900  # timeout in seconds
+timeout=20  # timeout in seconds
 iter=1   # number of iterations per config, to take randomness into account
 # compile the project and run the unit tests
 echo "compiling and running tests..."
@@ -15,7 +15,7 @@ gitShortHash=$(git rev-parse --short HEAD)
 outFileOpt="results/pctsptw/pctsptw-${currentDate}-${gitShortHash}"
 # declare -a distanceType=("ORIGINAL" "MIN_INPUT_SUM" "MEAN_INPUT_AND_OUTPUT_SUM" "MIN_DETOUR" "MST" "MATCHING_SUCCESSOR" "MST_DETOUR" "SCHEDULING" "ALL", "FORWARD_SLACK", "SUBSEQUENCE_SPLIT")  # -m, each type of distance constraint to try
 # declare -a distanceType=("ORIGINAL")  # -m, each type of distance constraint to try
-declare -a distanceType=("MIN_INPUT_AND_OUTPUT_SUM" "MIN_DETOUR" "MST_DETOUR")  # -m, each type of distance constraint to try
+declare -a distanceType=("ORIGINAL" "MIN_DETOUR")  # -m, each type of distance constraint to try
 mkdir -p "results/pctsptw"  # where the results will be written
 rm -f $outFileOpt  # delete filename of the results if it already existed (does not delete past results, unless their datetime is the same)
 # the solver must print only one line when it is finished, otherwise we won't get a CSV at the end
@@ -43,7 +43,7 @@ echo "launching experiments in parallel"
 # ./executable -f instance_filename -t timeout -m distance_type -v verbosity
 # change this depending on your solver
 # the number ({1}, {2}) corresponds to the columns present in the inputFile, beginning at index 1 (i.e. in this case 2 columns, so 1 and 2 are valid columns)
-cat $inputFile | parallel --colsep ',' $launch_solver -f {1} -m {2} -t $timeout -v 0 >> $outFileOpt
+cat $inputFile | parallel -j 1 --colsep ',' $launch_solver -f {1} -m {2} -t $timeout -v 0 >> $outFileOpt
 # delete the temporary file
 echo "experiments have been run. Results are at ${outFileOpt}"
 rm -f $inputFile
