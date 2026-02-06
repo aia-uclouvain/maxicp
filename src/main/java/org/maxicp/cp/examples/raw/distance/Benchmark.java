@@ -254,11 +254,11 @@ public abstract class Benchmark {
         }
     }
 
-    private String searchStatsString() {
+    protected String searchStatsString() {
         return statistics == null ? " | | | " : String.format("%d | %d | %d | %b", statistics.numberOfNodes(), statistics.numberOfFailures(), statistics.numberOfSolutions(), statistics.isCompleted());
     }
 
-    private String bestSolutionString() {
+    protected String bestSolutionString() {
         if (solutions == null || solutions.isEmpty()) {
             return "NaN";
         } else {
