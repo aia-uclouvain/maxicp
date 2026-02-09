@@ -125,6 +125,7 @@ public abstract class Benchmark {
             case MST -> seqVar.getSolver().post(new DistanceMST(seqVar, distance, totLength));
             case MATCHING_SUCCESSOR -> seqVar.getSolver().post(new DistanceMatchingSuccessor(seqVar, distance, totLength));
             case MST_DETOUR -> seqVar.getSolver().post(new DistanceMinRestrictedDetour(seqVar, distance, totLength));
+            case MST_DETOUR_SHAVING -> seqVar.getSolver().post(new DistanceMinRestrictedDetourShaving(seqVar, distance, totLength));
             case SCHEDULING -> seqVar.getSolver().post(new DistanceScheduling(seqVar, distance, totLength));
             case FORWARD_SLACK -> seqVar.getSolver().post(new DistanceForwardSlack(seqVar, distance, totLength));
             case SUBSEQUENCE_SPLIT -> seqVar.getSolver().post(new DistanceSubsequenceSplit(seqVar, distance, totLength));

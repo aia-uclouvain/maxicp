@@ -10,6 +10,7 @@ from collections import Counter
 filenames = [
     ("results/pctsptw/pctsptw-2026-02-07_21-16-26-8ab0e44b6", {"MIN_INPUT_AND_OUTPUT_SUM", "MIN_DETOUR", "MST_DETOUR"}),
     ("results/pctsptw/pctsptw-2026-02-03_23-37-23-f92b69cde", {"ORIGINAL"}),
+    ("results/pctsptw/pctsptw-2026-02-08_21-45-17-94330b676", {"FORWARD_SLACK", "SUBSEQUENCE_SPLIT"}),
 ]
 
 plt.rcParams.update({
@@ -56,12 +57,16 @@ colors = {
     "MIN_INPUT_AND_OUTPUT_SUM": SKY_BLUE,
     "MIN_DETOUR": BLUISH_GREEN,
     "MST_DETOUR": ORANGE,
+    "FORWARD_SLACK": REDDISH_PURPLE,
+    "SUBSEQUENCE_SPLIT": VERMILION,
 }
 naming = {
     "ORIGINAL": "Original",
     "MIN_INPUT_AND_OUTPUT_SUM": "I/O Min",
     "MIN_DETOUR": "Min Detours",
     "MST_DETOUR": "Restricted detours",
+    "FORWARD_SLACK": "Slack",
+    "SUBSEQUENCE_SPLIT": "Split",
 }
 
 global_df = None
