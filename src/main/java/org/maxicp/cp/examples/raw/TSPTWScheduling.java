@@ -7,8 +7,7 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.Element1DDC;
-import org.maxicp.cp.engine.constraints.Element1DVar;
+import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlapBinaryWithTransitionTime;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
@@ -20,6 +19,7 @@ import org.maxicp.search.*;
 import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
@@ -53,66 +53,49 @@ public class TSPTWScheduling {
         // taskInPosition[i] is the node at position i in the tour
         CPIntVar [] taskInPosition = CPFactory.makeIntVarArray(cp, instance.n, instance.n);
 
-        cp.post(allDifferent(taskInPosition));
-
-        // link disjunctive constraint and position-based representation
-        //cp.post(new PositionBasedDisjunctive(positionOfNode, visits));
-        cp.post(allDifferent(positionOfNode));
+        // channeling between positionOfNode and taskInPosition positionOfNode[i] = p <=> taskInPosition[p] = i
+        cp.post(new InversePerm(positionOfNode, taskInPosition));
         cp.post(nonOverlap(visits));
 
+        // enforce the transition time constraints
+        ArrayList<IntVar> precedences = new ArrayList<>();
         for (int i = 0; i < instance.n; i++) {
             for (int j = i+1; j < instance.n; j++) {
                 CPBoolVar iBeforej = CPFactory.isLe(positionOfNode[i], positionOfNode[j]);
+                //CPBoolVar iBeforej = CPFactory.makeBoolVar(cp);
+
+                // (positionOfNode[i] <= positionOfNode[j] -1)  <=> iBeforej = 1
+                cp.post(new IsLessOrEqualVar(iBeforej,positionOfNode[i], minus(positionOfNode[j], 1)));
+
+
+                // (visits[i] << visits[j]) <=> iBeforej = 1
                 cp.post(new NoOverlapBinaryWithTransitionTime(iBeforej, visits[i], visits[j], instance.distMatrix[i][j], instance.distMatrix[j][i]));
+
+                precedences.add(iBeforej);
             }
             cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
         }
 
-
         cp.post(eq(positionOfNode[0],0)); // start at depot
-        cp.post(eq(taskInPosition[0],0));
-        cp.post(startAt(visits[0],0 ));
-
+        cp.post(startAt(visits[0],0 )); // at time 0
         cp.post(eq(positionOfNode[instance.n-1],instance.n-1)); // end at depot duplicate
-        cp.post(eq(taskInPosition[instance.n-1],instance.n-1));
 
         // transition times and objective
-        CPIntVar totTransition = makeIntVar(cp, 0 , 100000);
-        CPIntVar[] transitionTimes = makeIntVarArray(cp, instance.n-1, 0, 10000);
+        CPIntVar totTransition = makeIntVar(cp, 0 , instance.horizon);
+        CPIntVar[] transitionTimes = makeIntVarArray(cp, instance.n-1, 0, instance.horizon);
         for (int i = 0; i < instance.n-1; i++) {
             cp.post(eq(transitionTimes[i],
                     CPFactory.element(instance.distMatrix, taskInPosition[i], taskInPosition[i+1])));
         }
         cp.post(sum(transitionTimes, totTransition));
 
-        // link positionOfNode and taskInPosition
-        for (int i = 0; i < instance.n; i++) {
-            cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
-            cp.post(new Element1DVar(taskInPosition,positionOfNode[i],CPFactory.makeIntVar(cp,i,i)));
-
-        }
-
-
-        int[] solution = new int[]{0, 7, 13, 16, 6, 15, 37, 12, 39, 2, 25, 35, 4, 23, 32, 3, 8, 1, 38, 18, 33, 14, 5, 36, 10, 22, 31, 21, 9, 11, 19, 26, 29, 27, 34, 28, 24, 20, 17, 30, 40, 41};
-        cp.post(eq(taskInPosition[1],7));
-        cp.post(eq(taskInPosition[2],13));
-
-        System.out.println(instance.earliest[7]+","+instance.latest[7]);
-        System.out.println(instance.earliest[13]+","+instance.latest[13]);
-        System.out.println("position of 0:"+positionOfNode[0]);
-        System.out.println("position of 7:"+positionOfNode[7]);
-        System.out.println("position of 13:"+positionOfNode[13]);
-        System.out.println("distances:" + instance.distMatrix[7][13]+" "+instance.distMatrix[13][7]);
-        System.out.println("transition times:"+transitionTimes[0]+" "+transitionTimes[1]);
-        System.out.println("tot transition time"+totTransition);
-        System.out.println(visits[0]+" :::: "+visits[7]+" :::: "+visits[13]);
-        System.out.println("here");
-
         Objective obj = cp.minimize(totTransition);
 
         // ===================== search =====================
 
-        DFSearch dfs = makeDfs(cp,conflictOrderingSearch(minDomVariableSelector(taskInPosition), x -> x.min()));
+        // Search that assign the time
+        DFSearch dfs = makeDfs(cp,conflictOrderingSearch(precedences.toArray(new CPIntVar[0])));
+
 
         dfs.onSolution(() -> {;
             System.out.println("tour: " + Arrays.toString(taskInPosition));
