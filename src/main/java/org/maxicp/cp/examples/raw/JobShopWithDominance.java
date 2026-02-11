@@ -203,6 +203,7 @@ public class JobShopWithDominance {
             }
 
             boolean allJobsDone = true;
+
             for (int j = 0; j < nJobs; j++) {
                 final int job = j;
                 int taskIdx = currentTask[job].value();
@@ -230,7 +231,8 @@ public class JobShopWithDominance {
                             lastUsedMachine.setValue(machine[job][taskIdx]);
 
                         }));
-                    } else {
+                    }
+                    else {
                         task.setStartMin(currentMakespan.value());
                         cp.fixPoint();
                     }
