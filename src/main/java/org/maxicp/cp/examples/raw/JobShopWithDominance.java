@@ -13,8 +13,8 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
 import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.io.BufferedReader;
@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import static java.lang.Math.*;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.branch;
@@ -39,6 +40,84 @@ public class JobShopWithDominance {
         return Arrays.stream(x).flatMap(Arrays::stream).toArray(CPIntervalVar[]::new);
     }
 
+    private static boolean reduceSpace(StateInt[][] realEst, StateInt[] currentTask, StateInt currentMakespan, JobShopInstance instance, StateInt lastUsedMachine){
+        int nMachines = realEst[0].length;
+        int nJobs = realEst.length;
+        for (int i = 0; i < nMachines; i++) {
+            boolean oneNotInEta = false;
+            boolean allEquals = true;
+            for (int j = 0; j < nJobs; j++) {
+                for (int k = currentTask[j].value(); k < nMachines; k++) {
+                    if (instance.machine[j][k] == i) {
+                        int apt = realEst[j][k].value() + instance.duration[j][k];
+                        if (apt < currentMakespan.value() ||(apt == currentMakespan.value() && instance.machine[j][k]< lastUsedMachine.value())) {
+                            oneNotInEta = true;
+                            apt = currentMakespan.value()+instance.duration[j][k];
+                        }
+                        if (apt != currentMakespan.value()+instance.duration[j][k]){
+                            allEquals = false;
+                        }
+                    }
+                    break;
+
+                }
+            }
+            if (oneNotInEta && allEquals) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean dominated(HashMap<BitSet, HashSet<int[]>> dominance, StateInt[] currentTask, StateInt[][] realEst, StateInt lastUsedMachine, JobShopInstance instance, StateInt currentMakespan) {
+        BitSet set = new BitSet(currentTask.length);
+        for(int i =0; i<currentTask.length; i++) {
+            StateInt taskId = currentTask[i];
+            if (taskId.value()< instance.nMachines){
+                set.set(i* instance.nMachines+taskId.value());
+            }
+        }
+        int[] est = new int[set.cardinality()];
+        int idx =0;
+        for (int i = set.nextSetBit(0); i >= 0; i = set.nextSetBit(i + 1)) {
+            int apt = realEst[i/instance.nMachines][i%instance.nMachines].value() + instance.duration[i/instance.nMachines][i%instance.nMachines];
+            if (apt < currentMakespan.value() ||(apt == currentMakespan.value() && instance.machine[i/instance.nMachines][i%instance.nMachines]< lastUsedMachine.value())) {
+                apt = currentMakespan.value()+instance.duration[i/instance.nMachines][i%instance.nMachines];
+            }
+            est[idx]= apt;
+            idx++;
+        }
+        if(dominance.containsKey(set)){
+            Iterator<int[]> it = dominance.get(set).iterator();
+            while (it.hasNext()) {
+                int[] arr = it.next();
+                boolean dominated = false;
+                boolean dominant = false;
+                for(int j = 0; j < arr.length; j++){
+                    if (arr[j]<= est[j] ){
+                        dominated = true;
+                    }else{
+                        dominant = true;
+                    }
+                }
+                if (dominated && !dominant){
+                    return true;
+                }
+                if (!dominated && dominant){
+                    it.remove();
+                }
+
+            }
+            dominance.get(set).add(est);
+
+        }else{
+            dominance.put(set, new HashSet<>());
+            dominance.get(set).add(est);
+        }
+
+        return false;
+    }
+
     public static void main(String[] args) {
         JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
 
@@ -46,11 +125,17 @@ public class JobShopWithDominance {
         int nMachines = instance.nMachines;
         int[][] duration = instance.duration;
         int[][] machine = instance.machine;
+        int ub = 0;
+
+        HashMap<BitSet, HashSet<int[]>> dominance = new HashMap<>();
 
         CPSolver cp = CPFactory.makeSolver();
 
+        StateInt lastUsedMachine = cp.getStateManager().makeStateInt(-1);
+        StateInt[][] realEst = new StateInt[nJobs][nMachines];
         StateInt[] currentTask = new StateInt[nJobs];
         StateInt currentMakespan = cp.getStateManager().makeStateInt(0);
+        StateSparseSet[][] precedences = new StateSparseSet[nJobs][nMachines];
 
         for (int j = 0; j < nJobs; j++) {
             currentTask[j] = cp.getStateManager().makeStateInt(0);
@@ -61,6 +146,8 @@ public class JobShopWithDominance {
         for (int j = 0; j < nJobs; j++) {
             for (int m = 0; m < nMachines; m++) {
                 activities[j][m] = makeIntervalVar(cp, false, duration[j][m], duration[j][m]);
+                precedences[j][m] = new StateSparseSet(cp.getStateManager(),nJobs*nMachines,0);
+                ub+=duration[j][m];
             }
         }
 
@@ -68,6 +155,13 @@ public class JobShopWithDominance {
         for (int j = 0; j < nJobs; j++) {
             for (int m = 1; m < nMachines; m++) {
                 cp.post(endBeforeStart(activities[j][m - 1], activities[j][m]));
+            }
+        }
+        //Set real earliest starting time
+        for (int j = 0; j < nJobs; j++) {
+            for (int m = 0; m < nMachines; m++) {
+                activities[j][m].setEndMax(ub);
+                realEst[j][m] = cp.getStateManager().makeStateInt(activities[j][m].startMin());
             }
         }
 
@@ -101,20 +195,40 @@ public class JobShopWithDominance {
 
             List<Alternative> branches = new LinkedList<>();
 
+            if (reduceSpace(realEst,currentTask,currentMakespan, instance, lastUsedMachine)){
+                throw InconsistencyException.INCONSISTENCY;
+            }
+            if (dominated(dominance,currentTask, realEst, lastUsedMachine, instance, currentMakespan)){
+                throw InconsistencyException.INCONSISTENCY;
+            }
+
             boolean allJobsDone = true;
             for (int j = 0; j < nJobs; j++) {
                 final int job = j;
                 int taskIdx = currentTask[job].value();
                 if (taskIdx < nMachines) {
                     CPIntervalVar task = activities[job][taskIdx];
-                    if (task.endMin() >= currentMakespan.value()) {
-                        branches.add(new Alternative(task.endMin(), () -> {
+
+                    if (realEst[job][taskIdx].value()+duration[job][taskIdx] > currentMakespan.value() ||(realEst[job][taskIdx].value()+duration[job][taskIdx] == currentMakespan.value() &&machine[job][taskIdx]> lastUsedMachine.value())) {
+                        branches.add(new Alternative(task.startMin(), () -> {
                             // assign the start time to its minimum
-                            task.setStart(task.startMin());
+                            task.setStart(realEst[job][taskIdx].value());
                             cp.fixPoint();
                             // update current task and makespan
                             currentMakespan.setValue(Math.max(currentMakespan.value(), task.endMin()));
                             currentTask[job].increment();
+                            for(int i=0; i<nJobs; i++) {
+                                for(int m=0; m<nMachines;m++){
+                                    if (m>= currentTask[i].value() && instance.machine[i][m]==machine[job][taskIdx]){
+                                        realEst[i][m].setValue(max(realEst[i][m].value(), realEst[job][taskIdx].value()+duration[job][taskIdx]));
+                                        for(int k=m+1; k<nMachines;k++){
+                                            realEst[i][k].setValue(max(realEst[i][k].value(), realEst[i][k-1].value()+duration[i][k-1]));
+                                        }
+                                    }
+                                }
+                            }
+                            lastUsedMachine.setValue(machine[job][taskIdx]);
+
                         }));
                     } else {
                         task.setStartMin(currentMakespan.value());
@@ -143,6 +257,7 @@ public class JobShopWithDominance {
 
         dfs.onSolution(() -> {
             System.out.println("makespan:" + makespan);
+            System.out.println("Sol : "+ Arrays.deepToString(activities));
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);
