@@ -35,7 +35,6 @@ public class Rank {
     CPIntervalVar[][] intervals;
     Ranker[] rankers;
     StateSparseSet notRanked;
-    int [] notRankedIterator;
     StateInt currentRanker;
 
     public Rank(CPIntervalVar[][] intervals) {
@@ -44,7 +43,6 @@ public class Rank {
         CPSolver cp = intervals[0][0].getSolver();
         this.notRanked = new StateSparseSet(cp.getStateManager(), intervals.length, 0);
         this.currentRanker = cp.getStateManager().makeStateInt(-1);
-        this.notRankedIterator = new int[intervals.length];
         for (int i = 0; i < intervals.length; i++) {
             rankers[i] = new Ranker(intervals[i]);
         }
@@ -56,6 +54,7 @@ public class Rank {
             // need to find a new ranked
             int bestRankerId = -1;
             int bestSlack = Integer.MAX_VALUE;
+            int [] notRankedIterator = new int[notRanked.size()];
             int nNotRanked = notRanked.fillArray(notRankedIterator);
             for (int i = 0; i < nNotRanked; i++) {
                 if (rankers[notRankedIterator[i]].isRanked()) {
@@ -81,6 +80,7 @@ public class Rank {
     }
 
     public Runnable[] alternatives() {
+        int [] notRankedIterator = new int[notRanked.size()];
         int nNotRanked = notRanked.fillArray(notRankedIterator);
         // find the ranker with the least slack
         int bestRankerId = -1;
@@ -143,6 +143,8 @@ public class Rank {
 
         public Runnable[] alternatives() {
             assert (!isRanked());
+
+            int [] notRankedIterator = new int[notRanked.size()];
             int nNotRanked = notRanked.fillArray(notRankedIterator); // fill the iterator with the unassigned tasks
 
             record RunnableWithPriority(int priority1, int priority2, Runnable action) {}
