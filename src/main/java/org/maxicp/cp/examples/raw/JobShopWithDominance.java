@@ -175,7 +175,7 @@ public class JobShopWithDominance {
                     }
                 };
             }
-            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            cp.post(noOverlap(machineActivities.toArray(new CPIntervalVar[0])));
         }
 
 

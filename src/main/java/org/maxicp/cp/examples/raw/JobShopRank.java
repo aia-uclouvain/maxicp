@@ -78,7 +78,7 @@
                     };
                 }
                 CPIntervalVar [] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
-                cp.post(nonOverlap(onMachine));
+                cp.post(noOverlap(onMachine));
                 toRank[m] = onMachine;
             }
 
