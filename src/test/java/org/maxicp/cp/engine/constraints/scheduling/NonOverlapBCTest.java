@@ -152,7 +152,7 @@ class NonOverlapBCTest extends CPSolverTest {
         intervals[2].setStart(1); // absent, [1] -> [2]
         intervals[3].setStartMin(2);
         intervals[3].setStartMax(3); // present, [2..3] -> [3..4]
-        assertDoesNotThrow(() -> cp.post(nonOverlap(intervals)));
+        assertDoesNotThrow(() -> cp.post(noOverlap(intervals)));
     }
 
 

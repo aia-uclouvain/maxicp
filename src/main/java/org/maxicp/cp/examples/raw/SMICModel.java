@@ -1,6 +1,5 @@
 package org.maxicp.cp.examples.raw;
 
-import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -69,7 +68,7 @@ public class SMICModel {
         }
         // constraints
         cp.post(alwaysIn(cumul, 0, data.capaInventory));
-        cp.post(nonOverlap(intervals));
+        cp.post(CPFactory.noOverlap(intervals));
 
         // Objective
         IntExpression makespan = max(ends);

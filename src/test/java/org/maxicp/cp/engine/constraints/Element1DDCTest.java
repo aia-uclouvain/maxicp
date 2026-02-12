@@ -63,7 +63,7 @@ public class Element1DDCTest extends CPSolverTest {
 
         cp.post(new Element1DDC(T, y, z));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(y, z));
+        DFSearch dfs = CPFactory.makeDfs(cp, firstFailBinary(y, z));
         dfs.onSolution(() ->
                 assertEquals(T[y.min()], z.min())
         );

@@ -57,7 +57,7 @@ public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
                 A.setStartMin(B.endMin() + transitionTimeBA);
                 B.setEndMax(A.startMax() - transitionTimeBA);
             }
-            if (B.endMin() > A.startMax() || before.isTrue()) {
+            if (B.endMin() + transitionTimeBA > A.startMax() || before.isTrue()) {
                 // A + transitionTimeAB << B
                 before.fix(true);
                 B.setStartMin(A.endMin() + transitionTimeAB);

@@ -1,22 +1,20 @@
 package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
-import org.maxicp.cp.engine.constraints.LessOrEqual;
-import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPSetVar;
-import org.maxicp.cp.engine.core.CPSetVarImpl;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.io.*;
 import java.util.List;
 import java.util.StringTokenizer;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * Max Independent Set Problem of a graph:
@@ -52,7 +50,7 @@ public class MaxIndependentSet {
 
         Objective obj = cp.maximize(set.card());
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(presence));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(presence));
 
         dfs.onSolution(() -> {
             System.out.println("Solution found: " + set.card().min());

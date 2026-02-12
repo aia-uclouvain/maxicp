@@ -11,10 +11,10 @@ import org.maxicp.ModelDispatcher;
 import static org.maxicp.modeling.Factory.*;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.modeling.constraints.AllDifferent;
 import org.maxicp.modeling.constraints.Table;
 import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
 import org.maxicp.util.io.InputReader;
 
@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 import static org.maxicp.modeling.Factory.eq;
 import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * The Eternity II puzzle is an edge-matching puzzle which
@@ -138,11 +138,11 @@ public class Eternity {
 
         long time = TimeIt.milliSeconds(() -> {
             baseModel.runCP(() -> {
-                SearchMethod search = baseModel.dfSearch(and(firstFail(flatten(id)),
-                        firstFail(flatten(u)),
-                        firstFail(flatten(r)),
-                        firstFail(flatten(d)),
-                        firstFail(flatten(l))));
+                SearchMethod search = baseModel.dfSearch(and(Searches.firstFailBinary(flatten(id)),
+                        Searches.firstFailBinary(flatten(u)),
+                        Searches.firstFailBinary(flatten(r)),
+                        Searches.firstFailBinary(flatten(d)),
+                        Searches.firstFailBinary(flatten(l))));
 
                 search.onSolution(() -> {
                     System.out.println("----------------");

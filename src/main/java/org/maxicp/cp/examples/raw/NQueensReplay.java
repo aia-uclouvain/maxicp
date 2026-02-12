@@ -14,10 +14,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 
-import java.util.Arrays;
-
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.EMPTY;
 
 
 /**
@@ -40,7 +37,7 @@ public class NQueensReplay {
 
         DFSLinearizer linearizer = new DFSLinearizer();
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(q));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(q));
 
         SearchStatistics stats0 = search.solve();
 

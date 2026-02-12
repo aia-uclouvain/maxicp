@@ -14,6 +14,7 @@ import org.maxicp.modeling.algebra.scheduling.CumulFunction;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 import static org.maxicp.modeling.Factory.*;
 
@@ -99,7 +100,7 @@ public class ShipLoading {
 
 
         // Search:
-        DFSearch dfs = cp.dfSearch(and(firstFail(starts), firstFail(ends)));
+        DFSearch dfs = cp.dfSearch(and(Searches.firstFailBinary(starts), Searches.firstFailBinary(ends)));
 
         // Solution management:
         dfs.onSolution(() -> {

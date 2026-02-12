@@ -84,7 +84,7 @@ public class ComplexExpressionsTest extends CPSolverTest {
 
         ConcreteCPModel cp = model.cpInstantiate();
 
-        DFSearch dfs = cp.dfSearch(Searches.staticOrder(x));
+        DFSearch dfs = cp.dfSearch(Searches.staticOrderBinary(x));
 
         SearchStatistics stats = dfs.solve(); // actually solve the problem
 

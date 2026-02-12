@@ -50,7 +50,7 @@ public class GuessTheNumberTest extends CPSolverTest {
         ConcreteCPModel cp = model.cpInstantiate();
 
 
-        DFSearch dfs = cp.dfSearch(Searches.staticOrder(digits));
+        DFSearch dfs = cp.dfSearch(Searches.staticOrderBinary(digits));
 
         dfs.onSolution(() -> {
             assertEquals(428571, nb1.min());

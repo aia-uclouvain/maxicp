@@ -12,13 +12,14 @@ import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class IsSubsetTest extends CPSolverTest {
 
@@ -171,7 +172,7 @@ public class IsSubsetTest extends CPSolverTest {
         cp.post(new IsSubset(b, set1, set2));
 
         Random r = new Random(42);
-        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(b),CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r)));
+        DFSearch dfs = CPFactory.makeDfs(cp, and(Searches.firstFailBinary(b),CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r)));
         SearchStatistics stats = dfs.solve();
 
         assertEquals(Math.pow(4,n),stats.numberOfSolutions());
@@ -188,7 +189,7 @@ public class IsSubsetTest extends CPSolverTest {
         cp.post(new IsSubset(b, set1, set2));
 
         Random r = new Random(42);
-        DFSearch dfs = CPFactory.makeDfs(cp, and(CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r),firstFail(b)));
+        DFSearch dfs = CPFactory.makeDfs(cp, and(CPSetVarTest.randomSetBranching(new CPSetVar[]{set1, set2}, r), Searches.firstFailBinary(b)));
         dfs.onSolution(() -> {
             if(b.isTrue()) {
                 for(int i = 0; i < n; i++) {
