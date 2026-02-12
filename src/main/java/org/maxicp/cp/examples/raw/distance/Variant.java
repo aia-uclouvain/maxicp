@@ -11,6 +11,7 @@ public enum Variant {
     MIN_DETOUR, // lb = sum of min detours (assume future detours not yet available for the API)
     MST, // lb = minimum spanning tree on the edges
     MST_DETOUR,
+    MST_DETOUR_SHAVING,
     MATCHING_SUCCESSOR, // lb = minimum matching of the successors
     MATCHING_SUCCESSOR_LAGRANGIAN, // lb = minimum matching of the successors. Attempt to create as few strongly connected components as possible through lagrangian relaxation
     SCHEDULING,
