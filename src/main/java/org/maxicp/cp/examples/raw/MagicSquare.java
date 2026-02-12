@@ -72,7 +72,7 @@ public class MagicSquare {
         cp.post(CPFactory.sum(diagonalLeft, sumResult));
         cp.post(CPFactory.sum(diagonalRight, sumResult));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(xFlat));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(xFlat));
         //DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrder(xFlat));
 
         dfs.onSolution(() -> {

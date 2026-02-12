@@ -178,7 +178,7 @@ public class SumTest extends CPSolverTest {
         };
         cp.post(new Sum(x, 0));
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         SearchStatistics stats = search.solve();
 

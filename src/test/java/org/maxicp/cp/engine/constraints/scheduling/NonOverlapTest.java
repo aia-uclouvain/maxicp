@@ -45,7 +45,7 @@ class NonOverlapTest extends CPSolverTest {
         interval1.setEndMax(2);
         interval2.setEndMax(2);
 
-        cp.post(nonOverlap(vars));
+        cp.post(noOverlap(vars));
 
         DFSearch dfs = CPFactory.makeDfs(cp, and(branchOnStatus(vars), branchOnPresentStarts(vars)));
 
@@ -76,7 +76,7 @@ class NonOverlapTest extends CPSolverTest {
         }
 
         try {
-            cp.post(nonOverlap(intervals));
+            cp.post(noOverlap(intervals));
             intervals[0].setStart(2);
             cp.fixPoint();
 
@@ -108,7 +108,7 @@ class NonOverlapTest extends CPSolverTest {
             intervals[i].setLength(1);
             intervals[i].setEndMax(n);
         }
-        cp.post(nonOverlap(intervals));
+        cp.post(noOverlap(intervals));
 
         DFSearch dfs = CPFactory.makeDfs(cp, branchOnPresentStarts(intervals));
 
@@ -128,7 +128,7 @@ class NonOverlapTest extends CPSolverTest {
             intervals[i].setLength(1);
             intervals[i].setEndMax(n);
         }
-        cp.post(nonOverlap(intervals));
+        cp.post(noOverlap(intervals));
 
         DFSearch dfs = CPFactory.makeDfs(cp, branchOnPresentStarts(intervals));
 
@@ -154,7 +154,7 @@ class NonOverlapTest extends CPSolverTest {
         intervals[2].setStart(1); // absent, [1] -> [2]
         intervals[3].setStartMin(2);
         intervals[3].setStartMax(3); // present, [2..3] -> [3..4]
-        assertDoesNotThrow(() -> cp.post(nonOverlap(intervals)));
+        assertDoesNotThrow(() -> cp.post(noOverlap(intervals)));
     }
 
 
@@ -173,7 +173,7 @@ class NonOverlapTest extends CPSolverTest {
             intervals[i].setLength(1);
             intervals[i].setEndMax(n);
         }
-        cp.post(nonOverlap(intervals));
+        cp.post(noOverlap(intervals));
 
         // branching that takes an interval unfixed and decides to either
         // - fix it to present if it was not decided
@@ -308,7 +308,7 @@ class NonOverlapTest extends CPSolverTest {
         cp.fixPoint();
         cp.getStateManager().saveState();
         cp.getStateManager().saveState();
-        cp.post(nonOverlap(intervals));
+        cp.post(noOverlap(intervals));
         SearchStatistics statsNoOverlap = makeDfs(cp, and(Searches.branchOnStatus(intervals), Searches.branchOnPresentStarts(intervals))).solve();
         cp.getStateManager().restoreState();
         postDecomposition(intervals);

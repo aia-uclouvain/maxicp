@@ -90,7 +90,7 @@ public class IntervalVarTest extends CPSolverTest {
 
         ConcreteCPModel cp = model.cpInstantiate();
 
-        DFSearch dfs = cp.dfSearch(Searches.firstFail(start,end));
+        DFSearch dfs = cp.dfSearch(Searches.firstFailBinary(start,end));
         dfs.onSolution(() -> {
             int s = start.min();
             int e = end.min();

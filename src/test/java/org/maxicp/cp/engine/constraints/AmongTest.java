@@ -8,11 +8,13 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.eq;
 import static org.maxicp.cp.CPFactory.neq;
-import static org.maxicp.search.Searches.firstFail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -102,7 +104,7 @@ public class AmongTest extends CPSolverTest {
 
         cp.post(CPFactory.among(x, vals, N));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
         dfs.onSolution(() -> {
             int count = 0;
             for (CPIntVar xi : x) {

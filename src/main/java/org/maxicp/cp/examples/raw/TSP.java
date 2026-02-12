@@ -16,8 +16,6 @@ import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.io.InputReader;
 
-import java.util.Arrays;
-
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
@@ -53,7 +51,7 @@ public class TSP {
         // redundant constraint
         cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
 
-        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(succ));
 
         dfs.onSolution(() -> {
             System.out.println(totalDist);

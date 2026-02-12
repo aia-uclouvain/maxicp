@@ -37,7 +37,7 @@ import static org.maxicp.modeling.Factory.*;
 public class QAP {
 
     public static void main(String[] args) {
-        System.out.println(run((baseModel, x) -> baseModel.dfSearch(Searches.firstFail(x)), (baseModel, x) -> baseModel.dfSearch(Searches.firstFail(x))));
+        System.out.println(run((baseModel, x) -> baseModel.dfSearch(Searches.firstFailBinary(x)), (baseModel, x) -> baseModel.dfSearch(Searches.firstFailBinary(x))));
     }
 
     public static SearchStatistics run(BiFunction<ModelDispatcher, IntExpression[], SearchMethod> lnsSearch, BiFunction<ModelDispatcher, IntExpression[], SearchMethod> optiSearch) {

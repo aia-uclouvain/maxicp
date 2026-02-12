@@ -14,10 +14,11 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class IsLessOrEqualVarTest extends CPSolverTest {
 
@@ -31,7 +32,7 @@ public class IsLessOrEqualVarTest extends CPSolverTest {
 
         cp.post(new IsLessOrEqualVar(b, x, y));
 
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(x, y));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(x, y));
 
         SearchStatistics stats = search.solve();
 

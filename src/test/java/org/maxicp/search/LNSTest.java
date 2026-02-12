@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class LNSTest extends CPSolverTest {
 
@@ -50,7 +50,7 @@ public class LNSTest extends CPSolverTest {
         }
         CPIntVar totalDist = sum(distSucc);
         Objective obj = cp.minimize(totalDist);
-        DFSearch dfs = makeDfs(cp, firstFail(succ));
+        DFSearch dfs = makeDfs(cp, Searches.firstFailBinary(succ));
 
         int[] xBest = IntStream.range(0, n).toArray();
         AtomicInteger bestSol = new AtomicInteger(Integer.MAX_VALUE);

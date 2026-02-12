@@ -14,6 +14,7 @@ import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.cp.CPFactory;
 import org.opentest4j.AssertionFailedError;
@@ -25,7 +26,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class TableTest extends CPSolverTest {
 
@@ -192,7 +193,7 @@ public class TableTest extends CPSolverTest {
             cp.post(table1.apply(new CPIntVar[]{x[0], x[1], x[2]}, t1));
             cp.post(table1.apply(new CPIntVar[]{x[2], x[3], x[4]}, t2));
             cp.post(table1.apply(new CPIntVar[]{x[0], x[2], x[4]}, t3));
-            stats1 = CPFactory.makeDfs(cp, firstFail(x)).solve();
+            stats1 = CPFactory.makeDfs(cp, Searches.firstFailBinary(x)).solve();
         } catch (InconsistencyException ignored) {
 
         }
@@ -204,7 +205,7 @@ public class TableTest extends CPSolverTest {
             cp.post(table2.apply(new CPIntVar[]{x[0], x[1], x[2]}, t1));
             cp.post(table2.apply(new CPIntVar[]{x[2], x[3], x[4]}, t2));
             cp.post(table2.apply(new CPIntVar[]{x[0], x[2], x[4]}, t3));
-            stats2 = CPFactory.makeDfs(cp, firstFail(x)).solve();
+            stats2 = CPFactory.makeDfs(cp, Searches.firstFailBinary(x)).solve();
         } catch (InconsistencyException ignored) {
 
         }

@@ -14,10 +14,11 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class IsLessOrEqualTest extends CPSolverTest {
 
@@ -30,7 +31,7 @@ public class IsLessOrEqualTest extends CPSolverTest {
 
         cp.post(new IsLessOrEqual(b, x, 3));
 
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         search.onSolution(() ->
                 assertTrue(x.min() <= 3 && b.isTrue() || x.min() > 3 && b.isFalse())

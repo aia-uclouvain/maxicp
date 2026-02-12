@@ -9,11 +9,7 @@ package org.maxicp.cp.examples.raw;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlapBinaryWithTransitionTime;
-import org.maxicp.cp.engine.constraints.seqvar.Distance;
-import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
 import org.maxicp.cp.engine.core.*;
-import org.maxicp.cp.examples.raw.amaury.PositionBasedDisjunctive;
-import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.search.*;
 import org.maxicp.util.algo.DistanceMatrix;
@@ -23,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.*;
 
 public class TSPTWScheduling {
@@ -55,23 +50,20 @@ public class TSPTWScheduling {
 
         // channeling between positionOfNode and taskInPosition positionOfNode[i] = p <=> taskInPosition[p] = i
         cp.post(new InversePerm(positionOfNode, taskInPosition));
-        cp.post(nonOverlap(visits));
+        // no overlap between visits
+        cp.post(noOverlap(visits));
 
         // enforce the transition time constraints
         ArrayList<IntVar> precedences = new ArrayList<>();
         for (int i = 0; i < instance.n; i++) {
             for (int j = i+1; j < instance.n; j++) {
-                CPBoolVar iBeforej = CPFactory.isLe(positionOfNode[i], positionOfNode[j]);
-                //CPBoolVar iBeforej = CPFactory.makeBoolVar(cp);
-
-                // (positionOfNode[i] <= positionOfNode[j] -1)  <=> iBeforej = 1
-                cp.post(new IsLessOrEqualVar(iBeforej,positionOfNode[i], minus(positionOfNode[j], 1)));
-
-
-                // (visits[i] << visits[j]) <=> iBeforej = 1
-                cp.post(new NoOverlapBinaryWithTransitionTime(iBeforej, visits[i], visits[j], instance.distMatrix[i][j], instance.distMatrix[j][i]));
-
-                precedences.add(iBeforej);
+                // order = 1 <=> positionOfNode[i] < positionOfNode[j]
+                // order = 0 <=> positionOfNode[j] < positionOfNode[i]
+                CPBoolVar order = CPFactory.strictOrder(positionOfNode[i], positionOfNode[j]);
+                // if order = 1 then visits[i] before visits[j] with transition time instance.distMatrix[i][j]
+                // if order = 0 then visits[j] before visits[i] with transition time instance
+                cp.post(new NoOverlapBinaryWithTransitionTime(order, visits[i], visits[j], instance.distMatrix[i][j], instance.distMatrix[j][i]));
+                precedences.add(order);
             }
             cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
         }
@@ -93,14 +85,23 @@ public class TSPTWScheduling {
 
         // ===================== search =====================
 
-        // Search that assign the time
-        DFSearch dfs = makeDfs(cp,conflictOrderingSearch(precedences.toArray(new CPIntVar[0])));
+        // Search that
+        // DFSearch dfs = makeDfs(cp,conflictOrderingSearch(precedences.toArray(new CPIntVar[0])));
+        //DFSearch dfs = makeDfs(cp,conflictOrderingSearch(positionOfNode));
+        // DFSearch dfs = makeDfs(cp,Rank.rank(visits));
+
+        DFSearch dfs = makeDfs(cp,heuristicNary(staticOrderVariableSelector(taskInPosition),
+                i -> positionOfNode[i].size()));
+
 
 
         dfs.onSolution(() -> {;
             System.out.println("tour: " + Arrays.toString(taskInPosition));
             System.out.println("distances: "+ Arrays.toString(transitionTimes));
             System.out.println("total distance: " + totTransition);
+            System.out.println("positionOfNode: " + Arrays.toString(positionOfNode));
+            System.out.println("precedences: " + precedences);
+
             // check solution
             int[] tour = new int[instance.n];
             for (int i = 0; i < instance.n; i++) {

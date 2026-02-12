@@ -13,7 +13,7 @@ import org.maxicp.cp.engine.core.*;
 import org.maxicp.util.exception.InconsistencyException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class IsIncludedTest extends CPSolverTest {
 

@@ -13,11 +13,12 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class IsOrTest extends CPSolverTest {
 
@@ -75,7 +76,7 @@ public class IsOrTest extends CPSolverTest {
         CPBoolVar b = CPFactory.makeBoolVar(cp);
         cp.post(new IsOr(b, x));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         dfs.onSolution(() -> {
             int nTrue = 0;

@@ -14,7 +14,7 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.util.exception.InconsistencyException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class MulCteTest extends CPSolverTest {
 

@@ -51,7 +51,7 @@ public class SortedTest extends CPSolverTest {
         cp.post(new Sorted(x, o, y));
         cp.post(new AllDifferentDC(x));
 
-        DFSearch dfs = makeDfs(cp, Searches.firstFail(x));
+        DFSearch dfs = makeDfs(cp, Searches.firstFailBinary(x));
 
         dfs.onSolution(() -> {
             for (int i = 0; i < 4; i++) {

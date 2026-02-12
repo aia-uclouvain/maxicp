@@ -10,13 +10,14 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.Searches;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Random;
 import java.util.stream.IntStream;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * The Quadratic Assignment problem.
@@ -75,7 +76,7 @@ public class QAPLNS {
         CPIntVar totCost = sum(weightedDist);
         Objective obj = cp.minimize(totCost);
 
-        DFSearch dfs = makeDfs(cp, firstFail(x));
+        DFSearch dfs = makeDfs(cp, Searches.firstFailBinary(x));
 
 
         // --- Large Neighborhood Search ---

@@ -12,12 +12,13 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * DARP
@@ -144,7 +145,7 @@ public class DARP {
 
 
 
-        DFSearch dfs = makeDfs(cp, firstFail(pred));
+        DFSearch dfs = makeDfs(cp, Searches.firstFailBinary(pred));
 
         dfs.onSolution(() -> {
             System.out.println("solution");

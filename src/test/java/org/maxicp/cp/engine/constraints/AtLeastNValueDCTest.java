@@ -13,12 +13,13 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.maxicp.search.Searches.staticOrder;
+import static org.maxicp.search.Searches.staticOrderBinary;
 
 
 public class AtLeastNValueDCTest extends CPSolverTest {
@@ -77,7 +78,7 @@ public class AtLeastNValueDCTest extends CPSolverTest {
         };
         CPIntVar y = CPFactory.makeIntVar(cp, 3, 5);
 
-        DFSearch dfSearch = CPFactory.makeDfs(cp, staticOrder(Xs));
+        DFSearch dfSearch = CPFactory.makeDfs(cp, Searches.staticOrderBinary(Xs));
 
         cp.getStateManager().saveState();
 

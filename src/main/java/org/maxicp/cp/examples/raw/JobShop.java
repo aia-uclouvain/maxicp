@@ -11,22 +11,16 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
-import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.search.*;
-import org.maxicp.util.exception.InconsistencyException;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 /**
  * The JobShop Problem.
@@ -78,7 +72,7 @@ public class JobShop {
                 };
             }
             CPIntervalVar [] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
-            cp.post(nonOverlap(onMachine));
+            cp.post(noOverlap(onMachine));
             toRank[m] = onMachine;
         }
 

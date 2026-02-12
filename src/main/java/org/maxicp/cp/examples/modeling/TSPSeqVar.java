@@ -49,7 +49,7 @@ public class TSPSeqVar {
         Objective minimizeDistance = minimize(totalDistance);
 
         ConcreteCPModel cp = model.cpInstantiate(); // instantiate the previously symbolic model as a CP solver
-        DFSearch search = cp.dfSearch(Searches.firstFail(route));
+        DFSearch search = cp.dfSearch(Searches.firstFailBinary(route));
         // print each solution found
         search.onSolution(() -> {
             System.out.println(route);

@@ -63,7 +63,7 @@ class BinaryKnapsackTest extends CPSolverTest {
             CPIntVar load = CPFactory.makeIntVar(cp, 0, n);
             cp.getStateManager().saveState();
             cp.post(new BinaryKnapsack(x, w, load));
-            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(x));
+            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
             long t0 = System.currentTimeMillis();
             SearchStatistics stat1 = dfs.solve();
             cp.getStateManager().restoreState();

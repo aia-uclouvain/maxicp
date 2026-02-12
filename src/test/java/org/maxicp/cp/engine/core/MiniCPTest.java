@@ -23,7 +23,7 @@ public class MiniCPTest extends CPSolverTest {
     public void testSolveSubjectTo(CPSolver cp) {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, firstFailBinary(x));
 
 
         SearchStatistics stats1 = dfs.solveSubjectTo(l -> false, () -> {

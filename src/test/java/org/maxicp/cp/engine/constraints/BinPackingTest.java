@@ -46,7 +46,7 @@ class BinPackingTest extends CPSolverTest {
 
         cp.post(new BinPacking(x, itemSizes, loads));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         SearchStatistics stats = dfs.solve();
         assertEquals(1, stats.numberOfSolutions());
@@ -60,7 +60,7 @@ class BinPackingTest extends CPSolverTest {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, nBins, nBins);
         CPIntVar [] loads = CPFactory.makeIntVarArray(cp, nBins, 11);
         cp.post(new BinPacking(x, itemSizes, loads));
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
         SearchStatistics stats = dfs.solve();
         assertEquals(120, stats.numberOfSolutions());
     }

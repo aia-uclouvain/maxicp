@@ -61,7 +61,7 @@ public class TSPTW {
 
         CPIntVar distance = sum(transition);
 
-        DFSearch search = makeDfs(cp, Searches.firstFail(x));
+        DFSearch search = makeDfs(cp, Searches.firstFailBinary(x));
 
         search.onSolution(() -> {
             System.out.println(Arrays.toString(x));

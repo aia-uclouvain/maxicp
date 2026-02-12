@@ -1,7 +1,6 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
-import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
@@ -12,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
@@ -95,7 +93,7 @@ public class FlexibleJobShop {
 
         model.runCP((cp) -> {
             // first step: assign the presence of the intervals to the machines
-            Supplier<Runnable[]> assignToMachine = staticOrder(status.toArray(IntExpression[]::new));
+            Supplier<Runnable[]> assignToMachine = staticOrderBinary(status.toArray(IntExpression[]::new));
             // second step: once the present intervals are chosen, fix the time
             Supplier<Runnable[]> setTimes = setTimes(tasks);
             // third step: fix the makespan once the times are fixed

@@ -14,6 +14,7 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.engine.constraints.TableTest.assertSameSearch;
 import static org.maxicp.cp.engine.constraints.TableTest.randomTuples;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class NegTableTest extends CPSolverTest {
 
@@ -88,7 +89,7 @@ public class NegTableTest extends CPSolverTest {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
         int[][] table = new int[][]{{1, 1, 1}};
         cp.post(new NegTableCT(x, table));
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
         SearchStatistics stats = dfs.solve();
         assertEquals(7, stats.numberOfSolutions());
     }
@@ -100,7 +101,7 @@ public class NegTableTest extends CPSolverTest {
                     CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
                     int[][] table = new int[][]{{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
                     cp.post(new NegTableCT(x, table));
-                    DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+                    DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
                     SearchStatistics stats = dfs.solve();
                 });
     }

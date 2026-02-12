@@ -12,12 +12,13 @@ import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Searches;
 import org.maxicp.util.io.InputReader;
 
 import java.util.stream.IntStream;
 
 import static org.maxicp.modeling.Factory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class TSP {
 
@@ -46,7 +47,7 @@ public class TSP {
         // run with a search procedure
         long init = System.currentTimeMillis();
         baseModel.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(firstFail(successor));
+            DFSearch search = cp.dfSearch(Searches.firstFailBinary(successor));
             // print each solution found
             search.onSolution(() -> {
                 System.out.println(totalDist);

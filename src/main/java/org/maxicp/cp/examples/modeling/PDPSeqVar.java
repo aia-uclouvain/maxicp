@@ -78,7 +78,7 @@ public class PDPSeqVar {
 
         // search
         baseModel.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(Searches.firstFail(routes));
+            DFSearch search = cp.dfSearch(Searches.firstFailBinary(routes));
             // print each solution found
             search.onSolution(() -> {
                 for (int vehicle = 0 ; vehicle < nVehicles ; vehicle++)

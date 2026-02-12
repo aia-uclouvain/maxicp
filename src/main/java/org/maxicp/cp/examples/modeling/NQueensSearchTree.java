@@ -17,7 +17,6 @@ import org.maxicp.search.DFSTreeRecorder;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
 
 import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
@@ -41,7 +40,7 @@ public class NQueensSearchTree {
         model.add(allDifferent(qR));
 
         ConcreteCPModel cp = model.cpInstantiate();
-        DFSearch dfs = cp.dfSearch(staticOrder(q));
+        DFSearch dfs = cp.dfSearch(staticOrderBinary(q));
 
         dfs.onSolution(() -> {
             System.out.println(Arrays.toString(q));

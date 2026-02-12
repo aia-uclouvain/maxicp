@@ -7,10 +7,11 @@ import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.eq;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class InversePermTest extends CPSolverTest {
 
@@ -39,7 +40,7 @@ public class InversePermTest extends CPSolverTest {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 3);
         CPIntVar[] y = CPFactory.makeIntVarArray(cp, 3, 3);
         cp.post(new InversePerm(x, y));
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
         dfs.onSolution(() -> {
             for (int i = 0; i < x.length; i++) {
                 assertTrue(y[i].isFixed());
