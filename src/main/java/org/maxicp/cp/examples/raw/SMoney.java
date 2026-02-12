@@ -52,7 +52,7 @@ public class SMoney {
         cp.post(CPFactory.eq(CPFactory.sum(values[D.val], values[E.val], CPFactory.minus(values[Y.val]), CPFactory.mul(carry[0], -10)), 0));
 
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(values));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(values));
 
         search.onSolution(() ->
                 System.out.println("solution:" + Arrays.toString(values))

@@ -14,7 +14,6 @@ import org.maxicp.cp.engine.constraints.seqvar.Exclude;
 import org.maxicp.cp.engine.constraints.seqvar.Insert;
 import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
-import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
 import org.maxicp.search.DFSearch;
@@ -381,7 +380,7 @@ public final class CPFactory {
      * {@link DFSearch#solve()} or
      * {@link DFSearch#optimize(Objective)}
      * using the given branching scheme
-     * @see org.maxicp.search.Searches#firstFail(org.maxicp.modeling.algebra.integer.IntExpression...)
+     * @see org.maxicp.search.Searches#firstFailBinary(org.maxicp.modeling.algebra.integer.IntExpression...)
      * @see org.maxicp.search.Searches#branch(Runnable...)
      */
     public static DFSearch makeDfs(CPSolver cp, Supplier<Runnable[]> branching) {
@@ -705,8 +704,7 @@ public final class CPFactory {
     }
 
     /**
-     * Returns a constraint imposing that the
-     * the first variable differs from the second
+     * Returns a constraint imposing that the first variable differs from the second
      * one minus a constant value.
      *
      * @param x a variable
@@ -912,10 +910,10 @@ public final class CPFactory {
      * This relation is enforced by the {@link IsLessOrEqualVar} constraint
      * posted by calling this method.
      *
-     * @param x left hand side of less or equal operator
-     * @param y right hand side of less or equal operator
-     * @return boolean variable value that will be set to true if
-     * {@code x <= y}, false otherwise
+     * @param x the variable
+     * @param y the variable
+     * @return a boolean variable that is true if and only if
+     * x takes a value less or equal to y
      */
     public static CPBoolVar isLe(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
@@ -923,6 +921,55 @@ public final class CPFactory {
         cp.post(new IsLessOrEqualVar(b, x, y), false);
         return b;
     }
+
+    /**
+     * Returns the reified version of the constraint {@code x <= y},
+     * i.e. the boolean variable that is set to true if and only if {@code x <= y}.
+     *
+     * @param b the boolean variable that will be set to true if and only if {@code x <= y}
+     * @param x left hand side of less or equal operator
+     * @param y right hand side of less or equal operator
+     * @return the reified constraint {@code b <-> x <= y}
+     * {@code x <= y}, false otherwise
+     */
+    public static CPConstraint isLe(CPBoolVar b, CPIntVar x, CPIntVar y) {
+        return new IsLessOrEqualVar(b, x, y);
+    }
+
+    /**
+     * Returns the reified version of the constraint {@code x < y},
+     * i.e. the boolean variable that is set to true if and only if {@code x < y}.
+     *
+     * @param b the boolean variable that will be set to true if and only if {@code x < y}
+     * @param x left hand side of less or equal operator
+     * @param y right hand side of less or equal operator
+     * @return the reified constraint {@code b <-> x < y}
+     * {@code x < y}, false otherwise
+     */
+    public static CPConstraint isLt(CPBoolVar b, CPIntVar x, CPIntVar y) {
+        return new IsLessOrEqualVar(b, x, minus(y, 1));
+    }
+
+    /**
+     * Creates a Boolean variable b encoding the strict ordering between x and y.
+     *
+     * The constraint enforces x ≠ y and links b to the ordering as follows:
+     *   - b = true  if and only if x < y
+     *   - b = false if and only if x > y
+     *
+     * @param x the first integer variable
+     * @param y the second integer variable
+     * @return a Boolean variable representing the strict order between x and y
+     */
+    public static CPBoolVar strictOrder(CPIntVar x, CPIntVar y) {
+        CPBoolVar b = makeBoolVar(x.getSolver());
+        x.getSolver().post(isLt(b, x, y));
+        x.getSolver().post(isLt(not(b), y, x));
+        return b;
+    }
+
+
+
 
     /**
      * Returns a boolean variable representing
@@ -1803,7 +1850,7 @@ public final class CPFactory {
      * @param vars one or more interval variables
      * @return a noOverlap constraint on the elements of vars.
      */
-    public static NoOverlap nonOverlap(CPIntervalVar... vars) {
+    public static NoOverlap noOverlap(CPIntervalVar... vars) {
         return new NoOverlap(vars);
     }
 
@@ -1819,7 +1866,7 @@ public final class CPFactory {
     public static CPSeqVar nonOverlapSequence(CPIntervalVar[] intervals) {
         int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();
         CPSolver cp = intervals[0].getSolver();
-        cp.post(nonOverlap(intervals));
+        cp.post(noOverlap(intervals));
         // start and end nodes are set as dumy intervals
         CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);
         CPIntervalVar dummyStart = makeIntervalVar(cp, false, 0); // dumy start

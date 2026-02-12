@@ -14,12 +14,13 @@ import org.maxicp.modeling.constraints.CardinalityMin;
 import org.maxicp.modeling.constraints.Table;
 import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * The problem is to schedule an even number n of teams over n/2 periods and n - 1 weeks,
@@ -106,7 +107,7 @@ public class SportScheduling {
 
         long time = TimeIt.run(() -> {
             baseModel.runCP(() -> {
-                SearchMethod search = baseModel.dfSearch(firstFail(allGames));
+                SearchMethod search = baseModel.dfSearch(Searches.firstFailBinary(allGames));
                 search.onSolution(() -> {
                     System.out.println("---------games---------");
                     for (int p = 0; p < nbPeriods; p++) {

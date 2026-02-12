@@ -63,7 +63,7 @@ public class TSPTW {
 
         long time = TimeIt.run(() -> {
             baseModel.runCP((cp) -> {
-                DFSearch search = cp.dfSearch(Searches.firstFail(x));
+                DFSearch search = cp.dfSearch(Searches.firstFailBinary(x));
                 search.onSolution(() -> {
                     System.out.println(Arrays.toString(x));
                     System.out.println("solution found distance:"+distance);

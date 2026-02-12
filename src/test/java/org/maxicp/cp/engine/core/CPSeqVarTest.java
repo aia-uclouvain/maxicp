@@ -27,7 +27,7 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.engine.core.CPSeqVarAssertion.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 import static org.maxicp.search.Searches.EMPTY;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class CPSeqVarTest extends CPSolverTest {
 
@@ -1344,7 +1344,7 @@ public class CPSeqVarTest extends CPSolverTest {
     public void testBranchingMaintainsState(CPSolver cp) {
         int nNodes = 7;
         CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, nNodes-2, nNodes-1);
-        DFSearch search = makeDfs(cp, firstFail(seqVar));
+        DFSearch search = makeDfs(cp, firstFailBinary(seqVar));
         search.onSolution(() -> {
             assertTrue(seqVar.isFixed());
             assertEquals(seqVar.nNode(MEMBER), seqVar.nNode(REQUIRED));

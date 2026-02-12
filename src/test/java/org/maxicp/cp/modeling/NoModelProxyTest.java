@@ -26,7 +26,7 @@ public class NoModelProxyTest extends CPSolverTest  {
     @MethodSource("getSolver")
     public void withoutExplicitModelProxySearch(CPSolver solver) {
         CPIntVar x = CPFactory.makeIntVar(solver, 0, 10);
-        DFSearch search = CPFactory.makeDfs(solver, Searches.firstFail(x));
+        DFSearch search = CPFactory.makeDfs(solver, Searches.firstFailBinary(x));
         assertEquals(11, search.solve().numberOfSolutions());
     }
 }

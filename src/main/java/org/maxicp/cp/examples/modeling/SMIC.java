@@ -8,6 +8,7 @@ import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,7 +21,7 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.Factory.max;
 import static org.maxicp.modeling.Factory.minimize;
 import static org.maxicp.modeling.Factory.start;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class SMIC {
     public static void main(String[] args) throws Exception {
@@ -75,7 +76,7 @@ public class SMIC {
             }
             // constraint
             cp.post(alwaysIn(cumul, 0, data.capaInventory));
-            cp.post(nonOverlap(intervals));
+            cp.post(noOverlap(intervals));
             // Objective
             IntExpression makespan = max(ends);
 
@@ -83,7 +84,7 @@ public class SMIC {
 
             bestSolution = new int[data.nbJob];
             // Search:
-            DFSearch dfs = new DFSearch(cp.getStateManager(), firstFail(starts));
+            DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
             dfs.onSolution(() -> {
                 bestMakespan = makespan.min();
                 for (int i = 0; i < data.nbJob; i++) {

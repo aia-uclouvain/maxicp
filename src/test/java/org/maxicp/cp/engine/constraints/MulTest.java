@@ -32,7 +32,7 @@ class MulTest extends CPSolverTest {
 
         cp.post(new MulVar(x, y, z)); // should post a MulCteRes because z is fixed
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(x, y));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(x, y));
         search.onSolution(() -> {
             assertTrue(x.isFixed() && y.isFixed());
             assertTrue(((x.min() == -2) && (y.min() == -50)) ||  ((x.min() == 2)  && (y.min() == 50)));

@@ -13,11 +13,12 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class MaximumTest extends CPSolverTest {
 
@@ -94,7 +95,7 @@ public class MaximumTest extends CPSolverTest {
         System.arraycopy(x, 0, allIntVars, 0, x.length);
         allIntVars[x.length] = y;
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(allIntVars));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(allIntVars));
 
         cp.post(new Maximum(x, y));
         // 5*5*5*5 // 625

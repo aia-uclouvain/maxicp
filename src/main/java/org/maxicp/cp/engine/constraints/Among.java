@@ -1,11 +1,19 @@
 package org.maxicp.cp.engine.constraints;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateSparseSet;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
+
+import static org.maxicp.cp.CPFactory.eq;
+import static org.maxicp.cp.CPFactory.neq;
 
 /**
  * Among constraint
@@ -99,6 +107,7 @@ public class Among extends AbstractCPConstraint {
         // The upper bound for N is the number of variable with a domain that is totally excluded from vals
         ubN.setValue(nonEmptyInterIdx.size());
 
+
         if (!N.isFixed()) {
             N.removeBelow(lbN.value());
             N.removeAbove(ubN.value());
@@ -108,7 +117,7 @@ public class Among extends AbstractCPConstraint {
         // the values in their domain that are not in vals
         if (N.isFixed() && N.min() == ubN.value()) {
             for (int i: nonSubsetIdx.toArray()) {
-                if(!x[i].isFixed()) {
+                if(!x[i].isFixed() && nonEmptyInterIdx.contains(i)) {
                     CPIntVar var = x[i];
                     int[] domain = new int[var.size()];
                     var.fillArray(domain);
@@ -128,7 +137,7 @@ public class Among extends AbstractCPConstraint {
         // the values in the domains of the other variables that are contained in vals are removed
         if (N.isFixed() && N.max() == lbN.value()) {
             for (int i: nonEmptyInterIdx.toArray()) {
-                if (!x[i].isFixed()) {
+                if (!x[i].isFixed() && nonSubsetIdx.contains(i)) {
                     CPIntVar var = x[i];
                     int[] domain = new int[var.size()];
                     var.fillArray(domain);

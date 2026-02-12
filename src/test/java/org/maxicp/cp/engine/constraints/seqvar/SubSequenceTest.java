@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.exclude;
 import static org.maxicp.cp.CPFactory.makeDfs;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class SubSequenceTest extends CPSolverTest {
 
@@ -417,7 +417,7 @@ public class SubSequenceTest extends CPSolverTest {
             }
         }
         cp.post(new SubSequence(main, sub));
-        DFSearch search = makeDfs(cp, firstFail(main));
+        DFSearch search = makeDfs(cp, firstFailBinary(main));
         search.onSolution(() -> {
             assertTrue(sub.isFixed());
             int predMain = main.start();
@@ -451,7 +451,7 @@ public class SubSequenceTest extends CPSolverTest {
         CPSeqVar sub = CPFactory.makeSeqVar(cp, nNodes, 0, 1);
         sub.exclude(3);
         cp.post(new SubSequence(main, sub));
-        DFSearch search = makeDfs(cp, firstFail(sub));
+        DFSearch search = makeDfs(cp, firstFailBinary(sub));
         search.onSolution(() -> {
             assertTrue(main.isNode(3, POSSIBLE));
             assertFalse(main.isFixed());

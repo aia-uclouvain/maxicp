@@ -13,6 +13,7 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
+import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
@@ -60,8 +61,7 @@ public class TSPTW {
 
         CPIntVar distance = sum(transition);
 
-
-        DFSearch search = makeDfs(cp, Searches.firstFail(x));
+        DFSearch search = makeDfs(cp, Searches.firstFailBinary(x));
 
         search.onSolution(() -> {
             System.out.println(Arrays.toString(x));
@@ -79,11 +79,16 @@ public class TSPTW {
 
     }
 
+    /**
+     * A TSP with Time Windows instance.
+     * The depot is duplicated at the end of the instance.
+     * So we don't seek for a tour but for a path from the depot to its duplicate at the end
+     */
     static class TSPTWInstance {
 
-        public final int n;
-        public final int[][] distMatrix;
-        public final int[] earliest, latest;
+        public int n;
+        public int[][] distMatrix;
+        public int[] earliest, latest;
         public int horizon = Integer.MIN_VALUE;
 
         public TSPTWInstance(String file) {
@@ -103,6 +108,9 @@ public class TSPTW {
                 latest[i] = reader.getInt();
                 horizon = Math.max(horizon, latest[i] + 1);
             }
+
+            DistanceMatrix.enforceTriangularInequality(distMatrix);
+
         }
 
         private TSPTWInstance(int[][] distMatrix, int[] E, int[] L) {

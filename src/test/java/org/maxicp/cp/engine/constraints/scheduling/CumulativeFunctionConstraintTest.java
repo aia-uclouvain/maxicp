@@ -19,11 +19,12 @@ import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 class CumulativeFunctionConstraintTest extends CPSolverTest {
 
@@ -50,7 +51,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), firstFail(starts));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
 
         SearchStatistics stats = dfs.solve();
 
@@ -88,7 +89,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), and(firstFail(starts), firstFail(present)));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), and(Searches.firstFailBinary(starts), Searches.firstFailBinary(present)));
 
         SearchStatistics stats = dfs.solve();
 
@@ -125,7 +126,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] heightAtStarts = CPFactory.makeIntVarArray(n, i -> cumProfile.heightAtStart(intervals[i]));
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), and(firstFail(heightAtStarts), firstFail(starts)));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), and(Searches.firstFailBinary(heightAtStarts), Searches.firstFailBinary(starts)));
 
         // (3 ^ 4) * 4! = 1944 solutions (since the height 8,9 and 10 are possible
 
@@ -172,7 +173,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         final CPCumulFunction cumProfile = profileAll;
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), firstFail(starts));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
 
         // 4! * 4! = 576 solutions (permutations of producers * permutations of consumers)
 
@@ -219,7 +220,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
         CPIntVar[] starts = CPFactory.makeIntVarArray(2 * n, i -> startOr(intervals[i], 0));
 
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), and(firstFail(heights), firstFail(starts)));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), and(Searches.firstFailBinary(heights), Searches.firstFailBinary(starts)));
 
 
         dfs.onSolution(() -> {
@@ -264,7 +265,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), firstFail(starts));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
 
         SearchStatistics stats = dfs.solve();
 
@@ -295,7 +296,7 @@ class CumulativeFunctionConstraintTest extends CPSolverTest {
 
         CPIntVar[] starts = CPFactory.makeIntVarArray(n, i -> startOr(intervals[i], 0));
 
-        DFSearch dfs = new DFSearch(cp.getStateManager(), firstFail(starts));
+        DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
 
         SearchStatistics stats = dfs.solve();
 

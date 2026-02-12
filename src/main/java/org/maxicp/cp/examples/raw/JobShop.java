@@ -11,25 +11,16 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
-import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.algebra.bool.Eq;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.Objective;
-import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
-import org.maxicp.util.exception.InconsistencyException;
+import org.maxicp.search.*;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 /**
  * The JobShop Problem.
@@ -44,7 +35,7 @@ public class JobShop {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/ft10.txt");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -68,6 +59,8 @@ public class JobShop {
             }
         }
 
+        CPIntervalVar [][] toRank = new CPIntervalVar[nMachines][];
+
         // no overlap between the activities on the same machine
         for (int m = 0; m < nMachines; m++) {
             ArrayList<CPIntervalVar> machineActivities = new ArrayList<>();
@@ -78,7 +71,9 @@ public class JobShop {
                     }
                 };
             }
-            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            CPIntervalVar [] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
+            cp.post(noOverlap(onMachine));
+            toRank[m] = onMachine;
         }
 
 
@@ -91,11 +86,17 @@ public class JobShop {
 
         CPIntervalVar[] allActivities = flatten(activities);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
 
+        DFSearch dfs = CPFactory.makeDfs(cp,
+                and(Rank.rank(toRank),
+                        () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
+                ));
+
+
+        //DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
 
         dfs.onSolution(() -> {
-            System.out.println("makespan:" + makespan);
+            System.out.println("=========================>makespan:" + makespan);
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);

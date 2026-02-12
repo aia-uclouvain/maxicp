@@ -111,7 +111,7 @@ public class MagicSquareVOLNS {
         System.out.println(Arrays.toString(rowViolation));
         MinimizeObjectiveSum globalObjective = new MinimizeObjectiveSum(rowViolation);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(xFlat));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(xFlat));
         
         int [] totalViolationSol = new int[] {0};
         int[] xFlatSol = new int[n*n];

@@ -7,7 +7,6 @@ package org.maxicp.search;
 
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.modeling.*;
 import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.modeling.algebra.bool.NotEq;
@@ -168,24 +167,19 @@ public final class Searches {
     }
 
     /**
-     * It selects the first not fixed variable that minimizes the heuristic function.
-     * Then it creates two branches. The left branch
-     * assigning the variable to its minimum value.
-     * The right branch removing this minimum value from the domain.
+     * Binary Branching with custom variable heuristic and natural value ordering.
      *
-     * @param heuristic the variable heuristic: the selected variable is the one that minimizes this function
-     * @param x the variable array
-     * @return a static branching strategy
+     * @param variableSelector returns the next variable to bind, null if all variables are fixed
+     * @return a static branching strategy, the minimum value of the variable domain is attempted on the left,
+     *          and removed on the right
      */
-    public static Supplier<Runnable[]> heuristic(Function<IntExpression, Integer> heuristic, IntExpression... x) {
-        ModelProxy model = x[0].getModelProxy();
+    public static Supplier<Runnable[]> heuristicBinary(Supplier<IntExpression> variableSelector) {
         return () -> {
-            IntExpression xs = selectMin(x,
-                    xi -> !xi.isFixed(),
-                    heuristic);
+            IntExpression xs = variableSelector.get();
             if (xs == null)
                 return EMPTY;
             else {
+                ModelProxy model = xs.getModelProxy();
                 int v = xs.min();
                 return branch(() -> model.add(new Eq(xs, v)),
                         () -> model.add(new NotEq(xs, v)));
@@ -194,22 +188,45 @@ public final class Searches {
     }
 
     /**
-     * It selects the first not fixed variable that minimizes the heuristic function.
-     * Then it creates one branch for each value in increasing order
+     * Binary Branching with custom variable and value heuristics.
      *
-     * @param x the variable array
-     * @param heuristic the variable heuristic: the selected variable is the one that minimizes this function
-     * @return a static branching strategy
+     * @param variableSelector the variable heuristic, returns the variable on which the branching is applied
+     *                         null if all variables are fixed
+     * @param valueSelector given the variable,
+     *                       returns the value assigned in the left branch,
+     *                       and removed fin the right branch
      */
-    public static Supplier<Runnable[]> heuristicNary(Function<IntExpression, Integer> heuristic, IntExpression... x) {
-        ModelProxy model = x[0].getModelProxy();
+    public static Supplier<Runnable[]> heuristicBinary(Supplier<IntExpression> variableSelector,
+                                                       Function<IntExpression, Integer> valueSelector) {
+
         return () -> {
-            IntExpression xs = selectMin(x,
-                    xi -> !xi.isFixed(),
-                    heuristic);
+            IntExpression xs = variableSelector.get();
             if (xs == null)
                 return EMPTY;
             else {
+                ModelProxy model = xs.getModelProxy();
+                int v = valueSelector.apply(xs);
+                return branch(() -> model.add(new Eq(xs, v)),
+                        () -> model.add(new NotEq(xs, v)));
+            }
+        };
+    }
+
+    /**
+     * N-ary Branching with custom variable heuristic and natural value ordering.
+     *
+     * @param variableSelector returns the variable on which the n-ary branching is applied
+     *                          null if all variables are fixed
+     * @return an n-ary branching strategy with the variable heuristic and natural
+     *          value ordering (increasing order).
+     */
+    public static Supplier<Runnable[]> heuristicNary(Supplier<IntExpression> variableSelector) {
+        return () -> {
+            IntExpression xs = variableSelector.get();
+            if (xs == null)
+                return EMPTY;
+            else {
+                ModelProxy model = xs.getModelProxy();
                 // create one branch for each value in increasing order
                 ArrayList<Runnable> branches  = new ArrayList<>();
                 for (int v = xs.min(); v < xs.max(); v++) {
@@ -223,38 +240,81 @@ public final class Searches {
         };
     }
 
+    /**
+     * N-ary Branching with custom variable and value heuristics.
+     *
+     * @param variableSelector returns the variable on which the n-ary branching is applied
+     * @param valueHeuristic the branches for each value are ordered according to the value
+     *                       of this function (in increasing order).
+     *                       This function is called once for each value in the variable domain to
+     *                       sort them according to the heuristic before creating the branches in the sorted order.
+     * @return an n-ary branching strategy
+     */
+    public static Supplier<Runnable[]> heuristicNary(Supplier<IntExpression> variableSelector,
+                                                     Function<Integer, Integer> valueHeuristic) {
+        return () -> {
+            IntExpression xs = variableSelector.get();
+            if (xs == null)
+                return EMPTY;
+            else {
+                ModelProxy model = xs.getModelProxy();
+                // create one branch for each value sorted by the valueHeuristic
+                int[] values = new int[xs.size()];
+                xs.fillArray(values);
+                Integer[] boxed = Arrays.stream(values)
+                        .boxed()
+                        .toArray(Integer[]::new);
+                Arrays.sort(boxed, Comparator.comparingInt(valueHeuristic::apply));
+                ArrayList<Runnable> branches  = new ArrayList<>();
+                for (int v : boxed) {
+                    int value = v;
+                    branches.add(() -> model.add(new Eq(xs, v)));
+                }
+                return branch(branches.toArray(new Runnable[0]));
+            }
+        };
+    }
 
     /**
-     * It selects the first not fixed variable.
+     * N-ary Branching with static variable ordering and natural value ordering.
+     *
+     * @param xs the variable array to fix
+     * @return an n-ary branching strategy with static variable ordering and
+     *             natural value ordering (increasing order).
+     */
+    public static Supplier<Runnable[]> staticOrderNary(IntExpression... xs) {
+        return heuristicNary(staticOrderVariableSelector(xs));
+    }
+
+
+    /**
+     * Binary Branching with static variable ordering and natural value ordering.
      *
      * @param xs the variable array to fix
      * @return a binary static branching strategy, min value on the left, remove it on the right
      */
-    public static Supplier<Runnable[]> staticOrder(IntExpression... xs) {
-        HashMap<IntExpression, Integer> index = new HashMap<>();
-        for (int i = 0; i < xs.length; i++) {
-            index.put(xs[i], i);
-        }
-        return heuristic(x -> index.get(x), xs);
+    public static Supplier<Runnable[]> staticOrderBinary(IntExpression... xs) {
+        return heuristicBinary(staticOrderVariableSelector(xs));
     }
 
     /**
-     * It selects the first not fixed variable.
+     * Binary Branching with static variable ordering and custom value heuristic.
      *
-     * @param xs the variable array to fix
-     * @return an n-ary static branching strategy, in increasing order of the values
+     * @param valueSelector the value heuristic, given a variable, returns the value to which
+     *                      it must be assigned on the left branch, and removed on the right branch
+     * @param xs the variable array to fix,
+     * @return a binary static branching strategy on the variable,
+     *        but the value is selected by the heuristic on the left, removed on the right branches
      */
-    public static Supplier<Runnable[]> staticOrderNary(IntExpression... xs) {
-        HashMap<IntExpression, Integer> index = new HashMap<>();
-        for (int i = 0; i < xs.length; i++) {
-            index.put(xs[i], i);
-        }
-        return heuristicNary(x -> index.get(x), xs);
+    public static Supplier<Runnable[]> staticOrderBinary(Function<IntExpression, Integer> valueSelector,
+                                                         IntExpression... xs) {
+        return heuristicBinary(staticOrderVariableSelector(xs), valueSelector);
     }
+
 
     /**
      * First-Fail Binary search strategy.
-     * It selects the first variable with a domain larger than one.
+     * Selects the first not fixed variable with smallest domain.
      * Then it creates two branches. The left branch
      * assigning the variable to its minimum value.
      * The right branch removing this minimum value from the domain.
@@ -262,8 +322,8 @@ public final class Searches {
      * @param x the variable on which the first fail strategy is applied.
      * @return a first-fail branching strategy
      */
-    public static Supplier<Runnable[]> firstFail(IntExpression... x) {
-        return heuristic(IntExpression::size, x);
+    public static Supplier<Runnable[]> firstFailBinary(IntExpression... x) {
+        return heuristicBinary(minDomVariableSelector(x));
     }
 
     /**
@@ -275,7 +335,7 @@ public final class Searches {
      * @return a first-fail n-ary branching strategy
      */
     public static Supplier<Runnable[]> firstFailNary(IntExpression... x) {
-        return heuristicNary(IntExpression::size, x);
+        return heuristicNary(minDomVariableSelector());
     }
 
     /**
@@ -307,8 +367,28 @@ public final class Searches {
         return new LimitedDiscrepancyBranching(branching, maxDiscrepancy);
     }
 
+    /**
+     * It selects the first not fixed variable with the smallest domain.
+     *
+     * @param xs the variable array to fix
+     * @return a supplier that returns the first not fixed variable with the smallest domain,
+     *         null if all variables are fixed
+     */
     public static Supplier<IntExpression> minDomVariableSelector(IntExpression... xs) {
-        return () -> selectMin(xs, xi -> !xi.isFixed(), IntExpression::size);
+        return () -> {
+            return selectMin(xs, xi -> !xi.isFixed(), IntExpression::size);
+        };
+    }
+
+    public static Supplier<IntExpression> staticOrderVariableSelector(IntExpression... xs) {
+        return () -> {
+            for (IntExpression xi : xs) {
+                if (!xi.isFixed()) {
+                    return xi;
+                }
+            }
+            return null;
+        };
     }
 
     /**
@@ -366,7 +446,7 @@ public final class Searches {
      * In International conference on principles and practice of constraint programming (pp. 140-148).
      * Springer.
      *
-     * @param variableSelector returns the next variable to bind
+     * @param variableSelector returns the next variable to bind (fall back euristic)
      * @param valueSelector    given a variable, returns the value to which
      *                         it must be assigned on the left branch (and excluded on the right)
      */
@@ -404,7 +484,25 @@ public final class Searches {
         };
     }
 
-    public static Supplier<Runnable[]> firstFail(SeqVar... seqVars) {
+    /**
+     * Conflict Ordering Search with default variable selector (first-fail min dom)
+     * and value selector (min value).
+     * <p>
+     * Gay, S., Hartert, R., Lecoutre, C.,  Schaus, P. (2015).
+     * Conflict ordering search for scheduling problems.
+     * In International conference on principles and practice of constraint programming (pp. 140-148).
+     * Springer.
+     *
+     */
+    public static Supplier<Runnable[]> conflictOrderingSearch(IntExpression... xs) {
+        return conflictOrderingSearch(
+                minDomVariableSelector(xs),
+                xi -> xi.min()
+        );
+    }
+
+
+    public static Supplier<Runnable[]> firstFailBinary(SeqVar... seqVars) {
         int nNodes = Arrays.stream(seqVars).map(SeqVar::nNode).max(Integer::compareTo).get();
         int[] nodes = new int[nNodes];
         return () -> {

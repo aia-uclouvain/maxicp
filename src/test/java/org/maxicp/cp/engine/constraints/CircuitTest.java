@@ -13,6 +13,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.cp.CPFactory;
 
@@ -22,7 +23,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 
 public class CircuitTest extends CPSolverTest {
@@ -90,7 +91,7 @@ public class CircuitTest extends CPSolverTest {
     public void testAllSolutions(CPSolver cp) {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 5, 5);
         cp.post(new Circuit(x));
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         dfs.onSolution(() -> {
             int[] sol = new int[x.length];
@@ -147,7 +148,7 @@ public class CircuitTest extends CPSolverTest {
         x[4] = CPFactory.makeIntVar(cp, Set.of(0,1,2));  // -> 1
         Circuit c = new Circuit(x);
         cp.post(c);
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
         SearchStatistics stat = dfs.solve();
         assertEquals(2, stat.numberOfSolutions());
     }
@@ -169,7 +170,7 @@ public class CircuitTest extends CPSolverTest {
             } catch (InconsistencyException e) {
                 continue;
             }
-            DFSearch dfs = CPFactory.makeDfs(cp, firstFail(x));
+            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
             SearchStatistics stat1 = dfs.solve();
             c.deactivateSCC = false;
             SearchStatistics stat2 = dfs.solve(); // with SCC
