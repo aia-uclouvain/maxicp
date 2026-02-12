@@ -22,6 +22,7 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
 public class TSPTWScheduling {
+
     public static void main(String[] args) {
 
         TSPTWInstance instance = new TSPTWInstance("data/TSPTW/Dumas/n40w20.001.txt");
@@ -65,7 +66,6 @@ public class TSPTWScheduling {
                 cp.post(new NoOverlapBinaryWithTransitionTime(order, visits[i], visits[j], instance.distMatrix[i][j], instance.distMatrix[j][i]));
                 precedences.add(order);
             }
-            cp.post(eq(element(taskInPosition,positionOfNode[i]), i));
         }
 
         cp.post(eq(positionOfNode[0],0)); // start at depot
@@ -85,30 +85,16 @@ public class TSPTWScheduling {
 
         // ===================== search =====================
 
-        // Search that
-        // DFSearch dfs = makeDfs(cp,conflictOrderingSearch(precedences.toArray(new CPIntVar[0])));
-        //DFSearch dfs = makeDfs(cp,conflictOrderingSearch(positionOfNode));
-        // DFSearch dfs = makeDfs(cp,Rank.rank(visits));
-
+        // choose the nodes in the order of the tour, trying first the nodes with the least positions
         DFSearch dfs = makeDfs(cp,heuristicNary(staticOrderVariableSelector(taskInPosition),
                 i -> positionOfNode[i].size()));
 
-
-
         dfs.onSolution(() -> {;
-            System.out.println("tour: " + Arrays.toString(taskInPosition));
-            System.out.println("distances: "+ Arrays.toString(transitionTimes));
             System.out.println("total distance: " + totTransition);
-            System.out.println("positionOfNode: " + Arrays.toString(positionOfNode));
-            System.out.println("precedences: " + precedences);
-
             // check solution
-            int[] tour = new int[instance.n];
-            for (int i = 0; i < instance.n; i++) {
-                tour[i] = taskInPosition[i].min();
-            }
+            int[] tour = Arrays.stream(taskInPosition).mapToInt(t -> t.min()).toArray();
             boolean ok = instance.checkSolution(tour, totTransition.min());
-            System.out.println("solution valid: " + ok);
+            assert(ok);
         });
 
         SearchStatistics stats = dfs.optimize(obj);
