@@ -197,13 +197,11 @@ public class MinCostMaxFlow {
 
     private void initLinks() {
         linkedDefined = true;
-        for (int i = 1; i < numNodes; i++) {
-            for (int k = 0; k < numNodes; k++) {
+        for (int i = 1; i < numNodes-1; i++) {
+            for (int k = 1; k < numNodes-1; k++) {
                 if (flow[i][k] != 0) {
                     linkedPred[k] = i;
-                }
-                if (flow[k][i] != 0) {
-                    linkedSucc[k] = i;
+                    linkedSucc[i] = k;
                 }
             }
         }

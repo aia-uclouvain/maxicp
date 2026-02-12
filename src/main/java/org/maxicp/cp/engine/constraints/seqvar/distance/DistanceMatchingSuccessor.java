@@ -99,12 +99,21 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         initResidualGraph();
 
-        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
-            seqVar.notBetween(seqVar.start(), node, predNode);
+        if (seqVar.isNode(predNode, MEMBER)) {
+            if (checkOnlyOnePossiblePred(node)) {
+                if (seqVar.start()!= predNode && seqVar.start()!= seqVar.memberBefore(predNode)) {
+                    seqVar.notBetween(seqVar.start(), node, seqVar.memberBefore(predNode));
+
+                }
+            }
         }
 
-        if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
-            seqVar.notBetween(succNode, node, seqVar.end());
+        if (seqVar.isNode(succNode, MEMBER)) {
+            if (checkOnlyOnePossibleSucc(node)) {
+                if (seqVar.end()!=succNode && seqVar.end()!= seqVar.memberAfter(succNode)) {
+                    seqVar.notBetween(seqVar.memberAfter(succNode), node, seqVar.end());
+                }
+            }
         }
 
         checkConsistency[node] = true;
@@ -193,7 +202,6 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
     }
 
 
-
     protected void initResidualGraph() {
         if (!initResidualGraph) {
             builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), capMaxResidualGraph, costResidualGraph);
@@ -210,14 +218,14 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         if (!SPCompute[nNode]) {
             bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nNode, SP[nNode]);
-            SPCompute[nNode]=true;
+            SPCompute[nNode] = true;
         }
 
         for (int pred = 0; pred < nNodes; pred++) {
 
             nPred = pred + 1;
 
-            if (node == pred || minCostMaxFlow.getFlow()[nPred][nNode] > 0) {
+            if (node == pred || minCostMaxFlow.getFlow()[nPred][nNode] > 0 || capMaxNetworkFlow[nPred][nNode]==0) {
                 continue; // skip if already assigned
             }
 
@@ -241,14 +249,14 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
             nSucc = succ + 1 + nNodes;
 
-            if (node == succ || minCostMaxFlow.getFlow()[nNode][nSucc] > 0) {
+            if (node == succ || minCostMaxFlow.getFlow()[nNode][nSucc] > 0 || capMaxNetworkFlow[nNode][nSucc]==0) {
                 continue; // skip if already assigned
             }
 
 
             if (!SPCompute[nSucc]) {
                 bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nSucc, SP[nSucc]);
-                SPCompute[nSucc]=true;
+                SPCompute[nSucc] = true;
             }
 
             // Check if the arc (nPred, nNode) is consistent with Régin 2002
@@ -261,7 +269,6 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         return onlyOnePossibleSucc;
     }
-
 
 
 }

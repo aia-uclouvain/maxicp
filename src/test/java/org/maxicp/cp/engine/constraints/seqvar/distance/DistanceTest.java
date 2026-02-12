@@ -30,8 +30,6 @@ import static org.maxicp.search.Searches.*;
 
 public abstract class DistanceTest extends CPSolverTest {
 
-    protected abstract CPConstraint getDistanceConstraint(CPSeqVar seqVar, int[][] transitions, CPIntVar distance);
-
     static int nNodes = 6;
     static int start = 4;
     static int end = 5;
@@ -43,6 +41,79 @@ public abstract class DistanceTest extends CPSolverTest {
             {4, 5, 9, 8, 0, 0},
             {4, 5, 9, 8, 0, 0}
     };
+
+    /**
+     * @return i!
+     */
+    private static int fact(int i) {
+        if (i <= 1) return 1;
+        return i * fact(i - 1);
+    }
+
+    /**
+     * Generates a random distance matrix over {@code nNodes} nodes.
+     * The matrix upholds the triangular inequality
+     *
+     * @param random rng used to generate the matrix
+     * @param nNodes number of nodes to include
+     * @return random distance matrix
+     */
+    public static int[][] randomTransitions(Random random, int nNodes) {
+        int[][] positions = new int[nNodes][];
+        for (int i = 0; i < nNodes; i++) {
+            int x = random.nextInt(100);
+            int y = random.nextInt(100);
+            positions[i] = new int[]{x, y};
+        }
+        return positionToDistances(positions);
+    }
+
+    /**
+     * Transform a list of coordinates into a matrix of Euclidean distances (rounded up)
+     *
+     * @param pos list of coordinates
+     * @return distance matrix
+     */
+    public static int[][] positionToDistances(int[][] pos) {
+        int n = pos.length;
+        int[][] transitions = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                // euclidean distance, rounded up
+                int d = roundedEuclideanDistance(pos[i][0], pos[i][1], pos[j][0], pos[j][1]);
+                transitions[i][j] = d;
+                transitions[j][i] = d;
+            }
+        }
+        return transitions;
+    }
+
+    /**
+     * Returns the Euclidean distance between two points, rounded up
+     *
+     * @param x1 x coordinate of the first point
+     * @param y1 y coordinate of the first point
+     * @param x2 x coordinate of the second point
+     * @param y2 y coordinate of the second point
+     * @return Euclidean distance, rounded up
+     */
+    public static int roundedEuclideanDistance(int x1, int y1, int x2, int y2) {
+        return (int) Math.ceil(Math.sqrt(Math.pow(Math.abs(x1 - x2), 2) + Math.pow(Math.abs(y1 - y2), 2)));
+    }
+
+    /**
+     * Stream of sequence variables with all nodes being required
+     */
+    public static Stream<CPSeqVar> getSeqVar() {
+        return getSolver().map(cp -> {
+            CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, start, end);
+            for (int node = 0; node < nNodes; node++)
+                seqVar.require(node);
+            return seqVar;
+        });
+    }
+
+    protected abstract CPConstraint getDistanceConstraint(CPSeqVar seqVar, int[][] transitions, CPIntVar distance);
 
     /**
      * Ensures that all solutions to a small instance may be retrieved
@@ -298,11 +369,6 @@ public abstract class DistanceTest extends CPSolverTest {
                 "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
     }
 
-    private record CostAndSequence(int cost, int[] sequence) {
-    }
-
-    ;
-
     /**
      * Gives the minimum distance cost for a given sequence variable.
      * This works by creating a copy of the sequence and computing the best solution through a DFS - so it's very slow
@@ -474,6 +540,7 @@ public abstract class DistanceTest extends CPSolverTest {
 
     }
 
+    ;
 
     public void makeTriangularInequality(int[][] distance) {
         int n = distance.length;
@@ -545,11 +612,6 @@ public abstract class DistanceTest extends CPSolverTest {
         return new StatsAndSolution(statsNoBounds, bestSolNoBounds.get());
     }
 
-    public record StatsAndSolution(SearchStatistics stats, int cost) {
-    }
-
-    ;
-
     /**
      * Search that selects the insertable node with the fewest insertions, and inserts it at its place with
      * the smallest detour cost. Ties are broken by taking the node and insertion with smallest id
@@ -603,75 +665,10 @@ public abstract class DistanceTest extends CPSolverTest {
         };
     }
 
-    /**
-     * @return i!
-     */
-    private static int fact(int i) {
-        if (i <= 1) return 1;
-        return i * fact(i - 1);
+    private record CostAndSequence(int cost, int[] sequence) {
     }
 
-    /**
-     * Generates a random distance matrix over {@code nNodes} nodes.
-     * The matrix upholds the triangular inequality
-     *
-     * @param random rng used to generate the matrix
-     * @param nNodes number of nodes to include
-     * @return random distance matrix
-     */
-    public static int[][] randomTransitions(Random random, int nNodes) {
-        int[][] positions = new int[nNodes][];
-        for (int i = 0; i < nNodes; i++) {
-            int x = random.nextInt(100);
-            int y = random.nextInt(100);
-            positions[i] = new int[]{x, y};
-        }
-        return positionToDistances(positions);
-    }
-
-    /**
-     * Transform a list of coordinates into a matrix of Euclidean distances (rounded up)
-     *
-     * @param pos list of coordinates
-     * @return distance matrix
-     */
-    public static int[][] positionToDistances(int[][] pos) {
-        int n = pos.length;
-        int[][] transitions = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            for (int j = i + 1; j < n; j++) {
-                // euclidean distance, rounded up
-                int d = roundedEuclideanDistance(pos[i][0], pos[i][1], pos[j][0], pos[j][1]);
-                transitions[i][j] = d;
-                transitions[j][i] = d;
-            }
-        }
-        return transitions;
-    }
-
-    /**
-     * Returns the Euclidean distance between two points, rounded up
-     *
-     * @param x1 x coordinate of the first point
-     * @param y1 y coordinate of the first point
-     * @param x2 x coordinate of the second point
-     * @param y2 y coordinate of the second point
-     * @return Euclidean distance, rounded up
-     */
-    public static int roundedEuclideanDistance(int x1, int y1, int x2, int y2) {
-        return (int) Math.ceil(Math.sqrt(Math.pow(Math.abs(x1 - x2), 2) + Math.pow(Math.abs(y1 - y2), 2)));
-    }
-
-    /**
-     * Stream of sequence variables with all nodes being required
-     */
-    public static Stream<CPSeqVar> getSeqVar() {
-        return getSolver().map(cp -> {
-            CPSeqVar seqVar = CPFactory.makeSeqVar(cp, nNodes, start, end);
-            for (int node = 0; node < nNodes; node++)
-                seqVar.require(node);
-            return seqVar;
-        });
+    public record StatsAndSolution(SearchStatistics stats, int cost) {
     }
 
 }

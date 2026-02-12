@@ -76,14 +76,15 @@ public class CreateNonDominatedBoundsMatrix {
                     new DistanceOriginal(tour, dist, totDistance),
                     new DistanceMinInput(tour, dist, totDistance),
                     new DistanceMinRestrictedInput(tour, dist, totDistance),
-                    new DistanceArborescence(tour, dist, totDistance),
-                    new DistanceRestrictedArborescence(tour, dist, totDistance),
-                    new DistanceMaxInputOrOutput(tour, dist, totDistance), //89
-                    new DistanceRestrictedMaxInputOrOutput(tour, dist, totDistance),
-//                    new DistanceMinDetour(tour, dist, totDistance), //126
+//                    new DistanceArborescence(tour, dist, totDistance),
+//                    new DistanceRestrictedArborescence(tour, dist, totDistance),
+//                    new DistanceMaxInputOrOutput(tour, dist, totDistance), //89
+//                    new DistanceRestrictedMaxInputOrOutput(tour, dist, totDistance),
+                    new DistanceMatchingSuccessor(tour, dist, totDistance),
+                    new DistanceMinDetour(tour, dist, totDistance), //126
 //                    new DistanceSubsequenceSplit(tour, dist, totDistance), //5
 //                    new DistanceForwardSlack(tour, dist, totDistance), //
-//                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
+                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
 
             };
 
