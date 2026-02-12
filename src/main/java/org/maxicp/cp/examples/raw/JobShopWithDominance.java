@@ -120,7 +120,7 @@ public class JobShopWithDominance {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/ft10.txt");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -193,8 +193,8 @@ public class JobShopWithDominance {
         DFSearch dfs = CPFactory.makeDfs(cp, () -> {
             // find the job with the smallest current task end time
 
-            record Alternative(int makespan, Runnable action) {
-            }
+            record Alternative(int criterion1, int criterion2 , Runnable action) { }
+
 
             List<Alternative> branches = new LinkedList<>();
 
@@ -207,18 +207,30 @@ public class JobShopWithDominance {
 
             boolean allJobsDone = true;
 
+            //int [] slackMachine = slackMachines(activities, instance.machine);
+
             for (int j = 0; j < nJobs; j++) {
                 final int job = j;
                 int taskIdx = currentTask[job].value();
                 if (taskIdx < nMachines) {
                     CPIntervalVar task = activities[job][taskIdx];
 
-                    if (realEst[job][taskIdx].value() + duration[job][taskIdx] > currentMakespan.value() || (realEst[job][taskIdx].value() + duration[job][taskIdx] == currentMakespan.value() && machine[job][taskIdx] > lastUsedMachine.value())) {
-                        branches.add(new Alternative(task.startMin(), () -> {
+                    boolean postponeMakespan = realEst[job][taskIdx].value() + duration[job][taskIdx] > currentMakespan.value();
+                    boolean equalizeMakespan = realEst[job][taskIdx].value() + duration[job][taskIdx] == currentMakespan.value();
+                    boolean newMachine = machine[job][taskIdx] > lastUsedMachine.value();
+
+                    //int m_ = instance.machine[job][taskIdx];
+
+                    if (postponeMakespan || (equalizeMakespan && newMachine)) {
+                        //branches.add(new Alternative(task.startMin(), slackMachine[m_], () -> {
+                        //branches.add(new Alternative(task.startMin(), task.startMax(), () -> {
+                        //branches.add(new Alternative(task.startMax()-task.startMin(), task.startMin(), () -> {
+
+                        branches.add(new Alternative(task.startMin(),task.lengthMin(), () -> {
                             // assign the start time to its minimum
                             task.setStart(realEst[job][taskIdx].value());
                             cp.fixPoint();
-                            // update current task and makespan
+                            // update current task and criterion
                             currentMakespan.setValue(Math.max(currentMakespan.value(), task.endMin()));
                             currentTask[job].increment();
                             for (int i = 0; i < nJobs; i++) {
@@ -241,7 +253,7 @@ public class JobShopWithDominance {
                     allJobsDone = false;
                 }
             }
-            branches.sort(Comparator.comparingInt(Alternative::makespan));
+            branches.sort(Comparator.comparingInt(Alternative::criterion1).thenComparingInt(Alternative::criterion2));
             Runnable[] branchesArray =
                     branches.stream()
                             .map(Alternative::action)
@@ -255,13 +267,40 @@ public class JobShopWithDominance {
 
         // for each job, I can tell at what task I am and the current makespan
 
-
+        long t0 = System.currentTimeMillis();
         dfs.onSolution(() -> {
             System.out.println("makespan:" + makespan);
+            System.out.println("t="+((System.currentTimeMillis()-t0)/1000.0)+"[s]");
             System.out.println("Sol : " + Arrays.deepToString(activities));
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);
+    }
+
+    public static int[] slackMachines(CPIntervalVar [][] tasks, int [][] machine) {
+        int nMachines = tasks[0].length;
+        int [] est = new int[nMachines];
+        int [] lct = new int[nMachines];
+        int [] totalDur = new int[nMachines];
+        for (int i = 0; i < tasks.length; i++) {
+            est[i] = Integer.MAX_VALUE;
+            lct[i] = Integer.MIN_VALUE;
+        }
+        for (int j = 0; j < tasks.length; j++) {
+            for (int m = 0; m < tasks[j].length; m++) {
+                int machineId = machine[j][m];
+                if (!tasks[j][m].isFixed()) {
+                    est[machineId] = Integer.min(est[machineId], tasks[j][m].startMin());
+                    lct[machineId] = Integer.max(lct[machineId], tasks[j][m].endMax());
+                    totalDur[machineId] += tasks[j][m].lengthMin();
+                }
+            }
+        }
+        int [] slack = new int[tasks[0].length];
+        for (int i = 0; i < slack.length; i++) {
+            slack[i] = (lct[i] - est[i]) - totalDur[i];
+        }
+        return slack;
     }
 
     private static class JobShopInstance {
