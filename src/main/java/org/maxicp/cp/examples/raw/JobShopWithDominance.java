@@ -119,7 +119,7 @@ public class JobShopWithDominance {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-8-8-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/ft10.txt");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -136,6 +136,7 @@ public class JobShopWithDominance {
         StateInt[] currentTask = new StateInt[nJobs];
         StateInt currentMakespan = cp.getStateManager().makeStateInt(0);
         StateSparseSet[][] precedences = new StateSparseSet[nJobs][nMachines];
+        int[] pred = new int[nJobs*nMachines];
 
         for (int j = 0; j < nJobs; j++) {
             currentTask[j] = cp.getStateManager().makeStateInt(0);
@@ -209,6 +210,19 @@ public class JobShopWithDominance {
                 int taskIdx = currentTask[job].value();
                 if (taskIdx < nMachines) {
                     CPIntervalVar task = activities[job][taskIdx];
+                    int nPred = precedences[job][taskIdx].fillExcluded(pred);
+                    boolean branch = true;
+                    for(int p=0; p<nPred; p++){
+                        int pJob = pred[p]/nMachines;
+                        int pTaskId = pred[p]%nMachines;
+                        if (pTaskId>=currentTask[pJob].value()) {
+                            branch = false;
+                            break;
+                        }
+                    }
+                    if (!branch){
+                        continue;
+                    }
 
                     if (realEst[job][taskIdx].value()+duration[job][taskIdx] > currentMakespan.value() ||(realEst[job][taskIdx].value()+duration[job][taskIdx] == currentMakespan.value() &&machine[job][taskIdx]> lastUsedMachine.value())) {
                         branches.add(new Alternative(task.startMin(), () -> {
@@ -229,12 +243,38 @@ public class JobShopWithDominance {
                                 }
                             }
                             lastUsedMachine.setValue(machine[job][taskIdx]);
+                            for(int i=0; i<nJobs; i++) {
+                                for(int m=0; m<nMachines;m++){
+                                    for (int k=0; k< nJobs; k++){
+                                        for (int l=0; l<nMachines;l++){
+                                            if (machine[i][m]==machine[k][l] && i*nMachines+m != k*nMachines+l) {
+                                                if (activities[i][m].endMin() > activities[k][l].startMax()) {
+                                                    precedences[i][m].remove(k * nMachines + l);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
 
                         }));
                     }
                     else {
                         task.setStartMin(currentMakespan.value());
                         cp.fixPoint();
+                        for(int i=0; i<nJobs; i++) {
+                            for(int m=0; m<nMachines;m++){
+                                for (int k=0; k< nJobs; k++){
+                                    for (int l=0; l<nMachines;l++){
+                                        if (machine[i][m]==machine[k][l]  && i*nMachines+m != k*nMachines+l ) {
+                                            if (activities[i][m].endMin() > activities[k][l].startMax()) {
+                                                precedences[i][m].remove(k * nMachines + l);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     allJobsDone = false;
                 }
@@ -254,12 +294,12 @@ public class JobShopWithDominance {
         // for each job, I can tell at what task I am and the current makespan
 
 
-
+        long t0 = System.currentTimeMillis();
 
 
         dfs.onSolution(() -> {
             System.out.println("makespan:" + makespan);
-            System.out.println("Sol : "+ Arrays.deepToString(activities));
+            System.out.println("Time : "+ (System.currentTimeMillis() - t0) + " ms");
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);

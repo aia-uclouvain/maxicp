@@ -81,7 +81,6 @@ public class JobShop {
                 .map(job -> job[nMachines - 1])
                 .toArray(CPIntervalVar[]::new);
         CPIntVar makespan = CPFactory.makespan(lasts);
-        cp.post(le(makespan,930));
 
         Objective obj = cp.minimize(makespan);
 
