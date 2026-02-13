@@ -44,13 +44,17 @@ public class MinCostMaxFlow {
     }
 
     public boolean run(int H, int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
+        return run(H, source, dest, capMaxNetworkFlow, costNetworkFlow, null, 0, 0);
+    }
+
+    public boolean run(int H, int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int[][] initialFlow, int initialTotalFlow, int initialTotalCost) {
         this.H = H;
         this.cost = costNetworkFlow;
         this.capMax = capMaxNetworkFlow;
         linkedDefined = false;
         Arrays.fill(linkedPred, -1);
         Arrays.fill(linkedSucc, -1);
-        getMaxFlowByMaxCapacity(source, dest, numNodes);
+        getMaxFlowByMaxCapacity(source, dest, numNodes, initialFlow, initialTotalFlow, initialTotalCost);
 
         totalFlow = result[0];
         totalCost = result[1];
@@ -134,32 +138,33 @@ public class MinCostMaxFlow {
     }
 
     // Function to obtain the maximum Flow
-    private void getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized) {
+    private void getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized, int[][] initialFlow, int initialTotalFlow, int initialTotalCost) {
         Arrays.fill(found, false);
         Arrays.fill(dist, 0);
         Arrays.fill(dad, 0);
         Arrays.fill(pi, 0);
 
-        for (int k = 0; k < numNodes; k++) {
-            Arrays.fill(flow[k], 0);
+        if (initialFlow==null) {
+            for (int k = 0; k < numNodes; k++) {
+                Arrays.fill(flow[k], 0);
+            }
+        }
+        else {
+            for (int i = 0; i < numNodes; i++) {
+                for (int j = 0; j < numNodes; j++) {
+                    flow[i][j] = initialFlow[i][j];
+                }
+            }
         }
 
 
-        int totflow = 0, totcost = 0;
+        int totflow = initialTotalFlow, totcost = initialTotalCost;
 
         // If a path exist from src to sink
         while (searchByMaxCapacity(source, dest)) {
 
             // Set the default amount
             int amt = 1; //INF;
-//            for (int x = dest; x != source; x = dad[x])
-//
-//                amt = Math.min(amt,
-//                        flow[x][dad[x]] != 0
-//                                ? flow[x][dad[x]]
-//                                : capMax[dad[x]][x]
-//                                - flow[dad[x]][x]);
-
             for (int x = dest; x != source; x = dad[x]) {
 
                 if (flow[x][dad[x]] != 0) {

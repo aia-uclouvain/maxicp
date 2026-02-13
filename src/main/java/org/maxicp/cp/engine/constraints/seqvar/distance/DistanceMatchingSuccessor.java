@@ -54,15 +54,25 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         initResidualGraph = false;
         Arrays.fill(checkConsistency, false);
         Arrays.fill(SPCompute, false);
+
         for (int i = 0; i < numNodesInMatching; i++) {
-            Arrays.fill(capMaxNetworkFlow[i], 0);
-            Arrays.fill(costNetworkFlow[i], 0);
             Arrays.fill(capMaxResidualGraph[i], 0);
             Arrays.fill(costResidualGraph[i], 0);
         }
         for (int i = 0; i < nNodes; i++) { // from variables to values
             //numSuccs[i] = seqVar.fillSucc(i, succs[i]);
             numSuccs[i] = edgeIterator.fillSucc(i, succs[i]);
+        }
+
+////        if (!updateFlow()){ //si un arc du flow a était supprimé alors il faut tout recalculer
+//            minCostMaxFlow.run(totalDist.max(), 0, numNodesInMatching - 1, capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), minCostMaxFlow.getTotalFlow(), minCostMaxFlow.getTotalCost());
+//            totalDist.removeBelow(minCostMaxFlow.getTotalCost());
+////            return;
+////        }
+
+        for (int i = 0; i < numNodesInMatching; i++) {
+            Arrays.fill(capMaxNetworkFlow[i], 0);
+            Arrays.fill(costNetworkFlow[i], 0);
         }
 
         for (int i = 0; i < nNodes; i++) {
@@ -86,6 +96,23 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         minCostMaxFlow.run(totalDist.max(), 0, numNodesInMatching - 1, capMaxNetworkFlow, costNetworkFlow);
 
         totalDist.removeBelow(minCostMaxFlow.getTotalCost());
+    }
+
+    private boolean updateFlow() {
+        for (int i = 1; i < nNodes; i++) {
+            for (int j = nNodes+1; j < numNodesInMatching-1; j++) {
+                if (minCostMaxFlow.getFlow()[i][j] > 0) {
+                    if (!seqVar.hasEdge(i-1, j-1-nNodes) && i-1 != j-1-nNodes) {
+                        return false;
+                    }
+                }
+                if (!seqVar.hasEdge(i-1, j-1-nNodes)) {
+                    capMaxNetworkFlow[i][j] = 0;
+                    costNetworkFlow[i][j] = 0;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

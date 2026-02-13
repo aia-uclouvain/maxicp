@@ -19,7 +19,7 @@ public class CreateNonDominatedBoundsMatrix {
     public static void main(String[] args) {
 
 
-        boolean[][] dominated = new boolean[7][7];
+        boolean[][] dominated = new boolean[4][4];
 
 
         for (int iter = 0; iter < 1000; iter++) {
@@ -74,17 +74,18 @@ public class CreateNonDominatedBoundsMatrix {
 
             CPConstraint[] distanceConstraints = new CPConstraint[]{
                     new DistanceOriginal(tour, dist, totDistance),
-                    new DistanceMinInput(tour, dist, totDistance),
-                    new DistanceMinRestrictedInput(tour, dist, totDistance),
+//                    new DistanceMinInput(tour, dist, totDistance),
+//                    new DistanceMinRestrictedInput(tour, dist, totDistance),
 //                    new DistanceArborescence(tour, dist, totDistance),
 //                    new DistanceRestrictedArborescence(tour, dist, totDistance),
-//                    new DistanceMaxInputOrOutput(tour, dist, totDistance), //89
+                    new DistanceMaxInputOrOutput(tour, dist, totDistance), //89
 //                    new DistanceRestrictedMaxInputOrOutput(tour, dist, totDistance),
-                    new DistanceMatchingSuccessor(tour, dist, totDistance),
                     new DistanceMinDetour(tour, dist, totDistance), //126
 //                    new DistanceSubsequenceSplit(tour, dist, totDistance), //5
 //                    new DistanceForwardSlack(tour, dist, totDistance), //
-                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
+//                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
+                    new DistanceMatchingSuccessor(tour, dist, totDistance),
+
 
             };
 

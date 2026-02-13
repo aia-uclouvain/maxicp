@@ -16,6 +16,7 @@ import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.maxicp.cp.CPFactory.*;
@@ -282,6 +283,18 @@ public class PCTSPTWBench extends Benchmark {
         // ===================== auxiliary variables =====================
 
         // view telling if a node is required
+        Random random= new Random(0);
+        int numberOfRequiredNodes = instance.n;
+        for (int i=0; i<numberOfRequiredNodes; i++) {
+            int node = random.nextInt(instance.n);
+            tour.require(node);
+        }
+        //"class | instance | variant | best_obj | timeout | runtime | n_nodes | n_failures | n_sols | is_completed | solution_list | memory | args
+        //PCTSPTWBench | data/PCTSPTW/toy.txt | ORIGINAL | 276,000 | 60,000 | 0,048 | 96 | 24 | 25 | true |
+        //PCTSPTWBench | data/PCTSPTW/toy.txt | MIN_INPUT_AND_OUTPUT_SUM | 276,000 | 60,000 | 0,053 | 96 | 24 | 25 | true |
+        //PCTSPTWBench | data/PCTSPTW/toy.txt | MST_DETOUR | 276,000 | 60,000 | 0,052 | 96 | 24 | 25 | true |
+        //PCTSPTWBench | data/PCTSPTW/toy.txt | MATCHING_SUCCESSOR | 276,000 | 60,000 | 0,073 | 86 | 19 | 25 | true |
+
         required = makeBoolVarArray(instance.n + 1, node -> tour.isNodeRequired(node));
 
         // multiplication over required node: the prize associated to the visit of a node (= {0, nodePrize})
