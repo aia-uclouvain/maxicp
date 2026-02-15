@@ -96,6 +96,7 @@ public abstract class Benchmark {
     protected abstract void makeModel(String instancePath);
 
     public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength) {
+        //seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
         addDistanceConstraint(seqVar, distance, totLength, variant);
         /*switch (variant) {
             case ORIGINAL -> seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
