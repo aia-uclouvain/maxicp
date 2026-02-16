@@ -56,15 +56,30 @@ public class DistanceRestrictedDetourShavingIncremental extends AbstractCPConstr
 
     @Override
     public void propagate() {
+        int cost = 0;
+        int nMember = seqVar.fillNode(nodes, MEMBER_ORDERED);
+        for (int i = 0; i < nMember-1; i++) {
+            cost += dist[nodes[i]][nodes[i+1]];
+        }
         if (seqVar.isFixed()) {
-            int cost = 0;
-            int nMember = seqVar.fillNode(nodes, MEMBER_ORDERED);
-            for (int i = 0; i < nMember-1; i++) {
-                cost += dist[nodes[i]][nodes[i+1]];
-            }
             totalDist.fix(cost);
             setActive(false);
         } else {
+            int maxDetour = totalDist.max() - cost;
+            int nInsertable = seqVar.fillNode(nodes, INSERTABLE);
+            for (int i = 0 ; i < nInsertable ; i++) {
+                int node = nodes[i];
+                int nPreds = seqVar.fillInsert(node, inserts);
+                for (int p = 0 ; p < nPreds ; p++) {
+                    int pred = inserts[p];
+                    int succ = seqVar.memberAfter(pred);
+                    int detour = dist[pred][node] + dist[node][succ] - dist[pred][succ];
+                    if (detour > maxDetour) { // detour is too long
+                        seqVar.notBetween(pred, node, succ); // first obvious filtering
+                    }
+                }
+            }
+
             estimator.init();
             // Computes the bound.
             // Use an early stop if it can be detected that we will not improve the lower bound that way.
@@ -72,7 +87,7 @@ public class DistanceRestrictedDetourShavingIncremental extends AbstractCPConstr
             totalDist.removeBelow(lowerBound);
             // all nodes on which the filtering must be applied
             nodesToFilter.removeAll();
-            int nInsertable = seqVar.fillNode(nodes, INSERTABLE_REQUIRED);
+            nInsertable = seqVar.fillNode(nodes, INSERTABLE_REQUIRED);
             for (int i = 0; i < nInsertable; i++) {
                 int node = nodes[i];
                 nodesToFilter.add(node);
