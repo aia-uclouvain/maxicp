@@ -44,7 +44,7 @@ public class DistanceMinInputAndOutput extends AbstractDistance {
                 // update minimum cost for the predecessors
                 if (bestP == -1 || dist[pred][node] < dist[bestP][node]) {
 //                    costMinRequiredPred[node] = dist[pred][node];
-                    nextBestP= bestP;
+                    nextBestP = bestP;
                     bestP = pred;
                 }
             }
@@ -55,7 +55,7 @@ public class DistanceMinInputAndOutput extends AbstractDistance {
                 // update minimum cost for the successors
                 if (bestS == -1 || dist[node][succ] < dist[node][bestS]) {
 //                    costMinRequiredSucc[node] = dist[node][succ];
-                    nextBestS= bestS;
+                    nextBestS = bestS;
                     bestS = succ;
                 }
             }
@@ -81,14 +81,16 @@ public class DistanceMinInputAndOutput extends AbstractDistance {
 
     @Override
     public void filterDetourForRequired(int pred, int node, int succ, int detour) {
-        if (lowerBound - costMinRequiredSucc[pred] / 2 - costMin[node] - costMinRequiredPred[succ] / 2 + detour > totalDist.max()) {
+//        if (lowerBound - costMinRequiredSucc[pred] - costMin[node]*2  - costMinRequiredPred[succ] + detour > totalDist.max()) {
+
+        if (lowerBound - costMinRequiredSucc[pred]/2 - costMin[node]  - costMinRequiredPred[succ]/2 + detour/2 > totalDist.max()) {
             seqVar.notBetween(pred, node, succ);
         }
     }
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        if (lowerBound - costMinRequiredSucc[pred] / 2 - costMinRequiredPred[succ] / 2 + detour > totalDist.max())
+        if (lowerBound - costMinRequiredSucc[pred] - costMinRequiredPred[succ] + detour > totalDist.max())
             seqVar.notBetween(pred, node, succ);
     }
 

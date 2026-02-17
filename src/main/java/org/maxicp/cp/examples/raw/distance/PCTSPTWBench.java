@@ -289,11 +289,6 @@ public class PCTSPTWBench extends Benchmark {
             int node = random.nextInt(instance.n);
             tour.require(node);
         }
-        //"class | instance | variant | best_obj | timeout | runtime | n_nodes | n_failures | n_sols | is_completed | solution_list | memory | args
-        //PCTSPTWBench | data/PCTSPTW/toy.txt | ORIGINAL | 276,000 | 60,000 | 0,048 | 96 | 24 | 25 | true |
-        //PCTSPTWBench | data/PCTSPTW/toy.txt | MIN_INPUT_AND_OUTPUT_SUM | 276,000 | 60,000 | 0,053 | 96 | 24 | 25 | true |
-        //PCTSPTWBench | data/PCTSPTW/toy.txt | MST_DETOUR | 276,000 | 60,000 | 0,052 | 96 | 24 | 25 | true |
-        //PCTSPTWBench | data/PCTSPTW/toy.txt | MATCHING_SUCCESSOR | 276,000 | 60,000 | 0,073 | 86 | 19 | 25 | true |
 
         required = makeBoolVarArray(instance.n + 1, node -> tour.isNodeRequired(node));
 

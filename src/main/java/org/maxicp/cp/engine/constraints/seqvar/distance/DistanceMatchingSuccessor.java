@@ -1,5 +1,6 @@
 package org.maxicp.cp.engine.constraints.seqvar.distance;
 
+import org.maxicp.cp.engine.constraints.IsEqualVar;
 import org.maxicp.cp.engine.constraints.MinCostMaxFlow;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -58,29 +59,16 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         for (int i = 0; i < numNodesInMatching; i++) {
             Arrays.fill(capMaxResidualGraph[i], 0);
             Arrays.fill(costResidualGraph[i], 0);
-        }
-        for (int i = 0; i < nNodes; i++) { // from variables to values
-            //numSuccs[i] = seqVar.fillSucc(i, succs[i]);
-            numSuccs[i] = edgeIterator.fillSucc(i, succs[i]);
-        }
-
-////        if (!updateFlow()){ //si un arc du flow a était supprimé alors il faut tout recalculer
-//            minCostMaxFlow.run(totalDist.max(), 0, numNodesInMatching - 1, capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow(), minCostMaxFlow.getTotalFlow(), minCostMaxFlow.getTotalCost());
-//            totalDist.removeBelow(minCostMaxFlow.getTotalCost());
-////            return;
-////        }
-
-        for (int i = 0; i < numNodesInMatching; i++) {
             Arrays.fill(capMaxNetworkFlow[i], 0);
             Arrays.fill(costNetworkFlow[i], 0);
         }
 
         for (int i = 0; i < nNodes; i++) {
+            numSuccs[i] = edgeIterator.fillSucc(i, succs[i]); // from variables to values
             capMaxNetworkFlow[0][i + 1] = 1; // source to first layer
-        }
-        for (int i = 0; i < nNodes; i++) {
             capMaxNetworkFlow[nNodes + i + 1][numNodesInMatching - 1] = 1; // second layer to sink
         }
+
         int succ;
         for (int i = 0; i < nNodes; i++) {
             for (int j = 0; j < numSuccs[i]; j++) {
@@ -100,13 +88,13 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
     private boolean updateFlow() {
         for (int i = 1; i < nNodes; i++) {
-            for (int j = nNodes+1; j < numNodesInMatching-1; j++) {
+            for (int j = nNodes + 1; j < numNodesInMatching - 1; j++) {
                 if (minCostMaxFlow.getFlow()[i][j] > 0) {
-                    if (!seqVar.hasEdge(i-1, j-1-nNodes) && i-1 != j-1-nNodes) {
+                    if (!seqVar.hasEdge(i - 1, j - 1 - nNodes) && i - 1 != j - 1 - nNodes) {
                         return false;
                     }
                 }
-                if (!seqVar.hasEdge(i-1, j-1-nNodes)) {
+                if (!seqVar.hasEdge(i - 1, j - 1 - nNodes)) {
                     capMaxNetworkFlow[i][j] = 0;
                     costNetworkFlow[i][j] = 0;
                 }
@@ -126,22 +114,21 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         initResidualGraph();
 
-        if (seqVar.isNode(predNode, MEMBER)) {
-            if (checkOnlyOnePossiblePred(node)) {
-                if (seqVar.start()!= predNode && seqVar.start()!= seqVar.memberBefore(predNode)) {
-                    seqVar.notBetween(seqVar.start(), node, seqVar.memberBefore(predNode));
-
-                }
+        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
+            if (seqVar.start() != predNode && seqVar.start() != seqVar.memberBefore(predNode)) {
+                int tmpPred = seqVar.memberBefore(predNode) == succNode ? (seqVar.memberBefore(succNode)==seqVar.start()?seqVar.start():seqVar.memberBefore(succNode)) : seqVar.memberBefore(predNode);
+                seqVar.notBetween(seqVar.start(), node, tmpPred);
             }
         }
 
-        if (seqVar.isNode(succNode, MEMBER)) {
-            if (checkOnlyOnePossibleSucc(node)) {
-                if (seqVar.end()!=succNode && seqVar.end()!= seqVar.memberAfter(succNode)) {
-                    seqVar.notBetween(seqVar.memberAfter(succNode), node, seqVar.end());
-                }
+
+        if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+            if (seqVar.end() != succNode && seqVar.end() != seqVar.memberAfter(succNode)) {
+                int tmpSucc = seqVar.memberAfter(succNode) == predNode ? (seqVar.memberAfter(predNode)==seqVar.end()?seqVar.end():seqVar.memberAfter(predNode)) : seqVar.memberAfter(succNode);
+                seqVar.notBetween(tmpSucc, node, seqVar.end());
             }
         }
+
 
         checkConsistency[node] = true;
     }
@@ -157,11 +144,9 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         initResidualGraph();
 
-        if (seqVar.isNode(predNode, MEMBER) && checkOnlyOnePossiblePred(node)) {
+        if (predNode == node && checkOnlyOnePossiblePred(node)) {
             seqVar.exclude(node);
-        }
-
-        else if (seqVar.isNode(succNode, MEMBER) && checkOnlyOnePossibleSucc(node)) {
+        } else if (succNode == node && checkOnlyOnePossibleSucc(node)) {
             seqVar.exclude(node);
         }
 
@@ -252,7 +237,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
             nPred = pred + 1;
 
-            if (node == pred || minCostMaxFlow.getFlow()[nPred][nNode] > 0 || capMaxNetworkFlow[nPred][nNode]==0) {
+            if (node == pred || minCostMaxFlow.getFlow()[nPred][nNode] > 0 || capMaxNetworkFlow[nPred][nNode] == 0) {
                 continue; // skip if already assigned
             }
 
@@ -276,7 +261,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
             nSucc = succ + 1 + nNodes;
 
-            if (node == succ || minCostMaxFlow.getFlow()[nNode][nSucc] > 0 || capMaxNetworkFlow[nNode][nSucc]==0) {
+            if (node == succ || minCostMaxFlow.getFlow()[nNode][nSucc] > 0 || capMaxNetworkFlow[nNode][nSucc] == 0) {
                 continue; // skip if already assigned
             }
 

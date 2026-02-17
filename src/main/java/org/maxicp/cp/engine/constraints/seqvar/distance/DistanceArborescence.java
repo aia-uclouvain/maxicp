@@ -4,6 +4,8 @@ import org.maxicp.cp.engine.constraints.seqvar.MinimumArborescence;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
+
 public class DistanceArborescence extends AbstractDistance {
 
     private MinimumArborescence minimumArborescence;
@@ -23,8 +25,10 @@ public class DistanceArborescence extends AbstractDistance {
     @Override
     public void updateLowerBound() {
         edgeIterator.update();
-        for (int node = 0 ; node < nNodes ; node++) {
-            numPreds[node] = edgeIterator.fillPred(node, preds[node]);
+        int nNodesRequired = seqVar.fillNode(nodes, REQUIRED);
+        for (int i = 0; i < nNodesRequired; i++) {
+            int node = nodes[i];
+            numPreds[node] = edgeIterator.fillPred(node, preds[node], REQUIRED);
         }
         minimumArborescence.findMinimumArborescence(preds, numPreds);
 

@@ -131,15 +131,17 @@ public abstract class Benchmark {
             case FORWARD_SLACK -> seqVar.getSolver().post(new DistanceForwardSlack(seqVar, distance, totLength));
             case SUBSEQUENCE_SPLIT -> seqVar.getSolver().post(new DistanceSubsequenceSplit(seqVar, distance, totLength));
             case ALL -> {
-                for (Variant v: Variant.values()) {
-                    if (v != Variant.ALL) {
-                        try {
-                            addDistanceConstraint(seqVar, distance, totLength, v);
-                        } catch (NotImplementedException ignored) {
-
-                        }
-                    }
-                }
+                addDistanceConstraint(seqVar, distance, totLength, Variant.MIN_DETOUR);
+                addDistanceConstraint(seqVar, distance, totLength, Variant.MIN_INPUT_AND_OUTPUT_SUM);
+//                for (Variant v: Variant.values()) {
+//                    if (v != Variant.ALL) {
+//                        try {
+//                            addDistanceConstraint(seqVar, distance, totLength, v);
+//                        } catch (NotImplementedException ignored) {
+//
+//                        }
+//                    }
+//                }
             }
             case MATCHING_SUCCESSOR_LAGRANGIAN -> throw new NotImplementedException("not yet implemented");
         }

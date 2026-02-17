@@ -6,7 +6,7 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
 
-public class DistanceRestrictedMaxInputOrOutput extends AbstractDistance {
+public class DistanceRestrictedMaxInputOrOutput extends DistanceMaxInputOrOutput {
 
     protected final int[] costMinRequiredPred; //  minimum cost of edges from required predecessors
     protected final int[] costMinRequiredSucc; //  minimum cost of edges from required successors
@@ -106,32 +106,6 @@ public class DistanceRestrictedMaxInputOrOutput extends AbstractDistance {
         // remove the lower bound on the total distance
         totalDist.removeBelow(totalCost);
         lowerBound = totalCost;
-    }
-
-    @Override
-    public void filterDetourForRequired(int pred, int node, int succ, int detour) {
-        if(this.choosePred) {
-            if (lowerBound - costMinRequiredPred[node] - costMinRequiredPred[succ] + detour > totalDist.max()) {
-                seqVar.notBetween(pred, node, succ);
-            }
-        }
-        else {
-            if (lowerBound - costMinRequiredSucc[pred]  - costMinRequiredSucc[node] + detour > totalDist.max()) {
-                seqVar.notBetween(pred, node, succ);
-            }
-        }
-    }
-
-    @Override
-    public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        if(this.choosePred) {
-            if (lowerBound - costMinRequiredPred[succ] + detour > totalDist.max())
-                seqVar.notBetween(pred, node, succ);
-        }
-        else {
-            if (lowerBound - costMinRequiredSucc[pred] + detour > totalDist.max())
-                seqVar.notBetween(pred, node, succ);
-        }
     }
 
 }
