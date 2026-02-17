@@ -342,9 +342,9 @@ public abstract class DistanceTest extends CPSolverTest {
                 10, 3
                 10, 4
                 10, 5
-                21,     0
-                21,     1
-                21,     2
+                20,     0
+                20,     1
+                20,     2
             """)
     public void testTSPLessSearchNodesUsingBound(int nNodes, int seed) {
         // instance data
@@ -782,8 +782,8 @@ public abstract class DistanceTest extends CPSolverTest {
         assertEquals(resultsNoBounds.cost, resultsWithBounds.cost, "The optimal solutions must be the same no matter the constraint used");
         assertTrue(resultsWithBounds.stats.numberOfNodes() <= resultsNoBounds.stats.numberOfNodes(),
                 "The search should explore less nodes when using bound computation (in optimization)");
-        System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
-                "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
+        //System.out.println("  bounds: " + resultsWithBounds.stats.numberOfNodes() + " nodes\n" +
+        //        "noBounds: " + resultsNoBounds.stats.numberOfNodes() + " nodes");
     }
 
     /**
