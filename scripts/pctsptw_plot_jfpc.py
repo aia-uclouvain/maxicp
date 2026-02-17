@@ -9,13 +9,8 @@ from matplotlib.lines import Line2D
 
 # list of files and methods to extract for the plots
 filenames = [
-    ("results/tsptw/tsptw-2026-02-16_12-56-54-e9cb16a78",
-        {
-         "MIN_INPUT_AND_OUTPUT_SUM",
-         "MIN_DETOUR",
-         "ORIGINAL",
-         }
-     ),
+    ("results/pctsptw/pctsptw-2026-02-07_21-16-26-8ab0e44b6", {"MIN_INPUT_AND_OUTPUT_SUM", "MIN_DETOUR"}),
+    ("results/pctsptw/pctsptw-2026-02-03_23-37-23-f92b69cde", {"ORIGINAL"}),
 ]
 
 plt.rcParams.update({
@@ -243,6 +238,6 @@ fig.legend(
     columnspacing=1.2
 )
 
-plt.savefig("plot/tsptw_jfpc.pdf", bbox_inches="tight", pad_inches=0.01)
-# plt.show()
+plt.savefig("plot/pctsptw_jfpc.pdf", bbox_inches="tight", pad_inches=0.01)
+plt.show()
 
