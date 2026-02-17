@@ -4,7 +4,7 @@ import org.maxicp.cp.engine.core.CPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
-public class DistanceMatchingSuccessorTest extends DistanceTest{
+public class DistanceMatchingSuccessorTest extends DistanceTest {
     @Override
     protected CPConstraint getDistanceConstraint(CPSeqVar seqVar, int[][] transitions, CPIntVar distance) {
         return new DistanceMatchingSuccessor(seqVar, transitions, distance);
