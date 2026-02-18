@@ -330,6 +330,11 @@ public class PCTSPTWBench extends Benchmark {
                 args);
     }
 
+    @Override
+    protected CPSeqVar getSeqVar() {
+        return tour;
+    }
+
     /**
      * Example of usage:
      * -f "data/PCTSPTW/toy.txt" -m original

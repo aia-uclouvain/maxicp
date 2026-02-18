@@ -64,6 +64,7 @@ public abstract class Benchmark {
     protected int verbosity;
     protected String instancePath; // instance to solve
     protected List<CompactSolution> solutions = new ArrayList<CompactSolution>();  // All solutions found during the resolution
+    protected String bestSol = "";
     protected Variant variant; // variant to use for the distance constraint
     protected SearchStatistics statistics; // statistics of the last call to the search
 
@@ -94,6 +95,9 @@ public abstract class Benchmark {
     protected abstract double getObjectiveValue();
 
     protected abstract void makeModel(String instancePath);
+
+    /// Gets the seqvar used in the problem. This is only used to print the final sequence obtained
+    protected abstract CPSeqVar getSeqVar();
 
     public void addDistanceConstraint(CPSeqVar seqVar, int[][] distance, CPIntVar totLength) {
         //seqVar.getSolver().post(new DistanceOriginal(seqVar, distance, totLength));
@@ -168,6 +172,9 @@ public abstract class Benchmark {
             int nNodes = s.numberOfNodes();
             int nFails = s.numberOfFailures();
             solutions.add(new CompactSolution(time, nNodes, nFails, objective));
+        });
+        search.onSolution(s -> {
+            this.bestSol = getSeqVar().membersOrdered(" ");
         });
         if (verbosity >= 1) {
             search.onSolution(() -> System.out.println(solutions.getLast()));
@@ -272,11 +279,12 @@ public abstract class Benchmark {
 
     @Override
     public String toString() {
-        return String.format("%s | %s | %s | %s | %.3f | %.3f | %s | %s | %s",
+        return String.format("%s | %s | %s | %s | %s | %.3f | %.3f | %s | %s | %s",
                 this.getClass().getSimpleName(),
                 instancePath,
                 variant,
                 bestSolutionString(),
+                bestSol,
                 (double) maxRunTimeMS / 1000.0,
                 elapsedSeconds(),
                 searchStatsString(),

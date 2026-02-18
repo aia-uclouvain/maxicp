@@ -150,6 +150,11 @@ public class TSPTWBench extends Benchmark {
         addDistanceConstraint(tour, distance, totDistance);
     }
 
+    @Override
+    protected CPSeqVar getSeqVar() {
+        return tour;
+    }
+
     /**
      * Example of usage:
      * -f "data/TSPTW/Dumas/n60w20.001.txt" -m original

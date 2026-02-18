@@ -182,6 +182,11 @@ public class OTSPBench extends Benchmark {
         addDistanceConstraint(tour, distance, totDistance);
     }
 
+    @Override
+    protected CPSeqVar getSeqVar() {
+        return tour;
+    }
+
     /**
      * Example of usage:
      * -f "data/OTSP/instance_30_30.xml" -m original

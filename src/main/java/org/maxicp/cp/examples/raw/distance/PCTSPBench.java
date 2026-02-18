@@ -87,6 +87,11 @@ public class PCTSPBench extends Benchmark {
     }
 
     @Override
+    protected CPSeqVar getSeqVar() {
+        return tour;
+    }
+
+    @Override
     protected void makeModel(String instancePath) {
         instance = new PCTSP.PCTSPInstance(instancePath);
 

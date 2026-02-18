@@ -223,6 +223,10 @@ public class PCTSPTWBench_ extends Benchmark {
         );
     }
 
+    @Override
+    protected CPSeqVar getSeqVar() {
+        return tour;
+    }
 
     @Override
     protected DFSearch makeDFSearch() {

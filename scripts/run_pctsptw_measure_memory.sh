@@ -22,7 +22,7 @@ rm -f $outFileOpt  # delete filename of the results if it already existed (does 
 # this is the header of the csv. This header needs to change depending on the solver / type of experiment that is being run
 # all rows need to be printed by the solver itself
 # the id of the commit can be retrieved with the command `git rev-parse HEAD`
-echo "class | instance | variant | best_obj | timeout | runtime | n_nodes | n_failures | n_sols | is_completed | solution_list | memory | args " >> $outFileOpt
+echo "class | instance | variant | best_obj | best_sol | timeout | runtime | n_nodes | n_failures | n_sols | is_completed | solution_list | memory | args " >> $outFileOpt
 echo "writing inputs"
 # write all the configs into a temporary file
 inputFile="inputFilePCTSPTWOpt"
