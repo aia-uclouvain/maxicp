@@ -129,8 +129,7 @@ public class MinCostMaxFlow {
         }
 
         for (int k = 0; k < numNodes; k++)
-            pi[k]
-                    = Math.min(pi[k] + dist[k],
+            pi[k] = Math.min(pi[k] + dist[k],
                     INF);
 
         // Return the value obtained at sink
@@ -190,6 +189,10 @@ public class MinCostMaxFlow {
 
     public int getTotalCost() {
         return totalCost;
+    }
+
+    public void setTotalCost(int totalCost) {
+        this.totalCost = totalCost;
     }
 
     public int getTotalFlow() {

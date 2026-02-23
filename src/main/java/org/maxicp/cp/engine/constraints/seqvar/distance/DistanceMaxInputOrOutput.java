@@ -59,9 +59,6 @@ public class DistanceMaxInputOrOutput extends AbstractDistance {
             if  (costMinRequiredSucc[node] < Integer.MAX_VALUE) {
                 costSucc += costMinRequiredSucc[node];
             }
-//            cost = cost / 2;
-//            costMin[node] = cost;
-//            totalCost += cost;
         }
 
         if(costPred>costSucc){
