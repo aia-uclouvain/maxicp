@@ -56,13 +56,14 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         Arrays.fill(checkConsistency, false);
         Arrays.fill(SPCompute, false);
 
-        if (!firstCall && checkRemoveArc()) {
-            for (int i = 0; i < numNodesInMatching; i++) {
-                Arrays.fill(capMaxResidualGraph[i], 0);
-                Arrays.fill(costResidualGraph[i], 0);
-            }
-            return;
-        }
+//        if (!firstCall && checkRemoveArc()) {
+//            for (int i = 0; i < numNodesInMatching; i++) {
+//                Arrays.fill(capMaxResidualGraph[i], 0);
+//                Arrays.fill(costResidualGraph[i], 0);
+//            }
+//            totalDist.removeBelow(minCostMaxFlow.getTotalCost());
+//            return;
+//        }
 
         for (int i = 0; i < numNodesInMatching; i++) {
             Arrays.fill(capMaxNetworkFlow[i], 0);
