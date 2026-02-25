@@ -1,6 +1,7 @@
-package org.maxicp.cp.examples.modeling;
+package org.maxicp.cp.examples.modeling.tsp;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.examples.utils.TSPInstance;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.bool.Eq;
@@ -18,14 +19,12 @@ import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
 
 public class TSPBoundImpact {
-    
-        public static void main(String[] args) {
 
-        InputReader reader = new InputReader("data/TSP/tsp.txt");
+    public static void main(String[] args) {
 
-        int n = reader.getInt();
-
-        int[][] distanceMatrix = reader.getIntMatrix(n, n);
+        TSPInstance instance = new TSPInstance("data/TSP/gr21.xml");
+        int n = instance.n;
+        int[][] distanceMatrix = instance.distanceMatrix;
 
         // create a model of the problem
         ModelDispatcher baseModel = Factory.makeModelDispatcher();
@@ -67,5 +66,5 @@ public class TSPBoundImpact {
         });
 
     }
-    
+
 }

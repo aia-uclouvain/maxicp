@@ -7,7 +7,7 @@ import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.cp.examples.raw.TSPSeqVar;
+import org.maxicp.cp.examples.raw.tsp.TSPSeqVarCustomSearch;
 import org.maxicp.state.StateInt;
 
 import java.util.function.Supplier;
@@ -117,7 +117,7 @@ public class ReplayTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void tspEnumerateTest(CPSolver cp) {
 
-        TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
+        TSPSeqVarCustomSearch.TSPInstance instance = new TSPSeqVarCustomSearch.TSPInstance("data/TSP/instance_10_0.xml");
         int n = instance.n;
         int[][] distanceMatrix = instance.distanceMatrix;
 
@@ -171,7 +171,7 @@ public class ReplayTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void tspOptimize(CPSolver cp) {
 
-        TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
+        TSPSeqVarCustomSearch.TSPInstance instance = new TSPSeqVarCustomSearch.TSPInstance("data/TSP/instance_10_0.xml");
         int n = instance.n;
         int[][] distanceMatrix = instance.distanceMatrix;
 

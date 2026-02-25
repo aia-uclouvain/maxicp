@@ -4,9 +4,10 @@
  *
  */
 
-package org.maxicp.cp.examples.modeling;
+package org.maxicp.cp.examples.modeling.tsp;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.examples.utils.TSPInstance;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
@@ -23,11 +24,10 @@ import static org.maxicp.search.Searches.firstFailBinary;
 public class TSP {
 
     public static void main(String[] args) {
-        String instancePath = "data/TSP/tsp.txt";
-        InputReader reader = new InputReader(instancePath);
 
-        int n = reader.getInt(); // number of cities
-        int[][] distanceMatrix = reader.getIntMatrix(n, n); // distance between cities
+        TSPInstance instance = new TSPInstance("data/TSP/gr21.xml");
+        int n = instance.n;
+        int[][] distanceMatrix = instance.distanceMatrix;
 
         // create a model of the problem
         ModelDispatcher baseModel = Factory.makeModelDispatcher();
