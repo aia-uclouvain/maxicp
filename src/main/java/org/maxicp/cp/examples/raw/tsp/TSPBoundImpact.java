@@ -7,6 +7,7 @@
 package org.maxicp.cp.examples.raw.tsp;
 
 import org.maxicp.cp.engine.constraints.Circuit;
+import org.maxicp.cp.engine.constraints.CostAllDifferentDC;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -27,29 +28,6 @@ import static org.maxicp.search.Searches.*;
 public class TSPBoundImpact {
 
 
-    /**
-     * Fages, J. G., Prud’Homme, C.
-     * Making the first solution good! (ICTAI-2017)
-     * @return the value that if assigned to v induces the least augmentation of the objective obj
-     */
-    public static int boundImpactValueSelector(CPIntVar x, CPIntVar obj) {
-        int val = x.min();
-        int best = Integer.MAX_VALUE;
-        for (int v = x.min(); v <= x.max(); v++) {
-            if (x.contains(v)) {
-                x.getSolver().getStateManager().saveState();
-                try {
-                    x.getSolver().post(eq(x,v));
-                    if ((obj.min()) < best) {
-                        val = v;
-                        best = obj.min();
-                    }
-                } catch (InconsistencyException e) {}
-                x.getSolver().getStateManager().restoreState();
-            }
-        }
-        return val;
-    }
 
 
     public static void main(String[] args) {
@@ -60,31 +38,19 @@ public class TSPBoundImpact {
 
         CPSolver cp = makeSolver(false);
         CPIntVar[] succ = makeIntVarArray(cp, n, n);
-        CPIntVar[] distSucc = makeIntVarArray(cp, n, 1000);
+        CPIntVar[] distSucc = makeIntVarArray(n, i -> element(distanceMatrix[i], succ[i]));
 
-        cp.post(new Circuit(succ));
-
-        for (int i = 0; i < n; i++) {
-            cp.post(new Element1D(distanceMatrix[i], succ[i], distSucc[i]));
-        }
+        cp.post(circuit(succ));
 
         CPIntVar totalDist = sum(distSucc);
-
         Objective obj = cp.minimize(totalDist);
 
-        DFSearch dfs = makeDfs(cp, () -> {
-            CPIntVar xs = selectMin(succ,
-                    xi -> xi.size() > 1,
-                    xi -> xi.size());
-            if (xs == null)
-                return EMPTY;
-            else {
-                int v = boundImpactValueSelector(xs,totalDist);// now the first solution should have objective 2561
-                //int v = xs.min(); // the first solution should have objective 4722
-                return branch(() -> cp.post(eq(xs, v)),
-                        () -> cp.post(neq(xs, v)));
-            }
-        });
+        // redundant constraint
+        cp.post(new CostAllDifferentDC(succ,distanceMatrix,totalDist));
+
+        DFSearch dfs = makeDfs(cp,
+                heuristicBinary(minDomVariableSelector(succ),
+                boundImpactValueSelector(totalDist)));
 
         dfs.onSolution(() ->
                 System.out.println(totalDist)

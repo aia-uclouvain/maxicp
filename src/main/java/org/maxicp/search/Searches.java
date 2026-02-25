@@ -6,7 +6,9 @@
 package org.maxicp.search;
 
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.*;
 import org.maxicp.modeling.algebra.bool.Eq;
 import org.maxicp.modeling.algebra.bool.NotEq;
@@ -643,16 +645,17 @@ public final class Searches {
      * Bound-Impact value selector. Gives a value selector yielding the value leading to
      * the smallest decrease on the objective
      * <p>
+     * This value selection strategy was introduced in:
      * Fages, J. G., Prud’Homme, C. Making the first solution good!
      * In 2017 IEEE 29th International Conference on Tools with Artificial Intelligence (ICTAI). IEEE.
      *
      * @param objective objective whose impact must be measured
      * @return value decreasing the less the objective lower bound. Null if no value is valid for the variable
      */
-    public static Supplier<Function<IntExpression, Integer>> boundImpactValueSelector(IntExpression objective) {
+    public static Function<IntExpression, Integer> boundImpactValueSelector(IntExpression objective) {
         // black magic for java, so that the domain can be updated by the function supplied
         final int[][] domain = {new int[100]};
-        return () -> (x) -> {
+        return (IntExpression x) -> {
             if (x.isFixed())
                 return null;
             int size = x.size();
@@ -672,9 +675,12 @@ public final class Searches {
                         bestBound = bound;
                     }
                 } catch (InconsistencyException ignored) {
-
                 }
                 x.getModelProxy().getConcreteModel().getStateManager().restoreState();
+            }
+            if (bestValue == null) {
+                // all values of x appear to be inconsistent
+                throw InconsistencyException.INCONSISTENCY;
             }
             return bestValue;
         };
