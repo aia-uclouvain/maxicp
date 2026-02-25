@@ -14,8 +14,6 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.util.TimeIt;
-import org.maxicp.util.algo.DistanceMatrix;
-import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
 

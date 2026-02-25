@@ -30,6 +30,7 @@ module org.maxicp {
     exports org.maxicp.cp.engine.constraints.scheduling;
     exports org.maxicp.cp.engine.constraints.setvar;
     exports org.maxicp.cp.engine.constraints.seqvar;
+    exports org.maxicp.cp.examples.utils;
 
     requires org.json;
     requires xcsp3.tools;
