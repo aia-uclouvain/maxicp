@@ -1,6 +1,7 @@
-package org.maxicp.cp.examples.modeling;
+package org.maxicp.cp.examples.modeling.tsp;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.examples.utils.TSPInstance;
 import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
@@ -19,11 +20,10 @@ import static org.maxicp.modeling.Factory.*;
 public class TSPSeqVar {
 
     public static void main(String[] args) {
-        String instancePath = "data/TSP/tsp.txt";
-        InputReader reader = new InputReader(instancePath);
 
-        int n = reader.getInt(); // number of cities
-        int[][] distanceMatrix = reader.getIntMatrix(n, n); // distance between cities
+        TSPInstance instance = new TSPInstance("data/TSP/gr21.xml");
+        int n = instance.n;
+        int[][] distanceMatrix = instance.distanceMatrix;
 
         // duplicate city 0 at position n, and set city n as the last one being visited
         int nNodes = n + 1;

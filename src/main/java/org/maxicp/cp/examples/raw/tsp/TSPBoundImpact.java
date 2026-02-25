@@ -4,33 +4,33 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.raw.tsp;
 
 import org.maxicp.cp.engine.constraints.Circuit;
 import org.maxicp.cp.engine.constraints.Element1D;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.examples.utils.TSPInstance;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
-import org.maxicp.util.io.InputReader;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
 /**
  * Traveling salesman problem.
+ *
  * <a href="https://en.wikipedia.org/wiki/Travelling_salesman_problem">Wikipedia</a>.
  */
 public class TSPBoundImpact {
 
 
     /**
-     * Fages, J. G., Prud’Homme, C. Making the first solution good! In 2017 IEEE 29th International Conference on Tools with Artificial Intelligence (ICTAI). IEEE.
-     * @param x
-     * @param obj
-     * @return the value that if assigned to v induced the least augmentation of the objective obj
+     * Fages, J. G., Prud’Homme, C.
+     * Making the first solution good! (ICTAI-2017)
+     * @return the value that if assigned to v induces the least augmentation of the objective obj
      */
     public static int boundImpactValueSelector(CPIntVar x, CPIntVar obj) {
         int val = x.min();
@@ -44,9 +44,7 @@ public class TSPBoundImpact {
                         val = v;
                         best = obj.min();
                     }
-                } catch (InconsistencyException e) {
-
-                }
+                } catch (InconsistencyException e) {}
                 x.getSolver().getStateManager().restoreState();
             }
         }
@@ -56,13 +54,9 @@ public class TSPBoundImpact {
 
     public static void main(String[] args) {
 
-
-        // instance gr17 https://people.sc.fsu.edu/~jburkardt/datasets/tsp/gr17_d.txt
-        InputReader reader = new InputReader("data/TSP/tsp.txt");
-
-        int n = reader.getInt();
-
-        int[][] distanceMatrix = reader.getIntMatrix(n, n);
+        TSPInstance instance = new TSPInstance("data/TSP/gr21.xml");
+        int n = instance.n;
+        int[][] distanceMatrix = instance.distanceMatrix;
 
         CPSolver cp = makeSolver(false);
         CPIntVar[] succ = makeIntVarArray(cp, n, n);

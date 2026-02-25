@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.raw.darp;
 
 import org.maxicp.cp.engine.constraints.Circuit;
 import org.maxicp.cp.engine.constraints.Element1DVar;

@@ -4,14 +4,13 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.raw.jobshop;
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;

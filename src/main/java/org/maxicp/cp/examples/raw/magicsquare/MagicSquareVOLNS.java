@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.raw.magicsquare;
 
 
 import org.maxicp.cp.CPFactory;

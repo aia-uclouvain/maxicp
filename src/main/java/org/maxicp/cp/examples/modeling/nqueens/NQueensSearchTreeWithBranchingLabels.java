@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.modeling;
+package org.maxicp.cp.examples.modeling.nqueens;
 
 
 import org.maxicp.ModelDispatcher;

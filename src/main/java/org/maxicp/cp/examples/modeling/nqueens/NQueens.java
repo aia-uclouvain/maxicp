@@ -4,30 +4,33 @@
  *
  */
 
-package org.maxicp.cp.examples.modeling;
+package org.maxicp.cp.examples.modeling.nqueens;
 
 
 import org.maxicp.ModelDispatcher;
 import org.maxicp.cp.modeling.ConcreteCPModel;
+
+import static org.maxicp.modeling.Factory.*;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.DFSTreeRecorder;
+import org.maxicp.search.*;
+import static org.maxicp.search.Searches.*;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
-import static org.maxicp.modeling.Factory.*;
-import static org.maxicp.search.Searches.*;
+
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
 
 /**
  * The N-Queens problem.
  * <a href="http://csplib.org/Problems/prob054/">CSPLib</a>.
  */
-public class NQueensSearchTree {
+public class NQueens {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        int n = 7;
+        int n = 12;
 
         ModelDispatcher model = makeModelDispatcher();
 
@@ -39,20 +42,24 @@ public class NQueensSearchTree {
         model.add(allDifferent(qL));
         model.add(allDifferent(qR));
 
-        ConcreteCPModel cp = model.cpInstantiate();
-        DFSearch dfs = cp.dfSearch(staticOrderBinary(q));
+        Supplier<Runnable[]> branching = () -> {
+            IntExpression qs = selectMin(q,
+                    qi -> qi.size() > 1,
+                    qi -> qi.size());
+            if (qs == null)
+                return EMPTY;
+            else {
+                int v = qs.min();
+                return branch(() -> model.add(eq(qs, v)), () -> model.add(neq(qs, v)));
+            }
+        };
 
+        ConcreteCPModel cp = model.cpInstantiate();
+        DFSearch dfs = cp.dfSearch(branching);
         dfs.onSolution(() -> {
             System.out.println(Arrays.toString(q));
         });
-
-        DFSTreeRecorder treeRecorder = new DFSTreeRecorder();
-        dfs.setDFSListener(treeRecorder);
-
         SearchStatistics stats = dfs.solve();
-
-        treeRecorder.toTikz(0.2,0.4,0.2, 1.5);
-
         System.out.println(stats);
 
     }

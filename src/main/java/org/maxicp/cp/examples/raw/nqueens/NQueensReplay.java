@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw;
+package org.maxicp.cp.examples.raw.nqueens;
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.CPIntVar;
