@@ -22,11 +22,11 @@ public class CreateNonDominatedBoundsMatrix {
         boolean[][] dominated = new boolean[4][4];
 
 
-        for (int iter = 0; iter < 1000; iter++) {
+        for (int iter = 24; iter <= 24; iter++) {
             Random rand = new Random(iter);
 
 
-            int n = 20;
+            int n = 5;
 
             int[][] dist = new int[n][n];
             for (int i = 0; i < n; i++) {
@@ -84,7 +84,7 @@ public class CreateNonDominatedBoundsMatrix {
 //                    new DistanceSubsequenceSplit(tour, dist, totDistance), //5
 //                    new DistanceForwardSlack(tour, dist, totDistance), //
 //                    new DistanceMinRestrictedDetour(tour, dist, totDistance), //24
-                    new DistanceMatchingSuccessor(tour, dist, totDistance),
+                    new DistanceMatchingSuccessor(tour, dist, totDistance), //89
 
 
             };
@@ -102,8 +102,9 @@ public class CreateNonDominatedBoundsMatrix {
                     cp.post(distanceConstraints[j]);
                     int lb_j = totDistance.min();
                     cp.getStateManager().restoreState();
-
-
+//                    if (i==2 && j==3 && lb_i>lb_j) {
+                        System.out.println("iter " + iter + " comparing " + distanceConstraints[i].getClass().getSimpleName() + " (lb=" + lb_i + ") and " + distanceConstraints[j].getClass().getSimpleName() + " (lb=" + lb_j + ")");
+//                    }
                     if (lb_i < lb_j) {
                         dominated[i][j] = true;
                     }
