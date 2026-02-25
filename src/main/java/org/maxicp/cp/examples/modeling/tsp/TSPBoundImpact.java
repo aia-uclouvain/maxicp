@@ -43,20 +43,10 @@ public class TSPBoundImpact {
 
         // run with a search procedure
         baseModel.runCP((cp) -> {
-            Function<IntExpression, Integer> valueSelector = boundImpactValueSelector(totalDist).get();
-            DFSearch search = cp.dfSearch(() -> {
-                IntVar xs = selectMin(successor, xi -> !xi.isFixed(), xi -> xi.size());
-                if (xs == null)
-                    return EMPTY;
-                else {
-                    Integer v = valueSelector.apply(xs);
-                    //if (v == null)
-                    //    throw InconsistencyException.INCONSISTENCY;
-                    int value = v == null ? xs.min() : v;
-                    return branch(() -> baseModel.add(new Eq(xs, value)),
-                            () -> baseModel.add(new NotEq(xs, value)));
-                }
-            });
+            DFSearch search = cp.dfSearch(heuristicBinary(
+                    minDomVariableSelector(successor), // min dom variable heuristic
+                    boundImpactValueSelector(totalDist))); // bound impact value heuristic
+
             // print each solution found
             search.onSolution(() -> {
                 System.out.println(totalDist);

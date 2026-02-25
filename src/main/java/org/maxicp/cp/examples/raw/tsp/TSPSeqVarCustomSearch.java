@@ -6,6 +6,7 @@
 
 package org.maxicp.cp.examples.raw.tsp;
 
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -81,8 +82,8 @@ public class TSPSeqVarCustomSearch {
                     // successor of the insertion
                     int succ = tour.memberAfter(bestPred);
                     // either use the insertion to form bestPred -> node -> succ, or remove the detour
-                    return branch(() -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
-                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
+                    return branch(() -> cp.post(CPFactory.insert(tour, bestPred, node)),
+                            () -> cp.post(CPFactory.notBetween(tour, bestPred, node, succ)));
                 }
         );
 
