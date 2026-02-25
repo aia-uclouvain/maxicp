@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
+from matplotlib.lines import Line2D
 
 # list of files and methods to extract for the plots
 filenames = [
@@ -37,6 +38,12 @@ plt.rcParams.update({
     'figure.titlesize': 10,   # overall figure title
 })
 
+markersize = 20
+alpha = 0.7
+rel_tolerance_similar = 10  # how close in percentage values should be to be considered as similar
+rel_tolerance_np = rel_tolerance_similar / 100.0
+similar_key = f"Similar ({rel_tolerance_similar}\%)"
+
 BLACK = '#000000'
 ORANGE = '#e69f00'
 BLUE = '#0072b2'
@@ -62,6 +69,9 @@ colors = {
     "MIN_INPUT_AND_OUTPUT_SUM": SKY_BLUE,
     "MIN_DETOUR": ORANGE,
     "MATCHING_SUCCESSOR": BLUE,
+    "Improve": SKY_BLUE,
+    "Deteriorate": VERMILION,
+    similar_key: BLACK,
 }
 naming = {
     "ORIGINAL": "Original",
@@ -204,8 +214,6 @@ plt.savefig(figname)
 print(f"figure saved to {figname}")
 
 
-
-
 # ========== gap over time ==========
 
 # cactus plot: percentage of gap over time
@@ -302,65 +310,135 @@ for method in sorted_methods:
     search_nodes_per_method[method] = nodes_list
 
 # 1 to 1 comparison for the runtime
-fig, axs = plt.subplots(n_methods, n_methods)
+fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
 for i in range(n_methods):
     for j in range(n_methods):
         method_i = sorted_methods[i]
         method_j = sorted_methods[j]
-        list_for_i = []
-        list_for_j = []
-        for v_i, v_j in zip(runtime_per_method[method_j], runtime_per_method[method_i]):
+        list_for_i_when_i_better = []
+        list_for_j_when_i_better = []
+
+        list_for_i_when_j_better = []
+        list_for_j_when_j_better = []
+
+        list_for_i_when_equal = []
+        list_for_j_when_equal = []
+        for v_i, v_j in zip(runtime_per_method[method_i], runtime_per_method[method_j]):
             if np.isinf(v_i) or np.isinf(v_j):
                 continue
-            list_for_i.append(v_i)
-            list_for_j.append(v_j)
+            if v_i == v_j or np.allclose(v_i, v_j, rtol=rel_tolerance_np) or np.allclose(v_j, v_i, rtol=rel_tolerance_np):
+                list_for_i_when_equal.append(v_i)
+                list_for_j_when_equal.append(v_j)
+            elif v_i < v_j:
+                list_for_i_when_i_better.append(v_i)
+                list_for_j_when_i_better.append(v_j)
+            else:
+                assert v_i > v_j
+                list_for_i_when_j_better.append(v_i)
+                list_for_j_when_j_better.append(v_j)
         # diagonal line
         axs[(i, j)].plot([0.0, 900.0], [0.0, 900.0], '--', alpha=0.7, color="gray")
         # actual values
-        axs[(i, j)].plot(list_for_i, list_for_j, '.')
+        axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
+                            s=markersize)
+        axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
+                            s=markersize)
+        axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
+
         if i == n_methods - 1:
             axs[(i, j)].set_xlabel(naming[method_j])
         if j == 0:
             axs[(i, j)].set_ylabel(naming[method_i])
 
 
-fig.set_figheight(cm_to_inch(14))
-fig.set_figwidth(cm_to_inch(14))
 fig.suptitle("Runtime of one method against another\n(only on instances solved by both)")
-plt.tight_layout()
+
+legend_elements = [
+    Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
+    Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
+    Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
+]
+
+fig.legend(
+    handles=legend_elements,
+    loc="upper center",
+    bbox_to_anchor=(0.5, -0.01),   # centered below the figure
+    ncol=3,                       # one row
+    frameon=True,
+    handletextpad=0.6,
+    columnspacing=1.2
+)
+
 figname = "plot/tmsp_runtime_comparison.pdf"
-plt.savefig(figname)
+plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
 print(f"figure saved to {figname}")
 
 # 1 to 1 comparison for the number of nodes
-fig, axs = plt.subplots(n_methods, n_methods)
+fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
 for i in range(n_methods):
     for j in range(n_methods):
         method_i = sorted_methods[i]
         method_j = sorted_methods[j]
-        list_for_i = []
-        list_for_j = []
-        for v_i, v_j in zip(search_nodes_per_method[method_j], search_nodes_per_method[method_i]):
+        list_for_i_when_i_better = []
+        list_for_j_when_i_better = []
+
+        list_for_i_when_j_better = []
+        list_for_j_when_j_better = []
+
+        list_for_i_when_equal = []
+        list_for_j_when_equal = []
+        max_val = 0
+        for v_i, v_j in zip(search_nodes_per_method[method_i], search_nodes_per_method[method_j]):
             if np.isinf(v_i) or np.isinf(v_j):
                 continue
-            list_for_i.append(v_i)
-            list_for_j.append(v_j)
+            max_val = max(max_val, v_i, v_j)
+            if v_i == v_j or np.allclose(v_i, v_j, rtol=rel_tolerance_np) or np.allclose(v_j, v_i, rtol=rel_tolerance_np):
+                list_for_i_when_equal.append(v_i)
+                list_for_j_when_equal.append(v_j)
+            elif v_i < v_j:
+                list_for_i_when_i_better.append(v_i)
+                list_for_j_when_i_better.append(v_j)
+            else:
+                assert v_i > v_j
+                list_for_i_when_j_better.append(v_i)
+                list_for_j_when_j_better.append(v_j)
         # diagonal line
-        max_val = max(max(list_for_i), max(list_for_j))
         axs[(i, j)].plot([0, max_val], [0, max_val], '--', alpha=0.7, color="gray")
         # actual values
-        axs[(i, j)].plot(list_for_i, list_for_j, '.')
+
+        axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
+                            s=markersize)
+        axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
+                            s=markersize)
+        axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
+
         if i == n_methods - 1:
             axs[(i, j)].set_xlabel(naming[method_j])
         if j == 0:
             axs[(i, j)].set_ylabel(naming[method_i])
 
+for ax in axs.ravel():
+    ax.xaxis.labelpad = 14   # increase gap label <-> ticks/offset
 
-fig.set_figheight(cm_to_inch(14))
-fig.set_figwidth(cm_to_inch(14))
 fig.suptitle("Number of nodes to prove optimality\n(only on instances solved by both)")
-plt.tight_layout()
+
+legend_elements = [
+    Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
+    Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
+    Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
+]
+
+fig.legend(
+    handles=legend_elements,
+    loc="upper center",
+    bbox_to_anchor=(0.5, -0.01),   # centered below the figure
+    ncol=3,                       # one row
+    frameon=True,
+    handletextpad=0.6,
+    columnspacing=1.2
+)
+
 figname = "plot/tmsp_nodes_comparison.pdf"
-plt.savefig(figname)
+plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
 print(f"figure saved to {figname}")
 
