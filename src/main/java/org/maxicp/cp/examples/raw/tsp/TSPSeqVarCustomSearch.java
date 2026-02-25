@@ -16,6 +16,9 @@ import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
+import org.maxicp.util.algo.DistanceMatrix;
+
+import java.util.List;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
@@ -35,18 +38,8 @@ public class TSPSeqVarCustomSearch {
         // ===================== read & preprocessing =====================
 
         int n = instance.n;
-        int[][] distanceMatrix = instance.distanceMatrix;
-
-
-        // a seqvar needs both a start and an end node
-        // here the node 0 will be considered as the start, and duplicated to set the end
-        // the distance matrix is thus extended
-        int[][] distance = new int[n + 1][n + 1];
-        for (int i = 0; i < n; i++) {
-            System.arraycopy(distanceMatrix[i], 0, distance[i], 0, n);
-            distance[i][n] = distanceMatrix[i][0];
-            distance[n][i] = distanceMatrix[0][i];
-        }
+        // duplicate the 0 in the distance matrix, as seqvar need a proper start and end node
+        int[][] distance = DistanceMatrix.extendMatrixAtEnd(instance.distanceMatrix, List.of(0));
 
         // ===================== decision variables =====================
 
