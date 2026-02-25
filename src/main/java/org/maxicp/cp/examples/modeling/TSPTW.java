@@ -7,6 +7,7 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.examples.utils.TSPTWInstance;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
@@ -24,36 +25,37 @@ public class TSPTW {
     public static void main(String[] args) {
 
         TSPTWInstance instance = new TSPTWInstance("data/TSPTW/Dumas/n40w20.001.txt");
-        //TSPTWInstance instance = new TSPTWInstance("data/TSPTW/tsptw_10cities_0.txt");
+        int n = instance.n;
 
         ModelDispatcher baseModel = makeModelDispatcher();
 
+        // decision vars: x[i] is the node visited at position i
+        IntVar [] x = baseModel.intVarArray(n,n);
 
-        IntVar [] arrival = baseModel.intVarArray(instance.n+1, instance.horizon);
+        // arrival[i] is the arrival time of node x[i]
+        IntVar [] arrival = baseModel.intVarArray(n, instance.horizon);
 
-        // x[i] is the node visited at position i
-        IntVar [] x = baseModel.intVarArray(instance.n+1, instance.n);
-
-        IntExpression [] transition = new IntExpression[instance.n];
+        // transition[i] cost of the transition from x[i] to x[i+1]
+        IntExpression [] transition = new IntExpression[n-1];
 
         // every node is visited exactly once (except last one)
-        baseModel.add(allDifferent(Arrays.copyOf(x,instance.n)));
+        baseModel.add(allDifferent(x));
 
         // the time starts at 0 in the depot (i.e. node 0)
         baseModel.add(eq(arrival[0],0));
         baseModel.add(eq(x[0], 0));
 
         // the last node is the depot
-        baseModel.add(eq(x[instance.n], 0));
+        baseModel.add(eq(x[n-1], n-1));
 
-        for (int i = 0; i < instance.n+1; i++) {
+        for (int i = 0; i < n; i++) {
             IntExpression earliest = get(instance.earliest, x[i]); // earliest = instance.earliest[x[i]]
             IntExpression latest = get(instance.latest, x[i]); // latest = instance.latest[x[i]]
             baseModel.add(le(arrival[i],latest)); // arrival[i] <= latest[i]
             baseModel.add(le(earliest,arrival[i])); // earliest[i] <= arrival[i]
         }
 
-        for (int i = 0; i < instance.n; i++) {
+        for (int i = 0; i < n-1; i++) {
             transition[i] = get(instance.distMatrix,x[i],x[i+1]); // transition time between x[i] and x[i+1]
             IntExpression arrivalPlusTransition = sum(arrival[i], transition[i]); // arrivalPlusTransition[i] = arrival[i] + transition[i]
             baseModel.add(le(arrivalPlusTransition,arrival[i+1])); // arrivalPlusTransition[i] <= arrival[i+1]
@@ -74,54 +76,6 @@ public class TSPTW {
         });
 
         System.out.println("Time (s): " + (time/1000000000.));
-    }
-
-    static class TSPTWInstance {
-
-        public final int n;
-        public final int[][] distMatrix;
-        public final int[] earliest, latest;
-        public int horizon = Integer.MIN_VALUE;
-
-        public TSPTWInstance(String file) {
-            InputReader reader = new InputReader(file);
-            n = reader.getInt();
-            distMatrix = new int[n][n];
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    distMatrix[i][j] = reader.getInt();
-                }
-            }
-            earliest = new int[n];
-            latest = new int[n];
-
-            for (int i = 0; i < n; i++) {
-                earliest[i] = reader.getInt();
-                latest[i] = reader.getInt();
-                horizon = Math.max(horizon, latest[i] + 1);
-            }
-        }
-
-        private TSPTWInstance(int[][] distMatrix, int[] E, int[] L) {
-            n = E.length;
-            this.earliest = E;
-            this.latest = L;
-            this.distMatrix = distMatrix;
-            for (int i = 0; i < n; i++) {
-                horizon = Math.max(horizon, L[i] + 1);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "Instance{" +
-                    "n=" + n + "\n" +
-                    ", distMatrix=" + Arrays.deepToString(distMatrix) + "\n" +
-                    ", E=" + Arrays.toString(earliest) + "\n" +
-                    ", L=" + Arrays.toString(latest) + "\n" +
-                    ", horizon=" + horizon +
-                    '}';
-        }
     }
 
 }
