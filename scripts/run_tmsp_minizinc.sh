@@ -10,7 +10,7 @@ outFileOpt="results/tmsp-minizinc/tmsp-minizinc-${currentDate}-${gitShortHash}"
 mkdir -p "results/tmsp-minizinc"  # where the results will be written
 rm -f $outFileOpt  # delete filename of the results if it already existed (does not delete past results, unless their datetime is the same)
 
-echo "solver | model | instance | best_obj | timeout | seed | solutions_over_time" >> $outFileOpt
+echo "solver | model | instance | best_obj | timeout | runtime | seed | solution_list" >> $outFileOpt
 
 declare -a solvers=("gecode" "cp-sat" "chuffed" "coin-bc" "cplex" "highs")  # -d
 inputFile="inputFileTMSP"

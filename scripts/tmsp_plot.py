@@ -8,16 +8,42 @@ from collections import Counter
 from matplotlib.lines import Line2D
 
 # list of files and methods to extract for the plots
-filenames = [
-    ("results/tmsp/tmsp-2026-02-21_10-11-06-c85f5cb55",
-        {
-         "ORIGINAL",
-         "MIN_INPUT_AND_OUTPUT_SUM",
-         "MIN_DETOUR",
-         "MATCHING_SUCCESSOR"
+compare_with_minizinc = False
+
+if compare_with_minizinc:
+    filenames = [
+        ("results/tmsp/tmsp-2026-02-21_10-11-06-c85f5cb55",
+         {
+             "ORIGINAL",
+             # "MIN_INPUT_AND_OUTPUT_SUM",
+             "MIN_DETOUR",
+             # "MATCHING_SUCCESSOR"
          }
-     ),
-]
+         ),
+        ("results/tmsp-minizinc/tmsp-minizinc-2026-02-23_17-41-27-f3178a4ec",
+         {
+             "gecode",
+             "cp-sat",
+             "chuffed",
+             "coin-bc",
+             "cplex",
+             "highs",
+         }
+         ),
+    ]
+    suffix = "_minizinc"
+else:
+    filenames = [
+        ("results/tmsp/tmsp-2026-02-21_10-11-06-c85f5cb55",
+            {
+             "ORIGINAL",
+             "MIN_INPUT_AND_OUTPUT_SUM",
+             "MIN_DETOUR",
+             "MATCHING_SUCCESSOR"
+             }
+         ),
+    ]
+    suffix = "_minizinc"
 
 plt.rcParams.update({
     # use actual LaTeX via text.usetex
@@ -69,15 +95,29 @@ colors = {
     "MIN_INPUT_AND_OUTPUT_SUM": SKY_BLUE,
     "MIN_DETOUR": ORANGE,
     "MATCHING_SUCCESSOR": BLUE,
+
     "Improve": SKY_BLUE,
     "Deteriorate": VERMILION,
     similar_key: BLACK,
+
+    "gecode": VERMILION,
+    "cp-sat": BLUISH_GREEN,
+    "chuffed": BLUE,
+    "coin-bc": REDDISH_PURPLE,
+    "cplex": SKY_BLUE,
+    "highs": YELLOW,
 }
 naming = {
     "ORIGINAL": "Original",
     "MIN_INPUT_AND_OUTPUT_SUM": "I/O Min",
     "MIN_DETOUR": "Min Detours",
     "MATCHING_SUCCESSOR": "Matching",
+    "gecode": "Gecode",
+    "cp-sat": "OR-Tools",
+    "chuffed": "Chuffed",
+    "coin-bc": "Coin-Bc",
+    "cplex": "CPLEX",
+    "highs": "HiGHS",
 }
 
 global_df = None
@@ -91,8 +131,13 @@ for filename, methods in filenames:
     df = pd.read_csv(filename, engine="python", sep=" \\| ")
     df["instance"] = df["instance"].apply(lambda name: os.path.basename(name))
     # keep only the rows with the asked methods
-    df = df[df["variant"].isin(methods)]
-    df = df[["instance", "variant", "best_obj", "timeout", "n_nodes", "runtime", "is_completed", "solution_list"]]
+    if "variant" in df.columns:
+        df = df[df["variant"].isin(methods)]
+        df = df[["instance", "variant", "best_obj", "timeout", "n_nodes", "runtime", "is_completed", "solution_list"]]
+    else:
+        # minizinc dataframe
+        df = df[df["variant"].isin(methods)]
+        df = df[["solver", "instance", "best_obj", "solutions_over_time"]]
     for i, row in df.iterrows():
         instance = row["instance"]
         best_sol = row["best_obj"]
@@ -209,7 +254,7 @@ axs[1].set_xlabel("Gap to b.k.s. [\%]")
 fig.set_figheight(cm_to_inch(6))
 fig.set_figwidth(cm_to_inch(14))
 plt.tight_layout(rect=[0, 0.1, 1, 1])
-figname = "plot/tmsp_cactus_plot.pdf"
+figname = f"plot/tmsp_cactus_plot{suffix}.pdf"
 plt.savefig(figname)
 print(f"figure saved to {figname}")
 
@@ -277,7 +322,7 @@ ax.set_ylim([0 - delta_axis, 100 + delta_axis])
 fig.set_figheight(cm_to_inch(6))
 fig.set_figwidth(cm_to_inch(14))
 plt.tight_layout()
-figname = "plot/tmsp_gap_over_time.pdf"
+figname = f"plot/tmsp_gap_over_time{suffix}.pdf"
 plt.savefig(figname)
 print(f"figure saved to {figname}")
 
@@ -369,76 +414,77 @@ fig.legend(
     columnspacing=1.2
 )
 
-figname = "plot/tmsp_runtime_comparison.pdf"
+figname = f"plot/tmsp_runtime_comparison{suffix}.pdf"
 plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
 print(f"figure saved to {figname}")
 
-# 1 to 1 comparison for the number of nodes
-fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
-for i in range(n_methods):
-    for j in range(n_methods):
-        method_i = sorted_methods[i]
-        method_j = sorted_methods[j]
-        list_for_i_when_i_better = []
-        list_for_j_when_i_better = []
+if not compare_with_minizinc:
+    # 1 to 1 comparison for the number of nodes
+    fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
+    for i in range(n_methods):
+        for j in range(n_methods):
+            method_i = sorted_methods[i]
+            method_j = sorted_methods[j]
+            list_for_i_when_i_better = []
+            list_for_j_when_i_better = []
 
-        list_for_i_when_j_better = []
-        list_for_j_when_j_better = []
+            list_for_i_when_j_better = []
+            list_for_j_when_j_better = []
 
-        list_for_i_when_equal = []
-        list_for_j_when_equal = []
-        max_val = 0
-        for v_i, v_j in zip(search_nodes_per_method[method_i], search_nodes_per_method[method_j]):
-            if np.isinf(v_i) or np.isinf(v_j):
-                continue
-            max_val = max(max_val, v_i, v_j)
-            if v_i == v_j or np.allclose(v_i, v_j, rtol=rel_tolerance_np) or np.allclose(v_j, v_i, rtol=rel_tolerance_np):
-                list_for_i_when_equal.append(v_i)
-                list_for_j_when_equal.append(v_j)
-            elif v_i < v_j:
-                list_for_i_when_i_better.append(v_i)
-                list_for_j_when_i_better.append(v_j)
-            else:
-                assert v_i > v_j
-                list_for_i_when_j_better.append(v_i)
-                list_for_j_when_j_better.append(v_j)
-        # diagonal line
-        axs[(i, j)].plot([0, max_val], [0, max_val], '--', alpha=0.7, color="gray")
-        # actual values
+            list_for_i_when_equal = []
+            list_for_j_when_equal = []
+            max_val = 0
+            for v_i, v_j in zip(search_nodes_per_method[method_i], search_nodes_per_method[method_j]):
+                if np.isinf(v_i) or np.isinf(v_j):
+                    continue
+                max_val = max(max_val, v_i, v_j)
+                if v_i == v_j or np.allclose(v_i, v_j, rtol=rel_tolerance_np) or np.allclose(v_j, v_i, rtol=rel_tolerance_np):
+                    list_for_i_when_equal.append(v_i)
+                    list_for_j_when_equal.append(v_j)
+                elif v_i < v_j:
+                    list_for_i_when_i_better.append(v_i)
+                    list_for_j_when_i_better.append(v_j)
+                else:
+                    assert v_i > v_j
+                    list_for_i_when_j_better.append(v_i)
+                    list_for_j_when_j_better.append(v_j)
+            # diagonal line
+            axs[(i, j)].plot([0, max_val], [0, max_val], '--', alpha=0.7, color="gray")
+            # actual values
 
-        axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
-                            s=markersize)
-        axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
-                            s=markersize)
-        axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
+            axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
+                                s=markersize)
+            axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
+                                s=markersize)
+            axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
 
-        if i == n_methods - 1:
-            axs[(i, j)].set_xlabel(naming[method_j])
-        if j == 0:
-            axs[(i, j)].set_ylabel(naming[method_i])
+            if i == n_methods - 1:
+                axs[(i, j)].set_xlabel(naming[method_j])
+            if j == 0:
+                axs[(i, j)].set_ylabel(naming[method_i])
 
-for ax in axs.ravel():
-    ax.xaxis.labelpad = 14   # increase gap label <-> ticks/offset
+    for ax in axs.ravel():
+        ax.xaxis.labelpad = 14   # increase gap label <-> ticks/offset
 
-fig.suptitle("Number of nodes to prove optimality\n(only on instances solved by both)")
+    fig.suptitle("Number of nodes to prove optimality\n(only on instances solved by both)")
 
-legend_elements = [
-    Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
-    Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
-    Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
-]
+    legend_elements = [
+        Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
+        Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
+        Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
+    ]
 
-fig.legend(
-    handles=legend_elements,
-    loc="upper center",
-    bbox_to_anchor=(0.5, -0.01),   # centered below the figure
-    ncol=3,                       # one row
-    frameon=True,
-    handletextpad=0.6,
-    columnspacing=1.2
-)
+    fig.legend(
+        handles=legend_elements,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.01),   # centered below the figure
+        ncol=3,                       # one row
+        frameon=True,
+        handletextpad=0.6,
+        columnspacing=1.2
+    )
 
-figname = "plot/tmsp_nodes_comparison.pdf"
-plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
-print(f"figure saved to {figname}")
+    figname = f"plot/tmsp_nodes_comparison{suffix}.pdf"
+    plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
+    print(f"figure saved to {figname}")
 
