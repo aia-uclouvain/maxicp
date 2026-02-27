@@ -8,7 +8,7 @@ from collections import Counter
 from matplotlib.lines import Line2D
 
 # list of files and methods to extract for the plots
-compare_with_minizinc = False
+compare_with_minizinc = True
 
 if compare_with_minizinc:
     filenames = [
@@ -129,15 +129,16 @@ feasible_instances = set()
 all_instances = set()
 for filename, methods in filenames:
     df = pd.read_csv(filename, engine="python", sep=" \\| ")
-    df["instance"] = df["instance"].apply(lambda name: os.path.basename(name))
+    df["instance"] = df["instance"].apply(lambda name: os.path.splitext(os.path.basename(name))[0])
     # keep only the rows with the asked methods
     if "variant" in df.columns:
         df = df[df["variant"].isin(methods)]
         df = df[["instance", "variant", "best_obj", "timeout", "n_nodes", "runtime", "is_completed", "solution_list"]]
     else:
         # minizinc dataframe
+        df["variant"] = df["solver"]
         df = df[df["variant"].isin(methods)]
-        df = df[["solver", "instance", "best_obj", "solutions_over_time"]]
+        df = df[["instance", "variant", "best_obj", "timeout", "runtime", "is_completed", "solution_list"]]
     for i, row in df.iterrows():
         instance = row["instance"]
         best_sol = row["best_obj"]
@@ -262,7 +263,8 @@ print(f"figure saved to {figname}")
 # ========== gap over time ==========
 
 # cactus plot: percentage of gap over time
-pattern_sol = "t=(\d+\.\d+); nodes=(\d+); fails=(\d+); obj=(\d+\.\d+)"
+pattern_sol_seqvar = "t=(\d+\.\d+); nodes=(\d+); fails=(\d+); obj=(\d+\.\d+)"
+pattern_sol_minizinc = "t=(\d+\.\d+); obj=(\d+\.*\d*)"
 fig = plt.figure()
 for method in all_methods:
     df_method = global_df[global_df["variant"] == method]
@@ -280,10 +282,19 @@ for method in all_methods:
         # values for this instance
         times = [0.0]  # at time 0, no sol found
         gaps = [100.0]
-        for sol_tuple_group in re.finditer(pattern_sol, sol_list):
+        for sol_tuple_group in re.finditer(pattern_sol_seqvar, sol_list):
             time = float(sol_tuple_group.group(1))
             node = int(sol_tuple_group.group(2))
             sol = float(sol_tuple_group.group(4))
+            gap = primal_gap(instance, sol)
+            if len(gaps) > 0 and gap > gaps[-1]:
+                raise ValueError("The gap should only decrease over time")
+            times.append(time)
+            gaps.append(gap)
+
+        for sol_tuple_group in re.finditer(pattern_sol_minizinc, sol_list):
+            time = float(sol_tuple_group.group(1))
+            sol = float(sol_tuple_group.group(2))
             gap = primal_gap(instance, sol)
             if len(gaps) > 0 and gap > gaps[-1]:
                 raise ValueError("The gap should only decrease over time")
@@ -487,4 +498,3 @@ if not compare_with_minizinc:
     figname = f"plot/tmsp_nodes_comparison{suffix}.pdf"
     plt.savefig(figname, bbox_inches="tight", pad_inches=0.01)
     print(f"figure saved to {figname}")
-
