@@ -5,6 +5,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.util.Arrays;
 import java.util.Stack;
 
 /**
@@ -21,6 +22,7 @@ public class SubCircuit extends AbstractCPConstraint {
     private final StateInt[] dest;
     private final StateInt[] orig;
     private final StateInt nSubCircuits;
+    private final boolean[] inMainCircuit;
 
     /**
      * Creates a SubCircuit Constraint.
@@ -33,6 +35,8 @@ public class SubCircuit extends AbstractCPConstraint {
         assert (x.length > 0);
         this.x = x;
         this.n = x.length;
+
+        inMainCircuit = new boolean[n];
 
         dest = new StateInt[x.length];
         orig = new StateInt[x.length];
@@ -93,10 +97,9 @@ public class SubCircuit extends AbstractCPConstraint {
             x[d].remove(s);
         }
 
-        // Check if the circuit has closed, if so,
-        // we force all remaining unassigned nodes to point to themselves.
+        // Check if the circuit has closed, if so, nodes not this subcircuit should point to themselves.
         if (s == v) {
-            close();
+            close(s);
         }
     }
 
@@ -104,9 +107,15 @@ public class SubCircuit extends AbstractCPConstraint {
      * Closes the sub-circuit by forcing all remaining unassigned nodes
      * to point to themselves (self-loops).
      */
-    private void close() {
+    private void close(int start) {
+        Arrays.fill(inMainCircuit, false);
+        int v = start;
+        do {
+            inMainCircuit[v] = true;
+            v = x[v].min();
+        } while (v != start);
         for (int i = 0; i < n; i++) {
-            if (!x[i].isFixed()) {
+            if (!inMainCircuit[i]) {
                 x[i].fix(i); // In MaxiCP, fix() will throw InconsistencyException if 'i' is removed
             }
         }
