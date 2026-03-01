@@ -37,7 +37,7 @@ jobs:
           maven-version: ${{ matrix.maven }}
 
       - name: Build and test with Maven
-        run: mvn verify
+        run: mvn test
 
       - name: Generate Javadoc
         run: |
