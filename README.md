@@ -20,7 +20,7 @@ The key features of MaxiCP are:
 
 ## Installation
 
-The official more stable releases are on maven central: https://central.sonatype.com/artifact/org.maxicp/maxicp
+The official more stable releases are on [maven central](https://central.sonatype.com/artifact/org.maxicp/maxicp).
 
 You can add this as a maven dependency to your project, those releases are committed and tagged in the releases branch: 
 
@@ -32,11 +32,11 @@ You can add this as a maven dependency to your project, those releases are commi
 </dependency>
 ```
 
-The javadoc of stable releases can be consulted on at this url https://javadoc.io/doc/org.maxicp/maxicp/latest/org.maxicp/module-summary.html
+The javadoc of stable releases can be consulted on at this [url](https://javadoc.io/doc/org.maxicp/maxicp/latest/org.maxicp/module-summary.html).
 
-If you need a dependency on the main branch (the main working branch where the next release is prepared), you can use jitpack: https://jitpack.io/#aia-uclouvain/maxicp
+If you need a dependency on the main branch (the main working branch where the next release is prepared), you can use [jitpack](https://jitpack.io/#aia-uclouvain/maxicp).
 
-The javadoc of the main branch can be consulted at this url http://www.maxicp.org/javadoc/org.maxicp/module-summary.html
+The javadoc of the main branch can be consulted at this [url](http://www.maxicp.org/javadoc/org.maxicp/module-summary.html).
 
 ## Examples
 
