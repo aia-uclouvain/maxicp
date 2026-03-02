@@ -141,6 +141,10 @@
                     <aggregate>false</aggregate>          <!-- Important: disable aggregation -->
                     <failOnError>false</failOnError>      <!-- Avoid stopping build for JPMS warnings -->
                     <source>${maven.compiler.source}</source>
+                    <excludePackageNames>
+                        org.maxicp.modeling.constraints.helpers:
+                        org.maxicp.modeling.utils
+                    </excludePackageNames>
                     <additionalOptions>
                         <additionalOption>-Xdoclint:none</additionalOption>
                         <additionalOption>-quiet</additionalOption>
