@@ -135,25 +135,31 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.11.2</version>
+
                 <configuration>
-                    <reportOutputDirectory>${project.reporting.outputDirectory}</reportOutputDirectory>
-                    <destDir>javadoc</destDir>
+                    <aggregate>false</aggregate>          <!-- Important: disable aggregation -->
+                    <failOnError>false</failOnError>      <!-- Avoid stopping build for JPMS warnings -->
                     <source>${maven.compiler.source}</source>
                     <additionalOptions>
                         <additionalOption>-Xdoclint:none</additionalOption>
                         <additionalOption>-quiet</additionalOption>
                     </additionalOptions>
+                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
+                    <destDir>apidocs</destDir>
+                    <sourceFileExcludes>
+                        <sourceFileExclude>module-info.java</sourceFileExclude>
+                    </sourceFileExcludes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.7.0</version> <extensions>true</extensions>
-                <configuration>
-                    <publishingServerId>central</publishingServerId>
-                    <autoPublish>true</autoPublish>
-                </configuration>
+
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>                  <!-- For publishing -->
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>    <artifactId>maven-gpg-plugin</artifactId>
@@ -171,19 +177,6 @@
                                 <arg>loopback</arg>
                             </gpgArguments>
                         </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.11.2</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>
