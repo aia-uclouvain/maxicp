@@ -26,11 +26,9 @@ org.maxicp.modeling.algebra.scheduling
 org.maxicp.modeling.algebra.sequence
 org.maxicp.modeling.concrete
 org.maxicp.modeling.constraints
-org.maxicp.modeling.constraints.helpers
 org.maxicp.modeling.constraints.scheduling
 org.maxicp.modeling.constraints.seqvar
 org.maxicp.modeling.symbolic
-org.maxicp.modeling.utils
 org.maxicp.modeling.xcsp3
 org.maxicp.search
 org.maxicp.state
