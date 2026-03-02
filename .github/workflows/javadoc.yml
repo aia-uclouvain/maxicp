@@ -42,7 +42,8 @@ jobs:
       - name: Generate Javadoc
         run: |
           mvn javadoc:javadoc
-          mv target/site/javadoc/ /tmp/.
+          mv target/reports/apidocs target/reports/javadoc
+          mv target/reports/javadoc/ /tmp/.
 
       - name: Checkout gh-pages branch
         uses: actions/checkout@v3
