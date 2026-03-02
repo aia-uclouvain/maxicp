@@ -12,10 +12,9 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.search.Searches.*;
 
 import java.util.Arrays;
-
-import static org.maxicp.search.Searches.EMPTY;
 
 
 /**
@@ -35,37 +34,19 @@ public class NQueens {
         cp.post(allDifferent(qL));
         cp.post(allDifferent(qR));
 
-        DFSearch search = CPFactory.makeDfs(cp, () -> {
-            int idx = -1; // index of the first variable that is not fixed
-            for (int k = 0; k < q.length; k++)
-                if (q[k].size() > 1) {
-                    idx = k;
-                    break;
-                }
-            if (idx == -1)
-                return EMPTY;
-            else {
-                CPIntVar qi = q[idx];
-                int v = qi.min();
-                Runnable left = () -> cp.post(CPFactory.eq(qi, v));
-                Runnable right = () -> cp.post(CPFactory.neq(qi, v));
-                return new Runnable[]{left, right};
-            }
-        });
 
         // a more compact first fail search using selectors is given next
-/*
-        DFSearch search = Factory.makeDfs(cp, () -> {
-            IntVar qs = selectMin(q,
+        DFSearch search = CPFactory.makeDfs(cp, () -> {
+            CPIntVar qs = selectMin(q,
                     qi -> qi.size() > 1,
                     qi -> qi.size());
             if (qs == null) return EMPTY;
             else {
                 int v = qs.min();
-                return branch(() -> cp.post(Factory.equal(qs, v)),
-                        () -> cp.post(Factory.notEqual(qs, v)));
+                return branch(() -> cp.post(eq(qs, v)),
+                        () -> cp.post(neq(qs, v)));
             }
-        });*/
+        });
 
 
         search.onSolution(() ->
