@@ -199,6 +199,6 @@ We recommend using **IntelliJ IDEA** to develop and run the MaxiCP project.
     ```bash
     mvn test
     ```
-
+    
 
 

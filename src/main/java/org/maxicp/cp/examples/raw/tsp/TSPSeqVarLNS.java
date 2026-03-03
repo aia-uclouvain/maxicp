@@ -86,7 +86,6 @@ public class TSPSeqVarLNS {
 
         // LNS loop
         Random random = new Random(42);
-        int percentageOfFixed = 90; // percentage of fixed nodes
         for (int iter = 0; iter < 100; iter++) {
             System.out.println(String.format("---restart %d ----", iter));
             dfs.optimizeSubjectTo(obj, s -> false, () -> {
