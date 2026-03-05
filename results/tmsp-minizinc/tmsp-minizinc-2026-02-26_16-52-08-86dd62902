@@ -1,4 +1,4 @@
-solver | model | instance | best_obj | timeout | runtime | seed | solution_list
+solver | model | instance | best_obj | timeout | runtime | is_completed | seed | solution_list
 gecode | tmsp.mzn | Buda_20_10_17_6_medium_318588070.dzn | NaN | 900.000 | 1.443 | true | 3346 | 
 gecode | tmsp.mzn | Buda_20_6_12_15_tight_1726847486.dzn | NaN | 900.000 | 1.371 | true | 6301 | 
 gecode | tmsp.mzn | Buda_20_10_17_6_tight_318588070.dzn | NaN | 900.000 | 1.442 | true | 9777 | 
