@@ -273,7 +273,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
             }
 
             // Check if the arc (nPred, nNode) is consistent with Régin 2002
-            if (SP[nNode][nPred] != Integer.MAX_VALUE && SP[nNode][nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nNode]) {
+            if (SP[nNode][nPred] != Integer.MAX_VALUE && SP[nNode][nPred] <= totalDist.max() - minCostMaxFlow.getTotalCost() - costResidualGraph[nPred][nNode]) {
                 // Arc is consistent
                 onlyOnePossiblePred = false;
                 break;
@@ -303,7 +303,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
             }
 
             // Check if the arc (nPred, nNode) is consistent with Régin 2002
-            if (SP[nSucc][nNode] != Integer.MAX_VALUE && SP[nSucc][nNode] <= totalDist.max() - totalDist.min() - costResidualGraph[nNode][nSucc]) {
+            if (SP[nSucc][nNode] != Integer.MAX_VALUE && SP[nSucc][nNode] <= totalDist.max() - minCostMaxFlow.getTotalCost() - costResidualGraph[nNode][nSucc]) {
                 // Arc is consistent
                 onlyOnePossibleSucc = false;
                 break;
@@ -318,7 +318,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         int nSucc = node + 1;
 
         // Check if the arc (nPred, nNode) is consistent with Régin 2002
-        if (SP[nSucc][nPred] != Integer.MAX_VALUE && SP[nSucc][nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nSucc]) {
+        if (SP[nSucc][nPred] != Integer.MAX_VALUE && SP[nSucc][nPred] <= totalDist.max() - minCostMaxFlow.getTotalCost() - costResidualGraph[nPred][nSucc]) {
             // Arc is consistent
             // can be excluded
             return false;
