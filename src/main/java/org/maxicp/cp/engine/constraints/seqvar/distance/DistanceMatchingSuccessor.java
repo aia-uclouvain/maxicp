@@ -171,8 +171,14 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         if (predNode == node && checkOnlyOnePossiblePred(node)) {
             seqVar.exclude(node);
-        } else if (succNode == node && checkOnlyOnePossibleSucc(node)) {
+        } else if(predNode != node && checkRequiredOptional(node)){
+            seqVar.require(node);
+        }
+
+        if (succNode == node && checkOnlyOnePossibleSucc(node)) {
             seqVar.exclude(node);
+        } else if(succNode != node && checkRequiredOptional(node)){
+            seqVar.require(node);
         }
 
         checkConsistency[node] = true;
@@ -305,6 +311,19 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         }
 
         return onlyOnePossibleSucc;
+    }
+
+    private boolean checkRequiredOptional(int node) {
+        int nPred = nNodes + 1 + node;
+        int nSucc = node + 1;
+
+        // Check if the arc (nPred, nNode) is consistent with Régin 2002
+        if (SP[nSucc][nPred] != Integer.MAX_VALUE && SP[nSucc][nPred] <= totalDist.max() - totalDist.min() - costResidualGraph[nPred][nSucc]) {
+            // Arc is consistent
+            // can be excluded
+            return false;
+        }
+        return true;
     }
 
 
