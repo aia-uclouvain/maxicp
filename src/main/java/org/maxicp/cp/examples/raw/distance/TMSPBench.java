@@ -57,7 +57,7 @@ public class TMSPBench extends Benchmark {
     }
 
 
-    static class Instance {
+    public static class Instance {
 
         public int n; // number of nodes
         public List<Integer> mandatory; // nodes that are mandatory in any solution

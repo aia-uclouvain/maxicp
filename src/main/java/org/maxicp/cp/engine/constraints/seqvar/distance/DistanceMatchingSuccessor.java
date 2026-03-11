@@ -160,7 +160,7 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        /*
+
         if (checkConsistency[node]) {
             return;
         }
@@ -183,8 +183,6 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
         }
 
         checkConsistency[node] = true;
-
-         */
     }
 
     private void builResidualGraph(int[][] capMaxNF, int[][] costNF, int[][] flow, int[][] capMaxRG, int[][] costRG) {

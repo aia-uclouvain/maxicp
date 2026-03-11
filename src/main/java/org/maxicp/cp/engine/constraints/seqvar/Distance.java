@@ -49,10 +49,10 @@ public class Distance extends AbstractCPConstraint {
 
     @Override
     public void post() {
-        propagate();
         seqVar.propagateOnInsert(this);
         seqVar.propagateOnFix(this);
         totalDist.propagateOnBoundChange(this);
+        propagate();
     }
 
     @Override
