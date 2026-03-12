@@ -8,10 +8,9 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.constraints.seqvar.Distance;
 import org.maxicp.cp.engine.constraints.seqvar.TransitionTimes;
-import org.maxicp.cp.engine.core.CPConstraint;
-import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPSeqVar;
-import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.engine.core.*;
+import org.maxicp.cp.examples.raw.distance.TMSPBench;
+import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
@@ -19,9 +18,12 @@ import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
+import java.util.OptionalInt;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -294,6 +296,116 @@ public abstract class DistanceTest extends CPSolverTest {
     }
 
     /**
+     * Select min with tie breaks using the smallest int value
+     */
+    protected static<N extends Comparable<N>> OptionalInt selectMin(int[] x, int n, Predicate<Integer> p, Function<Integer, N> f) {
+        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -> {
+            int comparison = f.apply(i).compareTo(f.apply(j));
+            if (comparison == 0) {
+                return Math.min(i, j);
+            } else {
+                return comparison < 0 ? i : j;
+            }
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource(useHeadersInDisplayName = true, textBlock = """
+            instance, optimum
+            data/TMSP/Delh_23_3_3_15_tight_1772501334.json, 2554
+            data/TMSP/Buda_20_2_0_7_tight_1370765090.json, 1726
+            data/TMSP/Buda_20_5_1_11_medium_248477452.json, 5425
+            data/TMSP/Buda_20_5_6_13_medium_1547115155.json, 7760
+            data/TMSP/Delh_20_6_6_8_loose_339370987.json, 2269
+            data/TMSP/Delh_23_3_3_15_medium_1772501334.json, 3379
+            data/TMSP/Delh_23_4_18_12_loose_1291049579.json, 2970
+            data/TMSP/Delh_23_5_10_3_medium_1800834186.json, 2889
+            data/TMSP/Delh_23_5_4_15_loose_1998827649.json, 2537
+            data/TMSP/Delh_23_7_1_20_loose_1070037553.json, 2459
+            data/TMSP/Glas_27_2_24_6_medium_1073302508.json, 9088
+            data/TMSP/Osak_20_4_15_0_medium_336798764.json, 4276
+            data/TMSP/Osak_20_4_9_18_loose_716723054.json, 4156
+            data/TMSP/Osak_27_3_12_26_medium_2140781906.json, 4170
+            data/TMSP/Osak_27_8_18_6_medium_1065442383.json, 3981
+            data/TMSP/Vien_20_2_6_5_tight_924569371.json, 5338
+            data/TMSP/Osak_27_2_6_14_medium_41996748.json, 3411
+            """)
+    public void testFindOptimumTMSP(String instancePath, int optimal) {
+        TMSPBench.Instance instance = new TMSPBench.Instance(instancePath);
+
+        // ===================== read & preprocessing =====================
+        int n = instance.n;
+        start = instance.start;
+        end = instance.end;
+        // distance takes into account the service duration of the origin
+        int[][] distance = new int[n][n];
+        for (int i = 0 ; i < n ; i++) {
+            for (int j = 0 ; j < n ; j++) {
+                distance[i][j] = instance.travelTime[i][j] + instance.duration[i];
+            }
+        }
+        // takes into account the visit of the end node
+        int maxTime = instance.maxTime - instance.duration[end];
+
+        // ===================== decision variables =====================
+
+        CPSolver cp = makeSolver();
+        // sequence variable representing the path from the start to the end
+        CPSeqVar tour = CPFactory.makeSeqVar(cp, n, start, end);
+        // add the mandatory nodes
+        for (int mandatory: instance.mandatory)
+            tour.require(mandatory);
+        // distance traveled
+        CPIntVar sumDist = makeIntVar(cp, 0, maxTime);
+
+        // ===================== auxiliary variables =====================
+
+        CPBoolVar[] required = makeBoolVarArray(n, node -> tour.isNodeRequired(node));
+
+        // multiplication over required node: the reward associated to the visit of a node (= {0, reward})
+        CPIntVar[] reward = makeIntVarArray(n, node -> mul(required[node], instance.reward[node]));
+
+        // ===================== constraints =====================
+        // total reward is the sum of individual visits
+        CPIntVar totalReward = sum(reward);
+        // constraint the maximum travel time that can be used (including service duration, which is in the matrix)
+        cp.post(getDistanceConstraint(tour, distance, sumDist));
+
+        int[] nodes = new int[instance.n];
+        DFSearch search = makeDfs(cp,
+                // each decision in the search tree will minimize the detour of adding a new node to the path
+                () -> {
+                    if (tour.isFixed())
+                        return EMPTY;
+                    // select node with minimum number of insertions points.
+                    // Ties are broken by selecting the node with smallest id
+                    int nUnfixed = tour.fillNode(nodes, INSERTABLE);
+                    int node = selectMin(nodes, nUnfixed, i -> true, tour::nInsert).getAsInt();
+                    // get the insertion of the node with the smallest detour cost
+                    int nInsert = tour.fillInsert(node, nodes);
+                    int bestPred = selectMin(nodes, nInsert, pred -> true,
+                            pred -> {
+                                int succ = tour.memberAfter(node);
+                                return distance[pred][node] + distance[node][succ] - distance[pred][succ];
+                            }).getAsInt();
+                    // successor of the insertion
+                    int succ = tour.memberAfter(bestPred);
+                    // either use the insertion to form bestPred -> node -> succ, or remove the detour
+                    return branch(
+                            () -> cp.getModelProxy().add(Factory.insert(tour, bestPred, node)),
+                            () -> cp.getModelProxy().add(Factory.notBetween(tour, bestPred, node, succ)));
+                }
+        );
+        //DFSearch search = minDetourSearch(tour, distance);
+        AtomicInteger bestCost = new AtomicInteger(Integer.MIN_VALUE);
+        search.onSolution(() -> {
+            bestCost.set(totalReward.min());
+        });
+        SearchStatistics stats = search.optimize(cp.maximize(totalReward));
+        assertEquals(bestCost.get(), optimal, "Failed to find the optimal solution");
+    }
+
+    /**
      * Ensures that some trivial inconsistent cases, where the sequence cannot match the distance, are detected
      */
     @Test
@@ -416,6 +528,52 @@ public abstract class DistanceTest extends CPSolverTest {
             bestCost.set(cost);
         });
         search.optimize(seqVar.getSolver().minimize(distance));
+        seqVar.getSolver().getStateManager().restoreState();
+        int[] bestSolution;
+        if (nMember.get() != sequence.length) {
+            bestSolution = new int[nMember.get()];
+            System.arraycopy(sequence, 0, bestSolution, 0, nMember.get());
+        } else {
+            bestSolution = sequence;
+        }
+        return new CostAndSequence(bestCost.get(), bestSolution);
+    }
+
+    /**
+     * Gives the minimum distance cost for a given sequence variable.
+     * This works by creating a copy of the sequence and computing the best solution through a DFS - so it's very slow
+     *
+     * @param seqVar sequence on which the minimum cost must be computed
+     * @param dist   transition cost between nodes
+     * @param remainingConstraints closure called right before launching the search (useful to add other constraints)
+     * @return best transition cost between nodes
+     */
+    private CostAndSequence bestCostFor(CPSeqVar seqVar, int[][] dist, int maxDistance, int[] prize, Consumer<CPSeqVar> remainingConstraints) {
+        seqVar.getSolver().getStateManager().saveState();
+        CPSeqVar copy = deepCopy(seqVar);
+        CPIntVar distance = CPFactory.makeIntVar(copy.getSolver(), 0, maxDistance);
+        copy.getSolver().post(new Distance(copy, dist, distance));
+        remainingConstraints.accept(copy);
+        DFSearch search = minDetourSearch(copy, dist);
+        CPIntVar[] score = makeIntVarArray(copy.nNode(), node -> CPFactory.mul(copy.isNodeRequired(node), prize[node]));
+        CPIntVar totalScore = sum(score);
+        AtomicInteger bestCost = new AtomicInteger(Integer.MIN_VALUE);
+        int[] sequence = new int[copy.nNode()];
+        AtomicInteger nMember = new AtomicInteger();
+        search.onSolution(() -> {
+            nMember.set(copy.fillNode(sequence, MEMBER_ORDERED));
+            int cost = 0;
+            int totalDist = 0;
+            for (int i = 0; i < nMember.get(); i++) {
+                cost += prize[sequence[i]];
+                if (i < nMember.get() - 1) {
+                    totalDist += dist[sequence[i]][sequence[i + 1]];
+                }
+            }
+            bestCost.set(cost);
+            assertEquals(cost, totalScore.min());
+        });
+        SearchStatistics stats = search.optimize(copy.getSolver().maximize(totalScore));
         seqVar.getSolver().getStateManager().restoreState();
         int[] bestSolution;
         if (nMember.get() != sequence.length) {
@@ -958,6 +1116,46 @@ public abstract class DistanceTest extends CPSolverTest {
                 if (nInserts < minInsert || (nInserts == minInsert && node < bestNode)) { // break ties by node id
                     minInsert = nInserts;
                     bestNode = node;
+                }
+            }
+            int node = bestNode;
+            // find insertion with smallest detour cost for the node
+            int nInsertions = seqVar.fillInsert(node, nodes);
+            int bestDetour = Integer.MAX_VALUE;
+            int bestPred = -1;
+            for (int i = 0; i < nInsertions; i++) {
+                int pred = nodes[i];
+                int succ = seqVar.memberAfter(pred);
+                int detour = transitions[pred][node] + transitions[node][succ] - transitions[pred][succ];
+                if (detour < bestDetour || (detour == bestDetour && pred < bestPred)) { // break ties by predecessor id
+                    bestDetour = detour;
+                    bestPred = pred;
+                }
+            }
+            // generates 2 branches: insert the node or prevent the insertion
+            int pred = bestPred;
+            int succ = seqVar.memberAfter(pred);
+            return branch(() -> cp.post(insert(seqVar, pred, node)),
+                    () -> cp.post(notBetween(seqVar, pred, node, succ)));
+        };
+    }
+
+    public Supplier<Supplier<Runnable[]>> randomSearch(CPSeqVar seqVar, int[][] transitions, Random rng) {
+        int[] nodes = new int[seqVar.nNode()];
+        CPSolver cp = seqVar.getSolver();
+        return () -> () -> {
+            int nInsertable = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
+            if (nInsertable == 0)
+                return EMPTY; // no node can be inserted -> solution found
+            // selects the insertable node with the fewest remaining insertions
+            int bestCost = Integer.MIN_VALUE;
+            int bestNode = -1;
+            for (int i = 0; i < nInsertable; i++) {
+                int node = nodes[i];
+                int cost = rng.nextInt(10_000);
+                if (cost > bestCost) {
+                    bestNode = node;
+                    bestCost = cost;
                 }
             }
             int node = bestNode;

@@ -91,14 +91,14 @@ public class DistanceMaxInputOrOutput extends AbstractDistance {
 
     @Override
     public void filterDetourForOptional(int pred, int node, int succ, int detour) {
-        //if(this.choosePred) {
-        //    if (lowerBound - costMinRequiredPred[succ] + detour > totalDist.max())
-        //        seqVar.notBetween(pred, node, succ);
-        //}
-        //else {
-        //    if (lowerBound - costMinRequiredSucc[pred] + detour > totalDist.max())
-        //        seqVar.notBetween(pred, node, succ);
-        //}
+        if(this.choosePred) {
+            if (lowerBound - costMinRequiredPred[succ] + detour > totalDist.max())
+                seqVar.notBetween(pred, node, succ);
+        }
+        else {
+            if (lowerBound - costMinRequiredSucc[pred] + detour > totalDist.max())
+                seqVar.notBetween(pred, node, succ);
+        }
     }
 
 }
