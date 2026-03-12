@@ -172,13 +172,13 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
 
         if (predNode == node && checkOnlyOnePossiblePred(node)) {
             seqVar.exclude(node);
-        } else if(predNode != node && checkRequiredOptional(node)){
-            seqVar.require(node);
         }
 
         if (succNode == node && checkOnlyOnePossibleSucc(node)) {
             seqVar.exclude(node);
-        } else if(succNode != node && checkRequiredOptional(node)){
+        }
+
+        if(minCostMaxFlow.getFlow()[node+1][nNodes+1+node] == 0 && checkRequiredOptional(node)){
             seqVar.require(node);
         }
 
@@ -316,6 +316,11 @@ public class DistanceMatchingSuccessor extends AbstractDistance {
     private boolean checkRequiredOptional(int node) {
         int nPred = nNodes + 1 + node;
         int nSucc = node + 1;
+
+        if (!SPCompute[nSucc]) {
+            bellmanFord(numEdgesResidualGraph, edgesResidualGraph, nSucc, SP[nSucc]);
+            SPCompute[nSucc] = true;
+        }
 
         // Check if the arc (nPred, nNode) is consistent with Régin 2002
         if (SP[nSucc][nPred] != Integer.MAX_VALUE && SP[nSucc][nPred] <= totalDist.max() - minCostMaxFlow.getTotalCost() - costResidualGraph[nPred][nSucc]) {
