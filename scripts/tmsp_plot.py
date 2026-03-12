@@ -44,7 +44,12 @@ else:
              "MIN_DETOUR",
              "MATCHING_SUCCESSOR"
              }
-         ),
+        ),
+        #("results/tmsp/tmsp-2026-03-11_12-52-09-9c94ecffe",
+        # {
+        #     "MATCHING_SUCCESSOR"
+        # }
+        # ),
         ("results/tmsp-minizinc/tmsp-minizinc-2026-02-26_16-52-08-86dd62902",
          {
              "gecode",
@@ -110,6 +115,7 @@ colors = {
     "MIN_INPUT_AND_OUTPUT_SUM": SKY_BLUE,
     "MIN_DETOUR": ORANGE,
     "MATCHING_SUCCESSOR": BLUE,
+    "MATCHING_SUCCESSOR2": VERMILION,
 
     "Improve": SKY_BLUE,
     "Deteriorate": VERMILION,
@@ -127,6 +133,7 @@ naming = {
     "MIN_INPUT_AND_OUTPUT_SUM": "I/O Min",
     "MIN_DETOUR": "Min Detours",
     "MATCHING_SUCCESSOR": "Matching",
+    "MATCHING_SUCCESSOR2": "Matching (new)",
     "gecode": "Gecode",
     "cp-sat": "OR-Tools",
     "chuffed": "Chuffed",
@@ -139,6 +146,7 @@ linestyles = {
     "MIN_INPUT_AND_OUTPUT_SUM": "-",
     "MIN_DETOUR": "-",
     "MATCHING_SUCCESSOR": "-",
+    "MATCHING_SUCCESSOR2": "-",
     "gecode": "--",
     "cp-sat": "--",
     "chuffed": "--",
@@ -192,7 +200,8 @@ for filename, methods in filenames:
             # checks if the solution is not better than another one previously found
             if instance not in optimal_sol:
                 optimal_sol[instance] = best_sol
-            if best_sol > optimal_sol[instance]:
+            if best_sol != optimal_sol[instance]:
+                #print(f"{instance}, {optimal_sol[instance]}")
                 raise ValueError(f"A solution of cost {best_sol} was proven optimal for instance {instance} with {row['variant']}"
                                  f"while another solver proved a solution of cost {optimal_sol[instance]}.")
         all_instances.add(instance)
@@ -346,9 +355,6 @@ fig.set_figwidth(cm_to_inch(14))
 figname = f"plot/tmsp_cactus_plot{suffix}.pdf"
 plt.savefig(figname, bbox_inches="tight")
 print(f"figure saved to {figname}")
-
-exit(1)
-
 
 # ========== gap over time ==========
 
