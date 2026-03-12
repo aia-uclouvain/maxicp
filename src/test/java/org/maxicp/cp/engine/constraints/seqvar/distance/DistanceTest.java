@@ -34,9 +34,9 @@ import static org.maxicp.search.Searches.*;
 
 public abstract class DistanceTest extends CPSolverTest {
 
-    static int nNodes = 6;
-    static int start = 4;
-    static int end = 5;
+    static final int nNodes = 6;
+    static final int start = 4;
+    static final int end = 5;
     static int[][] transitions = new int[][]{
             {0, 3, 5, 4, 4, 4},
             {3, 0, 4, 5, 5, 5},
@@ -335,8 +335,8 @@ public abstract class DistanceTest extends CPSolverTest {
 
         // ===================== read & preprocessing =====================
         int n = instance.n;
-        start = instance.start;
-        end = instance.end;
+        int start = instance.start;
+        int end = instance.end;
         // distance takes into account the service duration of the origin
         int[][] distance = new int[n][n];
         for (int i = 0 ; i < n ; i++) {

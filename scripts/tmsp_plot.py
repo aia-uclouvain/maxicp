@@ -10,11 +10,11 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 
 # list of files and methods to extract for the plots
-compare_with_minizinc = False
+compare_with_minizinc = True
 
 if compare_with_minizinc:
     filenames = [
-        ("results/tmsp/tmsp-2026-02-21_10-11-06-c85f5cb55",
+        ("results/tmsp/tmsp-2026-03-11_15-41-25-b23bc5aa8",
          {
              "ORIGINAL",
              # "MIN_INPUT_AND_OUTPUT_SUM",
@@ -37,7 +37,7 @@ if compare_with_minizinc:
     suffix = "_minizinc"
 else:
     filenames = [
-        ("results/tmsp/tmsp-2026-02-21_10-11-06-c85f5cb55",
+        ("results/tmsp/tmsp-2026-03-11_15-41-25-b23bc5aa8",
             {
              "ORIGINAL",
              "MIN_INPUT_AND_OUTPUT_SUM",
