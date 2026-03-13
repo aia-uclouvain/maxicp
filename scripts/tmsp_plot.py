@@ -10,16 +10,13 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import MultipleLocator
 
 # list of files and methods to extract for the plots
-compare_with_minizinc = True
+compare_with_minizinc = False
 
 if compare_with_minizinc:
     filenames = [
         ("results/tmsp/tmsp-2026-03-11_15-41-25-b23bc5aa8",
          {
              "ORIGINAL",
-             # "MIN_INPUT_AND_OUTPUT_SUM",
-             # "MIN_DETOUR",
-             # "MATCHING_SUCCESSOR"
          }
          ),
         ("results/tmsp/tmsp-2026-03-12_14-13-50-ead7e2b62",
@@ -27,6 +24,12 @@ if compare_with_minizinc:
              "MIN_DETOUR",
          }
          ),
+        ("results/tmsp/tmsp-2026-03-12_16-32-40-36f78ae3b",
+         {
+             "MIN_INPUT_AND_OUTPUT_SUM",
+             "MATCHING_SUCCESSOR"
+         }
+        ),
         ("results/tmsp-minizinc/tmsp-minizinc-2026-02-26_16-52-08-86dd62902",
          {
              "gecode",
@@ -43,18 +46,21 @@ if compare_with_minizinc:
 else:
     filenames = [
         ("results/tmsp/tmsp-2026-03-11_15-41-25-b23bc5aa8",
-            {
+         {
              "ORIGINAL",
-             "MIN_INPUT_AND_OUTPUT_SUM",
+         }
+         ),
+        ("results/tmsp/tmsp-2026-03-12_14-13-50-ead7e2b62",
+         {
              "MIN_DETOUR",
+         }
+         ),
+        ("results/tmsp/tmsp-2026-03-12_16-32-40-36f78ae3b",
+         {
+             "MIN_INPUT_AND_OUTPUT_SUM",
              "MATCHING_SUCCESSOR"
-             }
+         }
         ),
-        #("results/tmsp/tmsp-2026-03-11_12-52-09-9c94ecffe",
-        # {
-        #     "MATCHING_SUCCESSOR"
-        # }
-        # ),
         ("results/tmsp-minizinc/tmsp-minizinc-2026-02-26_16-52-08-86dd62902",
          {
              "gecode",
