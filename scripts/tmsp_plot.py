@@ -18,8 +18,13 @@ if compare_with_minizinc:
          {
              "ORIGINAL",
              # "MIN_INPUT_AND_OUTPUT_SUM",
-             "MIN_DETOUR",
+             # "MIN_DETOUR",
              # "MATCHING_SUCCESSOR"
+         }
+         ),
+        ("results/tmsp/tmsp-2026-03-12_14-13-50-ead7e2b62",
+         {
+             "MIN_DETOUR",
          }
          ),
         ("results/tmsp-minizinc/tmsp-minizinc-2026-02-26_16-52-08-86dd62902",
