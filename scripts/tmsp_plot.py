@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 from matplotlib.lines import Line2D
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import MultipleLocator, PercentFormatter, LogLocator
 
 # list of files and methods to extract for the plots
 compare_with_minizinc = False
@@ -41,7 +41,7 @@ if compare_with_minizinc:
          }
          ),
     ]
-    ignore_files = set()
+    ignore_files = {"results/tmsp/tmsp-2026-03-12_16-32-40-36f78ae3b"}
     suffix = "_minizinc"
 else:
     filenames = [
@@ -96,7 +96,7 @@ plt.rcParams.update({
 })
 
 markersize = 20
-alpha = 0.7
+alpha = 0.45
 rel_tolerance_similar = 10  # how close in percentage values should be to be considered as similar
 rel_tolerance_np = rel_tolerance_similar / 100.0
 similar_key = f"Similar ({rel_tolerance_similar}\%)"
@@ -246,18 +246,23 @@ def primal_gap(instance: str, sol: float) -> float:
 # ========== cactus plot ==========
 
 # cactus plot: number of solved instances over time
-fig, axs = plt.subplots(1,2,
-    sharey = True,  # <-- exact shared y-axis
-    gridspec_kw = {'wspace': 0.05},  # <-- small horizontal spacing
-    constrained_layout=True
-)
+fig = plt.figure(constrained_layout=True)
+gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 0.8, 0.2], wspace=0.05)
 
-axs[0].yaxis.set_major_locator(MultipleLocator(25))  # 0,25,50,75,100 (within your limits)
+ax_left = fig.add_subplot(gs[0, 0])
+ax_right = fig.add_subplot(gs[0, 1], sharey=ax_left)
+ax_legend = fig.add_subplot(gs[0, 2])
 
-for ax in axs:
+ax_legend.axis("off")
+
+ax_left.yaxis.set_major_locator(MultipleLocator(25))  # 0,25,50,75,100 (within your limits)
+
+for ax in [ax_left, ax_right]:
     ax.grid(axis='y', linestyle='-', alpha=0.7)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(axis='y', length=0)
 
 for method in all_methods:
     df_method = global_df[global_df["variant"] == method]
@@ -278,7 +283,7 @@ for method in all_methods:
     t_solved.append(df_method["timeout"].iloc[0])
     n_solved.append(n_solved_tot / n_instances * 100.0)
     print(f"cactus plot: [{naming[method]}] {n_solved[-1]}% instances solved")
-    axs[0].step(t_solved, n_solved, where='post', color=colors[method], label=naming[method], linestyle=linestyles[method])
+    ax_left.step(t_solved, n_solved, where='post', color=colors[method], label=naming[method], linestyle=linestyles[method])
     # instances that were not solved
     df_unsolved = df_method[df_method["is_completed"] == False]
     # plot the best gap found at the end of the solving process
@@ -306,10 +311,10 @@ for method in all_methods:
             raise ValueError(f"There seems to be an error for computing the remaining gap for method {method}")
         gap_remaining = [0.0, 100.0]
         n_remaining = [100.0, 100.0]
-    axs[1].step(gap_remaining, n_remaining, where='post', color=colors[method], label=naming[method], linestyle=linestyles[method])
-axs[0].set_title("Instances solved")
+    ax_right.step(gap_remaining, n_remaining, where='post', color=colors[method], label=naming[method], linestyle=linestyles[method])
+ax_left.set_title("Instances solved")
 # Legend only for the first subplot, outside the axis, one row
-handles, labels = axs[0].get_legend_handles_labels()
+handles, labels = ax_left.get_legend_handles_labels()
 ncol = len(labels) if not compare_with_minizinc else 4
 
 # sort the legend by integral value
@@ -335,34 +340,37 @@ order = np.argsort(areas)[::-1]
 handles_sorted = [handles[i] for i in order]
 labels_sorted  = [labels[i]  for i in order]
 
-fig.legend(handles_sorted, labels_sorted, loc="lower center",
-           bbox_to_anchor=(0.5, -0.05), ncol=ncol, columnspacing=1.5)
-delta_axis = 2
-axs[0].set_ylabel("Number of instances [\%]")
-axs[0].set_xlabel("Runtime [s]")
-axs[0].set_xscale("log")
-axs[1].set_title("Gap on unsolved instances")
-axs[1].set_xlim([0 - delta_axis, 100 + delta_axis])
-#axs[1].set_ylim([0 - delta_axis, 100 + delta_axis])
-axs[0].set_ylim([0 - delta_axis, 100 + delta_axis])
-#axs[0].set_yticks([0, 25, 50, 75, 100])
-#axs[1].set_yticks([0, 25, 50, 75, 100])
-axs[1].set_xlabel("Gap to b.k.s. [\%]")
-# Hide y ticks/labels on the right subplot (keep only left)
-axs[1].tick_params(axis='y', left=False, labelleft=False)
-axs[1].spines['left'].set_visible(False)
+ax_legend.legend(
+    handles_sorted,
+    labels_sorted,
+    loc="center right",
+    ncol=1,
+    frameon=False,
+    handlelength=1.5,
+    borderaxespad=0.0
+)
 
-# Reserve bottom space (e.g. 15%) for the legend
-fig.set_constrained_layout_pads()
-fig.set_constrained_layout(True)
-if compare_with_minizinc:
-    fig.get_layout_engine().set(rect=(0, 0.2, 1, 1))   # left, bottom, right, top
-else:
-    fig.get_layout_engine().set(rect=(0, 0.1, 1, 1))   # left, bottom, right, top
+delta_axis = 2
+ax_left.set_ylabel("Number of instances [\%]")
+ax_left.set_xlabel("Runtime [s]")
+ax_left.set_xscale("log")
+ax_left.set_ylim([0 - delta_axis, 100 + delta_axis])
+#ax_left.yaxis.set_major_formatter(PercentFormatter())
+
+ax_right.set_title("Gap on unsolved instances")
+ax_right.set_xlim([0 - delta_axis, 100 + delta_axis])
+ax_right.set_xticks([0, 25, 50, 75, 100])
+#ax_right.xaxis.set_major_formatter(PercentFormatter())
+#axs[1].set_yticks([0, 25, 50, 75, 100])
+ax_right.set_xlabel("Gap to b.k.s. [\%]")
+# Hide y ticks/labels on the right subplot (keep only left)
+
+ax_right.tick_params(axis='y', left=False, labelleft=False)
+ax_right.spines['left'].set_visible(False)
 
 fig.set_figheight(cm_to_inch(5))
 fig.set_figwidth(cm_to_inch(14))
-#plt.tight_layout(rect=[0, 0.1, 1, 1])
+
 figname = f"plot/tmsp_cactus_plot{suffix}.pdf"
 plt.savefig(figname, bbox_inches="tight")
 print(f"figure saved to {figname}")
@@ -477,7 +485,11 @@ for method in sorted_methods:
     search_nodes_per_method[method] = nodes_list
 
 # 1 to 1 comparison for the runtime
-fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
+fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)),
+                        sharex=True,
+                        sharey=True,
+                        constrained_layout=True)
+
 for i in range(n_methods):
     for j in range(n_methods):
         method_i = sorted_methods[i]
@@ -504,34 +516,71 @@ for i in range(n_methods):
                 list_for_i_when_j_better.append(v_i)
                 list_for_j_when_j_better.append(v_j)
         # diagonal line
-        axs[(i, j)].plot([0.0, 900.0], [0.0, 900.0], '--', alpha=0.7, color="gray")
+        # axs[(i, j)].plot([0.0, 900.0], [0.0, 900.0], '--', alpha=0.6, color="gray", linewidth=1.5)
         # actual values
         axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
-                            s=markersize)
+                            s=markersize, zorder=3)
         axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
-                            s=markersize)
-        axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
+                            s=markersize, zorder=3)
+        axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize, zorder=3)
 
         if i == n_methods - 1:
             axs[(i, j)].set_xlabel(naming[method_j])
         if j == 0:
             axs[(i, j)].set_ylabel(naming[method_i])
 
+xmin_overal, xmax_overal = 0.05, 1500
+for ax in axs.flat:
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_box_aspect(1)
 
-fig.suptitle("Runtime of one method against another\n(only on instances solved by both)")
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    #xmin_overal = min(xmin_overal, xmin, ymin)
+    #xmax_overal = max(xmax_overal, xmax, ymax)
+
+    # ax.grid(True, zorder=0)
+    ax.grid(which="major", linewidth=1, zorder=0, alpha=0.6)
+    # ax.grid(which="minor", linewidth=0.3, alpha=0.3, zorder=0)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    ax.xaxis.set_major_locator(LogLocator(base=10, numticks=5))
+    ax.yaxis.set_major_locator(LogLocator(base=10, numticks=5))
+
+    #ax.set_xticks([1e3, 1e4, 1e5, 1e6, 1e7])
+    #ax.set_yticks([1e3, 1e4, 1e5, 1e6, 1e7])
+
+    ax.label_outer()
+    ax.tick_params(axis='y', length=0)
+    ax.tick_params(axis='x', length=0)
+for ax in axs.flat:
+    # diagonal line
+    ax.plot([xmin_overal, xmax_overal], [xmin_overal, xmax_overal], alpha=0.6, color="gray", linewidth=1.5, zorder=0, linestyle="dashed")
+
+axs[0, 0].set_xlim(xmin_overal, xmax_overal)
+axs[0, 0].set_ylim(xmin_overal, xmax_overal)
+
+
+fig.suptitle("Pairwise runtime comparison")
 
 legend_elements = [
-    Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
-    Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
-    Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
+    Line2D([0], [0], marker='o', alpha=alpha, linestyle='None', color=colors["Improve"], label="Improve"),
+    Line2D([0], [0], marker='o', alpha=alpha, linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
+    Line2D([0], [0], marker='o', alpha=alpha, linestyle='None', color=colors[similar_key], label=similar_key),
+    Line2D([0, 1], [0, 0], alpha=0.6, color="gray", linewidth=1.5, linestyle="dashed", label="Identical"),
 ]
 
 fig.legend(
     handles=legend_elements,
     loc="upper center",
-    bbox_to_anchor=(0.5, -0.01),   # centered below the figure
-    ncol=3,                       # one row
-    frameon=True,
+    bbox_to_anchor=(0.5, -0.01),  # centered below the figure
+    ncol=4,  # one row
+    frameon=False,
     handletextpad=0.6,
     columnspacing=1.2
 )
@@ -542,7 +591,10 @@ print(f"figure saved to {figname}")
 
 if not compare_with_minizinc:
     # 1 to 1 comparison for the number of nodes
-    fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)), constrained_layout=True)
+    fig, axs = plt.subplots(n_methods, n_methods, figsize=(cm_to_inch(14), cm_to_inch(14)),
+    sharex=True,
+    sharey=True,
+                            constrained_layout=True)
     for i in range(n_methods):
         for j in range(n_methods):
             method_i = sorted_methods[i]
@@ -570,38 +622,73 @@ if not compare_with_minizinc:
                     assert v_i > v_j
                     list_for_i_when_j_better.append(v_i)
                     list_for_j_when_j_better.append(v_j)
-            # diagonal line
-            axs[(i, j)].plot([0, max_val], [0, max_val], '--', alpha=0.7, color="gray")
             # actual values
 
             axs[(i, j)].scatter(list_for_j_when_i_better, list_for_i_when_i_better, color=colors["Improve"], alpha=alpha,
-                                s=markersize)
+                                s=markersize, zorder=3)
             axs[(i, j)].scatter(list_for_j_when_j_better, list_for_i_when_j_better, color=colors["Deteriorate"], alpha=alpha,
-                                s=markersize)
-            axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize)
+                                s=markersize, zorder=3)
+            axs[(i, j)].scatter(list_for_j_when_equal, list_for_i_when_equal, color=colors[similar_key], alpha=alpha, s=markersize, zorder=3)
 
             if i == n_methods - 1:
                 axs[(i, j)].set_xlabel(naming[method_j])
             if j == 0:
                 axs[(i, j)].set_ylabel(naming[method_i])
 
-    for ax in axs.ravel():
-        ax.xaxis.labelpad = 14   # increase gap label <-> ticks/offset
+    #for ax in axs.ravel():
+    #    ax.xaxis.labelpad = 14   # increase gap label <-> ticks/offset
 
-    fig.suptitle("Number of nodes to prove optimality\n(only on instances solved by both)")
+    xmin_overal, xmax_overal = float("inf"), float("-inf")
+    for ax in axs.flat:
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_box_aspect(1)
+
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        xmin_overal = min(xmin_overal, xmin, ymin)
+        xmax_overal = max(xmax_overal, xmax, ymax)
+
+        # ax.grid(True, zorder=0)
+        ax.grid(which="major", linewidth=1, zorder=0, alpha=0.6)
+        # ax.grid(which="minor", linewidth=0.3, alpha=0.3, zorder=0)
+
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+
+        ax.xaxis.set_major_locator(LogLocator(base=10, numticks=5))
+        ax.yaxis.set_major_locator(LogLocator(base=10, numticks=5))
+
+        #ax.set_xticks([1e3, 1e4, 1e5, 1e6, 1e7])
+        #ax.set_yticks([1e3, 1e4, 1e5, 1e6, 1e7])
+
+        ax.label_outer()
+        ax.tick_params(axis='y', length=0)
+        ax.tick_params(axis='x', length=0)
+    for ax in axs.flat:
+        # diagonal line
+        ax.plot([xmin_overal, xmax_overal], [xmin_overal, xmax_overal], alpha=0.6, color="gray", linewidth=1.5, zorder=0, linestyle="dashed")
+
+    axs[0, 0].set_xlim(xmin_overal, xmax_overal)
+    axs[0, 0].set_ylim(xmin_overal, xmax_overal)
+
+    fig.suptitle("Pairwise comparison of search tree nodes")
 
     legend_elements = [
-        Line2D([0], [0], marker='o', linestyle='None', color=colors["Improve"], label="Improve"),
-        Line2D([0], [0], marker='o', linestyle='None', color=colors["Deteriorate"], label="Deteriorate"),
-        Line2D([0], [0], marker='o', linestyle='None', color=colors[similar_key], label=similar_key),
+        Line2D([0], [0], marker='o', linestyle='None', alpha=alpha, color=colors["Improve"], label="Improve"),
+        Line2D([0], [0], marker='o', linestyle='None', alpha=alpha, color=colors["Deteriorate"], label="Deteriorate"),
+        Line2D([0], [0], marker='o', linestyle='None', alpha=alpha, color=colors[similar_key], label=similar_key),
+        Line2D([0, 1], [0, 0], alpha=0.6, color="gray", linewidth=1.5, linestyle="dashed", label="Identical"),
     ]
 
     fig.legend(
         handles=legend_elements,
         loc="upper center",
         bbox_to_anchor=(0.5, -0.01),   # centered below the figure
-        ncol=3,                       # one row
-        frameon=True,
+        ncol=4,                       # one row
+        frameon=False,
         handletextpad=0.6,
         columnspacing=1.2
     )
