@@ -349,7 +349,9 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
      * @return string representation of the members, ordered following the sequence
      * from {@code start()} to {@code end()}.
      */
-    String membersOrdered();
+    default String membersOrdered() {
+        return membersOrdered(" -> ");
+    }
 
     /**
      * Returns a string representation of the members, ordered following the sequence
@@ -359,7 +361,9 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
      * @return string representation of the members, ordered following the sequence
      * from {@code start()} to {@code end()}. The nodes are separated by the given delimiter.
      */
-    String membersOrdered(String join);
+    default String membersOrdered(String join) {
+        return membersOrdered(join, i -> true);
+    }
 
     /**
      * Returns a string representation of the members, ordered following the sequence
@@ -371,7 +375,19 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
      * @return string representation of the members, ordered following the sequence
      * from {@code start()} to {@code end()}. The nodes are separated by the given delimiter.
      */
-    String membersOrdered(String join, Predicate<Integer> filter);
+    default String membersOrdered(String join, Predicate<Integer> filter) {
+        StringJoiner joiner = new StringJoiner(join);
+        int current = start();
+        int end = end();
+        while (current != end) {
+            if (filter.test(current))
+                joiner.add(String.valueOf(current));
+            current = memberAfter(current);
+        }
+        if (filter.test(end))
+            joiner.add(String.valueOf(end));
+        return joiner.toString();
+    }
 
     /**
      * Exports the variable into a GraphViz format

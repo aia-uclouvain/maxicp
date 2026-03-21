@@ -443,6 +443,16 @@ public final class CPFactory {
     }
 
     /**
+     * A variable that is a view of {@code seqVar} in reverse order
+     *
+     * @param seqVar a variable
+     * @return a variable that is a view of {@code seqVar} in reverse order
+     */
+    public static CPSeqVar flip(CPSeqVar seqVar) {
+        return new CPSeqVarViewFlip(seqVar);
+    }
+
+    /**
      * A variable that is {@code x*b}.
      *
      * @param x a variable
