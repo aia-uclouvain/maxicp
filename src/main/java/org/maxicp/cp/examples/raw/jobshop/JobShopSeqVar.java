@@ -33,6 +33,7 @@ import static org.maxicp.modeling.Factory.min;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.*;
 import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.SequenceRank.sequenceRank;
 
 /**
  * The JobShop Problem.
@@ -112,10 +113,10 @@ public class JobShopSeqVar {
             CPIntervalVar[] intervals = machineIntervals[m];
             rankers[m] = rankBinary(seqVars[m],(pred, node) -> pred < intervals.length ? intervals[pred].endMin(): 0);
             //rankers[m] = rank(seqVars[m], pred -> pred < intervals.length ? intervals[pred].endMin(): 0);
-            CPSeqVar seqVar = seqVars[m];
         }
 
-        DFSearch dfs = CPFactory.makeDfs(cp, and(and(rankers),fixMakespan));
+        //DFSearch dfs = CPFactory.makeDfs(cp, and(and(rankers),fixMakespan));
+        DFSearch dfs = CPFactory.makeDfs(cp, and(sequenceRank(machineIntervals, seqVars),fixMakespan));
 
         long t0 = System.currentTimeMillis();
         dfs.onSolution(() -> {
