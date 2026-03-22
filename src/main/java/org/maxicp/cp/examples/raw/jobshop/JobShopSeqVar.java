@@ -15,18 +15,22 @@ import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.Factory.eq;
+import static org.maxicp.modeling.Factory.min;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.INSERTABLE;
 import static org.maxicp.search.Searches.*;
 import static org.maxicp.search.Searches.EMPTY;
 
@@ -57,6 +61,7 @@ public class JobShopSeqVar {
         for (int j = 0; j < nJobs; j++) {
             for (int m = 0; m < nMachines; m++) {
                 activities[j][m] = makeIntervalVar(cp, false, duration[j][m], duration[j][m]);
+                activities[j][m].setEndMax(instance.horizon);
             }
         }
 
@@ -105,7 +110,9 @@ public class JobShopSeqVar {
 
         for (int m = 0; m < nMachines; m++) {
             CPIntervalVar[] intervals = machineIntervals[m];
-            rankers[m] = rank(seqVars[m],pred -> pred < intervals.length ? intervals[pred].endMin(): 0);
+            rankers[m] = rankBinary(seqVars[m],(pred, node) -> pred < intervals.length ? intervals[pred].endMin(): 0);
+            //rankers[m] = rank(seqVars[m], pred -> pred < intervals.length ? intervals[pred].endMin(): 0);
+            CPSeqVar seqVar = seqVars[m];
         }
 
         DFSearch dfs = CPFactory.makeDfs(cp, and(and(rankers),fixMakespan));
@@ -118,6 +125,46 @@ public class JobShopSeqVar {
         System.out.format("Statistics: %s\n", stats);
     }
 
+    public static Supplier<Runnable[]> rankBinarySlack(CPSeqVar seqVar, CPIntervalVar[] intervals, CPIntVar makespan) {
+        return rankBinary(seqVar,(pred, node) -> {
+            int succ = seqVar.memberAfter(pred);
+            int tSucc = (succ >= intervals.length ? makespan.max() : intervals[succ].endMax());
+            int tPred = (pred >= intervals.length ? 0 : intervals[pred].startMin());
+            int slackBefore = intervals[node].endMax() - tPred;
+            int slackAfter = tSucc - intervals[node].startMin();
+            return - (slackAfter + slackBefore);
+        });
+    }
+
+    public static Supplier<Runnable[]> rankBinary(CPSeqVar seqVar, BiFunction<Integer, Integer, Integer> predNodeHeuristic) {
+        CPSolver cp =seqVar.getSolver();
+        int[] nodes = new int[seqVar.nNode()];
+        return () -> {
+            // select the non-inserted node with the fewest number of insertions (first fail)
+            int nInsertables = seqVar.fillNode(nodes, INSERTABLE);
+            if (nInsertables == 0) {
+                return EMPTY; // no node to insert -> solution found
+            }
+            int node = selectMin(nodes,nInsertables, n -> true, n -> seqVar.nInsert(n)).getAsInt();
+            int nInsert = seqVar.fillInsert(node, nodes);
+            int bestPred = 0;
+            int bestCost = Integer.MAX_VALUE;
+
+            // use the best insertion for the node or refute it
+            for (int j = 0; j < nInsert; j++) {
+                int pred = nodes[j]; // predecessor for the node
+                int cost = predNodeHeuristic.apply(pred, node);
+                if (cost < bestCost) {
+                    bestPred = pred;
+                    bestCost = cost;
+                }
+            }
+            int pred = bestPred;
+            int succ = seqVar.memberAfter(pred);
+            return branch(() -> cp.post(insert(seqVar, pred, node)), () -> cp.post(notBetween(seqVar, pred, node, succ)));
+        };
+    }
+
     public static Supplier<Runnable[]> rank(CPSeqVar seqVar, Function<Integer, Integer> predNodeHeuristic) {
         // check that all the nodes are required
         if (IntStream.range(0, seqVar.nNode()).anyMatch(n -> !seqVar.isNode(n,SeqStatus.REQUIRED))) {
@@ -126,8 +173,8 @@ public class JobShopSeqVar {
         CPSolver cp =seqVar.getSolver();
         int[] nodes = new int[seqVar.nNode()];
         return () -> {
-            // select the non-inserted node with the fewest number of insertions (first fail)
-            int nInsertables = seqVar.fillNode(nodes, SeqStatus.INSERTABLE);
+            // select the insertable node with the fewest number of insertions (first fail)
+            int nInsertables = seqVar.fillNode(nodes, INSERTABLE);
             if (nInsertables == 0) {
                 return EMPTY; // no node to insert -> solution found
             }
@@ -158,6 +205,7 @@ public class JobShopSeqVar {
         public int nMachines;
         public int[][] duration;
         public int[][] machine;
+        public int horizon;
 
         public JobShopInstance(String path) {
             try {
@@ -176,6 +224,7 @@ public class JobShopSeqVar {
                     for (int j = 0; j < nMachines; j++) {
                         machine[i][j] = Integer.parseInt(tokenizer.nextToken());
                         duration[i][j] = Integer.parseInt(tokenizer.nextToken());
+                        horizon += duration[i][j];
                     }
                 }
             } catch (IOException e) {
