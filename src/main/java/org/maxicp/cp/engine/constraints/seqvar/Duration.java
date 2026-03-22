@@ -28,9 +28,16 @@ public class Duration extends AbstractCPConstraint {
     private LeftToRightFiltering filtering;
 
     private int nMember;
-    private final int[] ordering;                  // used for fill operations over the nodes
+    private final int[] orderingForward;                  // used for fill operations over the nodes
+    private final int[] orderingBackward;                  // used for fill operations over the nodes
     private final int[] insertable;                  // used for fill operations over the nodes
+    private final int[] unexcluded;                  // used for fill operations over the nodes
     private final int[] inserts;                  // used for fill operations over the pred of nodes
+
+    private final int[] earliestPosition;
+    private final int[] latestPosition;
+    private final int[] earliestPositionBackward;
+    private final int[] latestPositionBackward;
 
     private final int[] startMin;
     private final int[] duration;
@@ -43,11 +50,17 @@ public class Duration extends AbstractCPConstraint {
         this.intervals = intervals;
         n = seqVar.nNode();
         thetaTree = new ThetaTree(n);
-        this.ordering = new int[n];
+        this.orderingForward = new int[n];
+        this.orderingBackward = new int[n];
         this.insertable = new int[n];
+        this.unexcluded = new int[n];
         this.inserts = new int[n];
         this.startMin = new int[n];
         this.duration = new int[n];
+        earliestPosition = new int[n];
+        latestPosition = new int[n];
+        earliestPositionBackward = new int[n];
+        latestPositionBackward = new int[n];
         filtering = new LeftToRightFiltering();
     }
 
@@ -65,35 +78,51 @@ public class Duration extends AbstractCPConstraint {
 
     @Override
     public void propagate() {
-        nMember = seqVar.fillNode(ordering, MEMBER_ORDERED);
-        // enforces into the intervals the precedences from the sequence due to the member nodes
-        updateTWForward();
-        updateTWBackward();
-        // filter insertions
-        filterInsertsAndPossiblyTW();
-        // filter startMin
-        int nUnexcluded = seqVar.fillNode(ordering, NOT_EXCLUDED);
-        for (int i = 0 ; i < nUnexcluded ; i++) {
-            int node = ordering[i];
-            startMin[node] = intervals[node].startMin();
-            duration[node] = intervals[node].lengthMin();
-        }
-        filtering.filter(seqVar, startMin, duration);
-        for (int i = 0 ; i < nUnexcluded ; i++) {
-            int node = ordering[i];
-            intervals[node].setStartMin(filtering.startMinNew[node]);
-        }
-        // filter endMax
-        nUnexcluded = seqVar.fillNode(ordering, NOT_EXCLUDED);
-        for (int i = 0 ; i < nUnexcluded ; i++) {
-            int node = ordering[i];
-            startMin[node] = - intervals[node].endMax();
-            duration[node] = intervals[node].lengthMin();
-        }
-        filtering.filter(flip, startMin, duration);
-        for (int i = 0 ; i < nUnexcluded ; i++) {
-            int node = ordering[i];
-            intervals[node].setEndMax(- filtering.startMinNew[node]);
+        newPropagate();
+    }
+
+    public void newPropagate() {
+        boolean changed = true;
+        while (changed) {
+            nMember = seqVar.fillNode(orderingForward, MEMBER_ORDERED);
+            for (int pos = 0 ; pos < nMember ; pos++) {
+                int node = orderingForward[pos];
+                orderingBackward[nMember - pos - 1] = node;
+                earliestPosition[node] = pos; // forward position
+                latestPosition[node] = nMember - pos - 1; // backward position
+            }
+            // enforces into the intervals the precedences from the sequence due to the member nodes
+            updateTWForward();
+            updateTWBackward();
+            // filter insertions
+            filterInsertsAndPossiblyTW();
+            changed = seqVar.nNode(MEMBER) != nMember;
+            if (!changed) {
+                // filter startMin
+                int nUnexcluded = seqVar.fillNode(unexcluded, NOT_EXCLUDED);
+                for (int i = 0; i < nUnexcluded; i++) {
+                    int node = unexcluded[i];
+                    startMin[node] = intervals[node].startMin();
+                    duration[node] = intervals[node].lengthMin();
+                }
+                boolean changedStartMin = filtering.filter(seqVar, startMin, duration, orderingForward, earliestPosition, latestPosition);
+                for (int i = 0; i < nUnexcluded; i++) {
+                    int node = unexcluded[i];
+                    intervals[node].setStartMin(filtering.startMinNew[node]);
+                }
+                // filter endMax
+                for (int i = 0; i < nUnexcluded; i++) {
+                    int node = unexcluded[i];
+                    startMin[node] = -intervals[node].endMax();
+                }
+                boolean changedEndMax = filtering.filter(flip, startMin, duration, orderingBackward, earliestPositionBackward, latestPositionBackward);
+                for (int i = 0; i < nUnexcluded; i++) {
+                    int node = unexcluded[i];
+                    int newEndMax = -filtering.startMinNew[node];
+                    intervals[node].setEndMax(newEndMax);
+                }
+                changed = changedEndMax || changedStartMin;
+            }
         }
     }
 
@@ -108,10 +137,6 @@ public class Duration extends AbstractCPConstraint {
         private final int[] nEarliestPredecessor;
         // earliestPredecessor[nEarliestPredecessor[pos]..nEarliestPredecessor[pos+1]] = insertable nodes having this position as first insertion
         private final int[] earliestPredecessor;
-        private final int[] position;
-
-        private final int[] earliestPosition;
-        private final int[] latestPosition;
 
         private final int[] startMinNew;
         private final Integer[] permEst, rankEst;
@@ -126,42 +151,9 @@ public class Duration extends AbstractCPConstraint {
             mandatoryPred = new int[n];
             nEarliestPredecessor = new int[n];
             earliestPredecessor = new int[n];
-            earliestPosition = new int[n];
-            latestPosition = new int[n];
-            position = new int[n];
         }
 
-        private void update(int i, int startMin) {
-            this.startMinNew[i] = startMin;
-        }
-
-        private void updatePositionMember(CPSeqVar seqVar, int[] startMin) {
-            nMember = seqVar.fillNode(ordering, MEMBER_ORDERED);
-            for (int pos = 0 ; pos < nMember ; pos++) {
-                int node = ordering[pos];
-                position[node] = pos;
-                update(node, startMin[node]);
-            }
-        }
-
-        private void updatePositionInsertable(CPSeqVar seqVar, int[] startMin) {
-            int nInsertable = seqVar.fillNode(insertable, INSERTABLE);
-            for (int i = 0 ; i < nInsertable ; i++) {
-                int node = insertable[i];
-                int nInsert = seqVar.fillInsert(node, inserts);
-                earliestPosition[node] = Integer.MAX_VALUE;
-                latestPosition[node] = Integer.MIN_VALUE;
-                for (int j = 0 ; j < nInsert ; j++) {
-                    int pred = inserts[j];
-                    int pos = position[pred];
-                    earliestPosition[node] = Math.min(earliestPosition[node], pos);
-                    latestPosition[node] = Math.max(latestPosition[node], pos + 1);
-                }
-                update(node, startMin[node]);
-            }
-        }
-
-        private void updateMandatoryPred() {
+        private void updateMandatoryPred(int[] latestPosition) {
             int nInsertableRequired = seqVar.fillNode(insertable, INSERTABLE_REQUIRED);
             for (int i = 0 ; i < nInsertableRequired ; i++)
                 permEst[i] = insertable[i];
@@ -183,7 +175,7 @@ public class Duration extends AbstractCPConstraint {
             }
         }
 
-        private void updateEarliestPred() {
+        private void updateEarliestPred(int[] earliestPosition) {
             int nInsertable = seqVar.fillNode(insertable, INSERTABLE);
             for (int i = 0 ; i < nInsertable ; i++)
                 permEst[i] = insertable[i];
@@ -205,15 +197,11 @@ public class Duration extends AbstractCPConstraint {
             }
         }
 
-        private void update(CPSeqVar seqVar, int[] startMin) {
-            // update the position of member nodes
-            updatePositionMember(seqVar, startMin);
-            // compute the earliest and latest position for the insertable required nodes
-            updatePositionInsertable(seqVar, startMin);
+        private void update(CPSeqVar seqVar, int[] startMin, int[] earliestPosition, int[] latestPosition) {
             // updates nMandatoryPred and mandatoryPred
-            updateMandatoryPred();
+            updateMandatoryPred(latestPosition);
             // updates nEarliestPredecessor and earliestPredecessor
-            updateEarliestPred();
+            updateEarliestPred(earliestPosition);
             // updates rankEst and permEst
             int nRequired = seqVar.fillNode(required, REQUIRED);
             for (int i = 0 ; i < nRequired ; i++)
@@ -235,11 +223,18 @@ public class Duration extends AbstractCPConstraint {
          * - if the interval is an insertable node, this takes into account all nodes coming before its first insertion
          *
          */
-        private void filter(CPSeqVar seqVar, int[] startMin, int[] duration) {
-            update(seqVar, startMin);
+        private boolean filter(CPSeqVar seqVar, int[] startMin, int[] duration, int[] ordering, int[] earliestPosition, int[] latestPosition) {
+            boolean changed = false;
+            update(seqVar, startMin, earliestPosition, latestPosition);
             thetaTree.reset();
             int start = seqVar.start();
+            startMinNew[start] = startMin[start];
             thetaTree.insert(rankEst[start], startMin[start], duration[start]);
+            for (int j = 0 ; j < nEarliestPredecessor[0] ; j++) {
+                int insertable = earliestPredecessor[j];
+                startMinNew[insertable] = Math.max(startMin[insertable], thetaTree.getEct());
+                changed = changed || startMinNew[insertable] != startMin[insertable];
+            }
             for (int pos = 1 ; pos < nMember ; pos++) {
                 int node = ordering[pos];
                 // add the required insertable nodes having this node as their latest successor
@@ -248,13 +243,16 @@ public class Duration extends AbstractCPConstraint {
                     thetaTree.insert(rankEst[mandatory], startMin[mandatory], duration[mandatory]);
                 }
                 startMinNew[node] = Math.max(startMin[node], thetaTree.getEct());
+                changed = changed || startMinNew[node] != startMin[node];
                 thetaTree.insert(rankEst[node], startMin[node], duration[node]);
                 // updates for insertable nodes having this node as their earliest predecessor
                 for (int j = nEarliestPredecessor[pos-1] ; j < nEarliestPredecessor[pos] ; j++) {
                     int insertable = earliestPredecessor[j];
                     startMinNew[insertable] = Math.max(startMin[insertable], thetaTree.getEct());
+                    changed = changed || startMinNew[insertable] != startMin[insertable];
                 }
             }
+            return changed;
         }
 
     }
@@ -262,13 +260,13 @@ public class Duration extends AbstractCPConstraint {
 
     /**
      * Updates the min start time for intervals corresponding to member nodes
-     * The array {@link Duration#ordering} must be filled with the nodes, in order of appearance.
+     * The array {@link Duration#orderingForward} must be filled with the nodes, in order of appearance.
      */
     private void updateTWForward() {
-        int current = ordering[0];
+        int current = orderingForward[0];
         int endMinPred = intervals[current].endMin();
         for (int i = 1 ; i < nMember ; i++) {
-            current = ordering[i];
+            current = orderingForward[i];
             intervals[current].setStartMin(endMinPred);
             endMinPred = intervals[current].endMin();
         }
@@ -276,13 +274,13 @@ public class Duration extends AbstractCPConstraint {
 
     /**
      * Updates the max end time for intervals corresponding to member nodes
-     * The array {@link Duration#ordering} must be filled with the nodes, in order of appearance.
+     * The array {@link Duration#orderingForward} must be filled with the nodes, in order of appearance.
      */
     private void updateTWBackward() {
-        int succ = ordering[nMember-1];
+        int succ = orderingForward[nMember-1];
         int startMaxSucc = intervals[succ].startMax();
         for (int i = nMember - 2 ; i >= 0 ; i--) {
-            int current = ordering[i];
+            int current = orderingForward[i];
             intervals[current].setEndMax(startMaxSucc);
             startMaxSucc = intervals[current].startMax();
         }
@@ -294,9 +292,9 @@ public class Duration extends AbstractCPConstraint {
      * - otherwise, filters only the insertions
      */
     private void filterInsertsAndPossiblyTW() {
-        int nInsertable = seqVar.fillNode(ordering, INSERTABLE);
+        int nInsertable = seqVar.fillNode(insertable, INSERTABLE);
         for (int i = 0 ; i < nInsertable ; i++) {
-            int node = ordering[i];
+            int node = insertable[i];
             filterInsertsAndPossiblyTW(node);
         }
     }
@@ -309,6 +307,10 @@ public class Duration extends AbstractCPConstraint {
         // update the insertions as well as the time window
         int newStartMin = Integer.MAX_VALUE;
         int newEndMax = Integer.MIN_VALUE;
+        earliestPosition[node] = Integer.MAX_VALUE;
+        latestPosition[node] = Integer.MIN_VALUE;
+        earliestPositionBackward[node] = Integer.MAX_VALUE;
+        latestPositionBackward[node] = Integer.MIN_VALUE;
         for (int i = 0; i < nPred; i++) {
             int pred = inserts[i];
             if (!filterInsert(pred, node)) {
@@ -318,6 +320,14 @@ public class Duration extends AbstractCPConstraint {
                 int succ = seqVar.memberAfter(pred);
                 int lct = intervals[succ].startMax(); // end max candidate for the node
                 newEndMax = Math.max(newEndMax, lct);
+                // position in forward direction
+                int pos = earliestPosition[pred];
+                earliestPosition[node] = Math.min(earliestPosition[node], pos);
+                latestPosition[node] = Math.max(latestPosition[node], pos + 1);
+                // position in backward direction
+                pos = latestPosition[succ];
+                earliestPositionBackward[node] = Math.min(earliestPositionBackward[node], pos);
+                latestPositionBackward[node] = Math.max(latestPositionBackward[node], pos + 1);
             }
         }
         if (!seqVar.isNode(node, MEMBER)) {
