@@ -31,7 +31,7 @@ public class RCPSP {
 
     public static void main(String[] args) {
         // Reading the data
-        InputReader reader = new InputReader("data/RCPSP/j30_1_1.rcp");
+            InputReader reader = new InputReader("data/RCPSP/j90_1_1.rcp");
 
         int nActivities = reader.getInt();
         int nResources = reader.getInt();
@@ -90,7 +90,7 @@ public class RCPSP {
         for (int i = 0; i < nActivities; i++) {
             for (int k : successors[i]) {
                 // activity i must precede activity k
-                cp.post(new EndBeforeStart(tasks[i], tasks[k]));
+                cp.post(endBeforeStart(tasks[i], tasks[k]));
             }
         }
 
@@ -98,11 +98,7 @@ public class RCPSP {
 
         Objective obj = cp.minimize(makespan);
 
-        Supplier<Runnable[]> fixMakespan = () -> makespan.isFixed() ? EMPTY : new Runnable[]{() -> {
-            cp.post(CPFactory.eq(makespan, makespan.min()));
-        }};
-
-        DFSearch dfs = CPFactory.makeDfs(cp, and(setTimes(tasks, i -> i), fixMakespan));
+        DFSearch dfs = CPFactory.makeDfs(cp, fds(tasks));
 
         dfs.onSolution(() -> {
             System.out.println("makespan:" + makespan);

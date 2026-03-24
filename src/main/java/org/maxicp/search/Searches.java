@@ -448,7 +448,7 @@ public final class Searches {
      * In International conference on principles and practice of constraint programming (pp. 140-148).
      * Springer.
      *
-     * @param variableSelector returns the next variable to bind (fall back euristic)
+     * @param variableSelector returns the next variable to bind (fall back heuristic)
      * @param valueSelector    given a variable, returns the value to which
      *                         it must be assigned on the left branch (and excluded on the right)
      */
@@ -707,6 +707,10 @@ public final class Searches {
 
     public static Supplier<Runnable[]> setTimes(IntervalVar[] intervals) {
         return new SetTimesModeling(intervals);
+    }
+
+    public static Supplier<Runnable[]> fds(CPIntervalVar[] intervals) {
+        return new FDS(intervals);
     }
 
     public static Runnable[] branchOnStartMin(IntervalVar var) {
