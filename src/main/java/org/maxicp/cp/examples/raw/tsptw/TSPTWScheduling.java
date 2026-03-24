@@ -87,6 +87,7 @@ public class TSPTWScheduling {
         // ===================== search =====================
 
         // choose the nodes in the order of the tour, trying first the nodes with the least positions
+
         DFSearch dfs = makeDfs(cp,heuristicNary(staticOrderVariableSelector(taskInPosition),
                 i -> positionOfNode[i].size()));
 

@@ -86,11 +86,18 @@ public class JobShop {
 
         CPIntervalVar[] allActivities = flatten(activities);
 
+        DFSearch dfs = CPFactory.makeDfs(cp,
+                and(new FDS(allActivities),
+                        () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
+                ));
 
+        /*
         DFSearch dfs = CPFactory.makeDfs(cp,
                 and(Rank.rank(toRank),
                         () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
                 ));
+
+         */
 
 
         //DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
