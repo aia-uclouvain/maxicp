@@ -63,6 +63,15 @@ jobs:
           fi
           
 
+      - name: Save coverage report to tmp
+        run: |
+          if [ -d target/site/jacoco ]; then
+            cp -r target/site/jacoco /tmp/coverage
+          else
+            mkdir -p /tmp/coverage
+            echo "<html><body>No coverage report generated.</body></html>" > /tmp/coverage/index.html
+          fi
+
       - name: Generate the badge SVG using Shields.io
         run: |
           # Ensure COVERAGE is extracted and is a valid number
@@ -101,7 +110,7 @@ jobs:
         with:
           ref: gh-pages
 
-      - name: Commit and Push Badge
+      - name: Commit and Push Badge and Coverage Report
         run: |
           
           if [ ! -d "badges" ]; then
@@ -113,20 +122,19 @@ jobs:
           
           mv /tmp/coverbadge.svg badges/.
           
-          cd badges
-          ls -lah  # Debugging step to confirm files exist
+          # Copy the coverage HTML report
+          rm -rf coverage
+          cp -r /tmp/coverage .
+          
+          ls -lah badges/  # Debugging step to confirm files exist
+          ls -lah coverage/ # Debugging step to confirm coverage files exist
           
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
-          # Ensure the badge file exists before adding it
-          if [ -f "coverbadge.svg" ]; then
-            git add coverbadge.svg
-            git commit -m "Add/Update badge" || echo "No changes to commit"
+          git add badges/coverbadge.svg
+          git add coverage/
+          git commit -m "Add/Update badge and coverage report" || echo "No changes to commit"
           
-            # Push only if there were actual changes
-            git push origin gh-pages
-          else
-            echo "Badge file not found! Skipping commit and push."
-          fi
-
+          # Force push to avoid conflicts with other workflows updating gh-pages
+          git push --force origin gh-pages
