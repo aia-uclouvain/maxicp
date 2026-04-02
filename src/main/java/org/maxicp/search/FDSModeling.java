@@ -5,16 +5,23 @@
 
 package org.maxicp.search;
 
-import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.ModelProxy;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.*;
 import java.util.function.Supplier;
 
+import static org.maxicp.modeling.Factory.*;
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
+
 /**
- * Failure-Directed Search (FDS) for scheduling problems with interval variables.
+ * Failure-Directed Search (FDS) for scheduling problems with modeling-layer interval variables.
+ * <p>
+ * This is the modeling-layer adaptation of {@link FDS}, working with {@link IntervalVar}
+ * and {@link ModelProxy} instead of {@code CPIntervalVar} and {@code CPSolver}.
  * <p>
  * This search algorithm is designed for a broad class of scheduling problems.
  * Instead of guiding the search towards possible solutions, FDS drives the search
@@ -28,17 +35,13 @@ import java.util.function.Supplier;
  *   <li><b>Length choice:</b> whether length(v) &le; l or length(v) &gt; l (domain splitting).</li>
  * </ul>
  * <p>
- * The choices are generated lazily. At each branching point, the best unfixed
- * choice is selected based on FDS ratings. Ratings are updated with exponential decay
- * after each branch is explored, with emphasis on failures (localRating = 0 on failure).
- * <p>
  * Reference: Vilím, P., Laborie, P., Shaw, P. (2015).
  * Failure-directed Search for Constraint-based Scheduling.
  * CPAIOR 2015.
  *
  * @author pschaus
  */
-public class FDS implements Supplier<Runnable[]> {
+public class FDSModeling implements Supplier<Runnable[]> {
 
     // ------- Choice types -------
 
@@ -78,7 +81,7 @@ public class FDS implements Supplier<Runnable[]> {
         /**
          * Check if this choice is resolved (already decided by propagation).
          */
-        boolean isResolved(CPIntervalVar var) {
+        boolean isResolved(IntervalVar var) {
             return switch (type) {
                 case PRESENCE -> var.isPresent() || var.isAbsent();
                 case START -> {
@@ -102,7 +105,7 @@ public class FDS implements Supplier<Runnable[]> {
          * Check if this choice is waiting (cannot be applied yet).
          * Start and length choices wait until the variable is present.
          */
-        boolean isWaiting(CPIntervalVar var) {
+        boolean isWaiting(IntervalVar var) {
             return switch (type) {
                 case PRESENCE -> false;
                 case START, LENGTH -> var.isOptional();
@@ -112,25 +115,23 @@ public class FDS implements Supplier<Runnable[]> {
         /**
          * Apply the positive branch.
          */
-        void applyPositive(CPIntervalVar var, CPSolver cp) {
+        void applyPositive(IntervalVar var, ModelProxy model) {
             switch (type) {
-                case PRESENCE -> var.setPresent();
-                case START -> var.setStartMax(splitValue);
-                case LENGTH -> var.setLengthMax(splitValue);
+                case PRESENCE -> model.add(present(var));
+                case START -> model.add(startBefore(var, splitValue));   // start <= splitValue
+                case LENGTH -> model.add(le(length(var), splitValue));   // length <= splitValue
             }
-            cp.fixPoint();
         }
 
         /**
          * Apply the negative branch.
          */
-        void applyNegative(CPIntervalVar var, CPSolver cp) {
+        void applyNegative(IntervalVar var, ModelProxy model) {
             switch (type) {
-                case PRESENCE -> var.setAbsent();
-                case START -> var.setStartMin(splitValue + 1);
-                case LENGTH -> var.setLengthMin(splitValue + 1);
+                case PRESENCE -> model.add(not(present(var)));
+                case START -> model.add(startAfter(var, splitValue + 1));    // start > splitValue
+                case LENGTH -> model.add(lt(splitValue, length(var)));   // splitValue < length, i.e. length > splitValue
             }
-            cp.fixPoint();
         }
 
         @Override
@@ -145,8 +146,8 @@ public class FDS implements Supplier<Runnable[]> {
 
     // ------- FDS fields -------
 
-    private final CPIntervalVar[] intervals;
-    private final CPSolver cp;
+    private final IntervalVar[] intervals;
+    private final ModelProxy model;
 
     /** Decay factor for rating updates (typical values: 0.9 to 0.99). */
     private final double alpha;
@@ -166,7 +167,7 @@ public class FDS implements Supplier<Runnable[]> {
      *
      * @param intervals the interval variables to decide
      */
-    public FDS(CPIntervalVar... intervals) {
+    public FDSModeling(IntervalVar... intervals) {
         this(0.95, intervals);
     }
 
@@ -176,10 +177,10 @@ public class FDS implements Supplier<Runnable[]> {
      * @param alpha     decay factor for rating updates (typical: 0.9 to 0.99)
      * @param intervals the interval variables to decide
      */
-    public FDS(double alpha, CPIntervalVar... intervals) {
+    public FDSModeling(double alpha, IntervalVar... intervals) {
         this.intervals = intervals;
-        this.cp = intervals[0].getSolver();
-        this.sm = cp.getStateManager();
+        this.model = intervals[0].getModelProxy();
+        this.sm = model.getConcreteModel().getStateManager();
         this.alpha = alpha;
         this.baseLevel = sm.getLevel();
         this.avgRatingByDepth = new HashMap<>();
@@ -205,7 +206,7 @@ public class FDS implements Supplier<Runnable[]> {
      */
     private void generateInitialChoices() {
         for (int i = 0; i < intervals.length; i++) {
-            CPIntervalVar var = intervals[i];
+            IntervalVar var = intervals[i];
 
             // Presence choice for optional variables
             if (var.isOptional()) {
@@ -287,7 +288,7 @@ public class FDS implements Supplier<Runnable[]> {
     /**
      * Estimate domain size for an interval variable.
      */
-    private long domainSize(CPIntervalVar var) {
+    private long domainSize(IntervalVar var) {
         if (var.isAbsent()) return 1;
         long startRange = Math.max(1, (long) var.startMax() - var.startMin() + 1);
         long lengthRange = Math.max(1, (long) var.lengthMax() - var.lengthMin() + 1);
@@ -344,7 +345,7 @@ public class FDS implements Supplier<Runnable[]> {
      * Check if all interval variables are fixed.
      */
     private boolean allFixed() {
-        for (CPIntervalVar var : intervals) {
+        for (IntervalVar var : intervals) {
             if (!var.isFixed()) return false;
         }
         return true;
@@ -368,7 +369,7 @@ public class FDS implements Supplier<Runnable[]> {
     @Override
     public Runnable[] get() {
         if (allFixed()) {
-            return Searches.EMPTY;
+            return EMPTY;
         }
 
         // Pick: find the best applicable choice (lowest rating)
@@ -376,7 +377,7 @@ public class FDS implements Supplier<Runnable[]> {
         double bestRating = Double.MAX_VALUE;
 
         for (Choice c : allChoices) {
-            CPIntervalVar var = intervals[c.varIndex];
+            IntervalVar var = intervals[c.varIndex];
             if (c.isWaiting(var) || c.isResolved(var)) {
                 continue;
             }
@@ -396,23 +397,22 @@ public class FDS implements Supplier<Runnable[]> {
                     return get(); // retry with newly generated choices
                 }
             }
-            return Searches.EMPTY;
+            return EMPTY;
         }
 
         final Choice chosen = bestChoice;
-        final CPIntervalVar var = intervals[chosen.varIndex];
+        final IntervalVar var = intervals[chosen.varIndex];
 
         // Determine which branch to explore first (better rating = lower value → heads into conflict)
         boolean positiveFirst = chosen.ratingPos <= chosen.ratingNeg;
 
         if (positiveFirst) {
-
-            return Searches.branch(
+            return branch(
                     makeBranch(chosen, var, true),
                     makeBranch(chosen, var, false)
             );
         } else {
-            return Searches.branch(
+            return branch(
                     makeBranch(chosen, var, false),
                     makeBranch(chosen, var, true)
             );
@@ -428,14 +428,14 @@ public class FDS implements Supplier<Runnable[]> {
      * @param isPositive true for positive branch, false for negative
      * @return a Runnable that applies the branch
      */
-    private Runnable makeBranch(Choice choice, CPIntervalVar var, boolean isPositive) {
+    private Runnable makeBranch(Choice choice, IntervalVar var, boolean isPositive) {
         return () -> {
             long[] domBefore = snapshotDomainSizes();
             try {
                 if (isPositive) {
-                    choice.applyPositive(var, cp);
+                    choice.applyPositive(var, model);
                 } else {
-                    choice.applyNegative(var, cp);
+                    choice.applyNegative(var, model);
                 }
             } catch (InconsistencyException e) {
                 updateRating(choice, isPositive, true, 0);
@@ -454,7 +454,7 @@ public class FDS implements Supplier<Runnable[]> {
      */
     private void generateAdditionalChoices() {
         for (int i = 0; i < intervals.length; i++) {
-            CPIntervalVar var = intervals[i];
+            IntervalVar var = intervals[i];
             if (var.isFixed() || var.isAbsent()) continue;
 
             // Presence choice for still-optional variables

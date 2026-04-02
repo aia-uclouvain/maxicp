@@ -10,13 +10,30 @@ package org.maxicp.cp.modeling;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.CPSolverTest;
+import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
+import org.maxicp.cp.engine.constraints.scheduling.CPFlatCumulFunction;
+import org.maxicp.cp.engine.constraints.scheduling.CPPlusCumulFunction;
+import org.maxicp.cp.engine.constraints.scheduling.CPPulseCumulFunction;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.algebra.scheduling.CumulFunction;
+import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.Factory.*;
+import static org.maxicp.search.Searches.*;
 
 public class CumulFunctionTest extends CPSolverTest {
 
@@ -38,6 +55,104 @@ public class CumulFunctionTest extends CPSolverTest {
         ConcreteCPModel cp = model.cpInstantiate();
 
         Assertions.assertEquals(2, start2.min());
+    }
+
+    @Test
+    public void testSameBehaviorRawAndModeling() {
+        // Small cumulative scheduling problem:
+        // 5 activities with fixed durations, one resource with capacity 3,
+        // precedences: 0 -> 2, 1 -> 3
+
+        int nActivities = 5;
+        int[] duration = {2, 3, 2, 1, 4};
+        int[] demand = {2, 1, 3, 2, 1};
+        int capacity = 3;
+        int[][] successors = {{2}, {3}, {}, {}, {}}; // 0->2, 1->3
+
+        // ---- Raw model ----
+        SearchStatistics rawStats;
+        List<Integer> rawSolutions = new ArrayList<>();
+        {
+            CPSolver cp = makeSolver();
+            CPIntervalVar[] tasks = makeIntervalVarArray(cp, nActivities);
+            for (int i = 0; i < nActivities; i++) {
+                tasks[i].setLength(duration[i]);
+                tasks[i].setPresent();
+            }
+
+            CPCumulFunction resource = new CPFlatCumulFunction();
+            for (int i = 0; i < nActivities; i++) {
+                if (demand[i] > 0) {
+                    resource = new CPPlusCumulFunction(resource, new CPPulseCumulFunction(tasks[i], demand[i]));
+                }
+            }
+            cp.post(CPFactory.le(resource, capacity));
+
+            for (int i = 0; i < nActivities; i++) {
+                for (int k : successors[i]) {
+                    cp.post(CPFactory.endBeforeStart(tasks[i], tasks[k]));
+                }
+            }
+
+            CPIntVar makespan = CPFactory.makespan(tasks);
+            org.maxicp.search.Objective rawObj = cp.minimize(makespan);
+
+            DFSearch dfs = CPFactory.makeDfs(cp, fds(tasks));
+            dfs.onSolution(() -> rawSolutions.add(makespan.min()));
+            rawStats = dfs.optimize(rawObj);
+        }
+
+
+
+        // ---- Modeling layer ----
+        SearchStatistics modelingStats;
+        List<Integer> modelingSolutions = new ArrayList<>();
+        {
+            ModelDispatcher model = Factory.makeModelDispatcher();
+            IntervalVar[] tasks = model.intervalVarArray(nActivities, true);
+            for (int i = 0; i < nActivities; i++) {
+                model.add(Factory.length(tasks[i], duration[i]));
+            }
+
+            CumulFunction resource = Factory.flat();
+            for (int i = 0; i < nActivities; i++) {
+                if (demand[i] > 0) {
+                    resource = sum(resource, pulse(tasks[i], demand[i]));
+                }
+            }
+            model.add(Factory.le(resource, capacity));
+
+            for (int i = 0; i < nActivities; i++) {
+                for (int k : successors[i]) {
+                    model.add(endBeforeStart(tasks[i], tasks[k]));
+                }
+            }
+
+            IntExpression makespan = max(java.util.Arrays.stream(tasks)
+                    .map(task -> endOr(task, 0)).toArray(IntExpression[]::new));
+            Objective obj = minimize(makespan);
+
+            modelingStats = model.runCP((cp) -> {
+                DFSearch search = cp.dfSearch(fds(tasks));
+                search.onSolution(() -> modelingSolutions.add(makespan.min()));
+                return search.optimize(obj);
+            });
+        }
+
+        // Compare results
+        Assertions.assertFalse(rawSolutions.isEmpty(), "Raw model should find at least one solution");
+        Assertions.assertEquals(rawSolutions.size(), modelingSolutions.size(),
+                "Same number of improving solutions");
+        // Compare best (last) makespan found
+        Assertions.assertEquals(rawSolutions.get(rawSolutions.size() - 1),
+                modelingSolutions.get(modelingSolutions.size() - 1),
+                "Same optimal makespan");
+        // Compare number of backtracks (failures)
+        Assertions.assertEquals(rawStats.numberOfFailures(), modelingStats.numberOfFailures(),
+                "Same number of failures/backtracks");
+        Assertions.assertEquals(rawStats.numberOfNodes(), modelingStats.numberOfNodes(),
+                "Same number of nodes");
+
     }
 
 

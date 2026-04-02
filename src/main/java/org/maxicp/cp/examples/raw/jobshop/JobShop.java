@@ -86,21 +86,13 @@ public class JobShop {
 
         CPIntervalVar[] allActivities = flatten(activities);
 
+
         DFSearch dfs = CPFactory.makeDfs(cp,
-                and(new FDS(allActivities),
+                and(new Rank(toRank),
                         () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
                 ));
 
-        /*
-        DFSearch dfs = CPFactory.makeDfs(cp,
-                and(Rank.rank(toRank),
-                        () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
-                ));
 
-         */
-
-
-        //DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
 
         dfs.onSolution(() -> {
             System.out.println("=========================>makespan:" + makespan);

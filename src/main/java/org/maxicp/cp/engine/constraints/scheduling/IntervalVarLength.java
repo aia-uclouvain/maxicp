@@ -21,9 +21,6 @@ public class IntervalVarLength extends AbstractCPConstraint {
 
     public IntervalVarLength(CPIntervalVar var, CPIntVar length) {
         super(var.getSolver());
-        if (!var.isPresent()) {
-            throw new IllegalArgumentException("interval var must be present:" + var);
-        }
         this.var = var;
         this.length = length;
     }

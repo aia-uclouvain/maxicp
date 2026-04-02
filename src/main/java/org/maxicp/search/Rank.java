@@ -20,12 +20,7 @@ import java.util.function.Supplier;
  * Rank Branching
  * @author Pierre Schaus
  */
-public class Rank {
-
-    public static Supplier<Runnable[]> rank(CPIntervalVar[][] intervals) {
-        Rank rank = new Rank(intervals);
-        return rank::alternatives_;
-    }
+public class Rank implements Supplier<Runnable[]> {
 
     public static Supplier<Runnable[]> rank(CPIntervalVar[] intervals) {
         Ranker ranker = new Ranker(intervals);
@@ -48,8 +43,12 @@ public class Rank {
         }
     }
 
+    public Rank(CPIntervalVar[] intervals) {
+        this(new CPIntervalVar[][] {intervals});
+    }
 
-    public Runnable[] alternatives_() {
+    @Override
+    public Runnable[] get() {
         if (currentRanker.value() == -1 || rankers[currentRanker.value()].isRanked()) {
             // need to find a new ranked
             int bestRankerId = -1;
@@ -79,7 +78,7 @@ public class Rank {
         }
     }
 
-    public Runnable[] alternatives() {
+    public Runnable[] get_() {
         int [] notRankedIterator = new int[notRanked.size()];
         int nNotRanked = notRanked.fillArray(notRankedIterator);
         // find the ranker with the least slack
