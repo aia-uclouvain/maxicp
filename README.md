@@ -2,7 +2,7 @@
 
 ![Javadoc](https://github.com/aia-uclouvain/maxicp/actions/workflows/javadoc.yml/badge.svg)
 ![Userguide](https://github.com/aia-uclouvain/maxicp/actions/workflows/userguide.yml/badge.svg)
-![Coverage](https://raw.githubusercontent.com/aia-uclouvain/maxicp/refs/heads/gh-pages/badges/coverbadge.svg)
+[![Coverage](https://raw.githubusercontent.com/aia-uclouvain/maxicp/refs/heads/gh-pages/badges/coverbadge.svg)](https://aia-uclouvain.github.io/maxicp/coverage/index.html)
 
 **MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
 for solving scheduling and vehicle routing problems.

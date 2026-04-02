@@ -64,4 +64,4 @@ jobs:
 
       - name: Push changes to gh-pages branch
         run: |
-          git push origin gh-pages
+          git push --force origin gh-pages
