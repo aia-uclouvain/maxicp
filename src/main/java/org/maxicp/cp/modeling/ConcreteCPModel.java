@@ -79,6 +79,13 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     /**
+     * Post to enforce that the variable is true
+     */
+    private void post(CPBoolVar b) {
+        solver.post(b);
+    }
+
+    /**
      * Calls the fixpoint if if is not disabled
      */
     private void fixpoint() {
@@ -379,22 +386,27 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     public CPIntervalVar getCPVar(IntervalExpression v) {
-        if (v instanceof CPIntervalVar cpv)
+        if (v instanceof CPIntervalVar cpv) {
             return cpv;
-
+        }
         CPIntervalVar cached = intervalExprMapping.get(v);
-        if (cached != null)
+        if (cached != null) {
             return cached;
+        }
+
         CPIntervalVar newVar = switch (v) {
             case IntervalVarImpl iv -> {
-                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.isOptional(), iv.lengthMin(), iv.lengthMax());
-                intervalVar.setStartMin(iv.startMin());
-                intervalVar.setStartMax(iv.startMax());
-                intervalVar.setEndMin(iv.endMin());
-                intervalVar.setEndMax(iv.endMax());
+                iv.defaultLengthMin();
+                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.defaultIsOptional(), iv.defaultLengthMin(), iv.defaultLengthMax());
+                intervalVar.setStartMin(iv.defaultStartMin());
+                intervalVar.setStartMax(iv.defaultStartMax());
+                intervalVar.setEndMin(iv.defaultEndMin());
+                intervalVar.setEndMax(iv.defaultEndMax());
                 yield intervalVar;
             }
-            default -> throw new NotImplementedException("Unknown var type %s".formatted(v.getClass()));
+            default -> {
+                throw new NotImplementedException("Unknown var type %s".formatted(v.getClass()));
+            }
         };
         intervalExprMapping.put(v, newVar);
         return newVar;
@@ -551,6 +563,10 @@ public class ConcreteCPModel implements ConcreteModel {
                     instantiateBoolExpression(e);
                 }
             }
+            case Not e -> {
+                CPBoolVar b = getCPVar(e.a());
+                post(CPFactory.not(b));
+            }
             case NotEq e -> post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));
             case LessOrEq e -> post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));
             case GreaterOrEq e ->
@@ -574,6 +590,9 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case StartAfter s -> {
                 post(new org.maxicp.cp.engine.constraints.scheduling.StartAfter(getCPVar(s.interval()), getCPVar(s.value())));
+            }
+            case StartBefore s -> {
+                post(new org.maxicp.cp.engine.constraints.scheduling.StartBefore(getCPVar(s.interval()), getCPVar(s.value())));
             }
             case org.maxicp.modeling.algebra.bool.Present p -> {
                 getCPVar(p.interval().status()).fix(true);

@@ -46,6 +46,30 @@ public class IntervalVarTest extends CPSolverTest {
         Assertions.assertEquals(3,end.max());
     }
 
+    @Test
+    public void testStartEndLengthInterval() {
+        ModelDispatcher model = makeModelDispatcher();
+
+        IntervalVar interval = model.intervalVar(false);
+
+        model.add(present(interval));
+        model.add(eq(length(interval),2));
+        model.add(eq(start(interval),0));
+
+        ConcreteCPModel cp = model.cpInstantiate();
+
+
+        Assertions.assertTrue(interval.isPresent());
+        Assertions.assertEquals(2,interval.lengthMin());
+        Assertions.assertEquals(2,interval.lengthMax());
+        Assertions.assertEquals(0,interval.startMin());
+        Assertions.assertEquals(0,interval.startMax());
+        Assertions.assertEquals(2,interval.endMin());
+        Assertions.assertEquals(2,interval.endMax());
+
+
+    }
+
 
     @Test
     public void testLengthEqual() {
@@ -103,5 +127,63 @@ public class IntervalVarTest extends CPSolverTest {
         Assertions.assertEquals(16,stats.numberOfSolutions());
     }
 
+    @Test
+    public void testBranchingConstraints() {
+        ModelDispatcher model = makeModelDispatcher();
+        IntervalVar var = model.intervalVar(0, 10, 5, false);
+        int splitValue = 5;
+
+        // Test present(var)
+        model.add(present(var));
+        ConcreteCPModel cp1 = model.cpInstantiate();
+        Assertions.assertFalse(var.isOptional());
+        Assertions.assertTrue(var.isPresent());
+
+        // Test startBefore(var, splitValue)
+        // start(var) < split
+        model.add(startBefore(var, splitValue));
+        ConcreteCPModel cp2 = model.cpInstantiate();
+        Assertions.assertTrue(var.startMax() <= splitValue);
+
+        // Test le(length(var), splitValue)
+        // len(var) <= split
+        model.add(le(length(var), splitValue));
+        ConcreteCPModel cp3 = model.cpInstantiate();
+        Assertions.assertTrue(var.lengthMax() <= splitValue);
+
+
+        // Test startAfter(var, splitValue)
+        // start(var) > split
+        model.add(startAfter(var, splitValue));
+        ConcreteCPModel cp5 = model.cpInstantiate();
+        Assertions.assertTrue(var.startMin() >= splitValue);
+
+    }
+
+    @Test
+    public void testIsAbsent() {
+        ModelDispatcher model = makeModelDispatcher();
+        IntervalVar var = model.intervalVar(0, 10, 5, false);
+        Assertions.assertTrue(!var.isPresent());
+        Assertions.assertTrue(var.isOptional());
+        // Test present(var)
+        model.add(not(present(var)));
+        ConcreteCPModel cp1 = model.cpInstantiate();
+        Assertions.assertFalse(var.isPresent());
+        Assertions.assertFalse(var.isOptional());
+
+    }
+
+
+    @Test
+    public void testStartAfterBefore() {
+        ModelDispatcher model = makeModelDispatcher();
+        IntervalVar var = model.intervalVar(0, 10, 5, true);
+        model.add(startAfter(var, 5));
+        ConcreteCPModel cp1 = model.cpInstantiate();
+
+
+
+    }
 
 }
