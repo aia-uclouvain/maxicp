@@ -11,6 +11,7 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
+import org.maxicp.cp.engine.constraints.scheduling.PrecedenceGraph;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
@@ -23,7 +24,10 @@ import java.util.Arrays;
 import java.util.StringTokenizer;
 
 /**
- * The JobShop Problem.
+ * The JobShop Problem modeled with a {@link PrecedenceGraph}.
+ * <p>
+ * A single precedence graph handles both job-internal precedences and
+ * machine-ordering decisions (via {@link Rank} branching).
  * <a href="https://en.wikipedia.org/wiki/Job_shop_scheduling">Wikipedia.</a>
  *
  * @author Pierre Schaus
@@ -44,39 +48,51 @@ public class JobShop {
 
         CPSolver cp = CPFactory.makeSolver();
 
-        // create activities
+        // Create activities: activities[j][o] is job j, operation o
         CPIntervalVar[][] activities = new CPIntervalVar[nJobs][nMachines];
         for (int j = 0; j < nJobs; j++) {
-            for (int m = 0; m < nMachines; m++) {
-                activities[j][m] = makeIntervalVar(cp, false, duration[j][m], duration[j][m]);
+            for (int o = 0; o < nMachines; o++) {
+                activities[j][o] = makeIntervalVar(cp, false, duration[j][o], duration[j][o]);
             }
         }
 
-        // precedence constraints on each job
+        // Flatten all activities into a single array (global index = j * nMachines + o)
+        CPIntervalVar[] allActivities = flatten(activities);
+
+        // Single precedence graph over all activities
+        PrecedenceGraph graph = new PrecedenceGraph(allActivities);
+        // Disable O(n²) detectable-precedence detection — NoOverlap handles machine disjunctions
+        graph.setDetectPrecedences(false);
+        cp.post(graph);
+
+        // Job precedences: operations within each job must be sequential
         for (int j = 0; j < nJobs; j++) {
-            for (int m = 1; m < nMachines; m++) {
-                cp.post(endBeforeStart(activities[j][m - 1], activities[j][m]));
+            for (int o = 1; o < nMachines; o++) {
+                graph.addPrecedence(j * nMachines + (o - 1), j * nMachines + o);
             }
         }
 
-        CPIntervalVar [][] toRank = new CPIntervalVar[nMachines][];
-
-        // no overlap between the activities on the same machine
+        // Build machine groups and post no-overlap constraints per machine
+        int[][] machineIndices = new int[nMachines][];
         for (int m = 0; m < nMachines; m++) {
-            ArrayList<CPIntervalVar> machineActivities = new ArrayList<>();
+            ArrayList<Integer> indices = new ArrayList<>();
             for (int j = 0; j < nJobs; j++) {
-                for (int i = 0; i < nMachines; i++) {
-                    if (machine[j][i] == m) {
-                        machineActivities.add(activities[j][i]);
+                for (int o = 0; o < nMachines; o++) {
+                    if (machine[j][o] == m) {
+                        indices.add(j * nMachines + o);
                     }
-                };
+                }
             }
-            CPIntervalVar [] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
+            machineIndices[m] = indices.stream().mapToInt(Integer::intValue).toArray();
+            // NoOverlap per machine for strong edge-finding propagation
+            CPIntervalVar[] onMachine = new CPIntervalVar[machineIndices[m].length];
+            for (int k = 0; k < onMachine.length; k++) {
+                onMachine[k] = allActivities[machineIndices[m][k]];
+            }
             cp.post(noOverlap(onMachine));
-            toRank[m] = onMachine;
         }
 
-
+        // Makespan objective
         CPIntervalVar[] lasts = Arrays.stream(activities)
                 .map(job -> job[nMachines - 1])
                 .toArray(CPIntervalVar[]::new);
@@ -84,15 +100,11 @@ public class JobShop {
 
         Objective obj = cp.minimize(makespan);
 
-        CPIntervalVar[] allActivities = flatten(activities);
-
-
+        // Search: rank branching on the precedence graph + makespan tightening
         DFSearch dfs = CPFactory.makeDfs(cp,
-                and(new Rank(toRank),
-                        () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
+                and(new Rank(graph, machineIndices),
+                        () -> makespan.isFixed() ? EMPTY : branch(() -> cp.post(le(makespan, makespan.min())))
                 ));
-
-
 
         dfs.onSolution(() -> {
             System.out.println("=========================>makespan:" + makespan);
@@ -133,6 +145,5 @@ public class JobShop {
             }
         }
     }
-
 
 }
