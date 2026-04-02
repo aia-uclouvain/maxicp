@@ -43,7 +43,7 @@ class NonOverlapPrecedenceGraphTest extends CPSolverTest {
             intervals[i].setEndMax(n);
         }
 
-        NoOverlapPrecedenceGraph nonOverlap = new NoOverlapPrecedenceGraph(intervals);
+        PrecedenceGraph nonOverlap = new PrecedenceGraph(intervals);
         cp.post(nonOverlap);
 
         nonOverlap.addPrecedence(0,1);

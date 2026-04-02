@@ -550,5 +550,179 @@ class PrecedenceGraphTest extends CPSolverTest {
         // A is predecessor of D (transitive)
         assertTrue(graph.hasPrecedence(0, 3));
     }
+
+    // ===================== Tail (Q) value tests =====================
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailBasic(CPSolver cp) {
+        // A(dur=3) -> B(dur=2), horizon [0..20]
+        CPIntervalVar a = makeIntervalVar(cp, 3);
+        CPIntervalVar b = makeIntervalVar(cp, 2);
+        a.setPresent();
+        b.setPresent();
+        a.setEndMax(20);
+        b.setEndMax(20);
+
+        PrecedenceGraph graph = new PrecedenceGraph(a, b);
+        cp.post(graph);
+
+        // No precedences yet: both tails are 0
+        assertEquals(0, graph.getTail(0));
+        assertEquals(0, graph.getTail(1));
+
+        graph.addPrecedence(0, 1); // A -> B
+
+        // tail(A) = dur(B) + tail(B) = 2 + 0 = 2
+        assertEquals(2, graph.getTail(0), "tail(A) after A->B");
+        // tail(B) = 0 (no successors)
+        assertEquals(0, graph.getTail(1), "tail(B) after A->B");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailChain(CPSolver cp) {
+        // A(dur=2) -> B(dur=3) -> C(dur=1), horizon [0..30]
+        CPIntervalVar a = makeIntervalVar(cp, 2);
+        CPIntervalVar b = makeIntervalVar(cp, 3);
+        CPIntervalVar c = makeIntervalVar(cp, 1);
+        a.setPresent();
+        b.setPresent();
+        c.setPresent();
+        a.setEndMax(30);
+        b.setEndMax(30);
+        c.setEndMax(30);
+
+        PrecedenceGraph graph = new PrecedenceGraph(a, b, c);
+        cp.post(graph);
+
+        graph.addPrecedence(0, 1); // A -> B
+        // tail(A) = dur(B) + tail(B) = 3 + 0 = 3
+        assertEquals(3, graph.getTail(0), "tail(A) after A->B");
+
+        graph.addPrecedence(1, 2); // B -> C
+        // tail(B) = dur(C) + tail(C) = 1 + 0 = 1
+        assertEquals(1, graph.getTail(1), "tail(B) after B->C");
+        // tail(A) = dur(B) + tail(B) = 3 + 1 = 4 (updated via backward propagation)
+        assertEquals(4, graph.getTail(0), "tail(A) after B->C");
+        // tail(C) = 0
+        assertEquals(0, graph.getTail(2), "tail(C) after chain");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailDiamond(CPSolver cp) {
+        //     B(dur=2)
+        //    / \
+        //   A   D(dur=1)
+        //    \ /
+        //     C(dur=3)
+        CPIntervalVar a = makeIntervalVar(cp, 1);
+        CPIntervalVar b = makeIntervalVar(cp, 2);
+        CPIntervalVar c = makeIntervalVar(cp, 3);
+        CPIntervalVar d = makeIntervalVar(cp, 1);
+        a.setPresent();
+        b.setPresent();
+        c.setPresent();
+        d.setPresent();
+        a.setEndMax(30);
+        b.setEndMax(30);
+        c.setEndMax(30);
+        d.setEndMax(30);
+
+        PrecedenceGraph graph = new PrecedenceGraph(a, b, c, d);
+        cp.post(graph);
+
+        graph.addPrecedence(0, 1); // A -> B
+        graph.addPrecedence(0, 2); // A -> C
+        graph.addPrecedence(1, 3); // B -> D
+        graph.addPrecedence(2, 3); // C -> D
+
+        // tail(D) = 0
+        assertEquals(0, graph.getTail(3));
+        // tail(B) = dur(D) + tail(D) = 1 + 0 = 1
+        assertEquals(1, graph.getTail(1));
+        // tail(C) = dur(D) + tail(D) = 1 + 0 = 1
+        assertEquals(1, graph.getTail(2));
+        // tail(A) = max(dur(B)+tail(B), dur(C)+tail(C)) = max(2+1, 3+1) = max(3,4) = 4
+        assertEquals(4, graph.getTail(0), "tail(A) should be 4 via longest path A->C->D");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailWithSetupTimes(CPSolver cp) {
+        // A(dur=1) --setup=2--> B(dur=1), horizon [0..20]
+        CPIntervalVar a = makeIntervalVar(cp, 1);
+        CPIntervalVar b = makeIntervalVar(cp, 1);
+        a.setPresent();
+        b.setPresent();
+        a.setEndMax(20);
+        b.setEndMax(20);
+
+        int[][] setup = new int[2][2];
+        setup[0][1] = 2;
+
+        PrecedenceGraph graph = new PrecedenceGraph(setup, a, b);
+        cp.post(graph);
+
+        graph.addPrecedence(0, 1); // A -> B
+
+        // tail(A) = setup(A,B) + dur(B) + tail(B) = 2 + 1 + 0 = 3
+        assertEquals(3, graph.getTail(0), "tail(A) with setup time");
+        assertEquals(0, graph.getTail(1), "tail(B)");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailReversibility(CPSolver cp) {
+        CPIntervalVar a = makeIntervalVar(cp, 3);
+        CPIntervalVar b = makeIntervalVar(cp, 2);
+        CPIntervalVar c = makeIntervalVar(cp, 1);
+        a.setPresent();
+        b.setPresent();
+        c.setPresent();
+        a.setEndMax(20);
+        b.setEndMax(20);
+        c.setEndMax(20);
+
+        PrecedenceGraph graph = new PrecedenceGraph(a, b, c);
+        cp.post(graph);
+
+        graph.addPrecedence(0, 1); // A -> B
+        assertEquals(2, graph.getTail(0), "tail(A) after A->B");
+
+        cp.getStateManager().saveState();
+
+        graph.addPrecedence(1, 2); // B -> C
+        assertEquals(3, graph.getTail(0), "tail(A) after B->C");
+        assertEquals(1, graph.getTail(1), "tail(B) after B->C");
+
+        cp.getStateManager().restoreState();
+
+        // Tail should be restored
+        assertEquals(2, graph.getTail(0), "tail(A) after restore");
+        assertEquals(0, graph.getTail(1), "tail(B) after restore");
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testTailByVarReference(CPSolver cp) {
+        CPIntervalVar a = makeIntervalVar(cp, 5);
+        CPIntervalVar b = makeIntervalVar(cp, 3);
+        a.setPresent();
+        b.setPresent();
+        a.setEndMax(20);
+        b.setEndMax(20);
+
+        PrecedenceGraph graph = new PrecedenceGraph(a, b);
+        cp.post(graph);
+
+        graph.addPrecedence(0, 1);
+
+        assertEquals(3, graph.getTail(a), "getTail by var ref");
+        assertEquals(3, graph.getQ(a), "getQ alias");
+        assertEquals(0, graph.getTail(b));
+    }
 }
+
 

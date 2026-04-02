@@ -7,6 +7,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateTriPartition;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -31,6 +32,8 @@ import java.util.Map;
  *       {@code j before i} is infeasible, the edge {@code i → j} is added automatically.</li>
  *   <li>Setup (transition) times between activities.</li>
  *   <li>Full reversibility through {@link StateTriPartition}.</li>
+ *   <li>Incrementally maintained <em>tail</em> values: the minimum remaining processing
+ *       time after each activity finishes, along the longest successor chain.</li>
  * </ul>
  *
  * @author Pierre Schaus
@@ -54,6 +57,11 @@ public class PrecedenceGraph extends AbstractCPConstraint {
     // Whether to automatically detect and add forced precedences (pairwise O(n²) check).
     // Disable when a separate NoOverlap constraint handles machine disjunctions.
     private boolean detectPrecedencesEnabled = true;
+
+    // Tail (Q value): tail[i] = minimum remaining processing time after activity i finishes,
+    // along the longest path through its successors in the precedence graph.
+    // Incrementally maintained when precedences are added.
+    private final StateInt[] tail;
 
     // Scratch arrays for iteration (not reversible, just working buffers)
     private final int[] iterBuf1;
@@ -95,6 +103,11 @@ public class PrecedenceGraph extends AbstractCPConstraint {
         varIndex = new IdentityHashMap<>();
         for (int i = 0; i < n; i++) {
             varIndex.put(vars[i], i);
+        }
+
+        tail = new StateInt[n];
+        for (int i = 0; i < n; i++) {
+            tail[i] = getSolver().getStateManager().makeStateInt(0);
         }
 
         iterBuf1 = new int[n];
@@ -161,6 +174,43 @@ public class PrecedenceGraph extends AbstractCPConstraint {
      */
     public CPIntervalVar[] getVars() {
         return vars;
+    }
+
+    /**
+     * Returns the tail value for activity {@code idx}.
+     * <p>
+     * The tail represents the minimum remaining processing time after the activity
+     * finishes, along the longest successor chain in the precedence graph.
+     * For a leaf activity (no successors), the tail is 0.
+     * <p>
+     * Formally: {@code tail(i) = max over successors j of { setup(i,j) + dur(j) + tail(j) }}
+     *
+     * @param idx the activity index
+     * @return the tail value
+     */
+    public int getTail(int idx) {
+        return tail[idx].value();
+    }
+
+    /**
+     * Returns the tail value for the given interval variable.
+     *
+     * @param var the interval variable
+     * @return the tail value
+     */
+    public int getTail(CPIntervalVar var) {
+        return getTail(indexOf(var));
+    }
+
+    /**
+     * Returns the tail (Q) value for the given interval variable.
+     * Alias for {@link #getTail(CPIntervalVar)}.
+     *
+     * @param var the interval variable
+     * @return the tail value
+     */
+    public int getQ(CPIntervalVar var) {
+        return getTail(var);
     }
 
     /**
@@ -282,7 +332,7 @@ public class PrecedenceGraph extends AbstractCPConstraint {
      * Forward propagation: for each activity, compute est from its predecessors.
      * est(j) >= max over predecessors p of { est(p) + dur(p) + setup(p, j) }
      * <p>
-     * We process activities sorted by their current est (topological-ish order).
+     * We process activities sorted by their current est (topological-ish order)
      *
      * @return true if any bound was tightened
      */
@@ -404,7 +454,8 @@ public class PrecedenceGraph extends AbstractCPConstraint {
 
     /**
      * Internal version of addPrecedence that does NOT call fixPoint.
-     * Also dynamically excludes reverse directions in the tri-partitions.
+     * Also dynamically excludes reverse directions in the tri-partitions
+     * and incrementally updates tail values.
      */
     private void addPrecedenceInternal(int i, int j) {
         if (i == j) {
@@ -445,6 +496,37 @@ public class PrecedenceGraph extends AbstractCPConstraint {
                 // Exclude reverse direction: succ→pred is impossible
                 predecessors[pred].exclude(succ);
                 successors[succ].exclude(pred);
+            }
+        }
+
+        // Incrementally update tail for the new edge i → j.
+        // The chain path through intermediaries always dominates direct transitive edges,
+        // so backward propagation from i is sufficient (no tail updates needed in the
+        // transitive closure loop above).
+        int newTailI = setupTimes[i][j] + vars[j].lengthMin() + tail[j].value();
+        if (newTailI > tail[i].value()) {
+            tail[i].setValue(newTailI);
+            propagateTailBackward(i);
+        }
+    }
+
+    /**
+     * Propagates tail values backward through predecessors.
+     * <p>
+     * For each predecessor {@code p} of {@code idx}, checks if
+     * {@code tail[p] < setup(p, idx) + dur(idx) + tail[idx]}
+     * and updates it if so, recursing further backward.
+     * Terminates because tail values are monotonically increasing.
+     */
+    private void propagateTailBackward(int idx) {
+        int[] predBuf = new int[n];
+        int nPred = predecessors[idx].fillIncluded(predBuf);
+        for (int k = 0; k < nPred; k++) {
+            int p = predBuf[k];
+            int nt = setupTimes[p][idx] + vars[idx].lengthMin() + tail[idx].value();
+            if (nt > tail[p].value()) {
+                tail[p].setValue(nt);
+                propagateTailBackward(p);
             }
         }
     }

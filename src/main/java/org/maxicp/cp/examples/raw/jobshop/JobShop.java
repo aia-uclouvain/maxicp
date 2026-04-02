@@ -11,6 +11,7 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
+import org.maxicp.cp.engine.constraints.scheduling.MinMakespan;
 import org.maxicp.cp.engine.constraints.scheduling.PrecedenceGraph;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -97,6 +98,8 @@ public class JobShop {
                 .map(job -> job[nMachines - 1])
                 .toArray(CPIntervalVar[]::new);
         CPIntVar makespan = CPFactory.makespan(lasts);
+
+        //cp.post(new MinMakespan(graph,makespan,allActivities));
 
         Objective obj = cp.minimize(makespan);
 
