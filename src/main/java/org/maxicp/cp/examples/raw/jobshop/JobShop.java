@@ -73,6 +73,11 @@ public class JobShop {
             }
         }
 
+        CPIntervalVar[] lasts = Arrays.stream(activities)
+                .map(job -> job[nMachines - 1])
+                .toArray(CPIntervalVar[]::new);
+        CPIntVar makespan = CPFactory.makespan(lasts);
+
         // Build machine groups and post no-overlap constraints per machine
         int[][] machineIndices = new int[nMachines][];
         for (int m = 0; m < nMachines; m++) {
@@ -91,23 +96,19 @@ public class JobShop {
                 onMachine[k] = allActivities[machineIndices[m][k]];
             }
             cp.post(noOverlap(onMachine));
+            cp.post(new MinMakespan(graph, makespan, onMachine));
         }
 
-        // Makespan objective
-        CPIntervalVar[] lasts = Arrays.stream(activities)
-                .map(job -> job[nMachines - 1])
-                .toArray(CPIntervalVar[]::new);
-        CPIntVar makespan = CPFactory.makespan(lasts);
-
-        //cp.post(new MinMakespan(graph,makespan,allActivities));
 
         Objective obj = cp.minimize(makespan);
 
         // Search: rank branching on the precedence graph + makespan tightening
+        /*
         DFSearch dfs = CPFactory.makeDfs(cp,
                 and(new Rank(graph, machineIndices),
                         () -> makespan.isFixed() ? EMPTY : branch(() -> cp.post(le(makespan, makespan.min())))
-                ));
+                ));*/
+        DFSearch dfs = CPFactory.makeDfs(cp,fds(allActivities));
 
         dfs.onSolution(() -> {
             System.out.println("=========================>makespan:" + makespan);
