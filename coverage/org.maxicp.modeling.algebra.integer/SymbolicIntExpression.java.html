@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolicIntExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">SymbolicIntExpression.java</span></div><h1>SymbolicIntExpression.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+public interface SymbolicIntExpression extends IntExpression {
+    /**
+     * Evaluate this expression. All variables referenced have to be fixed.
+     *
+     * @return the value of this expression
+     * @throws VariableNotFixedException when a variable is not fixed
+     */
+    default int evaluate() throws VariableNotFixedException {
+<span class="nc bnc" id="L13" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L14">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluate();</span>
+<span class="nc" id="L15">        return defaultEvaluate();</span>
+    }
+
+    int defaultEvaluate() throws VariableNotFixedException;
+
+    /**
+     * Return a *lower bound* for this expression
+     */
+    default int min() {
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
+<span class="fc" id="L25">            return getModelProxy().getConcreteModel().getConcreteVar(this).min();</span>
+<span class="fc" id="L26">        return defaultMin();</span>
+    }
+
+    int defaultMin();
+
+    /**
+     * Return an *upper bound* for this expression
+     */
+    default int max() {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
+<span class="fc" id="L36">            return getModelProxy().getConcreteModel().getConcreteVar(this).max();</span>
+<span class="fc" id="L37">        return defaultMax();</span>
+    }
+
+    int defaultMax();
+
+    /**
+     * Returns whether this expression *can* contain v.
+     */
+    default boolean contains(int v) {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L47">            return getModelProxy().getConcreteModel().getConcreteVar(this).contains(v);</span>
+<span class="nc" id="L48">        return defaultContains(v);</span>
+    }
+
+    default boolean defaultContains(int v) {
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        return min() &lt;= v &amp;&amp; v &lt;= max();</span>
+    }
+
+    /**
+     * Fill an array of minimum size size() with a *superset* of the domain of this expression.
+     * Returns `v`, the size of the domain after it has been computed, with {@code v &lt;= size()}.
+     */
+    default int fillArray(int[] array) {
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L61">            return getModelProxy().getConcreteModel().getConcreteVar(this).fillArray(array);</span>
+<span class="fc" id="L62">        return defaultFillArray(array);</span>
+    }
+
+    default int defaultFillArray(int[] array) {
+<span class="nc" id="L66">        int vmin = min();</span>
+<span class="nc" id="L67">        int vmax = max();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        for (int i = 0; i &lt;= vmax - vmin; i++)</span>
+<span class="nc" id="L69">            array[i] = vmin + i;</span>
+<span class="nc" id="L70">        return vmax - vmin + 1;</span>
+    }
+
+    /**
+     * *Upper bound* on the size of the domain of this expression.
+     */
+    default int size() {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc" id="L78">            return getModelProxy().getConcreteModel().getConcreteVar(this).size();</span>
+<span class="nc" id="L79">        return defaultSize();</span>
+    }
+
+    default int defaultSize() {
+<span class="nc" id="L83">        return max() - min() + 1;</span>
+    }
+
+    default IntExpression plus(int v) {
+<span class="nc" id="L87">        return new CstOffset(this, v);</span>
+    }
+
+    default IntExpression minus(int v) {
+<span class="nc" id="L91">        return new CstOffset(this, -v);</span>
+    }
+
+    default IntExpression plus(IntExpression v) {
+<span class="nc" id="L95">        return new Sum(this, v);</span>
+    }
+
+    default IntExpression minus(IntExpression v) {
+<span class="nc" id="L99">        return new Sum(this, new UnaryMinus(v));</span>
+    }
+
+    default IntExpression abs() {
+<span class="nc" id="L103">        return new Abs(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

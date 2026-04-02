@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Activity.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">Activity.java</span></div><h1>Activity.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+/**
+ * Represents a scheduling activity i.e. an interval variable that consumes an ammount of resource over time.
+ *
+ * @author Pierre Schaus, Charles Thomas
+ */
+<span class="fc" id="L17">public record Activity(CPIntervalVar interval, CPIntVar height) {</span>
+
+    public int getStartMin() {
+<span class="fc" id="L20">        return interval.startMin();</span>
+    }
+
+    public int getStartMax() {
+<span class="fc" id="L24">        return interval.startMax();</span>
+    }
+
+    public int getEndMin() {
+<span class="fc" id="L28">        return interval.endMin();</span>
+    }
+
+    public int getEndMax() {
+<span class="fc" id="L32">        return interval.endMax();</span>
+    }
+
+    public int getHeightMin() {
+<span class="fc" id="L36">        return height.min();</span>
+    }
+
+    public int getHeightMax() {
+<span class="fc" id="L40">        return height.max();</span>
+    }
+
+    public int getLengthMin() {
+<span class="fc" id="L44">        return interval.lengthMin();</span>
+    }
+
+    public int getLengthMax() {
+<span class="fc" id="L48">        return interval.lengthMax();</span>
+    }
+
+    public boolean isPresent() {
+<span class="fc" id="L52">        return interval.isPresent();</span>
+    }
+
+    public boolean isAbsent() {
+<span class="fc" id="L56">        return interval.isAbsent();</span>
+    }
+
+    public boolean isOptional() {
+<span class="nc" id="L60">        return interval.isOptional();</span>
+    }
+
+    public boolean hasFixedPartAt(int t) {
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        return (getStartMax() &lt;= t &amp;&amp; getEndMin() &gt; t);</span>
+    }
+
+    public boolean hasFixedPart() {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return getStartMax() &lt; getEndMin();</span>
+    }
+
+    public boolean isStartFixed() {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        return getStartMin() == getStartMax();</span>
+    }
+
+    public boolean isLengthFixed() {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        return getLengthMin() == getLengthMax();</span>
+    }
+
+    public boolean isEndFixed() {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        return getEndMin() == getEndMax();</span>
+    }
+
+    public boolean isFixed() {
+<span class="pc bpc" id="L84" title="1 of 6 branches missed.">        return interval().isAbsent() || (interval().isFixed() &amp;&amp; height().isFixed());</span>
+    }
+
+    public void setStartMin(int val) {
+<span class="fc" id="L88">        interval.setStartMin(val);</span>
+<span class="fc" id="L89">    }</span>
+
+    public void setStartMax(int val) {
+<span class="fc" id="L92">        interval.setStartMax(val);</span>
+<span class="fc" id="L93">    }</span>
+
+    public void setEndMin(int val) {
+<span class="fc" id="L96">        interval.setEndMin(val);</span>
+<span class="fc" id="L97">    }</span>
+
+    public void setEndMax(int val) {
+<span class="fc" id="L100">        interval.setEndMax(val);</span>
+<span class="fc" id="L101">    }</span>
+
+    public void setLengthMin(int val) {
+<span class="nc" id="L104">        interval.setLengthMin(val);</span>
+<span class="nc" id="L105">    }</span>
+
+    public void setLengthMax(int val) {
+<span class="fc" id="L108">        interval.setLengthMax(val);</span>
+<span class="fc" id="L109">    }</span>
+
+    public void setHeightMin(int val) {
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if(val &lt;= height.max()) height.removeBelow(val);</span>
+<span class="nc" id="L113">        else interval.setAbsent();</span>
+<span class="fc" id="L114">    }</span>
+
+    public void setHeightMax(int val) {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if(val &gt;= height.min()) height.removeAbove(val);</span>
+<span class="nc" id="L118">        else interval.setAbsent();</span>
+<span class="fc" id="L119">    }</span>
+
+    public void setPresent() {
+<span class="fc" id="L122">        interval.setPresent();</span>
+<span class="fc" id="L123">    }</span>
+
+    public void setAbsent() {
+<span class="nc" id="L126">        interval.setAbsent();</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L131">        return &quot;Activity{&quot; +</span>
+                &quot;interval=&quot; + interval +
+                &quot;, height=&quot; + height +
+                '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Max.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">Max.java</span></div><h1>Max.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+<span class="fc" id="L12">public record Max(IntExpression[] exprs) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="fc" id="L15">        return List.of(exprs);</span>
+    }
+
+    @Override
+    public Max mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L20">        return new Max(Arrays.stream(exprs).map(x -&gt; (IntExpression) f.apply(x)).toArray(IntExpression[]::new));</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L26">            return getModelProxy().getConcreteModel().getConcreteVar(this).isFixed();</span>
+<span class="nc" id="L27">        return NonLeafExpressionNode.super.isFixed();</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc" id="L32">        int max = Integer.MIN_VALUE;</span>
+<span class="nc" id="L33">        boolean isMaxKnown = false;</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        for (IntExpression expr : exprs) {</span>
+            try {
+<span class="nc" id="L36">                int thisMax = expr.evaluate();</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">                if (thisMax &gt;= max) {</span>
+<span class="nc" id="L38">                    max = thisMax;</span>
+<span class="nc" id="L39">                    isMaxKnown = true;</span>
+                }
+<span class="nc" id="L41">            } catch (VariableNotFixedException e) {</span>
+<span class="nc" id="L42">                int thisMax = expr.max();</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">                if (thisMax &gt; max) {</span>
+<span class="nc" id="L44">                    max = thisMax;</span>
+<span class="nc" id="L45">                    isMaxKnown = false;</span>
+                }
+<span class="nc" id="L47">            }</span>
+        }
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (isMaxKnown)</span>
+<span class="nc" id="L50">            return max;</span>
+        else
+<span class="nc" id="L52">            throw new VariableNotFixedException();</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc" id="L57">        int max = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">        for (IntExpression expr : exprs)</span>
+<span class="nc" id="L59">            max = Math.max(max, expr.min());</span>
+<span class="nc" id="L60">        return max;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc" id="L65">        int max = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        for (IntExpression expr : exprs)</span>
+<span class="nc" id="L67">            max = Math.max(max, expr.max());</span>
+<span class="nc" id="L68">        return max;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L73">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

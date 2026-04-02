@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolicBranching.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling</a> &gt; <span class="el_source">SymbolicBranching.java</span></div><h1>SymbolicBranching.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling;
+
+import org.maxicp.modeling.concrete.ConcreteModelProxy;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+
+import java.util.function.Supplier;
+
+<span class="nc" id="L8">public class SymbolicBranching {</span>
+    public static Supplier&lt;SymbolicModel[]&gt; toSymbolicBranching(Supplier&lt;Runnable[]&gt; branching, ModelProxy mp) {
+<span class="nc" id="L10">        return () -&gt; {</span>
+<span class="nc" id="L11">            Runnable[] branches = branching.get();</span>
+<span class="nc" id="L12">            SymbolicModel[] symbolicModels = new SymbolicModel[branches.length];</span>
+<span class="nc bnc" id="L13" title="All 2 branches missed.">            for (int i = 0; i &lt; branches.length; i++) {</span>
+<span class="nc" id="L14">                symbolicModels[i] = ConcreteModelProxy.symbolicExecution(mp, branches[i]);</span>
+            }
+<span class="nc" id="L16">            return symbolicModels;</span>
+        };
+    }
+
+    public static Supplier&lt;Runnable[]&gt; toRunnableBranching(Supplier&lt;SymbolicModel[]&gt; branching, ModelProxy mp) {
+<span class="nc" id="L21">        return () -&gt; {</span>
+<span class="nc" id="L22">            SymbolicModel[] symbolicModels = branching.get();</span>
+<span class="nc" id="L23">            Runnable[] branches = new Runnable[symbolicModels.length];</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">            for (int i = 0; i &lt; symbolicModels.length; i++) {</span>
+<span class="nc" id="L25">                SymbolicModel m = symbolicModels[i];</span>
+<span class="nc" id="L26">                branches[i] = () -&gt; {mp.getConcreteModel().jumpTo(m);};</span>
+            }
+<span class="nc" id="L28">            return branches;</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

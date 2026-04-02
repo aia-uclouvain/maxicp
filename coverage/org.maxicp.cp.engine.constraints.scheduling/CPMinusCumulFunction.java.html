@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPMinusCumulFunction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">CPMinusCumulFunction.java</span></div><h1>CPMinusCumulFunction.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.modeling.IntervalVar;
+
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * CP implementation of a Minus Cumulative Function
+ *
+ * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
+ */
+<span class="fc" id="L21">public record CPMinusCumulFunction(CPCumulFunction left, CPCumulFunction right) implements CPCumulFunction {</span>
+
+    @Override
+    public List&lt;Activity&gt; flatten(boolean positive) {
+<span class="fc" id="L25">        List&lt;Activity&gt; res = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L26">        res.addAll(left.flatten(positive));</span>
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        res.addAll(right.flatten(!positive));</span>
+<span class="fc" id="L28">        return res;</span>
+    }
+
+    @Override
+    public boolean inScope(IntervalVar interval) {
+<span class="pc bpc" id="L33" title="3 of 4 branches missed.">        return left.inScope(interval) || right.inScope(interval);</span>
+    }
+
+    @Override
+    public CPIntVar heightAtStart(IntervalVar interval) {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (!inScope(interval)) {</span>
+<span class="nc" id="L39">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+        } else {
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            if (!left.inScope(interval)) {</span>
+<span class="nc" id="L42">                return CPFactory.minus(right.heightAtStart(interval));</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">            } else if (!right.inScope(interval)) {</span>
+<span class="fc" id="L44">                return left.heightAtStart(interval);</span>
+            } else {
+<span class="nc" id="L46">                CPIntVar leftHeight = left.heightAtStart(interval);</span>
+<span class="nc" id="L47">                CPIntVar rightHeight = right.heightAtStart(interval);</span>
+<span class="nc" id="L48">                return CPFactory.sum(leftHeight, CPFactory.minus(rightHeight));</span>
+            }
+        }
+    }
+
+    @Override
+    public CPIntVar heightAtEnd(IntervalVar interval) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (!inScope(interval)) {</span>
+<span class="nc" id="L56">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+        } else {
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (!left.inScope(interval)) {</span>
+<span class="nc" id="L59">                return CPFactory.minus(right.heightAtEnd(interval));</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            } else if (!right.inScope(interval)) {</span>
+<span class="nc" id="L61">                return left.heightAtEnd(interval);</span>
+            } else {
+<span class="nc" id="L63">                CPIntVar leftHeight = left.heightAtEnd(interval);</span>
+<span class="nc" id="L64">                CPIntVar rightHeight = right.heightAtEnd(interval);</span>
+<span class="nc" id="L65">                return CPFactory.sum(leftHeight, CPFactory.minus(rightHeight));</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

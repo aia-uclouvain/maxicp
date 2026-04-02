@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPSeqVar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPSeqVar.java</span></div><h1>CPSeqVar.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+import org.maxicp.modeling.concrete.ConcreteSeqVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.StringJoiner;
+import java.util.function.Predicate;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+
+public interface CPSeqVar extends CPVar, ConcreteSeqVar {
+
+    /**
+     * Returns the solver in which this variable was created.
+     *
+     * @return the solver in which this variable was created.
+     */
+    CPSolver getSolver();
+
+    /**
+     * Returns true if every node is either a member or an excluded node.
+     *
+     * @return true if every node is either a member or an excluded node.
+     */
+    boolean isFixed();
+
+    /**
+     * Returns the variable related to a node.
+     *
+     * @param node node.
+     * @return variable related to a node.
+     */
+    CPNodeVar getNodeVar(int node);
+
+    /**
+     * Gives a variable telling if a given node must be visited
+     * @param node node in the sequence
+     * @return variable set to true if the node must be visited
+     */
+    CPBoolVar isNodeRequired(int node);
+
+    // operations on set domain
+
+    /**
+     * Copies the nodes matching a status into an array.
+     *
+     * @param dest   an array large enough {@code dest.length &gt;= nNode(status)}.
+     * @param status status that must be matched by the nodes.
+     * @return the number of nodes matching the status and {@code dest[0,...,nNode(status)-1]} contains
+     * the nodes in an arbitrary order.
+     */
+    int fillNode(int[] dest, SeqStatus status);
+
+    /**
+     * Gives the number of nodes matching a status.
+     *
+     * @param status status that must be matched by the nodes.
+     * @return the number of nodes matching the status.
+     */
+    int nNode(SeqStatus status);
+
+    /**
+     * Gives the total number of nodes.
+     *
+     * @return the total number of nodes.
+     */
+    int nNode();
+
+    /**
+     * Tells if a node is matching a status.
+     *
+     * @param node   node.
+     * @param status status that must be matched by the node.
+     * @return true if the node is matching the status.
+     */
+    boolean isNode(int node, SeqStatus status);
+
+    // internal sequence
+
+    /**
+     * First member of the sequence
+     *
+     * @return first member of the sequence
+     */
+    int start(); // alpha
+
+    /**
+     * Last member of the sequence
+     *
+     * @return last member of the sequence
+     */
+    int end(); // omega
+
+    /**
+     * Returns the member following another member in the sequence.
+     *
+     * @param node member within the sequence.
+     * @return member following the given node in the sequence.
+     */
+    int memberAfter(int node);
+
+    /**
+     * Returns the member preceding another member in the sequence.
+     *
+     * @param node member within the sequence.
+     * @return member preceding the given node in the sequence.
+     */
+    int memberBefore(int node);
+
+    // edges
+
+    /**
+     * Copies the predecessors of a node matching a status into an array.
+     *
+     * @param node   node.
+     * @param dest   an array large enough
+     * @param status status that must be matched by the predecessors.
+     * @return the number of predecessors matching the status and {@code dest[0,...,nPred(node, status)-1]}
+     * contains the predecessors in an arbitrary order.
+     */
+    int fillPred(int node, int[] dest, SeqStatus status);
+
+    /**
+     * Copies the predecessors of a node into an array.
+     *
+     * @param node   node.
+     * @param dest   an array large enough {@code dest.length &gt;= nPred(node)}.
+     * @return the number of predecessors and {@code dest[0,...,nPred(node)-1]}
+     * contains the predecessors in an arbitrary order.
+     */
+    int fillPred(int node, int[] dest);
+
+    /**
+     * Returns the number of predecessors of a node.
+     *
+     * @param node   node.
+     * @return the number of predecessors.
+     */
+    int nPred(int node);
+
+    /**
+     * Copies the successors of a node matching a status into an array.
+     *
+     * @param node   node.
+     * @param dest   an array large enough {@code dest.length &gt;= nSucc(node, status)}.
+     * @param status status that must be matched by the nodes.
+     * @return the number of successors matching the status and {@code dest[0,...,nSucc(node, status)-1]}
+     * contains the successors in an arbitrary order.
+     */
+    int fillSucc(int node, int[] dest, SeqStatus status);
+
+    /**
+     * Copies the successors of a node into an array.
+     *
+     * @param node   node.
+     * @param dest   an array large enough {@code dest.length &gt;= nSucc(node)}.
+     * @return the number of successors and {@code dest[0,...,nSucc(node)-1]}
+     * contains the successors in an arbitrary order.
+     */
+    int fillSucc(int node, int[] dest);
+
+    /**
+     * Returns the number of successors of a node.
+     *
+     * @param node   node.
+     * @return the number of successors matching the status.
+     */
+    int nSucc(int node);
+
+    /**
+     * Fills an array with the insertions for a node.
+     * Equivalent to {@code fillPred(node, dest, MEMBER)}.
+     *
+     * @param node node.
+     * @param dest an array large enough {@code dest.length &gt;= nInsert(node)}.
+     * @return the number of insertions and {@code dest[0,...,nInsert(node)-1]}
+     * contains the insertions in an arbitrary order.
+     */
+    int fillInsert(int node, int[] dest);
+
+    /**
+     * Returns the number of insertions of a node.
+     *
+     * @param node node.
+     * @return the number of insertions of a node.
+     */
+    int nInsert(int node);
+
+    // getter and status
+
+    /**
+     * Tells if a directed edge exists between two nodes.
+     *
+     * @param from origin of the edge.
+     * @param to   destination of the edge.
+     * @return true if the directed edge exists between two nodes.
+     */
+    boolean hasEdge(int from, int to);
+
+    /**
+     * Tells if an insertion is valid.
+     * An insert operation is valid iff
+     * - prev is a member node ;
+     * - node is an insertable node (either possible or a required node not yet inserted) ;
+     * - {@code hasEdge(prev, node)} ;
+     * - {@code hasEdge(node, memberAfter(prev))}.
+     *
+     * @param prev a member node.
+     * @param node an insertable node.
+     * @return true if the node can be inserted after the given member.
+     */
+    boolean hasInsert(int prev, int node);
+
+    // changes the state of the variable
+
+    /**
+     * Excludes a node from the sequence.
+     *
+     * @param node node to be excluded.
+     * @throws InconsistencyException if the node is required ({@code isNode(node, REQUIRED)}).
+     */
+    void exclude(int node);
+
+    /**
+     * Requires a node in the sequence.
+     *
+     * @param node node to be required.
+     * @throws InconsistencyException if the node is excluded ({@code isNode(node, EXCLUDED)}).
+     */
+    void require(int node);
+
+    /**
+     * Inserts a node in the sequence after a given member.
+     * Requires the node if it was not required yet.
+     *
+     * @param prev member after which the node will be inserted.
+     * @param node node inserted in the sequence.
+     * @throws InconsistencyException if the insertion is invalid ({@code !hasInsert(prev, node)}).
+     * @throws IllegalArgumentException if prev and node are two member nodes that are not consecutive
+     *      ({@code isNode(prev, MEMBER) &amp;&amp; isNode(node, MEMBER) &amp;&amp; memberAfter(prev) != node})
+     */
+    void insert(int prev, int node);
+
+    /**
+     * Forbids a subsequence of length 3 to appear, removing from the domain all sequences containing the sub-sequence given as input.
+     * For technical reasons, the two endpoints of the subsequence must belong to the current partial sequence.
+     *
+     * @param prev origin of the subsequence, a member node
+     * @param node node in the middle of the subsequence
+     * @param succ end of the subsequence, a member node
+     * @throws InconsistencyException if the subsequence to remove appears within the sequence
+     */
+    void notBetween(int prev, int node, int succ);
+
+    // listeners for propagation
+
+    /**
+     * Asks that the closure is called whenever the domain is fixed {@link CPSeqVar#isFixed()}.
+     *
+     * @param f the closure.
+     */
+    void whenFixed(Runnable f);
+
+    /**
+     * Asks that the closure is called whenever an insertion happens.
+     *
+     * @param f the closure.
+     */
+    void whenInsert(Runnable f);
+
+    /**
+     * Asks that the closure is called whenever an insertion is removed.
+     *
+     * @param f the closure.
+     */
+    void whenInsertRemoved(Runnable f);
+
+    /**
+     * Asks that the closure is called whenever an exclusion happens.
+     *
+     * @param f the closure.
+     */
+    void whenExclude(Runnable f);
+
+    /**
+     * Asks that the closure is called a node is required.
+     *
+     * @param f the closure.
+     */
+    void whenRequire(Runnable f);
+
+    /**
+     * Asks that {@link CPConstraint#propagate()} is called whenever the domain is fixed {@link CPSeqVar#isFixed()}
+     * In such a state the variable is fixed and we say that a &lt;i&gt;fix&lt;/i&gt; event occurs.
+     *
+     * @param c the constraint for which the {@link CPConstraint#propagate()}
+     *          method should be called on fix events of this variable.
+     */
+    void propagateOnFix(CPConstraint c);
+
+    /**
+     * Asks that {@link CPConstraint#propagate()} is called whenever an insertion is removed
+     * We say that a &lt;i&gt;removeInsert&lt;/i&gt; event occurs.
+     *
+     * @param c the constraint for which the {@link CPConstraint#propagate()}
+     *          method should be called on removeInsert events of this variable.
+     */
+    void propagateOnInsertRemoved(CPConstraint c);
+
+    /**
+     * Asks that {@link CPConstraint#propagate()} is called whenever an insertion happens.
+     * We say that an &lt;i&gt;insert&lt;/i&gt; event occurs.
+     *
+     * @param c the constraint for which the {@link CPConstraint#propagate()}
+     *          method should be called on insert events of this variable.
+     */
+    void propagateOnInsert(CPConstraint c);
+
+    /**
+     * Asks that {@link CPConstraint#propagate()} is called whenever an exclusion happens.
+     * We say that an &lt;i&gt;exclude&lt;/i&gt; event occurs.
+     *
+     * @param c the constraint for which the {@link CPConstraint#propagate()}
+     *          method should be called on exclude events of this variable.
+     */
+    void propagateOnExclude(CPConstraint c);
+
+    /**
+     * Asks that {@link CPConstraint#propagate()} is called whenever a node is required.
+     * We say that an &lt;i&gt;require&lt;/i&gt; event occurs.
+     *
+     * @param c the constraint for which the {@link CPConstraint#propagate()}
+     *          method should be called on require events of this variable.
+     */
+    void propagateOnRequire(CPConstraint c);
+
+    // String representation
+
+    /**
+     * Returns a string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}, separated by &quot; -&gt; &quot;.
+     *
+     * @return string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}.
+     */
+    default String membersOrdered() {
+<span class="fc" id="L353">        return membersOrdered(&quot; -&gt; &quot;);</span>
+    }
+
+    /**
+     * Returns a string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}, separated by the given delimiter.
+     *
+     * @param join delimiter between two member nodes.
+     * @return string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}. The nodes are separated by the given delimiter.
+     */
+    default String membersOrdered(String join) {
+<span class="fc" id="L365">        return membersOrdered(join, i -&gt; true);</span>
+    }
+
+    /**
+     * Returns a string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}, separated by the given delimiter.
+     *
+     * @param join delimiter between two member nodes.
+     * @param filter filter the nodes that are valid for giving the representation.
+     *               Only nodes evaluated to true are included in the representation
+     * @return string representation of the members, ordered following the sequence
+     * from {@code start()} to {@code end()}. The nodes are separated by the given delimiter.
+     */
+    default String membersOrdered(String join, Predicate&lt;Integer&gt; filter) {
+<span class="fc" id="L379">        StringJoiner joiner = new StringJoiner(join);</span>
+<span class="fc" id="L380">        int current = start();</span>
+<span class="fc" id="L381">        int end = end();</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">        while (current != end) {</span>
+<span class="pc bpc" id="L383" title="1 of 2 branches missed.">            if (filter.test(current))</span>
+<span class="fc" id="L384">                joiner.add(String.valueOf(current));</span>
+<span class="fc" id="L385">            current = memberAfter(current);</span>
+        }
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        if (filter.test(end))</span>
+<span class="fc" id="L388">            joiner.add(String.valueOf(end));</span>
+<span class="fc" id="L389">        return joiner.toString();</span>
+    }
+
+    /**
+     * Exports the variable into a GraphViz format
+     * See &lt;a href=&quot;http://www.webgraphviz.com/&quot;&gt;...&lt;/a&gt;
+     *
+     * @return variable encoded into a GraphViz format
+     */
+    default String toGraphViz() {
+<span class="fc" id="L399">        String memberColor = &quot;#0072B2&quot;;</span>
+<span class="fc" id="L400">        String requiredColor = &quot;#56B4E9&quot;;</span>
+<span class="fc" id="L401">        String possibleColor = &quot;#009E73&quot;;</span>
+<span class="fc" id="L402">        String excludedColor = &quot;#D55E00&quot;;</span>
+<span class="fc" id="L403">        String possibleEdgeColor = &quot;#969696&quot;;</span>
+<span class="fc" id="L404">        StringJoiner graphViz = new StringJoiner(&quot;\n&quot;);</span>
+<span class="fc" id="L405">        graphViz.add(&quot;digraph {&quot;);</span>
+<span class="fc" id="L406">        graphViz.add(&quot;    node [style=filled];&quot;);</span>
+        // nodes from the graph
+<span class="fc" id="L408">        int n = nNode();</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">            if (isNode(i, MEMBER)) {</span>
+<span class="fc bfc" id="L411" title="All 4 branches covered.">                if (i == start() || i ==end()) {</span>
+<span class="fc" id="L412">                    graphViz.add(&quot;    &quot; + i + &quot; [shape = doublecircle, color=\&quot;&quot; + memberColor + &quot;\&quot;, tooltip=\&quot;member\&quot;];&quot;);</span>
+                } else {
+<span class="fc" id="L414">                    graphViz.add(&quot;    &quot; + i + &quot; [shape = circle, color=\&quot;&quot; + memberColor + &quot;\&quot;, tooltip=\&quot;member\&quot;];&quot;);</span>
+                }
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">            } else if (isNode(i, REQUIRED)) {</span>
+<span class="nc" id="L417">                graphViz.add(&quot;    &quot; + i + &quot; [shape = circle, color=\&quot;&quot; + requiredColor + &quot;\&quot;, tooltip=\&quot;required\&quot;];&quot;);</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">            } else if (isNode(i, POSSIBLE)) {</span>
+<span class="fc" id="L419">                graphViz.add(&quot;    &quot; + i + &quot; [shape = circle, color=\&quot;&quot; + possibleColor + &quot;\&quot;, tooltip=\&quot;possible\&quot;];&quot;);</span>
+            } else {
+<span class="fc" id="L421">                graphViz.add(&quot;    &quot; + i + &quot; [shape = circle, color=\&quot;&quot; + excludedColor + &quot;\&quot;, tooltip=\&quot;excluded\&quot;];&quot;);</span>
+            }
+        }
+        // edges
+<span class="fc" id="L425">        int[] values = new int[nNode()];</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++) {</span>
+<span class="fc" id="L427">            int nPred = fillPred(i, values, NOT_EXCLUDED);</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">            for (int j = 0 ; j &lt; nPred ; j++) {</span>
+<span class="fc" id="L429">                int pred = values[j];</span>
+<span class="fc bfc" id="L430" title="All 4 branches covered.">                String style = isNode(pred, MEMBER) &amp;&amp; isNode(i, MEMBER) ? &quot; [penwidth=3.0]&quot; : String.format(&quot; [style=dashed, color=\&quot;%s\&quot;]&quot;, possibleEdgeColor);</span>
+<span class="fc" id="L431">                graphViz.add(&quot;    &quot; + pred + &quot; -&gt; &quot; + i + style + &quot;;&quot;);</span>
+            }
+        }
+<span class="fc" id="L434">        graphViz.add(&quot;}&quot;);</span>
+<span class="fc" id="L435">        return graphViz.toString();</span>
+    }
+}
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

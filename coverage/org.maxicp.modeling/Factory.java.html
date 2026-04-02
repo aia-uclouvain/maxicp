@@ -1,0 +1,464 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Factory.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling</a> &gt; <span class="el_source">Factory.java</span></div><h1>Factory.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.modeling;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.algebra.bool.*;
+import org.maxicp.modeling.algebra.integer.*;
+import org.maxicp.modeling.algebra.scheduling.CumulFunction;
+import org.maxicp.modeling.constraints.*;
+import org.maxicp.modeling.constraints.scheduling.AlwaysIn;
+import org.maxicp.modeling.constraints.scheduling.LessOrEqual;
+import org.maxicp.modeling.constraints.seqvar.*;
+import org.maxicp.modeling.symbolic.*;
+
+import java.util.Optional;
+
+public final class Factory {
+    private Factory() {}
+
+    // -------------- instantiation of the model -----------------------
+
+    static public ModelDispatcher makeModelDispatcher() {
+<span class="fc" id="L26">        return new ModelDispatcher();</span>
+    }
+
+    // -------------- objectives -----------------------
+
+    public static Objective minimize(IntExpression x, boolean shared) {
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (shared) return new SharedMinimization(x);</span>
+<span class="fc" id="L33">        return new Minimization(x);</span>
+    }
+
+    public static Objective minimize(IntExpression x) {
+<span class="fc" id="L37">        return minimize(x, false);</span>
+    }
+
+    public static Objective maximize(IntExpression x, boolean shared) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (shared) return new SharedMaximization(x);</span>
+<span class="nc" id="L42">        return new Maximization(x);</span>
+    }
+
+    public static Objective maximize(IntExpression x) {
+<span class="nc" id="L46">        return maximize(x, false);</span>
+    }
+
+    // -------------- constraints -----------------------
+
+    // ********************
+    // Arithmetic constraints (+, -, *, abs)
+    // ********************
+
+    public static IntExpression cst(ModelProxy modelProxy, int v) {
+<span class="fc" id="L56">        return new Constant(modelProxy, v);</span>
+    }
+
+    static public IntExpression plus(IntExpression a, int v) {
+<span class="nc" id="L60">        return new Sum(a, new Constant(a.getModelProxy(), v));</span>
+    }
+
+    static public IntExpression plus(IntExpression a, IntExpression b) {
+<span class="nc" id="L64">        return new Sum(a, b);</span>
+    }
+
+    static public IntExpression minus(IntExpression a, int v) {
+<span class="nc" id="L68">        return new Sum(a, new Constant(a.getModelProxy(), -v));</span>
+    }
+
+    static public IntExpression minus(IntExpression a, IntExpression b) {
+<span class="nc" id="L72">        return new Sum(a, minus(b));</span>
+    }
+
+    static public IntExpression minus(IntExpression a) {
+<span class="fc" id="L76">        return new UnaryMinus(a);</span>
+    }
+
+    static public IntExpression mul(IntExpression a, int b) {
+<span class="fc" id="L80">        return new CstMul(a, b);</span>
+    }
+
+    static public IntExpression mul(int b, IntExpression a) {
+<span class="fc" id="L84">        return new CstMul(a, b);</span>
+    }
+
+    static public IntExpression mul(IntExpression x, BoolExpression b) {
+<span class="fc" id="L88">        return new MulBinary(x,b);</span>
+    }
+
+    static public IntExpression mul(IntExpression... x) {
+<span class="fc" id="L92">        return new Mul(x);</span>
+    }
+
+    public static IntExpression abs(IntExpression x) {
+<span class="nc" id="L96">        return new Abs(x);</span>
+    }
+
+    // ********************
+    // Arithmetic constraints (sum, min, max)
+    // ********************
+
+    static public IntExpression sum(IntExpression... x) {
+<span class="fc" id="L104">        return new Sum(x);</span>
+    }
+
+<span class="fc" id="L107">    public static IntExpression max(IntExpression... x) { return new Max(x); }</span>
+
+<span class="nc" id="L109">    public static IntExpression min(IntExpression... x) { return new Min(x); }</span>
+
+    // ********************
+    // Comon constraints (=, !=, &lt;=, &lt;, &gt;=, &gt;)
+    // ********************
+
+    static public BoolExpression eq(IntExpression a, int b) {
+<span class="fc" id="L116">        return new Eq(a, new Constant(a.getModelProxy(),b));</span>
+    }
+
+    static public BoolExpression eq(int a, IntExpression b) {
+<span class="fc" id="L120">        return new Eq(a, b);</span>
+    }
+
+    static public BoolExpression eq(IntExpression a, IntExpression b) {
+<span class="fc" id="L124">        return new Eq(a, b);</span>
+    }
+
+
+    static public BoolExpression neq(IntExpression a, int b) {
+<span class="fc" id="L129">        return new NotEq(a, new Constant(a.getModelProxy(), b));</span>
+    }
+
+    static public BoolExpression neq(int a, IntExpression b) {
+<span class="fc" id="L133">        return new NotEq(a, b);</span>
+    }
+
+    static public BoolExpression neq(IntExpression a, IntExpression b) {
+<span class="nc" id="L137">        return new NotEq(a, b);</span>
+    }
+
+
+    static public BoolExpression le(IntExpression a, int b) {
+<span class="fc" id="L142">        return new LessOrEq(a, new Constant(a.getModelProxy(),b));</span>
+    }
+
+    static public BoolExpression le(int a, IntExpression b) {
+<span class="nc" id="L146">        return new LessOrEq(a, b);</span>
+    }
+
+    static public BoolExpression le(IntExpression a, IntExpression b) {
+<span class="nc" id="L150">        return new LessOrEq(a, b);</span>
+    }
+
+
+    static public BoolExpression lt(int a, IntExpression b) {
+<span class="nc" id="L155">        return new LessOrEq(a, Factory.minus(b, 1));</span>
+    }
+
+    static public BoolExpression lt(IntExpression a, int b) {
+<span class="nc" id="L159">        return new LessOrEq(a, new Constant(a.getModelProxy(),b-1));</span>
+    }
+
+    static public BoolExpression lt(IntExpression a, IntExpression b) {
+<span class="nc" id="L163">        return new LessOrEq(a, Factory.minus(b, 1));</span>
+    }
+
+
+    static public BoolExpression ge(IntExpression a, int b) {
+<span class="nc" id="L168">        return new GreaterOrEq(a, new Constant(a.getModelProxy(),b));</span>
+    }
+
+    static public BoolExpression ge(int a, IntExpression b) {
+<span class="nc" id="L172">        return new GreaterOrEq(a, b);</span>
+    }
+
+    static public BoolExpression ge(IntExpression a, IntExpression b) {
+<span class="nc" id="L176">        return new GreaterOrEq(a, b);</span>
+    }
+
+
+    static public BoolExpression gt(IntExpression a, int b) {
+<span class="nc" id="L181">        return new GreaterOrEq(a, new Constant(a.getModelProxy(),b+1));</span>
+    }
+
+    static public BoolExpression gt(int a, IntExpression b) {
+<span class="nc" id="L185">        return new GreaterOrEq(a, Factory.plus(b, 1));</span>
+    }
+
+    static public BoolExpression gt(IntExpression a, IntExpression b) {
+<span class="nc" id="L189">        return new GreaterOrEq(a, Factory.plus(b, 1));</span>
+    }
+
+    // ********************
+    // Comparison tests constraints (reified version of: =, !=, &gt;, &gt;=, &lt;, &lt;=)
+    // ********************
+
+    // TODO b &lt;-&gt; comparison
+
+    // ********************
+    // Logical constraints (not, and, or, implies)
+    // ********************
+
+    public static BoolExpression not(BoolExpression a) {
+<span class="fc" id="L203">        return new Not(a);</span>
+    }
+
+    public static BoolExpression and(BoolExpression... t) {
+<span class="nc" id="L207">        return new And(t);</span>
+    }
+
+    public static BoolExpression or(BoolExpression... t) {
+<span class="nc" id="L211">        return new Or(t);</span>
+    }
+
+    /**
+     * Returns the logical implication of a and b
+     * @param a a boolean expression
+     * @param b a boolean expression
+     * @return a =&gt; b
+     */
+    public static BoolExpression implies(BoolExpression a, BoolExpression b) {
+<span class="nc" id="L221">        return or(not(a), b);</span>
+    }
+
+
+    public static BoolExpression endBeforeStart(IntervalVar a, IntervalVar b) {
+<span class="fc" id="L226">        return new EndBeforeStart(a, b);</span>
+    }
+
+    // ********************
+    // Element constraints
+    // ********************
+
+    public static IntExpression get(int [] T, IntExpression y) {
+<span class="nc" id="L234">        return new Element1D(T, y);</span>
+    }
+
+    public static IntExpression get(IntExpression[] T, IntExpression y) {
+<span class="nc" id="L238">        return new Element1DVar(T, y);</span>
+    }
+
+    public static IntExpression get(int [][] T, IntVar x, IntVar y) {
+<span class="nc" id="L242">        return new Element2D(T, x, y);</span>
+    }
+
+    public static IntExpression get(IntExpression [][] T, IntVar x, IntVar y) {
+<span class="nc" id="L246">        return new Element2DVar(T, x, y);</span>
+    }
+
+    // ********************
+    // AllDifferent constraints (and constraints regarding the number of different values)
+    // ********************
+
+    public static Constraint allDifferent(IntExpression... x) {
+<span class="nc" id="L254">        return new AllDifferent(x);</span>
+    }
+
+    public static Constraint binPacking(IntExpression [] x, int [] weights, IntExpression [] loads) {
+<span class="nc" id="L258">        return new BinPacking(x, weights, loads);</span>
+    }
+
+    // ********************
+    // Circuit constraints
+    // ********************
+
+    public static Constraint circuit(IntExpression... x) {
+<span class="nc" id="L266">        return new Circuit(x);</span>
+    }
+
+    // ********************
+    // Extensional constraints
+    // ********************
+
+    public static Constraint table(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) {
+<span class="nc" id="L274">        return new Table(x, array, starred);</span>
+    }
+
+    public static Constraint negTable(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) {
+<span class="nc" id="L278">        return new NegTable(x, array, starred);</span>
+    }
+
+    // ********************
+    // Sequence constraints
+    // ********************
+
+    // TODO Sequence
+
+    // ********************
+    // Scheduling constraints
+    // ********************
+
+    public static Constraint cumulative(IntExpression[] start, int[] duration, int[] demand, int capa) {
+<span class="nc" id="L292">        return new org.maxicp.modeling.constraints.Cumulative(start, duration, demand, capa);</span>
+    }
+
+    public static Constraint disjunctive(IntExpression[] start, int[] duration) {
+<span class="nc" id="L296">        return new Disjunctive(start, duration);</span>
+    }
+
+    public static Constraint distance(SeqVar seqVar, int[][] distanceMatrix, IntExpression distance) {
+<span class="nc" id="L300">        return new Distance(seqVar, distanceMatrix, distance);</span>
+    }
+
+    public static Constraint require(SeqVar seqVar, int node) {
+<span class="nc" id="L304">        return new Require(seqVar, node);</span>
+    }
+
+    public static Constraint insert(SeqVar seqVar, int prev, int node) {
+<span class="fc" id="L308">        return new Insert(seqVar, prev, node);</span>
+    }
+
+    public static Constraint exclude(SeqVar seqVar, int node) {
+<span class="fc" id="L312">        return new Exclude(seqVar, node);</span>
+    }
+
+    public static Constraint notBetween(SeqVar seqVar, int pred, int node, int succ) {
+<span class="nc" id="L316">        return new NotBetween(seqVar, pred, node, succ);</span>
+    }
+
+    public static Constraint transitionTimes(SeqVar seqVar, IntExpression[] time, int[][] dist) {
+<span class="nc" id="L320">        return new TransitionTimes(seqVar, time, dist);</span>
+    }
+
+    public static Constraint transitionTimes(SeqVar seqVar, IntExpression[] time, int[][] dist, int[] serviceTime) {
+<span class="nc" id="L324">        return new TransitionTimes(seqVar, time, dist, serviceTime);</span>
+    }
+
+    public static Constraint cumulative(SeqVar seqVar, int[] starts, int[] ends, int[] load, int capacity) {
+<span class="nc" id="L328">        return new org.maxicp.modeling.constraints.seqvar.Cumulative(seqVar, starts, ends, load, capacity);</span>
+    }
+
+    public static Constraint noOverlap(IntervalVar... intervals) {
+<span class="nc" id="L332">        return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);</span>
+    }
+
+    public static Constraint alternative(IntervalVar real, IntervalVar... alternatives) {
+<span class="nc" id="L336">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);</span>
+    }
+
+    public static Constraint alternative(IntervalVar real, IntExpression n, IntervalVar... alternatives) {
+<span class="nc" id="L340">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);</span>
+    }
+
+
+    public static Constraint length(IntervalVar var, int length) {
+<span class="fc" id="L345">        return new org.maxicp.modeling.constraints.scheduling.Length(var, length);</span>
+    }
+
+    //public static Constraint present(IntervalVar var) {
+    //    return new org.maxicp.modeling.constraints.scheduling.Present(var);
+    //}
+
+    public static BoolExpression present(IntervalVar var) {
+<span class="fc" id="L353">        return new org.maxicp.modeling.algebra.bool.Present(var);</span>
+    }
+
+    public static Constraint start(IntervalVar var, int start) {
+<span class="fc" id="L357">        return new org.maxicp.modeling.constraints.scheduling.Start(var, start);</span>
+    }
+
+    /*
+    public static Constraint startAfter(IntervalVar var, int start) {
+        return new org.maxicp.modeling.constraints.scheduling.StartAfter(var, start);
+    }
+
+     */
+
+    public static IntExpression startOr(IntervalVar interval, int v) {
+<span class="nc" id="L368">        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);</span>
+    }
+
+    public static IntExpression start(IntervalVar interval) {
+<span class="fc" id="L372">        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);</span>
+    }
+
+    public static IntExpression endOr(IntervalVar interval, int v) {
+<span class="fc" id="L376">        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);</span>
+    }
+
+    public static IntExpression end(IntervalVar interval) {
+<span class="fc" id="L380">        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);</span>
+    }
+
+    public static IntExpression length(IntervalVar interval) {
+<span class="fc" id="L384">        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);</span>
+    }
+
+    public static IntExpression lengthOr(IntervalVar interval, int v) {
+<span class="nc" id="L388">        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);</span>
+    }
+
+
+    public static BoolExpression endBefore(IntervalVar intervalVar, IntExpression value) {
+<span class="nc" id="L393">        return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);</span>
+    }
+
+    public static BoolExpression endAfter(IntervalVar intervalVar, IntExpression value) {
+<span class="nc" id="L397">        return new EndAfter(intervalVar, value);</span>
+    }
+
+    public static BoolExpression endAfter(IntervalVar intervalVar, int value) {
+<span class="nc" id="L401">        return new EndAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+    }
+
+    public static BoolExpression startBefore(IntervalVar intervalVar, IntExpression value) {
+<span class="nc" id="L405">        return new StartBefore(intervalVar, value);</span>
+    }
+
+    public static BoolExpression startBefore(IntervalVar intervalVar, int value) {
+<span class="fc" id="L409">        return new StartBefore(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+    }
+
+    public static BoolExpression startAfter(IntervalVar intervalVar, IntExpression value) {
+<span class="nc" id="L413">        return new StartAfter(intervalVar, value);</span>
+    }
+
+    public static BoolExpression startAfter(IntervalVar intervalVar, int value) {
+<span class="fc" id="L417">        return new StartAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+    }
+
+    public static CumulFunction flat() {
+<span class="fc" id="L421">        return new org.maxicp.modeling.algebra.scheduling.FlatCumulFunction();</span>
+    }
+
+    public static CumulFunction pulse(IntervalVar interval, int height) {
+<span class="fc" id="L425">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
+    }
+
+    public static CumulFunction pulse(IntervalVar interval, int hMin, int hMax) {
+<span class="fc" id="L429">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);</span>
+    }
+
+    public static CumulFunction sum(CumulFunction ... functions) {
+<span class="fc" id="L433">        return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);</span>
+    }
+
+    public static CumulFunction minus(CumulFunction left, CumulFunction right) {
+<span class="nc" id="L437">        return new org.maxicp.modeling.algebra.scheduling.MinusCumulFunction(left, right);</span>
+    }
+
+    public static CumulFunction stepAtEnd(IntervalVar interval, int hMin, int hMax) {
+<span class="nc" id="L441">        return new org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction(interval, hMin, hMax);</span>
+    }
+
+    public static CumulFunction stepAtEnd(IntervalVar interval, int height) {
+<span class="nc" id="L445">        return stepAtEnd(interval, height, height);</span>
+    }
+
+    public static CumulFunction stepAtStart(IntervalVar interval, int hMin, int hMax) {
+<span class="nc" id="L449">        return new org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction(interval, hMin, hMax);</span>
+    }
+
+    public static CumulFunction stepAtStart(IntervalVar interval, int height) {
+<span class="nc" id="L453">        return stepAtStart(interval, height, height);</span>
+    }
+
+    public static Constraint le(CumulFunction function, int limit) {
+<span class="fc" id="L457">        return new LessOrEqual(function, limit);</span>
+    }
+
+    public static Constraint alwaysIn(CumulFunction expression, int heightMin, int heightMax) {
+<span class="nc" id="L461">        return new AlwaysIn(expression, heightMin, heightMax);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

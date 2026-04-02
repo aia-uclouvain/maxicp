@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Copier.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.copy</a> &gt; <span class="el_source">Copier.java</span></div><h1>Copier.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.copy;
+
+import org.maxicp.state.*;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
+
+/**
+ * StateManager that will store
+ * the state of every created elements
+ * at each {@link #saveState()} call.
+ */
+public class Copier implements StateManager {
+
+    class Backup extends Stack&lt;StateEntry&gt; {
+        private int sz;
+
+<span class="fc" id="L24">        Backup() {</span>
+<span class="fc" id="L25">            sz = store.size();</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">            for (Storage s : store)</span>
+<span class="fc" id="L27">                add(s.save());</span>
+<span class="fc" id="L28">        }</span>
+
+        void restore() {
+<span class="fc" id="L31">            store.setSize(sz);</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">            for (StateEntry se : this)</span>
+<span class="fc" id="L33">                se.restore();</span>
+<span class="fc" id="L34">        }</span>
+    }
+
+    private Stack&lt;Storage&gt; store;
+    private Stack&lt;Backup&gt; prior;
+    private List&lt;Runnable&gt; onRestoreListeners;
+
+<span class="fc" id="L41">    public Copier() {</span>
+<span class="fc" id="L42">        store = new Stack&lt;Storage&gt;();</span>
+<span class="fc" id="L43">        prior = new Stack&lt;Backup&gt;();</span>
+<span class="fc" id="L44">        onRestoreListeners = new LinkedList&lt;Runnable&gt;();</span>
+<span class="fc" id="L45">    }</span>
+
+    private void notifyRestore() {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (Runnable l: onRestoreListeners) {</span>
+<span class="fc" id="L49">            l.run();</span>
+<span class="fc" id="L50">        }</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public void onRestore(Runnable listener) {
+<span class="fc" id="L55">        onRestoreListeners.add(listener);</span>
+<span class="fc" id="L56">    }</span>
+
+    public int getLevel() {
+<span class="fc" id="L59">        return prior.size() - 1;</span>
+    }
+
+
+    public int storeSize() {
+<span class="nc" id="L64">        return store.size();</span>
+    }
+
+    @Override
+    public void saveState() {
+<span class="fc" id="L69">        prior.add(new Backup());</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void restoreState() {
+<span class="fc" id="L74">        prior.pop().restore();</span>
+<span class="fc" id="L75">        notifyRestore();</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void restoreStateUntil(int level) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        while (getLevel() &gt; level)</span>
+<span class="fc" id="L81">            restoreState();</span>
+<span class="fc" id="L82">    }</span>
+
+    @Override
+    public &lt;T&gt; State&lt;T&gt; makeStateRef(T initValue) {
+<span class="fc" id="L86">        Copy r = new Copy(initValue);</span>
+<span class="fc" id="L87">        store.add(r);</span>
+<span class="fc" id="L88">        return r;</span>
+    }
+
+    @Override
+    public StateInt makeStateInt(int initValue) {
+<span class="fc" id="L93">        CopyInt s = new CopyInt(initValue);</span>
+<span class="fc" id="L94">        store.add(s);</span>
+<span class="fc" id="L95">        return s;</span>
+    }
+
+    @Override
+    public StateLong makeStateLong(long initValue) {
+<span class="fc" id="L100">        CopyLong s = new CopyLong(initValue);</span>
+<span class="fc" id="L101">        store.add(s);</span>
+<span class="fc" id="L102">        return s;</span>
+    }
+
+    @Override
+    public &lt;K,V&gt; StateMap&lt;K,V&gt; makeStateMap() {
+<span class="fc" id="L107">        CopyMap&lt;K, V&gt; s = new CopyMap&lt;&gt;();</span>
+<span class="fc" id="L108">        store.add(s);</span>
+<span class="fc" id="L109">        return s;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L114">        return &quot;Copier&quot;;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

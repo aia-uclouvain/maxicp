@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Square.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Square.java</span></div><h1>Square.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+/**
+ * Square Constraint x * x = y
+ * @author Pierre Schaus
+ */
+public class Square extends AbstractCPConstraint {
+
+    private CPIntVar x;
+    private CPIntVar y;
+
+    /**
+     * x*x == y
+     * @param x
+     * @param y
+     */
+    public Square(CPIntVar x, CPIntVar y) {
+<span class="fc" id="L27">        super(x.getSolver());</span>
+<span class="fc" id="L28">        this.x = x;</span>
+<span class="fc" id="L29">        this.y = y;</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L34">        y.removeBelow(0);</span>
+<span class="fc" id="L35">        propagate();</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (isActive()) {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">            if (!x.isFixed()) {</span>
+<span class="fc" id="L38">                x.propagateOnDomainChange(this);</span>
+            }
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">            if (!y.isFixed()) {</span>
+<span class="fc" id="L41">                y.propagateOnBoundChange(this);</span>
+            }
+        }
+<span class="fc" id="L44">    }</span>
+
+    @Override
+    public void propagate() {
+        // propagation of y
+<span class="fc" id="L49">        int mx = x.min();</span>
+<span class="fc" id="L50">        int Mx = x.max();</span>
+<span class="fc" id="L51">        int mx2 = mx * mx;</span>
+<span class="fc" id="L52">        int Mx2 = Mx * Mx;</span>
+
+        // propagate y (which is not bound)
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (mx &gt;= 0) { // x will be positive</span>
+<span class="fc" id="L56">            y.removeBelow(mx2);</span>
+<span class="fc" id="L57">            y.removeAbove(Mx2);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        } else if (Mx &lt;= 0) { // x is non-positive</span>
+<span class="fc" id="L59">            y.removeBelow(Mx2);</span>
+<span class="fc" id="L60">            y.removeAbove(mx2);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        } else if (x.contains(0)) {</span>
+            // y min is already &gt;= 0 (post does it)
+<span class="fc" id="L63">            y.removeAbove(Math.max(mx2, Mx2));</span>
+        } else {
+<span class="fc" id="L65">            int a = x.before(0);</span>
+<span class="fc" id="L66">            int b = x.after(0);</span>
+<span class="fc" id="L67">            int a2 = a * a;</span>
+<span class="fc" id="L68">            int b2 = b * b;</span>
+<span class="fc" id="L69">            y.removeBelow(Math.min(a2, b2));</span>
+<span class="fc" id="L70">            y.removeAbove(Math.max(a2, b2));</span>
+        }
+        //propagate x (which is not bound)
+<span class="fc" id="L73">        int my = y.min();</span>
+<span class="fc" id="L74">        int My = y.max();</span>
+
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        int rootm = (int) (Mx &lt;= 0 ? Math.ceil(Math.sqrt(my)) : Math.sqrt(my));</span>
+<span class="fc" id="L77">        int rootM = (int) Math.sqrt(My);</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (mx &gt;= 0) {</span>
+<span class="fc" id="L80">            x.removeBelow(rootm);</span>
+<span class="fc" id="L81">            x.removeAbove(rootM);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        } else if (Mx &lt;= 0) {</span>
+<span class="fc" id="L83">            x.removeAbove(-rootm);</span>
+<span class="fc" id="L84">            x.removeBelow(-rootM);</span>
+        } else {
+<span class="fc" id="L86">            x.removeBelow(-rootM);</span>
+<span class="fc" id="L87">            x.removeAbove(rootM);</span>
+			/*
+			for (int v = -rootm+1; v &lt; rootm; v++) {
+				x.removeValue(v);
+			}*/
+        }
+<span class="fc" id="L93">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

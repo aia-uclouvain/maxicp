@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CacheScope.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.constraints.helpers</a> &gt; <span class="el_source">CacheScope.java</span></div><h1>CacheScope.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.constraints.helpers;
+
+import org.maxicp.modeling.Constraint;
+import org.maxicp.modeling.algebra.Expression;
+
+import java.util.Collection;
+import java.util.WeakHashMap;
+
+public interface CacheScope extends Constraint {
+    /**
+     * Computes the scope. Should be implemented by subclasses, but not used directly.
+     * Use scope() instead, which is cached.
+     *
+     * @return the scope of the constraint, i.e. all the Expressions it uses. The collection should be immutable.
+     */
+    Collection&lt;? extends Expression&gt; computeScope();
+
+    /**
+     * Returns the scope of the constraint, preferably as an immutable, unique collection.
+     * Cached conterpart of computeScope().
+     *
+     * @return the scope of the constraint, i.e. all the Expressions it uses. The collection should be immutable.
+     */
+    default Collection&lt;? extends Expression&gt; scope() {
+<span class="nc" id="L25">        return ScopeCache.cache.computeIfAbsent(this, k -&gt; this.computeScope());</span>
+    }
+}
+
+<span class="nc" id="L29">class ScopeCache {</span>
+<span class="nc" id="L30">    static WeakHashMap&lt;CacheScope, Collection&lt;? extends Expression&gt;&gt; cache = new WeakHashMap&lt;&gt;();</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

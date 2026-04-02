@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MinimizeObjectiveSum.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">MinimizeObjectiveSum.java</span></div><h1>MinimizeObjectiveSum.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.search.IntObjective;
+import org.maxicp.search.Objective;
+
+import java.util.Arrays;
+
+/**
+ *  Objective to minimize a sum of variables following
+ *  the approach described in the paper:
+ *
+ *  Variable Objective Large Neighborhood Search:
+ *  A practical approach to solve over-constrained problems (ICTAI 2013, Pierre Schaus)
+ *
+ */
+public class MinimizeObjectiveSum implements Objective {
+
+
+    CPIntVar [] variables;
+    IntObjective [] ox;
+    IntObjective  osumx;
+    CPIntVar sumx;
+
+    /**
+     * Create a new objective to minimize x[0] + x[1] + ... + x[n-1]
+     * @param x
+     */
+<span class="nc" id="L34">    public MinimizeObjectiveSum(CPIntVar ... x) {</span>
+
+<span class="nc" id="L36">        this.variables = x;</span>
+<span class="nc" id="L37">        CPSolver cp = variables[0].getSolver();</span>
+
+
+        // the terms update the bounds but are not filtered
+        // and must not improve
+<span class="nc" id="L42">        ox = new IntObjective[variables.length];</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; variables.length; i++) {</span>
+<span class="nc" id="L44">            ox[i] = cp.minimize(variables[i]);</span>
+<span class="nc" id="L45">            ox[i].setDelta(0);</span>
+<span class="nc" id="L46">            ox[i].setFilter(false);</span>
+        }
+
+        // the sum must improve and is filtered
+<span class="nc" id="L50">        sumx = CPFactory.sum(x);</span>
+<span class="nc" id="L51">        osumx = cp.minimize(sumx);</span>
+<span class="nc" id="L52">        osumx.setDelta(1);</span>
+<span class="nc" id="L53">        osumx.setFilter(true);</span>
+<span class="nc" id="L54">    }</span>
+
+    /**
+     * Set all the terms, including the sum in Weak tighten mode.
+     * Weak tightening means that the bound are updated on each new
+     * solution and the next solution must at least equalize (but not necessarily improve)
+     * the bounds for each term and the sum.
+     */
+    public void weakTightenAll() {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        for (int i = 0; i &lt; variables.length; i++) {</span>
+<span class="nc" id="L64">            ox[i].setDelta(0);</span>
+<span class="nc" id="L65">            ox[i].setFilter(true);</span>
+        }
+<span class="nc" id="L67">        osumx.setDelta(0);</span>
+<span class="nc" id="L68">        osumx.setFilter(true);</span>
+<span class="nc" id="L69">    }</span>
+
+    /**
+     * Strong tighten the sum
+     * It means that the sum bound is updated on each new
+     * solution and the next solution must strictly improve the sum.
+     */
+    public void strongTightenSum() {
+<span class="nc" id="L77">        osumx.setDelta(1); // the sum must improve</span>
+<span class="nc" id="L78">        osumx.setFilter(true);</span>
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * Strong tighten the worse term
+     * It means that the bound of the worse term is updated on each new
+     * solution and the next solution must strictly improve this worse term.
+     */
+    public void strongTigthenWorseTerm() {
+<span class="nc" id="L87">        int [] bounds = Arrays.stream(ox).mapToInt(o -&gt; o.getBound()).toArray();</span>
+<span class="nc" id="L88">        int i = org.maxicp.util.Arrays.argMax(bounds); // index of worse term</span>
+<span class="nc" id="L89">        ox[i].setDelta(1);</span>
+<span class="nc" id="L90">    }</span>
+
+    /**
+     * Bound of the sum objective
+     * @return the bound of the sum objective
+     */
+    public int getBound() {
+<span class="nc" id="L97">        return osumx.getBound();</span>
+    }
+
+
+    /**
+     * Method called each time a solution is found
+     * during the search to let the tightening
+     * of the primal bound occurs such that
+     * the next found solution is better.
+     *
+     * This will tighten all the objectives
+     */
+    @Override
+    public void tighten() {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        for (Objective o : ox) {</span>
+<span class="nc" id="L112">            o.tighten();</span>
+        }
+<span class="nc" id="L114">        osumx.tighten();</span>
+<span class="nc" id="L115">    }</span>
+
+    /**
+     * Relax all the objectives bound so that they
+     * can be deteriorated.
+     */
+    @Override
+    public void relax() {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (Objective o : ox) {</span>
+<span class="nc" id="L124">            o.relax();</span>
+        }
+<span class="nc" id="L126">        osumx.relax();</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public void filter() {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (Objective o : ox) {</span>
+<span class="nc" id="L132">            o.filter();</span>
+        }
+<span class="nc" id="L134">        osumx.filter();</span>
+<span class="nc" id="L135">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeneralizedCumulativeConstraint.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">GeneralizedCumulativeConstraint.java</span></div><h1>GeneralizedCumulativeConstraint.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.Constants;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.Comparator;
+
+import static org.maxicp.Constants.HORIZON;
+
+/**
+ * Generalized Cumulative Constraint using Timetabling
+ * TODO Refer paper once published
+ *
+ * @author Roger Kameugne, Charles Thomas, Pierre Schaus
+ */
+public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
+    private final Activity[] activities;
+    protected final long maxCapacity;
+    protected final long minCapacity;
+
+    //Propagation structures:
+    protected final StateSparseSet activeSet; //Tracks active activities
+    protected final int[] active; //Indices of the active activities
+    protected final StateInt minStart; //Minimum start of all non-fixed activities
+    protected final StateInt maxEnd; //Maximum end of all non-fixed activities
+
+    //Structures used for timeline initialization:
+    protected final Event[] events; //Events used to build profile
+    public final int[] actToStartMinTp; //Pointers to start min time points
+    public final int[] actToEndMaxTp; //Pointers to end max time points
+
+    // Profile structure implemented as arrays:
+    protected final int[] time; //Time of time points
+    protected final int[] profileMin; //Minimum Profile
+    protected final int[] profileMax; //Maximum Profile
+    protected final int[] nOverlap; //Number of overlapping tasks
+    protected int lastTP; //Index of last time point
+
+    //Structures used to remember profile at start of propagation:
+    protected final boolean[] isPresentInProfile; // Tracks which tasks are present at start of propagation
+    protected final int[] startMaxInProfile; // Tracks start max of tasks at start of propagation
+    protected final int[] endMinInProfile; // Tracks end min of tasks at start of propagation
+
+    // Boolean flags for propagation rule activation:
+    protected boolean allHeightFixed;
+    protected boolean allLengthFixed;
+    protected boolean allPositive;
+    protected boolean allNegative;
+    protected boolean hasMinCapa;
+    protected boolean mandatoryActive;
+    protected boolean simpleCumulative;
+
+    /**
+     * Creates an new Generalized Cumulative Constraint
+     *
+     * @param activities  array of activities
+     * @param minCapacity minimum capacity
+     * @param maxCapacity maximum capacity
+     */
+    public GeneralizedCumulativeConstraint(Activity[] activities, int minCapacity, int maxCapacity) {
+<span class="fc" id="L72">        super(activities[0].interval().getSolver());</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (minCapacity &gt; maxCapacity)</span>
+<span class="nc" id="L74">            throw new IllegalArgumentException(&quot;The minimum capacity provided is &gt; max capacity&quot;);</span>
+<span class="fc" id="L75">        this.activities = activities.clone();</span>
+<span class="fc" id="L76">        this.maxCapacity = maxCapacity;</span>
+<span class="fc" id="L77">        this.minCapacity = minCapacity;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        hasMinCapa = minCapacity &gt; Integer.MIN_VALUE;</span>
+
+<span class="fc" id="L80">        StateManager sm = activities[0].interval().getSolver().getStateManager();</span>
+<span class="fc" id="L81">        activeSet = new StateSparseSet(sm, nMax(), 0);</span>
+<span class="fc" id="L82">        active = new int[nMax()];</span>
+<span class="fc" id="L83">        minStart = sm.makeStateInt(0);</span>
+<span class="fc" id="L84">        maxEnd = sm.makeStateInt(HORIZON);</span>
+
+<span class="fc" id="L86">        events = new Event[nMax() * 4];</span>
+<span class="fc" id="L87">        actToStartMinTp = new int[nMax()];</span>
+<span class="fc" id="L88">        actToEndMaxTp = new int[nMax()];</span>
+
+<span class="fc" id="L90">        time = new int[nMax() * 4 + 1];</span>
+<span class="fc" id="L91">        profileMin = new int[nMax() * 4 + 1];</span>
+<span class="fc" id="L92">        profileMax = new int[nMax() * 4 + 1];</span>
+<span class="fc" id="L93">        nOverlap = new int[nMax() * 4 + 1];</span>
+
+<span class="fc" id="L95">        isPresentInProfile = new boolean[nMax()];</span>
+<span class="fc" id="L96">        startMaxInProfile = new int[nMax()];</span>
+<span class="fc" id="L97">        endMinInProfile = new int[nMax()];</span>
+<span class="fc" id="L98">    }</span>
+
+    /**
+     * Creates an new Generalized Cumulative Constraint with only a maximum capacity
+     *
+     * @param activities  array of activities
+     * @param maxCapacity maximum capacity
+     */
+    public GeneralizedCumulativeConstraint(Activity[] activities, int maxCapacity) {
+<span class="fc" id="L107">        this(activities, Integer.MIN_VALUE, maxCapacity);</span>
+<span class="fc" id="L108">    }</span>
+
+    public int nMax() {
+<span class="fc" id="L111">        return activities.length;</span>
+    }
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        for (Activity act : activities) {</span>
+<span class="fc" id="L117">            act.interval().propagateOnChange(this);</span>
+<span class="fc" id="L118">            act.height().propagateOnBoundChange(this);</span>
+        }
+<span class="fc" id="L120">        propagate();</span>
+<span class="fc" id="L121">    }</span>
+
+    @Override
+    public int priority() {
+<span class="fc" id="L125">        return Constants.PIORITY_MEDIUM;</span>
+    }
+
+    @Override
+    public void propagate() {
+        //Checking active activities:
+<span class="fc" id="L131">        int nActive = activeSet.fillArray(active);</span>
+<span class="fc" id="L132">        int minS = Integer.MAX_VALUE;</span>
+<span class="fc" id="L133">        int maxE = Integer.MIN_VALUE;</span>
+<span class="fc" id="L134">        int j = 0;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        while (j &lt; nActive) {</span>
+<span class="fc" id="L136">            int a = active[j];</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (activities[a].isAbsent()) {</span>
+<span class="fc" id="L138">                activeSet.remove(a);</span>
+<span class="fc" id="L139">                active[j] = active[nActive - 1];</span>
+<span class="fc" id="L140">                nActive--;</span>
+            } else {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                if (!activities[a].isFixed()) {</span>
+<span class="fc" id="L143">                    minS = Math.min(minS, activities[a].getStartMin());</span>
+<span class="fc" id="L144">                    maxE = Math.max(maxE, activities[a].getEndMax());</span>
+                }
+<span class="fc" id="L146">                j++;</span>
+            }
+<span class="fc" id="L148">        }</span>
+
+        // Preparing data:
+<span class="fc" id="L151">        allHeightFixed = true;</span>
+<span class="fc" id="L152">        allLengthFixed = true;</span>
+<span class="fc" id="L153">        allPositive = true;</span>
+<span class="fc" id="L154">        allNegative = true;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int i = 0; i &lt; nActive; i++) {</span>
+<span class="fc" id="L156">            int a = active[i];</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if (activeSet.contains(a)) {</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                if (!activities[a].height().isFixed()) allHeightFixed = false;</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">                if (!activities[a].isLengthFixed()) allHeightFixed = false;</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">                if (activities[a].getHeightMin() &lt; 0) allPositive = false;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                if (activities[a].getHeightMax() &gt; 0) allNegative = false;</span>
+<span class="fc" id="L162">                isPresentInProfile[a] = activities[a].isPresent();</span>
+<span class="fc" id="L163">                startMaxInProfile[a] = activities[a].getStartMax();</span>
+<span class="fc" id="L164">                endMinInProfile[a] = activities[a].getEndMin();</span>
+            }
+        }
+<span class="pc bpc" id="L167" title="1 of 6 branches missed.">        mandatoryActive = (!allPositive &amp;&amp; !allNegative) || hasMinCapa;</span>
+<span class="pc bpc" id="L168" title="1 of 6 branches missed.">        simpleCumulative = !mandatoryActive &amp;&amp; allHeightFixed &amp;&amp; allLengthFixed;</span>
+
+        //Propagation:
+<span class="pc bpc" id="L171" title="2 of 6 branches missed.">        if (nActive &gt; 0 &amp;&amp; (minCapacity &gt; Integer.MIN_VALUE || maxCapacity &lt; Integer.MAX_VALUE)) {</span>
+<span class="fc" id="L172">            initializeTimeline(nActive);</span>
+<span class="fc" id="L173">            timeTabling(nActive);</span>
+        }
+
+        //Removing inactive activities:
+<span class="fc" id="L177">        minStart.setValue(minS);</span>
+<span class="fc" id="L178">        maxEnd.setValue(maxE);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int i = 0; i &lt; nActive; i++) {</span>
+<span class="fc" id="L180">            int a = active[i];</span>
+<span class="pc bpc" id="L181" title="1 of 6 branches missed.">            if (activeSet.contains(a) &amp;&amp; (activities[a].getEndMax() &lt;= minS || activities[a].getStartMin() &gt;= maxE))</span>
+<span class="fc" id="L182">                activeSet.remove(a);</span>
+        }
+<span class="fc" id="L184">    }</span>
+
+    //Creates timeline structure:
+    public void initializeTimeline(int n) {
+        //Resetting events:
+<span class="fc" id="L189">        int nEvents = 0;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">            if (events[nEvents] == null) events[nEvents] = new Event(active[i], eventType.START_MIN);</span>
+<span class="fc" id="L192">            else events[nEvents].reset(active[i], eventType.START_MIN);</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (events[nEvents + 1] == null) events[nEvents + 1] = new Event(active[i], eventType.END_MAX);</span>
+<span class="fc" id="L194">            else events[nEvents + 1].reset(active[i], eventType.END_MAX);</span>
+<span class="fc" id="L195">            nEvents += 2;</span>
+<span class="fc bfc" id="L196" title="All 4 branches covered.">            if (activities[active[i]].isPresent() &amp;&amp; activities[active[i]].hasFixedPart()) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                if (events[nEvents] == null) events[nEvents] = new Event(active[i], eventType.START_MAX);</span>
+<span class="fc" id="L198">                else events[nEvents].reset(active[i], eventType.START_MAX);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                if (events[nEvents + 1] == null) events[nEvents + 1] = new Event(active[i], eventType.END_MIN);</span>
+<span class="fc" id="L200">                else events[nEvents + 1].reset(active[i], eventType.END_MIN);</span>
+<span class="fc" id="L201">                nEvents += 2;</span>
+            }
+        }
+<span class="fc" id="L204">        Arrays.sort(events, 0, nEvents, Comparator.comparing(Event::getTime)); //Sorting events by time</span>
+
+<span class="fc" id="L206">        lastTP = 0;</span>
+<span class="fc" id="L207">        resetTP(lastTP, minStart.value(), 0, 0, 0);</span>
+
+        //Iterating over events to create time points:
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        for (int i = 0; i &lt; nEvents; i++) {</span>
+<span class="fc" id="L211">            Event event = events[i];</span>
+<span class="fc" id="L212">            int t = event.getTime();</span>
+<span class="fc" id="L213">            Activity act = event.getActivity();</span>
+
+            //If the current time is higher than the last Time Point: moving to new time point:
+<span class="fc bfc" id="L216" title="All 4 branches covered.">            if (t &gt; time[lastTP] &amp;&amp; t &lt;= maxEnd.value()) {</span>
+                // If the required consumption overloads the maximum capacity and the available production: failure
+<span class="fc bfc" id="L218" title="All 6 branches covered.">                if (nOverlap[lastTP] &gt; 0 &amp;&amp; (maxCapacity &lt; profileMin[lastTP] || profileMax[lastTP] &lt; minCapacity))</span>
+<span class="fc" id="L219">                    throw new InconsistencyException();</span>
+<span class="fc" id="L220">                lastTP++;</span>
+<span class="fc" id="L221">                resetTP(lastTP, t, profileMin[lastTP - 1], profileMax[lastTP - 1], nOverlap[lastTP - 1]);</span>
+            }
+
+<span class="pc bpc" id="L224" title="1 of 5 branches missed.">            switch (event.getType()) {</span>
+                case START_MIN -&gt; {
+<span class="fc" id="L226">                    profileMin[lastTP] += Math.min(act.getHeightMin(), 0);</span>
+<span class="fc" id="L227">                    profileMax[lastTP] += Math.max(act.getHeightMax(), 0);</span>
+<span class="fc" id="L228">                    actToStartMinTp[event.getActIdx()] = lastTP;</span>
+<span class="fc" id="L229">                }</span>
+                case END_MAX -&gt; {
+<span class="fc" id="L231">                    profileMin[lastTP] -= Math.min(act.getHeightMin(), 0);</span>
+<span class="fc" id="L232">                    profileMax[lastTP] -= Math.max(act.getHeightMax(), 0);</span>
+<span class="fc" id="L233">                    actToEndMaxTp[event.getActIdx()] = lastTP;</span>
+<span class="fc" id="L234">                }</span>
+                case START_MAX -&gt; {
+<span class="fc" id="L236">                    profileMin[lastTP] += Math.max(act.getHeightMin(), 0);</span>
+<span class="fc" id="L237">                    profileMax[lastTP] += Math.min(act.getHeightMax(), 0);</span>
+<span class="fc" id="L238">                    nOverlap[lastTP]++;</span>
+<span class="fc" id="L239">                }</span>
+                case END_MIN -&gt; {
+<span class="fc" id="L241">                    profileMin[lastTP] -= Math.max(act.getHeightMin(), 0);</span>
+<span class="fc" id="L242">                    profileMax[lastTP] -= Math.min(act.getHeightMax(), 0);</span>
+<span class="fc" id="L243">                    nOverlap[lastTP]--;</span>
+                }
+            }
+        }
+<span class="fc" id="L247">    }</span>
+
+    //Timetabling filtering:
+    protected void timeTabling(int n) {
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L252">            int actIdx = active[i];</span>
+<span class="fc" id="L253">            Activity act = activities[actIdx];</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">            if (!act.isFixed()) {</span>
+
+                //Forward check until fixed part or end min of activity:
+<span class="fc" id="L257">                int tpForward = actToStartMinTp[actIdx];</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">                while (time[tpForward] &lt; Math.min(act.getStartMax(), act.getEndMin())) {</span>
+                    // if by forcing the task, the profile does not intersect the capacity range
+                    // then the task is pushed to the next time point:
+<span class="fc bfc" id="L261" title="All 2 branches covered.">                    if ((profileMin[tpForward] + Math.max(act.getHeightMin(), 0) &gt; maxCapacity) ||</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">                            (profileMax[tpForward] + Math.min(act.getHeightMax(), 0) &lt; minCapacity)</span>
+                    ) {
+<span class="fc" id="L264">                        act.setStartMin(getEnd(tpForward));</span>
+                    } else {
+<span class="fc bfc" id="L266" title="All 2 branches covered.">                        if (mandatoryActive) checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory</span>
+                    }
+<span class="fc" id="L268">                    tpForward++;</span>
+                }
+
+                //Backward check until fixed part or start max of activity:
+<span class="fc" id="L272">                int tpBackward = actToEndMaxTp[actIdx] - 1;</span>
+<span class="fc bfc" id="L273" title="All 4 branches covered.">                while (tpBackward &gt;= 0 &amp;&amp; getEnd(tpBackward) &gt; Math.max(act.getEndMin(), act.getStartMax())) {</span>
+                    // if by forcing the task, the profile does not intersect the capacity range
+                    // then the task is pushed to the previous time point:
+<span class="fc bfc" id="L276" title="All 2 branches covered.">                    if ((profileMin[tpBackward] + Math.max(act.getHeightMin(), 0) &gt; maxCapacity) ||</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">                            (profileMax[tpBackward] + Math.min(act.getHeightMax(), 0) &lt; minCapacity)</span>
+                    ) {
+<span class="fc" id="L279">                        act.setEndMax(time[tpBackward]);</span>
+                    } else {
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                        if (mandatoryActive) checkIfMandatory(actIdx, tpBackward); //Checking if activity is mandatory</span>
+                    }
+<span class="fc" id="L283">                    tpBackward--;</span>
+                }
+
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                if (!simpleCumulative) {</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">                    if (act.hasFixedPart()) {</span>
+                        //Checking fixed part of activity:
+<span class="pc bpc" id="L289" title="1 of 4 branches missed.">                        while (!act.isAbsent() &amp;&amp; time[tpForward] &lt; act.getEndMin()) {</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">                            if (mandatoryActive)</span>
+<span class="fc" id="L291">                                checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory</span>
+                            // Adjusting height:
+                            // (Necessary even if height is fixed as height adjustment will remove task if not possible)
+<span class="fc" id="L294">                            adjustHeightOnFixedPart(actIdx, tpForward);</span>
+<span class="fc" id="L295">                            tpForward++;</span>
+                        }
+                    } else {
+                        //Checking max and min height at previous timePoint (start of MOI):
+<span class="fc bfc" id="L299" title="All 2 branches covered.">                        long maxH = tpForward &gt; 0 ? maxCapacity - ((long) profileMin[tpForward-1] - Math.min(act.getHeightMin(), 0L)) : Long.MIN_VALUE;</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                        long minH = tpForward &gt; 0 ? minCapacity - ((long) profileMax[tpForward-1] - Math.max(act.getHeightMax(), 0L)) : Long.MAX_VALUE;</span>
+
+                        // Last time at which the act can start and span until now without obstruction:
+                        // (used to compute max length)
+<span class="fc" id="L304">                        int currentStart = act.getStartMin();</span>
+<span class="fc" id="L305">                        int maxL = 0; //Current maximum length</span>
+
+                        //Checking free part of activity:
+<span class="pc bpc" id="L308" title="1 of 4 branches missed.">                        while (!act.isAbsent() &amp;&amp; time[tpForward] &lt; act.getStartMax()) {</span>
+<span class="fc" id="L309">                            maxL = Math.max(maxL, time[tpForward] - currentStart); //Updating max length</span>
+                            //If obstruction, moving current start to next time point:
+<span class="fc bfc" id="L311" title="All 2 branches covered.">                            if ((profileMin[tpForward] + Math.max(act.getHeightMin(), 0) &gt; maxCapacity) ||</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                                    (profileMax[tpForward] + Math.min(act.getHeightMax(), 0) &lt; minCapacity)</span>
+<span class="fc" id="L313">                            ) currentStart = getEnd(tpForward);</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">                            else if (mandatoryActive)</span>
+<span class="fc" id="L315">                                checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory</span>
+                            //Updating min &amp; max available heights:
+<span class="fc" id="L317">                            maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));</span>
+<span class="fc" id="L318">                            minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));</span>
+<span class="fc" id="L319">                            tpForward++;</span>
+                        }
+
+                        //Updating min &amp; max available heights at next timepoint if necessary:
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                        if(time[tpForward] == act.getStartMax()) {</span>
+<span class="fc" id="L324">                            maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));</span>
+<span class="fc" id="L325">                            minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));</span>
+                        }
+
+                        // Adjusting height:
+                        // (Necessary even if height is fixed as height adjustment will remove task if not possible)
+<span class="fc" id="L330">                        act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));</span>
+<span class="fc" id="L331">                        act.setHeightMin((int) Math.max(act.getHeightMin(), minH));</span>
+
+                        //Adjusting maximum length:
+<span class="fc" id="L334">                        maxL = Math.max(maxL, act.getEndMax() - currentStart);</span>
+<span class="fc" id="L335">                        act.setLengthMax(Math.min(act.getLengthMax(), maxL));</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L340">    }</span>
+
+    // Checks if the activity is mandatory:
+    // if by not scheduling the task, the profile does not intersect the capacity range
+    // then the task is forced to span the time point
+    protected void checkIfMandatory(int actIdx, int tp) {
+<span class="fc" id="L346">        Activity act = activities[actIdx];</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">        long minCapaDeficit = minCapacity - ((long) profileMax[tp] - Math.max(act.getHeightMax(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.min(act.getHeightMax(), 0L) : 0L));</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        long maxCapaOverload = maxCapacity - ((long) profileMin[tp] - Math.min(act.getHeightMin(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.max(act.getHeightMin(), 0L) : 0L));</span>
+
+        // If the task is detected mandatory:
+<span class="fc bfc" id="L351" title="All 6 branches covered.">        if (nOverlap[tp] &gt; 0 &amp;&amp; (minCapaDeficit &gt; 0 || maxCapaOverload &lt; 0)) {</span>
+            // Ensure it is run during the current time point:
+<span class="fc" id="L353">            act.setPresent();</span>
+<span class="fc" id="L354">            act.setStartMax(time[tp]);</span>
+<span class="fc" id="L355">            act.setEndMin(getEnd(tp));</span>
+            // (length min, start min and end max are also updated when setting start max and end min).
+
+            // Ensure the minimum or maximum height of the task covers the profile deficit or overload:
+<span class="fc bfc" id="L359" title="All 2 branches covered.">            if (minCapaDeficit &gt; 0) act.setHeightMin((int) Math.max(minCapaDeficit, act.getHeightMin()));</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            if (maxCapaOverload &lt; 0) act.setHeightMax((int) Math.min(maxCapaOverload, act.getHeightMax()));</span>
+        }
+<span class="fc" id="L362">    }</span>
+
+    // if profileMax &gt; maxCapacity and we are on a fixed-part of the task, we can reduce its height
+    // perform computation on longs to avoid overflow
+    protected void adjustHeightOnFixedPart(int actIdx, int tp) {
+<span class="fc" id="L367">        Activity act = activities[actIdx];</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">        if (act.hasFixedPartAt(time[tp])) {</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">            long minH = minCapacity - ((long) profileMax[tp] - Math.max(act.getHeightMax(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.min(act.getHeightMax(), 0L) : 0L));</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            long maxH = maxCapacity - ((long) profileMin[tp] - Math.min(act.getHeightMin(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.max(act.getHeightMin(), 0L) : 0L));</span>
+<span class="fc" id="L371">            act.setHeightMin((int) Math.max(minH, act.getHeightMin()));</span>
+<span class="fc" id="L372">            act.setHeightMax((int) Math.min(maxH, act.getHeightMax()));</span>
+        }
+<span class="fc" id="L374">    }</span>
+
+    //Returns end time of time point:
+    public int getEnd(int idx) {
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        return idx &lt; lastTP ? time[idx + 1] : time[idx];</span>
+    }
+
+    // Resets time point at given index with provided values
+    public void resetTP(int idx, int time, int profileMin, int profileMax, int nOverlap) {
+<span class="fc" id="L383">        this.time[idx] = time;</span>
+<span class="fc" id="L384">        this.profileMin[idx] = profileMin;</span>
+<span class="fc" id="L385">        this.profileMax[idx] = profileMax;</span>
+<span class="fc" id="L386">        this.nOverlap[idx] = nOverlap;</span>
+<span class="fc" id="L387">    }</span>
+
+    //Checks if a task fixed part is included in the profile at given time
+    public boolean isIncludedInProfileAt(int tsk, int time) {
+<span class="fc bfc" id="L391" title="All 6 branches covered.">        return isPresentInProfile[tsk] &amp;&amp; startMaxInProfile[tsk] &lt;= time &amp;&amp; endMinInProfile[tsk] &gt; time;</span>
+    }
+
+<span class="fc" id="L394">    public enum eventType {</span>
+<span class="fc" id="L395">        START_MIN,</span>
+<span class="fc" id="L396">        START_MAX,</span>
+<span class="fc" id="L397">        END_MIN,</span>
+<span class="fc" id="L398">        END_MAX</span>
+    }
+
+    /**
+     * Represents a task event. Used to compute profile
+     */
+    public class Event {
+        private int act;
+        private eventType type;
+
+<span class="fc" id="L408">        public Event(int act, eventType type) {</span>
+<span class="fc" id="L409">            this.act = act;</span>
+<span class="fc" id="L410">            this.type = type;</span>
+<span class="fc" id="L411">        }</span>
+
+        public int getActIdx() {
+<span class="fc" id="L414">            return act;</span>
+        }
+
+        public Activity getActivity() {
+<span class="fc" id="L418">            return activities[act];</span>
+        }
+
+        public eventType getType() {
+<span class="fc" id="L422">            return type;</span>
+        }
+
+        public int getTime() {
+<span class="fc" id="L426">            Activity tsk = getActivity();</span>
+<span class="fc bfc" id="L427" title="All 4 branches covered.">            switch (type) {</span>
+                case START_MAX -&gt; {
+<span class="fc" id="L429">                    return tsk.getStartMax();</span>
+                }
+                case END_MIN -&gt; {
+<span class="fc" id="L432">                    return tsk.getEndMin();</span>
+                }
+                case END_MAX -&gt; {
+<span class="fc" id="L435">                    return tsk.getEndMax();</span>
+                }
+                default -&gt; {
+<span class="fc" id="L438">                    return tsk.getStartMin();</span>
+                }
+            }
+        }
+
+        public void reset(int act, eventType type) {
+<span class="fc" id="L444">            this.act = act;</span>
+<span class="fc" id="L445">            this.type = type;</span>
+<span class="fc" id="L446">        }</span>
+
+        public String toString() {
+<span class="nc" id="L449">            return &quot;(Time : &quot; + this.getTime() + &quot; Type : &quot; + this.type + &quot;)&quot;;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

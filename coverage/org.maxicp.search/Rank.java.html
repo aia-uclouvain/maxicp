@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Rank.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">Rank.java</span></div><h1>Rank.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.search;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.function.Supplier;
+
+/**
+ * Rank Branching
+ * @author Pierre Schaus
+ */
+public class Rank implements Supplier&lt;Runnable[]&gt; {
+
+    public static Supplier&lt;Runnable[]&gt; rank(CPIntervalVar[] intervals) {
+<span class="nc" id="L26">        Ranker ranker = new Ranker(intervals);</span>
+<span class="nc" id="L27">        return ranker::alternatives;</span>
+    }
+
+    CPIntervalVar[][] intervals;
+    Ranker[] rankers;
+    StateSparseSet notRanked;
+    StateInt currentRanker;
+
+<span class="nc" id="L35">    public Rank(CPIntervalVar[][] intervals) {</span>
+<span class="nc" id="L36">        this.intervals = intervals;</span>
+<span class="nc" id="L37">        this.rankers = new Ranker[intervals.length];</span>
+<span class="nc" id="L38">        CPSolver cp = intervals[0][0].getSolver();</span>
+<span class="nc" id="L39">        this.notRanked = new StateSparseSet(cp.getStateManager(), intervals.length, 0);</span>
+<span class="nc" id="L40">        this.currentRanker = cp.getStateManager().makeStateInt(-1);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="nc" id="L42">            rankers[i] = new Ranker(intervals[i]);</span>
+        }
+<span class="nc" id="L44">    }</span>
+
+    public Rank(CPIntervalVar[] intervals) {
+<span class="nc" id="L47">        this(new CPIntervalVar[][] {intervals});</span>
+<span class="nc" id="L48">    }</span>
+
+    @Override
+    public Runnable[] get() {
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        if (currentRanker.value() == -1 || rankers[currentRanker.value()].isRanked()) {</span>
+            // need to find a new ranked
+<span class="nc" id="L54">            int bestRankerId = -1;</span>
+<span class="nc" id="L55">            int bestSlack = Integer.MAX_VALUE;</span>
+<span class="nc" id="L56">            int [] notRankedIterator = new int[notRanked.size()];</span>
+<span class="nc" id="L57">            int nNotRanked = notRanked.fillArray(notRankedIterator);</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            for (int i = 0; i &lt; nNotRanked; i++) {</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                if (rankers[notRankedIterator[i]].isRanked()) {</span>
+<span class="nc" id="L60">                    notRanked.remove(notRankedIterator[i]);</span>
+<span class="nc" id="L61">                    continue;</span>
+                }
+<span class="nc" id="L63">                int rankerId = notRankedIterator[i];</span>
+<span class="nc" id="L64">                int slack = rankers[rankerId].slack();</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                if (slack &lt; bestSlack) {</span>
+<span class="nc" id="L66">                    bestSlack = slack;</span>
+<span class="nc" id="L67">                    bestRankerId = rankerId;</span>
+                }
+            }
+<span class="nc bnc" id="L70" title="All 2 branches missed.">            if (bestRankerId == -1) {</span>
+<span class="nc" id="L71">                return Searches.EMPTY;</span>
+            } else {
+<span class="nc" id="L73">                currentRanker.setValue(bestRankerId);</span>
+<span class="nc" id="L74">                return rankers[currentRanker.value()].alternatives();</span>
+            }
+        } else {
+<span class="nc" id="L77">            return rankers[currentRanker.value()].alternatives();</span>
+        }
+    }
+
+    public Runnable[] get_() {
+<span class="nc" id="L82">        int [] notRankedIterator = new int[notRanked.size()];</span>
+<span class="nc" id="L83">        int nNotRanked = notRanked.fillArray(notRankedIterator);</span>
+        // find the ranker with the least slack
+<span class="nc" id="L85">        int bestRankerId = -1;</span>
+<span class="nc" id="L86">        int bestSlack = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (int i = 0; i &lt; nNotRanked; i++) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            if (rankers[notRankedIterator[i]].isRanked()) {</span>
+<span class="nc" id="L89">                notRanked.remove(notRankedIterator[i]);</span>
+<span class="nc" id="L90">                continue;</span>
+            }
+<span class="nc" id="L92">            int rankerId = notRankedIterator[i];</span>
+<span class="nc" id="L93">            int slack = rankers[rankerId].slack();</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            if (slack &lt; bestSlack) {</span>
+<span class="nc" id="L95">                bestSlack = slack;</span>
+<span class="nc" id="L96">                bestRankerId = rankerId;</span>
+            }
+        }
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (bestRankerId == -1) {</span>
+<span class="nc" id="L100">            return Searches.EMPTY;</span>
+        } else {
+<span class="nc" id="L102">            Ranker bestRanker = rankers[bestRankerId];</span>
+<span class="nc" id="L103">            return bestRanker.alternatives();</span>
+        }
+    }
+
+
+
+
+<span class="nc" id="L110">    static class Ranker {</span>
+
+        private final CPIntervalVar[] intervals;
+        private final CPSolver cp;
+        private final int[] notRankedIterator;
+        private final StateSparseSet notRanked;
+
+<span class="nc" id="L117">        Ranker(CPIntervalVar[] intervals) {</span>
+<span class="nc" id="L118">            this.intervals = intervals;</span>
+<span class="nc" id="L119">            this.cp = intervals[0].getSolver();</span>
+<span class="nc" id="L120">            this.notRanked = new StateSparseSet(cp.getStateManager(), intervals.length, 0);</span>
+<span class="nc" id="L121">            this.notRankedIterator = new int[intervals.length];</span>
+<span class="nc" id="L122">        }</span>
+
+        int slack() {
+<span class="nc" id="L125">            int minEst = Integer.MAX_VALUE;</span>
+<span class="nc" id="L126">            int maxLct = Integer.MIN_VALUE;</span>
+<span class="nc" id="L127">            notRanked.fillArray(notRankedIterator);</span>
+<span class="nc" id="L128">            int nNotRanked = notRanked.size();</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            for (int i = 0; i &lt; nNotRanked; i++) {</span>
+<span class="nc" id="L130">                int taskId = notRankedIterator[i];</span>
+<span class="nc" id="L131">                CPIntervalVar interval = intervals[taskId];</span>
+<span class="nc" id="L132">                minEst = Integer.min(minEst, interval.startMin());</span>
+<span class="nc" id="L133">                maxLct = Integer.max(maxLct, interval.endMax());</span>
+            }
+<span class="nc" id="L135">            return (maxLct - minEst) -</span>
+<span class="nc" id="L136">                    Arrays.stream(notRankedIterator, 0, nNotRanked).map(i -&gt; intervals[i].lengthMin()).sum();</span>
+        }
+
+        boolean isRanked() {
+<span class="nc" id="L140">            return notRanked.isEmpty();</span>
+        }
+
+        public Runnable[] alternatives() {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            assert (!isRanked());</span>
+
+<span class="nc" id="L146">            int [] notRankedIterator = new int[notRanked.size()];</span>
+<span class="nc" id="L147">            int nNotRanked = notRanked.fillArray(notRankedIterator); // fill the iterator with the unassigned tasks</span>
+
+<span class="nc" id="L149">            record RunnableWithPriority(int priority1, int priority2, Runnable action) {}</span>
+
+<span class="nc" id="L151">            RunnableWithPriority[] branches = new RunnableWithPriority[nNotRanked];</span>
+
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            for (int i = 0; i &lt; nNotRanked; i++) {</span>
+<span class="nc" id="L154">                int i_ = i;</span>
+<span class="nc" id="L155">                int taskId = notRankedIterator[i];</span>
+<span class="nc" id="L156">                int priority1 = intervals[taskId].startMin();</span>
+<span class="nc" id="L157">                int priority2 = intervals[taskId].startMax();</span>
+
+
+<span class="nc" id="L160">                branches[i] = new RunnableWithPriority(priority1, priority2, () -&gt; {</span>
+<span class="nc" id="L161">                    notRanked.remove(taskId);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                    for (int j = 0; j &lt; nNotRanked; j++) {</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                        if (i_ != j) {</span>
+<span class="nc" id="L164">                            int otherTaskId = notRankedIterator[j];</span>
+<span class="nc" id="L165">                            cp.post(CPFactory.endBeforeStart(intervals[taskId], intervals[otherTaskId]));</span>
+                        }
+                    }
+<span class="nc" id="L168">                });</span>
+            }
+
+<span class="nc" id="L171">            Arrays.sort(branches, Comparator.comparingInt(RunnableWithPriority::priority1).thenComparing(RunnableWithPriority::priority2));</span>
+<span class="nc" id="L172">            return Arrays.stream(branches).map(rwp -&gt; rwp.action).toArray(Runnable[]::new);</span>
+        }
+
+
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

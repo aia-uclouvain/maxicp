@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsNodeRequired.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.symbolic</a> &gt; <span class="el_source">IsNodeRequired.java</span></div><h1>IsNodeRequired.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.modeling.symbolic;
+
+import org.maxicp.modeling.SeqVar;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.EXCLUDED;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.REQUIRED;
+
+public class IsNodeRequired extends BoolVarImpl {
+
+    public final SeqVar seqVar;
+    public final int node;
+
+    public IsNodeRequired(SeqVar seqVar, int node) {
+<span class="nc bnc" id="L20" title="All 4 branches missed.">        super(seqVar.getModelProxy(), !seqVar.isNode(node, REQUIRED), !seqVar.isNode(node, EXCLUDED));</span>
+<span class="nc" id="L21">        this.seqVar = seqVar;</span>
+<span class="nc" id="L22">        this.node = node;</span>
+<span class="nc" id="L23">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

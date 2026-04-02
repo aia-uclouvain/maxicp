@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Element1DDC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Element1DDC.java</span></div><h1>Element1DDC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Hashtable;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.DeltaCPIntVar;
+import org.maxicp.state.State;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+import org.maxicp.util.exception.InconsistencyException;
+
+/**
+ * Element1DDC constraint
+ * @author pschaus
+ */
+public class Element1DDC
+        extends AbstractCPConstraint {
+    private final int[] t;
+    private final CPIntVar y;
+    private DeltaCPIntVar yDelta;
+    private DeltaCPIntVar zDelta;
+    private int[] yValues;
+    private int[] zValues;
+    private final CPIntVar z;
+
+    // for each value in Dom(z), the number of supports it has in Dom(y)
+    int offZ;
+    private StateInt[] supportCounter;
+
+    public Element1DDC(int[] array, CPIntVar y, CPIntVar z) {
+<span class="fc" id="L39">        super(y.getSolver());</span>
+<span class="fc" id="L40">        this.t = array;</span>
+<span class="fc" id="L41">        this.y = y;</span>
+<span class="fc" id="L42">        this.z = z;</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public void post() {
+
+<span class="fc" id="L48">        y.removeBelow(0);</span>
+<span class="fc" id="L49">        y.removeAbove(this.t.length - 1);</span>
+
+<span class="fc" id="L51">        z.removeAbove(Arrays.stream(t).max().getAsInt());</span>
+<span class="fc" id="L52">        z.removeBelow(Arrays.stream(t).min().getAsInt());</span>
+
+<span class="fc" id="L54">        y.propagateOnDomainChange(this);</span>
+<span class="fc" id="L55">        z.propagateOnDomainChange(this);</span>
+
+<span class="fc" id="L57">        yDelta = y.delta(this);</span>
+<span class="fc" id="L58">        yValues = new int[y.size()];</span>
+<span class="fc" id="L59">        zDelta = z.delta(this);</span>
+<span class="fc" id="L60">        zValues = new int[z.size()];</span>
+
+        // if a value t[i] not present in D(z), i must be removed from D(y)
+<span class="fc" id="L63">        int sizeY = y.fillArray(yValues);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeY; i++) {</span>
+<span class="fc" id="L65">            int val = yValues[i];</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            if (!z.contains(t[val])) {</span>
+<span class="nc" id="L67">                y.remove(val);</span>
+            }
+        }
+
+        // init supports of z values
+<span class="fc" id="L72">        this.supportCounter = new StateInt[z.size()];</span>
+<span class="fc" id="L73">        offZ = z.min();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; z.size(); i++) {</span>
+<span class="fc" id="L75">            supportCounter[i] = this.getSolver().getStateManager().makeStateInt(0);</span>
+        }
+
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; this.t.length; i++) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (y.contains(i)) {</span>
+<span class="fc" id="L80">                StateInt counter = this.supportCounter[t[i] - offZ];</span>
+<span class="fc" id="L81">                counter.increment();</span>
+            }
+        }
+
+        // if a value from D(z) is not present in t, it must be removed from D(z)
+<span class="fc" id="L86">        int sizeZ = z.fillArray(zValues);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeZ; i++) {</span>
+<span class="fc" id="L88">            int val = zValues[i];</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (supportCounter[val - offZ].value() == 0) {</span>
+<span class="fc" id="L90">                z.remove(val);</span>
+            }
+        }
+
+<span class="fc" id="L94">        this.propagate();</span>
+<span class="fc" id="L95">    }</span>
+
+    @Override
+    public void propagate() {
+
+        int val;
+        int i;
+        int size;
+
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (zDelta.size() &gt; 0) {</span>
+<span class="fc" id="L105">            size = zDelta.fillArray(zValues);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
+                // we could optimize this to maintain incrementally
+                // a struct with the indices(v) = {i in D(y) | T[i] = v}
+<span class="fc" id="L109">                val = this.zValues[i];</span>
+<span class="fc" id="L110">                int sizeY = y.fillArray(yValues);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">                for (int j = 0; j &lt; sizeY; j++) {</span>
+<span class="fc" id="L112">                    int yVal = yValues[j];</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                    if (t[yVal] == val ) {</span>
+<span class="fc" id="L114">                        y.remove(yVal);</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (yDelta.size() &gt; 0) {</span>
+<span class="fc" id="L121">            size = yDelta.fillArray(this.yValues);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L123">                val = yValues[i];</span>
+<span class="fc" id="L124">                StateInt counter = supportCounter[t[val]-offZ];</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                if (counter.decrement() == 0) {</span>
+<span class="fc" id="L126">                    z.remove(t[val]);</span>
+                }
+            }
+        }
+<span class="fc" id="L130">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

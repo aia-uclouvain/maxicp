@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsLessOrEqual.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">IsLessOrEqual.java</span></div><h1>IsLessOrEqual.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+/**
+ * Reified less or equal constraint.
+ */
+public class IsLessOrEqual extends AbstractCPConstraint { // b &lt;=&gt; x &lt;= v
+
+    private final CPBoolVar b;
+    private final CPIntVar x;
+    private final int v;
+
+    /**
+     * Creates a constraint that
+     * link a boolean variable representing
+     * whether one variable is less or equal to the given constant.
+     * @param b a boolean variable that is true if and only if
+     *         x takes a value less or equal to v
+     * @param x the variable
+     * @param v the constant
+     * @see CPFactory#isLe(CPIntVar, int)
+     */
+    public IsLessOrEqual(CPBoolVar b, CPIntVar x, int v) {
+<span class="fc" id="L33">        super(b.getSolver());</span>
+<span class="fc" id="L34">        this.b = b;</span>
+<span class="fc" id="L35">        this.x = x;</span>
+<span class="fc" id="L36">        this.v = v;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (b.isTrue()) {</span>
+<span class="fc" id="L42">            x.removeAbove(v);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        } else if (b.isFalse()) {</span>
+<span class="fc" id="L44">            x.removeBelow(v + 1);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        } else if (x.max() &lt;= v) {</span>
+<span class="fc" id="L46">            b.fix(1);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        } else if (x.min() &gt; v) {</span>
+<span class="fc" id="L48">            b.fix(0);</span>
+        } else {
+<span class="fc" id="L50">            b.whenFixed(() -&gt; {</span>
+                // should deactivate the constraint as it is entailed
+<span class="fc bfc" id="L52" title="All 2 branches covered.">                if (b.isTrue()) {</span>
+<span class="fc" id="L53">                    x.removeAbove(v);</span>
+
+                } else {
+<span class="fc" id="L56">                    x.removeBelow(v + 1);</span>
+                }
+<span class="fc" id="L58">            });</span>
+<span class="fc" id="L59">            x.whenBoundChange(() -&gt; {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                if (x.max() &lt;= v) {</span>
+                    // should deactivate the constraint as it is entailed
+<span class="fc" id="L62">                    b.fix(1);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                } else if (x.min() &gt; v) {</span>
+                    // should deactivate the constraint as it is entailed
+<span class="fc" id="L65">                    b.fix(0);</span>
+                }
+<span class="fc" id="L67">            });</span>
+        }
+<span class="fc" id="L69">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

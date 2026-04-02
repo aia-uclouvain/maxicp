@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MaximumMatching.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">MaximumMatching.java</span></div><h1>MaximumMatching.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.CPIntVar;
+
+/**
+ * Compute and Maintain a Maximum Matching
+ * in the variable-value graph
+ */
+public class MaximumMatching {
+
+    public static final int NONE = -Integer.MIN_VALUE;
+
+    // For each variable, the setValue it is mached to
+    private int[] match;
+    private int[] varSeen;
+
+    private int min;
+    private int max;
+
+    // Number of values
+    private int valSize;
+    // For each setValue, the variable idx matched to this setValue, -1 if none of them
+    private int[] valMatch;
+    private int[] valSeen;
+
+
+    private int sizeMatching;
+
+    private int magic;
+
+    private CPIntVar[] x;
+
+<span class="fc" id="L38">    public MaximumMatching(CPIntVar... x) {</span>
+<span class="fc" id="L39">        this.x = x;</span>
+
+        // find setValue ranges
+
+<span class="fc" id="L43">        min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L44">        max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L46">            min = Math.min(min, x[i].min());</span>
+<span class="fc" id="L47">            max = Math.max(max, x[i].max());</span>
+        }
+<span class="fc" id="L49">        valSize = max - min + 1;</span>
+<span class="fc" id="L50">        valMatch = new int[valSize];</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int k = 0; k &lt; valSize; k++)</span>
+<span class="fc" id="L52">            valMatch[k] = -1;  // unmatched</span>
+
+        // initialize
+
+<span class="fc" id="L56">        magic = 0;</span>
+<span class="fc" id="L57">        match = new int[x.length];</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L59">            match[k] = NONE; // unmatched</span>
+        }
+<span class="fc" id="L61">        varSeen = new int[x.length];</span>
+<span class="fc" id="L62">        valSeen = new int[valSize];</span>
+
+<span class="fc" id="L64">        findInitialMatching();</span>
+<span class="fc" id="L65">    }</span>
+
+
+    public int compute(int[] result) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (match[k] != NONE) {</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                if (!x[k].contains(match[k])) {</span>
+<span class="fc" id="L72">                    valMatch[match[k] - min] = -1;</span>
+<span class="fc" id="L73">                    match[k] = NONE;</span>
+<span class="fc" id="L74">                    sizeMatching--;</span>
+                }
+            }
+        }
+<span class="fc" id="L78">        int sizeMatching = findMaximalMatching();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L80">            result[k] = match[k];</span>
+        }
+<span class="fc" id="L82">        return sizeMatching;</span>
+    }
+
+
+    private void findInitialMatching() { //returns the size of the maximum matching
+<span class="fc" id="L87">        sizeMatching = 0;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L89">            int minv = x[k].min();</span>
+<span class="fc" id="L90">            int maxv = x[k].max();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            for (int i = minv; i &lt;= maxv; i++)</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                if (valMatch[i - min] &lt; 0) // unmatched</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                    if (x[k].contains(i)) {</span>
+<span class="fc" id="L94">                        match[k] = i;</span>
+<span class="fc" id="L95">                        valMatch[i - min] = k;</span>
+<span class="fc" id="L96">                        sizeMatching++;</span>
+<span class="fc" id="L97">                        break;</span>
+                    }
+        }
+<span class="fc" id="L100">    }</span>
+
+    private int findMaximalMatching() {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (sizeMatching &lt; x.length) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">                if (match[k] == NONE) {</span>
+<span class="fc" id="L106">                    magic++;</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">                    if (findAlternatingPathFromVar(k)) {</span>
+<span class="fc" id="L108">                        sizeMatching++;</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L113">        return sizeMatching;</span>
+    }
+
+    private boolean findAlternatingPathFromVar(int i) {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if (varSeen[i] != magic) {</span>
+<span class="fc" id="L118">            varSeen[i] = magic;</span>
+<span class="fc" id="L119">            int xMin = x[i].min();</span>
+<span class="fc" id="L120">            int xMax = x[i].max();</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            for (int v = xMin; v &lt;= xMax; v++) {</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">                if (match[i] != v) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                    if (x[i].contains(v)) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                        if (findAlternatingPathFromVal(v)) {</span>
+<span class="fc" id="L125">                            match[i] = v;</span>
+<span class="fc" id="L126">                            valMatch[v - min] = i;</span>
+<span class="fc" id="L127">                            return true;</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L133">        return false;</span>
+    }
+
+    private boolean findAlternatingPathFromVal(int v) {
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (valSeen[v - min] != magic) {</span>
+<span class="fc" id="L138">            valSeen[v - min] = magic;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (valMatch[v - min] == -1)</span>
+<span class="fc" id="L140">                return true;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (findAlternatingPathFromVar(valMatch[v - min]))</span>
+<span class="fc" id="L142">                return true;</span>
+        }
+<span class="fc" id="L144">        return false;</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

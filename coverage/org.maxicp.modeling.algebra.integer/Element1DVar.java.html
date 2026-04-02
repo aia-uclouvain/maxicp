@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Element1DVar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">Element1DVar.java</span></div><h1>Element1DVar.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.util.ImmutableSet;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
+
+<span class="nc" id="L14">public record Element1DVar(IntExpression[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+
+
+    private int[] getTempArray() {
+<span class="nc" id="L18">        int minIndex = Math.max(index.min(), 0);</span>
+<span class="nc" id="L19">        int maxIndex = Math.min(index.max(), array.length - 1);</span>
+<span class="nc" id="L20">        return new int[maxIndex - minIndex + 1];</span>
+    }
+
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="nc" id="L25">        ImmutableSet.Builder&lt;Expression&gt; b = ImmutableSet.builder();</span>
+<span class="nc" id="L26">        b.add(array);</span>
+<span class="nc" id="L27">        b.add(index);</span>
+<span class="nc" id="L28">        return b.build();</span>
+    }
+
+    @Override
+    public Element1DVar mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L33">        return new Element1DVar(Arrays.stream(array).map(x -&gt; (IntExpression)f.apply(x)).toArray(IntExpression[]::new), (IntExpression) f.apply(index));</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc" id="L38">        return array[index.evaluate()].evaluate();</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc" id="L43">        int[] temp = this.getTempArray();</span>
+<span class="nc" id="L44">        int size = index.fillArray(temp);</span>
+<span class="nc" id="L45">        int minValue = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L47">            minValue = Math.min(minValue, array[temp[i]].min());</span>
+<span class="nc" id="L48">        return minValue;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc" id="L53">        int[] temp = this.getTempArray();</span>
+<span class="nc" id="L54">        int size = index.fillArray(temp);</span>
+<span class="nc" id="L55">        int maxValue = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L57">            maxValue = Math.max(maxValue, array[temp[i]].max());</span>
+<span class="nc" id="L58">        return maxValue;</span>
+    }
+
+    @Override
+    public boolean defaultContains(int v) {
+<span class="nc" id="L63">        int[] temp = this.getTempArray();</span>
+<span class="nc" id="L64">        int size = index.fillArray(temp);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++)</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (this.array[temp[i]].contains(v))</span>
+<span class="nc" id="L67">                return true;</span>
+<span class="nc" id="L68">        return false;</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="nc" id="L73">        int[] temp = this.getTempArray();</span>
+<span class="nc" id="L74">        int size = index.fillArray(temp);</span>
+<span class="nc" id="L75">        int k = 0;</span>
+<span class="nc" id="L76">        Set&lt;Integer&gt; s = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L78">            IntExpression e = this.array[temp[i]];</span>
+<span class="nc" id="L79">            int[] temp2 = new int[e.max() - e.min() + 1];</span>
+<span class="nc" id="L80">            int size2 = e.fillArray(temp2);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">            for (int j = 0; j &lt; size2; j++){</span>
+<span class="nc" id="L82">                s.add(temp2[j]);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                if (s.size() != k) {</span>
+<span class="nc" id="L84">                    array[k] = temp2[j];</span>
+<span class="nc" id="L85">                    k++;</span>
+                }
+            }
+        }
+<span class="nc" id="L89">        return k;</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="nc" id="L94">        int[] temp = this.getTempArray();</span>
+<span class="nc" id="L95">        int size = index.fillArray(temp);</span>
+<span class="nc" id="L96">        Set&lt;Integer&gt; s = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++){</span>
+<span class="nc" id="L98">            IntExpression e = this.array[temp[i]];</span>
+<span class="nc" id="L99">            int[] temp2 = new int[e.max() - e.min() + 1];</span>
+<span class="nc" id="L100">            int size2 = e.fillArray(temp2);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (int j = 0; j &lt; size2; j++)</span>
+<span class="nc" id="L102">                s.add(temp2[j]);</span>
+        }
+<span class="nc" id="L104">        return s.size();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L109">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Among.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Among.java</span></div><h1>Among.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.maxicp.cp.CPFactory.eq;
+import static org.maxicp.cp.CPFactory.neq;
+
+/**
+ * Among constraint
+ */
+public class Among extends AbstractCPConstraint {
+
+    private final CPIntVar[] x;
+    private final Set&lt;Integer&gt; vals;
+    private final CPIntVar N;
+    private StateInt lbN;
+    private StateInt ubN;
+
+    // indexes of variables with a domain that is not totally excluded from vals
+    private final StateSparseSet nonEmptyInterIdx;
+    // indexes of variables with a domain that is not a subset of vals
+    private final StateSparseSet nonSubsetIdx;
+    private final StateInt[] interSize;
+
+    public Among(CPIntVar[] x, Set&lt;Integer&gt; vals, CPIntVar N) {
+<span class="fc" id="L36">        super(x[0].getSolver());</span>
+<span class="fc" id="L37">        this.x = x;</span>
+<span class="fc" id="L38">        this.vals = vals;</span>
+<span class="fc" id="L39">        this.N = N;</span>
+
+<span class="fc" id="L41">        nonEmptyInterIdx = new StateSparseSet(getSolver().getStateManager(), x.length, 0);</span>
+<span class="fc" id="L42">        nonSubsetIdx = new StateSparseSet(getSolver().getStateManager(), x.length, 0);</span>
+<span class="fc" id="L43">        interSize = new StateInt[x.length];</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * @param var the variable
+     * @return the number of value in the domain of a var that are included in vals
+     */
+    protected int interSize(CPIntVar var) {
+<span class="fc" id="L51">        int count = 0;</span>
+<span class="fc" id="L52">        int[] domain = new int[var.size()];</span>
+<span class="fc" id="L53">        var.fillArray(domain);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (int val: domain) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (vals.contains(val)) count++;</span>
+        }
+<span class="fc" id="L57">        return count;</span>
+    }
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L63">            CPIntVar var = x[i];</span>
+<span class="fc" id="L64">            interSize[i] = getSolver().getStateManager().makeStateInt(interSize(var));</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">            if (interSize[i].value() == 0) nonEmptyInterIdx.remove(i);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            else if (interSize[i].value() == var.size()) nonSubsetIdx.remove(i);</span>
+        }
+
+        // The lower bound for N is the number of variable with a domain that is totally included in vals
+<span class="fc" id="L70">        lbN = getSolver().getStateManager().makeStateInt(x.length - nonSubsetIdx.size());</span>
+        // The upper bound for N is the number of variable with a domain that is not totally excluded from vals
+<span class="fc" id="L72">        ubN = getSolver().getStateManager().makeStateInt(nonEmptyInterIdx.size());</span>
+
+<span class="fc" id="L74">        N.propagateOnBoundChange(this);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; nonEmptyInterIdx.size(); i++) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            if (nonSubsetIdx.contains(i)) {</span>
+<span class="fc" id="L77">                int idx = i;</span>
+<span class="fc" id="L78">                x[idx].whenDomainChange(() -&gt; {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                    if (x[idx].isFixed()) {</span>
+<span class="fc" id="L80">                        int val = x[idx].min();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                        if (vals.contains(val)) {</span>
+<span class="fc" id="L82">                            interSize[idx].setValue(1);</span>
+<span class="fc" id="L83">                            nonSubsetIdx.remove(idx);</span>
+                        }
+                        else {
+<span class="fc" id="L86">                            interSize[idx].setValue(0);</span>
+<span class="fc" id="L87">                            nonEmptyInterIdx.remove(idx);</span>
+                        }
+<span class="fc" id="L89">                    } else { // x[idx] lost some values</span>
+<span class="fc" id="L90">                        interSize[idx].setValue(interSize(x[idx]));</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                        if (interSize[idx].value() == 0) nonEmptyInterIdx.remove(idx);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                        else if (interSize[idx].value() == x[idx].size()) nonSubsetIdx.remove(idx);</span>
+                    }
+<span class="fc" id="L94">                    propagate();</span>
+<span class="fc" id="L95">                });</span>
+            }
+        }
+<span class="fc" id="L98">        propagate();</span>
+<span class="fc" id="L99">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (!this.isActive()) return;</span>
+
+        // The lower bound for N is the number of variable with a domain that is totally included in vals
+<span class="fc" id="L106">        lbN.setValue(x.length - nonSubsetIdx.size());</span>
+        // The upper bound for N is the number of variable with a domain that is totally excluded from vals
+<span class="fc" id="L108">        ubN.setValue(nonEmptyInterIdx.size());</span>
+
+
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (!N.isFixed()) {</span>
+<span class="fc" id="L112">            N.removeBelow(lbN.value());</span>
+<span class="fc" id="L113">            N.removeAbove(ubN.value());</span>
+        }
+
+        // If N is fixed and that exactly N variables still have at least one value in vals
+        // the values in their domain that are not in vals
+<span class="fc bfc" id="L118" title="All 4 branches covered.">        if (N.isFixed() &amp;&amp; N.min() == ubN.value()) {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            for (int i: nonSubsetIdx.toArray()) {</span>
+<span class="fc bfc" id="L120" title="All 4 branches covered.">                if(!x[i].isFixed() &amp;&amp; nonEmptyInterIdx.contains(i)) {</span>
+<span class="fc" id="L121">                    CPIntVar var = x[i];</span>
+<span class="fc" id="L122">                    int[] domain = new int[var.size()];</span>
+<span class="fc" id="L123">                    var.fillArray(domain);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                    for (int val: domain) {</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                        if (!vals.contains(val)) {</span>
+<span class="fc" id="L126">                            var.remove(val);</span>
+                        }
+                    }
+<span class="fc" id="L129">                    nonSubsetIdx.remove(i);</span>
+                }
+            }
+<span class="fc" id="L132">            this.setActive(false);</span>
+<span class="fc" id="L133">            return;</span>
+        }
+
+        // If N is fixed and exactly N variables have a domain that is a subset of vals
+        // the values in the domains of the other variables that are contained in vals are removed
+<span class="fc bfc" id="L138" title="All 4 branches covered.">        if (N.isFixed() &amp;&amp; N.max() == lbN.value()) {</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            for (int i: nonEmptyInterIdx.toArray()) {</span>
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">                if (!x[i].isFixed() &amp;&amp; nonSubsetIdx.contains(i)) {</span>
+<span class="fc" id="L141">                    CPIntVar var = x[i];</span>
+<span class="fc" id="L142">                    int[] domain = new int[var.size()];</span>
+<span class="fc" id="L143">                    var.fillArray(domain);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                    for (int val: domain) {</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">                        if (vals.contains(val)) var.remove(val);</span>
+                    }
+<span class="fc" id="L147">                    nonEmptyInterIdx.remove(i);</span>
+                }
+            }
+<span class="fc" id="L150">            this.setActive(false);</span>
+        }
+<span class="fc" id="L152">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

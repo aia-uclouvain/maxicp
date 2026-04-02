@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntVarViewOffset.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntVarViewOffset.java</span></div><h1>CPIntVarViewOffset.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+
+package org.maxicp.cp.engine.core;
+
+
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.util.exception.IntOverFlowException;
+
+import java.util.function.Consumer;
+
+/**
+ * A view on a variable of type {@code x+o}
+ */
+public class CPIntVarViewOffset implements CPIntVar {
+
+    private final CPIntVar x;
+    private final int o;
+
+<span class="fc" id="L23">    public CPIntVarViewOffset(CPIntVar x, int offset) { // y = x + o</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        if (0L + x.min() + offset &lt;= (long) Integer.MIN_VALUE)</span>
+<span class="nc" id="L25">            throw new IntOverFlowException(&quot;consider applying a smaller offset as the min domain on this view is &lt;= Integer.MIN _VALUE&quot;);</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (0L + x.max() + offset &gt;= (long) Integer.MAX_VALUE)</span>
+<span class="fc" id="L27">            throw new IntOverFlowException(&quot;consider applying a smaller offset as the max domain on this view is &gt;= Integer.MAX _VALUE&quot;);</span>
+<span class="fc" id="L28">        this.x = x;</span>
+<span class="fc" id="L29">        this.o = offset;</span>
+
+<span class="fc" id="L31">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L35">        return x.getSolver();</span>
+    }
+
+    @Override
+    public void whenFixed(Runnable f) {
+<span class="fc" id="L40">        x.whenFixed(f);</span>
+<span class="fc" id="L41">    }</span>
+
+    @Override
+    public void whenBoundChange(Runnable f) {
+<span class="fc" id="L45">        x.whenBoundChange(f);</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public void whenDomainChange(Runnable f) {
+<span class="fc" id="L50">        x.whenDomainChange(f);</span>
+<span class="fc" id="L51">    }</span>
+
+    @Override
+    public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+<span class="nc" id="L55">        CPConstraint c = new CPConstraintClosureWithDelta(getSolver(),this,f);</span>
+<span class="nc" id="L56">        getSolver().post(c, false);</span>
+<span class="nc" id="L57">    }</span>
+
+    @Override
+    public void propagateOnDomainChange(CPConstraint c) {
+<span class="fc" id="L61">        x.propagateOnDomainChange(c);</span>
+<span class="fc" id="L62">    }</span>
+
+    @Override
+    public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L66">        x.propagateOnFix(c);</span>
+<span class="fc" id="L67">    }</span>
+
+    @Override
+    public void propagateOnBoundChange(CPConstraint c) {
+<span class="fc" id="L71">        x.propagateOnBoundChange(c);</span>
+<span class="fc" id="L72">    }</span>
+
+    @Override
+    public int min() {
+<span class="fc" id="L76">        return x.min() + o;</span>
+    }
+
+    @Override
+    public int max() {
+<span class="fc" id="L81">        return x.max() + o;</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L86">        return x.size();</span>
+    }
+
+    @Override
+    public int fillArray(int[] dest) {
+<span class="fc" id="L91">        int s = x.fillArray(dest);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (int i = 0; i &lt; s; i++) {</span>
+<span class="fc" id="L93">            dest[i] += o;</span>
+        }
+<span class="fc" id="L95">        return s;</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc" id="L100">        return x.isFixed();</span>
+    }
+
+    @Override
+    public boolean contains(int v) {
+<span class="fc" id="L105">        return x.contains(v - o);</span>
+    }
+
+    @Override
+    public void remove(int v) {
+<span class="fc" id="L110">        x.remove(v - o);</span>
+<span class="fc" id="L111">    }</span>
+
+    @Override
+    public void fix(int v) {
+<span class="fc" id="L115">        x.fix(v - o);</span>
+<span class="fc" id="L116">    }</span>
+
+    @Override
+    public void removeBelow(int v) {
+<span class="fc" id="L120">        x.removeBelow(v - o);</span>
+<span class="fc" id="L121">    }</span>
+
+    @Override
+    public void removeAbove(int v) {
+<span class="fc" id="L125">        x.removeAbove(v - o);</span>
+<span class="fc" id="L126">    }</span>
+
+    @Override
+    public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] arr) {
+<span class="fc" id="L130">        int s = x.fillDeltaArray(oldMin - o,oldMax - o,oldSize,arr);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (int i = 0; i &lt; s; i++) {</span>
+<span class="fc" id="L132">            arr[i] += o;</span>
+        }
+<span class="fc" id="L134">        return s;</span>
+    }
+
+    @Override
+    public DeltaCPIntVar delta(CPConstraint c) {
+<span class="fc" id="L139">        DeltaCPIntVar delta = new DeltaCPIntVarImpl(this);</span>
+<span class="fc" id="L140">        c.registerDelta(delta);</span>
+<span class="fc" id="L141">        return delta;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L146">        return show();</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L151">        return getSolver().getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

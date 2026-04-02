@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NoOverlapBinary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">NoOverlapBinary.java</span></div><h1>NoOverlapBinary.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+public class NoOverlapBinary extends AbstractCPConstraint {
+    final CPBoolVar before;
+    final CPBoolVar after;
+    final CPIntervalVar A, B;
+
+    public NoOverlapBinary(CPIntervalVar A, CPIntervalVar B) {
+<span class="fc" id="L20">        super(A.getSolver());</span>
+<span class="fc" id="L21">        this.A = A;</span>
+<span class="fc" id="L22">        this.B = B;</span>
+<span class="fc" id="L23">        this.before = CPFactory.makeBoolVar(getSolver());</span>
+<span class="fc" id="L24">        this.after = CPFactory.not(before);</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L29" title="All 4 branches covered.">        if (!A.isAbsent() &amp;&amp; !B.isAbsent()) {</span>
+<span class="fc" id="L30">            A.propagateOnChange(this);</span>
+<span class="fc" id="L31">            B.propagateOnChange(this);</span>
+<span class="fc" id="L32">            before.propagateOnFix(this);</span>
+<span class="fc" id="L33">            propagate();</span>
+        }
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L39" title="All 4 branches covered.">        if (A.isPresent() &amp;&amp; B.isPresent()) {</span>
+<span class="fc bfc" id="L40" title="All 4 branches covered.">            if (A.endMin() &gt; B.startMax() || before.isFalse()) {</span>
+                // B &lt;&lt; A
+<span class="fc" id="L42">                before.fix(false);</span>
+<span class="fc" id="L43">                A.setStartMin(B.endMin());</span>
+<span class="fc" id="L44">                B.setEndMax(A.startMax());</span>
+            }
+<span class="pc bpc" id="L46" title="1 of 4 branches missed.">            if (B.endMin() &gt; A.startMax() || before.isTrue()) {</span>
+                // A &lt;&lt; B
+                // A = [5..10] -&gt; [10..15]
+                // B = [12..13] -&gt; [13..14]
+<span class="fc" id="L50">                before.fix(true);</span>
+<span class="fc" id="L51">                B.setStartMin(A.endMin());</span>
+<span class="fc" id="L52">                A.setEndMax(B.startMax());</span>
+            }
+        }
+<span class="fc bfc" id="L55" title="All 4 branches covered.">        if (A.isAbsent() || B.isAbsent()) {</span>
+<span class="fc" id="L56">            setActive(false);</span>
+        }
+<span class="fc" id="L58">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

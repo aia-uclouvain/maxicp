@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StateManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state</a> &gt; <span class="el_source">StateManager.java</span></div><h1>StateManager.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state;
+
+import java.util.function.Supplier;
+
+/**
+ * The StateManager exposes
+ * all the mechanisms and data-structures
+ * needed to implement a depth-first-search
+ * with reversible states.
+ */
+public interface StateManager {
+
+    /**
+     * Stores the current state
+     * such that it can be recovered using restoreState()
+     * Increase the level by 1
+     */
+    void saveState();
+
+
+    /**
+     * Restores state as it was at getLevel()-1
+     * Decrease the level by 1
+     */
+    void restoreState();
+
+    /**
+     * Restores the state up the the given level.
+     *
+     * @param level the level, a non negative number between 0 and {@link #getLevel()}
+     */
+    void restoreStateUntil(int level);
+
+    /**
+     * Add a listener that is notified each time the {@link #restoreState()}
+     * is called.
+     *
+     * @param listener the listener to be notified
+     */
+    void onRestore(Runnable listener);
+
+    /**
+     * Returns the current level.
+     * It is increased at each {@link #saveState()}
+     * and decreased at each {@link #restoreState()}.
+     * It is initially equal to -1.
+     * @return the level
+     */
+    int getLevel();
+
+    /**
+     * Creates a Stateful reference (restorable)
+     *
+     * @param initValue the initial setValue
+     * @return a State object wrapping the initValue
+     */
+    &lt;T&gt; State&lt;T&gt; makeStateRef(T initValue);
+
+    /**
+     * Creates a Stateful integer (restorable)
+     *
+     * @param initValue the initial setValue
+     * @return a StateInt object wrapping the initValue
+     */
+    StateInt makeStateInt(int initValue);
+
+    /**
+     * Creates a Stateful long (restorable)
+     *
+     * @param initValue the initial setValue
+     * @return a StateLong object wrapping the initValue
+     */
+    StateLong makeStateLong(long initValue);
+
+    /**
+     * Creates a Stateful map (restorable)
+     *
+     * @return a reference to the map.
+     */
+    &lt;K, V&gt; StateMap&lt;K,V&gt; makeStateMap();
+
+    /**
+     * Higher-order function that preserves the state prior to calling body and restores it after.
+     *
+     * @param body the first-order function to execute.
+     */
+    default void withNewState(Runnable body) {
+<span class="fc" id="L93">        final int level = getLevel();</span>
+<span class="fc" id="L94">        saveState();</span>
+        try {
+<span class="fc" id="L96">            body.run();</span>
+        }
+        finally {
+<span class="fc" id="L99">            restoreStateUntil(level);</span>
+        }
+<span class="fc" id="L101">    }</span>
+
+    default &lt;T&gt; T withNewState(Supplier&lt;T&gt; body) {
+<span class="nc" id="L104">        final int level = getLevel();</span>
+<span class="nc" id="L105">        saveState();</span>
+        try {
+<span class="nc" id="L107">            return body.get();</span>
+        }
+        finally {
+<span class="nc" id="L110">            restoreStateUntil(level);</span>
+        }
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

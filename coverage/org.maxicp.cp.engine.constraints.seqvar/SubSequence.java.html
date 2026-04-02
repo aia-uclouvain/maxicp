@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubSequence.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">SubSequence.java</span></div><h1>SubSequence.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.cp.engine.core.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.maxicp.cp.CPFactory.implies;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+/**
+ * Links two {@link CPSeqVar}, ensuring a subsequence appears within a super sequence
+ */
+public class SubSequence extends AbstractCPConstraint {
+
+    private final CPSeqVar mainSequence;
+    private final CPSeqVar subSequence;
+
+    private final int[] nodes;
+    private final int[] common;
+    private int nCommon;
+<span class="fc" id="L23">    private final List&lt;Integer&gt; nodesToFilter = new ArrayList&lt;&gt;();</span>
+
+    /**
+     * Ensures that the ordering from a subsequence appears within a super sequence, including all of its nodes
+     * The super sequence can have other nodes belonging to its ordering as well
+     * Example:
+     * mainSequence: 0 -&gt; 1 -&gt; 2 -&gt; 3 -&gt; 4
+     * subSequence:  0 -&gt; 2 -&gt; 4
+     *
+     * @param mainSequence super sequence
+     * @param subSequence  sub sequence, whose ordering appears within the main sequence. The ordering appearing in the
+     *                     super sequence must not be consecutive
+     */
+    public SubSequence(CPSeqVar mainSequence, CPSeqVar subSequence) {
+<span class="fc" id="L37">        super(mainSequence.getSolver());</span>
+<span class="fc" id="L38">        this.mainSequence = mainSequence;</span>
+<span class="fc" id="L39">        this.subSequence = subSequence;</span>
+<span class="fc" id="L40">        int nNodes = Math.max(mainSequence.nNode(), subSequence.nNode());</span>
+<span class="fc" id="L41">        nodes = new int[mainSequence.nNode()];</span>
+<span class="fc" id="L42">        common = new int[nNodes];</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public void post() {
+        // nodes excluded from main cannot appear in sub
+<span class="fc" id="L48">        int nExcluded = mainSequence.fillNode(nodes, EXCLUDED);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int i = 0; i &lt; nExcluded; i++) {</span>
+<span class="fc" id="L50">            subSequence.exclude(nodes[i]);</span>
+        }
+        // presence in sub-sequence implies presence in main sequence
+<span class="fc" id="L53">        int nPossible = subSequence.fillNode(nodes, NOT_EXCLUDED);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (int i = 0; i &lt; nPossible; i++) {</span>
+<span class="fc" id="L55">            int node = nodes[i];</span>
+<span class="fc" id="L56">            getSolver().post(implies(subSequence.isNodeRequired(node), mainSequence.isNodeRequired(node)));</span>
+        }
+<span class="fc" id="L58">        propagate();</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        if (isActive()) {</span>
+<span class="fc" id="L60">            mainSequence.propagateOnRequire(this);</span>
+<span class="fc" id="L61">            mainSequence.propagateOnInsert(this);</span>
+<span class="fc" id="L62">            subSequence.propagateOnRequire(this);</span>
+<span class="fc" id="L63">            subSequence.propagateOnInsert(this);</span>
+        }
+<span class="fc" id="L65">    }</span>
+
+    private void checkCurrentOrdering() {
+<span class="fc" id="L68">        int nMemberSub = subSequence.fillNode(nodes, MEMBER_ORDERED);</span>
+<span class="fc" id="L69">        nCommon = 0;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; nMemberSub; i++) {</span>
+<span class="fc" id="L71">            int nodeSub = nodes[i];</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (mainSequence.isNode(nodeSub, MEMBER)) {</span>
+<span class="fc" id="L73">                common[nCommon++] = nodeSub;</span>
+            }
+        }
+        // common[0..nCommon] contains the common members from both sequence, based on the ordering from sub
+        // check that this ordering is preserved in main
+<span class="fc" id="L78">        int idx = 0;</span>
+<span class="fc" id="L79">        int nMemberMain = mainSequence.fillNode(nodes, MEMBER_ORDERED);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; nCommon; i++) {</span>
+<span class="fc" id="L81">            int node = common[i];</span>
+<span class="fc bfc" id="L82" title="All 4 branches covered.">            while (idx != nMemberMain - 1 &amp;&amp; node != nodes[idx]) {</span>
+<span class="fc" id="L83">                idx++;</span>
+            }
+<span class="fc bfc" id="L85" title="All 4 branches covered.">            if (idx == nMemberMain - 1 &amp;&amp; node != nodes[nMemberMain-1])</span>
+<span class="fc" id="L86">                throw INCONSISTENCY;</span>
+        }
+<span class="fc" id="L88">    }</span>
+
+    private void enforcePrecedence(CPSeqVar seqVar, int nNodes, int[] nodes) {
+<span class="fc" id="L91">        nodesToFilter.clear();</span>
+<span class="fc" id="L92">        int pred = seqVar.start();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (int i = 0; i &lt;= nNodes; i++) {</span>
+            // end is always added to be sure to go into the else if instruction below at the last iteration
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            int node = i &lt; nNodes ? nodes[i] : seqVar.end();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (seqVar.isNode(node, INSERTABLE)) {</span>
+<span class="fc" id="L97">                nodesToFilter.add(node); // node that is not in common, and whose insertions will be filtered</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            } else if (seqVar.isNode(node, MEMBER)) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                for (int nodeToFilter : nodesToFilter) {</span>
+                    // nodeToFilter must be placed between pred and node
+<span class="fc" id="L101">                    seqVar.notBetween(seqVar.start(), nodeToFilter, pred);</span>
+<span class="fc" id="L102">                    seqVar.notBetween(node, nodeToFilter, seqVar.end());</span>
+<span class="fc" id="L103">                }</span>
+<span class="fc" id="L104">                pred = node;</span>
+<span class="fc" id="L105">                nodesToFilter.clear();</span>
+            }
+        }
+<span class="fc" id="L108">    }</span>
+
+    @Override
+    public void propagate() {
+        // check che current ordering between the sequences to see they are coherent
+        // and fill the arrays common, mainNodes and subNodes
+<span class="fc" id="L114">        checkCurrentOrdering();</span>
+        // enforces precedence from main into subsequence
+<span class="fc" id="L116">        int nMemberMain = mainSequence.fillNode(nodes, MEMBER_ORDERED);</span>
+<span class="fc" id="L117">        enforcePrecedence(subSequence, nMemberMain, nodes);</span>
+        // enforces precedence from subsequence into main
+<span class="fc" id="L119">        int nMemberSub = subSequence.fillNode(nodes, MEMBER_ORDERED);</span>
+<span class="fc" id="L120">        enforcePrecedence(mainSequence, nMemberSub, nodes);</span>
+<span class="fc" id="L121">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelProxyInstantiator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling</a> &gt; <span class="el_source">ModelProxyInstantiator.java</span></div><h1>ModelProxyInstantiator.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling;
+
+import org.maxicp.modeling.concrete.ConcreteModel;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+/**
+ * Maintains the current model and proxies calls to it.
+ */
+public interface ModelProxyInstantiator extends ModelProxy {
+
+    interface ModelInstantiator&lt;T extends ConcreteModel&gt; {
+        T instantiate(Model m);
+    }
+
+    default &lt;T extends ConcreteModel&gt; T instantiate(ModelInstantiator&lt;T&gt; instantiator) {
+<span class="fc" id="L19">        return setModel(instantiator.instantiate(getModel()));</span>
+    }
+
+    default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Function&lt;T, R&gt; fun) {
+<span class="fc" id="L23">        return runAsConcrete(instantiator, getModel(), fun);</span>
+    }
+
+    default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Consumer&lt;T&gt; fun) {
+<span class="fc" id="L27">        runAsConcrete(instantiator, getModel(), fun);</span>
+<span class="fc" id="L28">    }</span>
+
+    default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Supplier&lt;R&gt; fun) {
+<span class="nc" id="L31">        return runAsConcrete(instantiator, getModel(), fun);</span>
+    }
+
+    default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Runnable fun) {
+<span class="nc" id="L35">        runAsConcrete(instantiator, getModel(), fun);</span>
+<span class="nc" id="L36">    }</span>
+
+    default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Runnable fun) {
+<span class="nc" id="L39">        T m = instantiator.instantiate(bm);</span>
+<span class="nc" id="L40">        runWithModel(m, () -&gt; {</span>
+<span class="nc" id="L41">            fun.run();</span>
+<span class="nc" id="L42">            return null;</span>
+        });
+<span class="nc" id="L44">    }</span>
+
+    default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Function&lt;T, R&gt; fun) {
+<span class="fc" id="L47">        T m = instantiator.instantiate(bm);</span>
+<span class="fc" id="L48">        return runWithModel(m, () -&gt; fun.apply(m));</span>
+    }
+
+    default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Consumer&lt;T&gt; fun) {
+<span class="fc" id="L52">        T m = instantiator.instantiate(bm);</span>
+<span class="fc" id="L53">        runWithModel(m, () -&gt; fun.accept(m));</span>
+<span class="fc" id="L54">    }</span>
+
+    default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Supplier&lt;R&gt; fun) {
+<span class="nc" id="L57">        T m = instantiator.instantiate(bm);</span>
+<span class="nc" id="L58">        return runWithModel(m, fun);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

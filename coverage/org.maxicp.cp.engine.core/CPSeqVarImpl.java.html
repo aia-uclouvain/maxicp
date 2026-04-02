@@ -1,0 +1,934 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPSeqVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPSeqVarImpl.java</span></div><h1>CPSeqVarImpl.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.BoolVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.state.datastructures.StateStack;
+import org.maxicp.state.datastructures.StateTriPartition;
+
+import java.util.StringJoiner;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+<span class="fc" id="L18">public class CPSeqVarImpl implements CPSeqVar {</span>
+
+    private final StateInt[] succ; // successors in the current partial sequence
+    private final StateInt[] pred; // predecessors in the current partial sequence
+    private final int start;
+    private final int end;
+    private final int nNodes;
+    private final StateInt nMember;
+    private final CPSolver cp;
+    private final Node[] nodes;
+    private final StateTriPartition domain;  // split between required, possible and excluded
+    private final StateSparseSet insertable; // holds the insertable nodes
+
+    private final StateStack&lt;CPConstraint&gt; onInsert;        // a node has been inserted into the sequence
+    private final StateStack&lt;CPConstraint&gt; onFix;           // all nodes are members or excluded: no possible node remain
+    private final StateStack&lt;CPConstraint&gt; onExclude;       // a node has been excluded from the sequence
+    private final StateStack&lt;CPConstraint&gt; onRequire;       // a node has been required within the sequence
+    private final StateStack&lt;CPConstraint&gt; onInsertRemoved; // an insertion has been removed from the sequence
+
+    private final int[] values;
+
+<span class="fc" id="L39">    public CPSeqVarImpl(CPSolver cp, int nNodes, int start, int end) {</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (nNodes &lt; 2) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(&quot;at least two nodes required since start and end are included in the sequence&quot;);</span>
+        }
+<span class="pc bpc" id="L43" title="5 of 10 branches missed.">        if (start &lt; 0 | end &lt; 0 | start &gt;= nNodes | end &gt;= nNodes) {</span>
+<span class="nc" id="L44">            throw new IllegalArgumentException(&quot;start and end nodes must be in the range [&quot; + 0 + &quot;..&quot; + (nNodes - 1) + &quot;]&quot; + &quot; start=&quot; + start + &quot; end=&quot; + end);</span>
+        }
+<span class="fc" id="L46">        this.cp = cp;</span>
+<span class="fc" id="L47">        this.nNodes = nNodes;</span>
+<span class="fc" id="L48">        this.start = start;</span>
+<span class="fc" id="L49">        this.end = end;</span>
+<span class="fc" id="L50">        nodes = new CPSeqVarImpl.Node[nNodes];</span>
+<span class="fc" id="L51">        succ = new StateInt[nNodes];</span>
+<span class="fc" id="L52">        pred = new StateInt[nNodes];</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = 0; i &lt; nNodes; ++i) {</span>
+<span class="fc" id="L54">            nodes[i] = new CPSeqVarImpl.Node(i);</span>
+<span class="fc" id="L55">            succ[i] = cp.getStateManager().makeStateInt(i);</span>
+<span class="fc" id="L56">            pred[i] = cp.getStateManager().makeStateInt(i);</span>
+        }
+<span class="fc" id="L58">        succ[start].setValue(end); // the sequence is a closed loop between the start and end nodes</span>
+<span class="fc" id="L59">        succ[end].setValue(start);</span>
+<span class="fc" id="L60">        pred[start].setValue(end);</span>
+<span class="fc" id="L61">        pred[end].setValue(start);</span>
+<span class="fc" id="L62">        nMember = cp.getStateManager().makeStateInt(2); // only the start and end nodes are member</span>
+
+<span class="fc" id="L64">        insertable = new StateSparseSet(cp.getStateManager(), nNodes, 0);</span>
+<span class="fc" id="L65">        insertable.remove(start);</span>
+<span class="fc" id="L66">        insertable.remove(end);</span>
+<span class="fc" id="L67">        domain = new StateTriPartition(cp.getStateManager(), nNodes);</span>
+<span class="fc" id="L68">        domain.include(start);</span>
+<span class="fc" id="L69">        domain.include(end);</span>
+
+        // start and end nodes initialization
+<span class="fc" id="L72">        nodes[start].pred.removeAll();</span>
+<span class="fc" id="L73">        nodes[end].succ.removeAll();</span>
+
+<span class="fc" id="L75">        onInsert = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L76">        onFix = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L77">        onExclude = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L78">        onRequire = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L79">        onInsertRemoved = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L80">        values = new int[nNodes];</span>
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Listener for the whole sequence.
+     * For more information about the changes (i.e. what insertion has occurred?),
+     * use the listener within the nodes
+     */
+<span class="fc" id="L88">    private final SeqListener listener = new SeqListener() {</span>
+        @Override
+        public void fix() {
+<span class="fc" id="L91">            scheduleAll(onFix);</span>
+<span class="fc" id="L92">        }</span>
+
+        @Override
+        public void insert() {
+<span class="fc" id="L96">            scheduleAll(onInsert);</span>
+<span class="fc" id="L97">        }</span>
+
+        @Override
+        public void exclude() {
+<span class="fc" id="L101">            scheduleAll(onExclude);</span>
+<span class="fc" id="L102">        }</span>
+
+        @Override
+        public void require() {
+<span class="fc" id="L106">            scheduleAll(onRequire);</span>
+<span class="fc" id="L107">        }</span>
+
+        @Override
+        public void insertRemoved() {
+<span class="fc" id="L111">            scheduleAll(onInsertRemoved);</span>
+<span class="fc" id="L112">        }</span>
+    };
+
+    private class Node implements CPNodeVar {
+
+        private final int me;
+        private StateSparseSet pred;
+        private StateSparseSet succ;
+        private StateInt nInsert;
+
+        // constraints registered for this node
+        private StateStack&lt;CPConstraint&gt; onInsert;
+        private StateStack&lt;CPConstraint&gt; onExclude;
+        private StateStack&lt;CPConstraint&gt; onRequire;
+        private StateStack&lt;CPConstraint&gt; onInsertRemoved;
+
+<span class="fc" id="L128">        private Node(int i) {</span>
+<span class="fc" id="L129">            me = i;</span>
+<span class="fc" id="L130">            pred = new StateSparseSet(cp.getStateManager(), nNodes, 0);</span>
+<span class="fc" id="L131">            pred.remove(me);</span>
+<span class="fc" id="L132">            pred.remove(end);</span>
+
+<span class="fc" id="L134">            succ = new StateSparseSet(cp.getStateManager(), nNodes, 0);</span>
+<span class="fc" id="L135">            succ.remove(me);</span>
+<span class="fc" id="L136">            succ.remove(start);</span>
+            // the node can be inserted between start and end at initialization
+<span class="fc" id="L138">            nInsert = cp.getStateManager().makeStateInt(1);</span>
+
+<span class="fc" id="L140">            onInsert = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L141">            onRequire = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L142">            onExclude = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L143">            onInsertRemoved = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L144">        }</span>
+
+
+<span class="fc" id="L147">        private final NodeListener listener = new NodeListener() {</span>
+            @Override
+            public void insert() {
+<span class="fc" id="L150">                scheduleAll(onInsert);</span>
+<span class="fc" id="L151">            }</span>
+
+            @Override
+            public void exclude() {
+<span class="fc" id="L155">                scheduleAll(onExclude);</span>
+<span class="fc" id="L156">            }</span>
+
+            @Override
+            public void insertRemoved() {
+<span class="fc" id="L160">                scheduleAll(onInsertRemoved);</span>
+<span class="fc" id="L161">            }</span>
+
+            @Override
+            public void require() {
+<span class="fc" id="L165">                scheduleAll(onRequire);</span>
+<span class="fc" id="L166">            }</span>
+
+        };
+
+        @Override
+        public CPSolver getSolver() {
+<span class="nc" id="L172">            return cp;</span>
+        }
+
+        @Override
+        public CPSeqVar getSeqVar() {
+<span class="fc" id="L177">            return CPSeqVarImpl.this;</span>
+        }
+
+        @Override
+        public int node() {
+<span class="fc" id="L182">            return me;</span>
+        }
+
+        @Override
+        public boolean isNode(SeqStatus status) {
+<span class="fc" id="L187">            return CPSeqVarImpl.this.isNode(me, status);</span>
+        }
+
+        @Override
+        public CPBoolVar isRequired() {
+<span class="fc" id="L192">            return new CPBoolVar() {</span>
+                @Override
+                public ModelProxy getModelProxy() {
+<span class="nc" id="L195">                    return CPSeqVarImpl.this.getModelProxy();</span>
+                }
+
+                @Override
+                public boolean isTrue() {
+<span class="fc" id="L200">                    return isNode(REQUIRED);</span>
+                }
+
+                @Override
+                public boolean isFalse() {
+<span class="fc" id="L205">                    return isNode(EXCLUDED);</span>
+                }
+
+                @Override
+                public void fix(boolean b) {
+<span class="fc bfc" id="L210" title="All 2 branches covered.">                    if (b) {</span>
+<span class="fc" id="L211">                        require(me);</span>
+                    } else {
+<span class="fc" id="L213">                        exclude(me);</span>
+                    }
+<span class="fc" id="L215">                }</span>
+
+                @Override
+                public CPSolver getSolver() {
+<span class="fc" id="L219">                    return cp;</span>
+                }
+
+                @Override
+                public void whenFixed(Runnable f) {
+<span class="fc" id="L224">                    whenExclude(f);</span>
+<span class="fc" id="L225">                    whenRequire(f);</span>
+<span class="fc" id="L226">                }</span>
+
+                @Override
+                public void whenBoundChange(Runnable f) {
+<span class="fc" id="L230">                    whenFixed(f);</span>
+<span class="fc" id="L231">                }</span>
+
+                @Override
+                public void whenDomainChange(Runnable f) {
+<span class="fc" id="L235">                    whenFixed(f);</span>
+<span class="fc" id="L236">                }</span>
+
+                @Override
+                public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+<span class="nc" id="L240">                    throw new UnsupportedOperationException(&quot;Not implemented&quot;);</span>
+                }
+
+                @Override
+                public void propagateOnDomainChange(CPConstraint c) {
+<span class="nc" id="L245">                    propagateOnFix(c);</span>
+<span class="nc" id="L246">                }</span>
+
+                @Override
+                public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L250">                    propagateOnRequire(c);</span>
+<span class="fc" id="L251">                    propagateOnExclude(c);</span>
+<span class="fc" id="L252">                }</span>
+
+                @Override
+                public void propagateOnBoundChange(CPConstraint c) {
+<span class="fc" id="L256">                    propagateOnFix(c);</span>
+<span class="fc" id="L257">                }</span>
+
+                @Override
+                public int min() {
+<span class="fc bfc" id="L261" title="All 2 branches covered.">                    if (isNode(REQUIRED)) {</span>
+<span class="fc" id="L262">                        return 1;</span>
+                    } else {
+<span class="fc" id="L264">                        return 0; // possible (unfixed) or excluded (fixed)</span>
+                    }
+                }
+
+                @Override
+                public int max() {
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                    if (isNode(EXCLUDED)) {</span>
+<span class="fc" id="L271">                        return 0;</span>
+                    } else {
+<span class="fc" id="L273">                        return 1; //  possible (unfixed) or required (fixed)</span>
+                    }
+                }
+
+                @Override
+                public int size() {
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                    if (isNode(POSSIBLE)) {</span>
+<span class="fc" id="L280">                        return 2;</span>
+                    } else {
+<span class="fc" id="L282">                        return 1;</span>
+                    }
+                }
+
+                @Override
+                public int fillArray(int[] dest) {
+<span class="fc bfc" id="L288" title="All 2 branches covered.">                    if (isNode(POSSIBLE)) {</span>
+<span class="fc" id="L289">                        dest[0] = 0;</span>
+<span class="fc" id="L290">                        dest[1] = 1;</span>
+<span class="fc" id="L291">                        return 2;</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">                    } else if (isNode(REQUIRED)) {</span>
+<span class="fc" id="L293">                        dest[0] = 1;</span>
+                    } else { // excluded
+<span class="fc" id="L295">                        dest[0] = 0;</span>
+                    }
+<span class="fc" id="L297">                    return 1;</span>
+                }
+
+                @Override
+                public boolean isFixed() {
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                    return !isNode(POSSIBLE);</span>
+                }
+
+                @Override
+                public boolean contains(int v) {
+<span class="fc bfc" id="L307" title="All 4 branches covered.">                    if (v &lt; 0 || v &gt; 1)</span>
+<span class="fc" id="L308">                        return false;</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">                    if (v == 0) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">                        return !isNode(REQUIRED); // (possible or excluded) == (!required) contain 0</span>
+                    } else { // v == 1
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                        return !isNode(EXCLUDED); // (possible or required) == (!excluded) contain 1</span>
+                    }
+                }
+
+                @Override
+                public void remove(int v) {
+<span class="fc bfc" id="L318" title="All 2 branches covered.">                    if (v == 0) {</span>
+<span class="fc" id="L319">                        require(me);</span>
+                    }
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                    if (v == 1) {</span>
+<span class="fc" id="L322">                        exclude(me);</span>
+                    }
+<span class="fc" id="L324">                }</span>
+
+                @Override
+                public void fix(int v) {
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                    if (v == 0) {</span>
+<span class="fc" id="L329">                        exclude(me);</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                    } else if (v == 1) {</span>
+<span class="fc" id="L331">                        require(me);</span>
+                    } else {
+<span class="fc" id="L333">                        throw INCONSISTENCY;</span>
+                    }
+<span class="fc" id="L335">                }</span>
+
+                @Override
+                public void removeBelow(int v) {
+<span class="fc bfc" id="L339" title="All 2 branches covered.">                    if (v &gt;= 1) {</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">                        if (v == 1) {</span>
+<span class="fc" id="L341">                            require(me);</span>
+                        } else {
+<span class="fc" id="L343">                            throw INCONSISTENCY;</span>
+                        }
+                    }
+<span class="fc" id="L346">                }</span>
+
+                @Override
+                public void removeAbove(int v) {
+<span class="fc bfc" id="L350" title="All 2 branches covered.">                    if (v &lt;= 0) {</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">                        if (v == 0) {</span>
+<span class="fc" id="L352">                            exclude(me);</span>
+                        } else {
+<span class="fc" id="L354">                            throw INCONSISTENCY;</span>
+                        }
+                    }
+<span class="fc" id="L357">                }</span>
+
+                @Override
+                public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] dest) {
+<span class="nc" id="L361">                    int size = size();</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">                    if (oldSize == size) {</span>
+<span class="nc" id="L363">                        return 0; // no difference</span>
+                    } else { // either the min or the max differ
+                        // the current domain must have shrink since the last call
+<span class="nc bnc" id="L366" title="All 2 branches missed.">                        if (oldMin != min()) { // min has changed</span>
+<span class="nc" id="L367">                            dest[0] = 0;</span>
+                        } else { // max has changed
+<span class="nc" id="L369">                            dest[0] = 1;</span>
+                        }
+<span class="nc" id="L371">                        return 1;</span>
+                    }
+                }
+
+                @Override
+                public DeltaCPIntVar delta(CPConstraint c) {
+<span class="nc" id="L377">                    DeltaCPIntVar delta = new DeltaCPIntVarImpl(this);</span>
+<span class="nc" id="L378">                    c.registerDelta(delta);</span>
+<span class="nc" id="L379">                    return delta;</span>
+                }
+
+                @Override
+                public String toString() {
+<span class="nc bnc" id="L384" title="All 2 branches missed.">                    if (isTrue()) return &quot;true&quot;;</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">                    else if (isFalse()) return &quot;false&quot;;</span>
+<span class="nc" id="L386">                    else return &quot;{false,true}&quot;;</span>
+                }
+            };
+        }
+
+
+        @Override
+        public int fillPred(int[] dest, SeqStatus status) {
+            // same effect but is not always the most efficient method
+            //return pred.fillArrayWithFilter(dest, i -&gt; isNode(i, status));
+<span class="fc bfc" id="L396" title="All 8 branches covered.">            return switch (status) {</span>
+<span class="fc" id="L397">                case REQUIRED -&gt; pred.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, REQUIRED));</span>
+<span class="fc" id="L398">                case MEMBER -&gt; pred.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, MEMBER));</span>
+<span class="fc" id="L399">                case POSSIBLE -&gt; pred.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, POSSIBLE));</span>
+<span class="fc" id="L400">                case EXCLUDED -&gt; 0;</span>
+<span class="fc" id="L401">                case NOT_EXCLUDED -&gt; pred.fillArray(dest);</span>
+<span class="fc" id="L402">                case INSERTABLE -&gt; pred.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, INSERTABLE));</span>
+<span class="fc" id="L403">                case INSERTABLE_REQUIRED -&gt; pred.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, INSERTABLE_REQUIRED));</span>
+<span class="fc" id="L404">                case MEMBER_ORDERED -&gt; fillOrdered(dest, i -&gt; hasEdge(i, me));</span>
+            };
+        }
+
+        @Override
+        public int fillPred(int[] dest) {
+<span class="nc" id="L410">            return fillPred(dest, NOT_EXCLUDED);</span>
+        }
+
+        @Override
+        public int nPred() {
+<span class="fc" id="L415">            return pred.size();</span>
+        }
+
+        @Override
+        public int fillSucc(int[] dest, SeqStatus status) {
+<span class="fc bfc" id="L420" title="All 8 branches covered.">            return switch (status) {</span>
+<span class="fc" id="L421">                case REQUIRED -&gt; succ.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, REQUIRED));</span>
+<span class="fc" id="L422">                case MEMBER -&gt; succ.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, MEMBER));</span>
+<span class="fc" id="L423">                case POSSIBLE -&gt; succ.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, POSSIBLE));</span>
+<span class="fc" id="L424">                case EXCLUDED -&gt; 0;</span>
+<span class="fc" id="L425">                case NOT_EXCLUDED -&gt; succ.fillArray(dest);</span>
+<span class="fc" id="L426">                case INSERTABLE -&gt; succ.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, INSERTABLE));</span>
+                case INSERTABLE_REQUIRED -&gt;
+<span class="fc" id="L428">                        succ.fillArrayWithFilter(dest, i -&gt; getSeqVar().isNode(i, INSERTABLE_REQUIRED));</span>
+<span class="fc" id="L429">                case MEMBER_ORDERED -&gt; fillOrdered(dest, i -&gt; hasEdge(me, i));</span>
+            };
+        }
+
+        @Override
+        public int fillSucc(int[] dest) {
+<span class="nc" id="L435">            return fillSucc(dest, NOT_EXCLUDED);</span>
+        }
+
+        @Override
+        public int nSucc() {
+<span class="fc" id="L440">            return succ.size();</span>
+        }
+
+        @Override
+        public int fillInsert(int[] dest) {
+<span class="fc bfc" id="L445" title="All 4 branches covered.">            if (isNode(MEMBER) || isNode(EXCLUDED))</span>
+<span class="fc" id="L446">                return 0;</span>
+<span class="fc" id="L447">            int nPred = pred.size();</span>
+<span class="fc" id="L448">            int nMember = CPSeqVarImpl.this.nMember.value();</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">            if (nMember &lt; nPred) {</span>
+<span class="fc" id="L450">                return fillOrdered(dest, i -&gt; hasInsert(i, me));</span>
+            }
+             // faster to iterate over the edges going up to this node
+<span class="fc" id="L453">            return pred.fillArrayWithFilter(dest, i -&gt; hasInsert(i, me));</span>
+        }
+
+        @Override
+        public int nInsert() {
+<span class="fc bfc" id="L458" title="All 2 branches covered.">            return isMember(me) ? 0 : nInsert.value();</span>
+        }
+
+        @Override
+        public void whenInsert(Runnable f) {
+<span class="fc" id="L463">            onInsert.push(constraintClosure(f));</span>
+<span class="fc" id="L464">        }</span>
+
+        @Override
+        public void whenExclude(Runnable f) {
+<span class="fc" id="L468">            onExclude.push(constraintClosure(f));</span>
+<span class="fc" id="L469">        }</span>
+
+        @Override
+        public void whenRequire(Runnable f) {
+<span class="fc" id="L473">            onRequire.push(constraintClosure(f));</span>
+<span class="fc" id="L474">        }</span>
+
+        @Override
+        public void whenInsertRemoved(Runnable f) {
+<span class="fc" id="L478">            onInsertRemoved.push(constraintClosure(f));</span>
+<span class="fc" id="L479">        }</span>
+
+        @Override
+        public void propagateOnInsert(CPConstraint c) {
+<span class="nc" id="L483">            onInsert.push(c);</span>
+<span class="nc" id="L484">        }</span>
+
+        @Override
+        public void propagateOnExclude(CPConstraint c) {
+<span class="fc" id="L488">            onExclude.push(c);</span>
+<span class="fc" id="L489">        }</span>
+
+        @Override
+        public void propagateOnRequire(CPConstraint c) {
+<span class="fc" id="L493">            onRequire.push(c);</span>
+<span class="fc" id="L494">        }</span>
+
+        @Override
+        public void propagateOnInsertRemoved(CPConstraint c) {
+<span class="fc" id="L498">            onInsertRemoved.push(c);</span>
+<span class="fc" id="L499">        }</span>
+
+    }
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L505">        return cp;</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc bfc" id="L510" title="All 4 branches covered.">        return domain.nPossible() == 0 &amp;&amp; domain.nIncluded() == nMember.value();</span>
+    }
+
+    @Override
+    public CPNodeVar getNodeVar(int node) {
+<span class="fc" id="L515">        return nodes[node];</span>
+    }
+
+    @Override
+    public int fillNode(int[] dest, SeqStatus status) {
+<span class="fc bfc" id="L520" title="All 8 branches covered.">        return switch (status) {</span>
+<span class="fc" id="L521">            case REQUIRED -&gt; domain.fillIncluded(dest);</span>
+<span class="fc" id="L522">            case MEMBER -&gt; domain.fillIncluded(dest, i -&gt; isNode(i, MEMBER));</span>
+<span class="fc" id="L523">            case POSSIBLE -&gt; domain.fillPossible(dest);</span>
+<span class="fc" id="L524">            case EXCLUDED -&gt; domain.fillExcluded(dest);</span>
+<span class="fc" id="L525">            case NOT_EXCLUDED -&gt; domain.fillIncludedAndPossible(dest);</span>
+            case INSERTABLE -&gt; // required not yet inserted and possible nodes
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                    domain.fillIncludedAndPossible(dest, i -&gt; !isNode(i, MEMBER));</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">            case INSERTABLE_REQUIRED -&gt; domain.fillIncluded(dest, i -&gt; !isNode(i, MEMBER));</span>
+            case MEMBER_ORDERED -&gt; {
+<span class="fc" id="L530">                dest[0] = start;</span>
+<span class="fc" id="L531">                int n = nMember.value();</span>
+<span class="fc bfc" id="L532" title="All 2 branches covered.">                for (int i = 1; i &lt; n; i++) {</span>
+<span class="fc" id="L533">                    dest[i] = memberAfter(dest[i - 1]);</span>
+                }
+<span class="fc" id="L535">                yield n;</span>
+            }
+        };
+    }
+
+    private int fillOrdered(int[] dest, Predicate&lt;Integer&gt; predicate) {
+<span class="fc" id="L541">        int i = 0;</span>
+<span class="fc" id="L542">        int current = start;</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        while (current != end) {</span>
+<span class="fc bfc" id="L544" title="All 2 branches covered.">            if (predicate.test(current)) {</span>
+<span class="fc" id="L545">                dest[i++] = current;</span>
+            }
+<span class="fc" id="L547">            current = memberAfter(current);</span>
+        }
+<span class="fc bfc" id="L549" title="All 2 branches covered.">        if (predicate.test(end)) {</span>
+<span class="fc" id="L550">            dest[i] = current;</span>
+<span class="fc" id="L551">            i++;</span>
+        }
+<span class="fc" id="L553">        return i;</span>
+    }
+
+    @Override
+    public int nNode(SeqStatus status) {
+<span class="fc bfc" id="L558" title="All 7 branches covered.">        return switch (status) {</span>
+<span class="fc" id="L559">            case REQUIRED -&gt; domain.nIncluded();</span>
+<span class="fc" id="L560">            case MEMBER, MEMBER_ORDERED -&gt; nMember.value();</span>
+<span class="fc" id="L561">            case POSSIBLE -&gt; domain.nPossible();</span>
+<span class="fc" id="L562">            case EXCLUDED -&gt; domain.nExcluded();</span>
+<span class="fc" id="L563">            case NOT_EXCLUDED -&gt; domain.nIncluded() + domain.nPossible();</span>
+<span class="fc" id="L564">            case INSERTABLE -&gt; insertable.size();</span>
+<span class="fc" id="L565">            case INSERTABLE_REQUIRED -&gt; domain.nIncluded() - nMember.value();</span>
+        };
+    }
+
+    @Override
+    public int nNode() {
+<span class="fc" id="L571">        return nNodes;</span>
+    }
+
+    private boolean isMember(int node) {
+<span class="fc bfc" id="L575" title="All 2 branches covered.">        return succ[node].value() != node;// &amp;&amp; domain.isIncluded(node);</span>
+    }
+
+    @Override
+    public boolean isNode(int node, SeqStatus status) {
+<span class="fc bfc" id="L580" title="All 7 branches covered.">        return switch (status) {</span>
+<span class="fc" id="L581">            case REQUIRED -&gt; domain.isIncluded(node);</span>
+<span class="fc" id="L582">            case MEMBER, MEMBER_ORDERED -&gt; isMember(node);</span>
+<span class="fc" id="L583">            case POSSIBLE -&gt; domain.isPossible(node);</span>
+<span class="fc" id="L584">            case EXCLUDED -&gt; domain.isExcluded(node);</span>
+<span class="fc bfc" id="L585" title="All 4 branches covered.">            case NOT_EXCLUDED -&gt; domain.isIncluded(node) || domain.isPossible(node);</span>
+<span class="fc" id="L586">            case INSERTABLE -&gt; insertable.contains(node);</span>
+<span class="fc bfc" id="L587" title="All 4 branches covered.">            case INSERTABLE_REQUIRED -&gt; domain.isIncluded(node) &amp;&amp; !isMember(node);</span>
+        };
+    }
+
+    @Override
+    public int start() {
+<span class="fc" id="L593">        return start;</span>
+    }
+
+    @Override
+    public int end() {
+<span class="fc" id="L598">        return end;</span>
+    }
+
+    @Override
+    public int memberAfter(int node) {
+<span class="fc" id="L603">        return succ[node].value();</span>
+    }
+
+    @Override
+    public int memberBefore(int node) {
+<span class="fc" id="L608">        return pred[node].value();</span>
+    }
+
+    @Override
+    public int fillPred(int node, int[] dest, SeqStatus status) {
+<span class="fc" id="L613">        return nodes[node].fillPred(dest, status);</span>
+    }
+
+    @Override
+    public int fillPred(int node, int[] dest) {
+<span class="fc" id="L618">        return fillPred(node, dest, NOT_EXCLUDED);</span>
+    }
+
+    @Override
+    public int nPred(int node) {
+<span class="fc" id="L623">        return nodes[node].pred.size();</span>
+    }
+
+    @Override
+    public int fillSucc(int node, int[] dest, SeqStatus status) {
+<span class="fc" id="L628">        return nodes[node].fillSucc(dest, status);</span>
+    }
+
+    @Override
+    public int fillSucc(int node, int[] dest) {
+<span class="fc" id="L633">        return fillSucc(node, dest, NOT_EXCLUDED);</span>
+    }
+
+    @Override
+    public int nSucc(int node) {
+<span class="fc" id="L638">        return nodes[node].succ.size();</span>
+    }
+
+    @Override
+    public int fillInsert(int node, int[] dest) {
+<span class="fc" id="L643">        return nodes[node].fillInsert(dest);</span>
+    }
+
+    @Override
+    public int nInsert(int node) {
+<span class="fc" id="L648">        return nodes[node].nInsert();</span>
+    }
+
+    @Override
+    public boolean hasEdge(int from, int to) {
+<span class="fc" id="L653">        boolean link1 = nodes[to].pred.contains(from);</span>
+<span class="pc bpc" id="L654" title="1 of 2 branches missed.">        assert link1 == nodes[from].succ.contains(to);</span>
+<span class="fc" id="L655">        return link1;</span>
+    }
+
+    @Override
+    public boolean hasInsert(int prev, int node) {
+<span class="pc bpc" id="L660" title="1 of 8 branches missed.">        return isNode(prev, MEMBER) &amp;&amp; isNode(node, INSERTABLE) &amp;&amp; hasEdge(prev, node) &amp;&amp; hasEdge(node, memberAfter(prev));</span>
+    }
+
+    @Override
+    public CPBoolVar isNodeRequired(int node) {
+<span class="fc" id="L665">        return nodes[node].isRequired();</span>
+    }
+
+    @Override
+    public void exclude(int node) {
+<span class="fc bfc" id="L670" title="All 2 branches covered.">        if (domain.isIncluded(node)) {</span>
+<span class="fc" id="L671">            throw INCONSISTENCY;</span>
+        }
+<span class="fc bfc" id="L673" title="All 2 branches covered.">        if (domain.isPossible(node)) {</span>
+<span class="fc" id="L674">            domain.exclude(node);</span>
+<span class="fc" id="L675">            insertable.remove(node);</span>
+<span class="fc" id="L676">            nodes[node].nInsert.setValue(0);</span>
+<span class="fc" id="L677">            int nPred = fillPred(node, values);</span>
+<span class="fc bfc" id="L678" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred ; i++) {</span>
+<span class="fc" id="L679">                int pred = values[i];</span>
+<span class="fc" id="L680">                removeEdge(pred, node);</span>
+            }
+<span class="fc" id="L682">            int nSucc = fillSucc(node, values);</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">            for (int i = 0; i &lt; nSucc ; i++) {</span>
+<span class="fc" id="L684">                int succ = values[i];</span>
+<span class="fc" id="L685">                removeEdge(node, succ);</span>
+            }
+<span class="fc" id="L687">            listener.exclude();</span>
+<span class="fc" id="L688">            nodes[node].listener.exclude();</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">            if (isFixed())</span>
+<span class="fc" id="L690">                listener.fix();</span>
+        }
+<span class="fc" id="L692">    }</span>
+
+    @Override
+    public void require(int node) {
+<span class="fc bfc" id="L696" title="All 2 branches covered.">        if (domain.isExcluded(node)) {</span>
+<span class="fc" id="L697">            throw INCONSISTENCY;</span>
+        }
+<span class="fc bfc" id="L699" title="All 2 branches covered.">        if (domain.isPossible(node)) {</span>
+<span class="fc" id="L700">            domain.include(node);</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">            if (nInsert(node) == 1) {</span>
+<span class="fc" id="L702">                insertAtOnlyRemainingPlace(node);</span>
+            }
+<span class="fc" id="L704">            listener.require();</span>
+<span class="fc" id="L705">            nodes[node].listener.require();</span>
+        }
+<span class="fc" id="L707">    }</span>
+
+
+    /**
+     * Tells if two member nodes are following each other, possibly with other nodes between them
+     * @param prev predecessor, must be a member node
+     * @param succ successor, must be a member node
+     * @return true if {@code prev} is a predecessor of {@code succ}
+     */
+    private boolean areFollowing(int prev, int succ) {
+<span class="fc" id="L717">        int start = start();</span>
+<span class="pc bpc" id="L718" title="2 of 4 branches missed.">        if (prev == end() || succ == start)</span>
+<span class="nc" id="L719">            return false;</span>
+<span class="fc" id="L720">        int after = memberAfter(prev);</span>
+<span class="fc bfc" id="L721" title="All 2 branches covered.">        if (after == succ) { // prev is the direct predecessor of succ</span>
+<span class="fc" id="L722">            return true;</span>
+        } else {
+            // check if there is a chain prev -&gt; ... -&gt; succ
+<span class="fc" id="L725">            int current = after;</span>
+<span class="fc" id="L726">            boolean areFollowing = false;</span>
+<span class="pc bpc" id="L727" title="1 of 4 branches missed.">            while (!areFollowing &amp;&amp; current != start) {</span>
+<span class="fc" id="L728">                current = memberAfter(current);</span>
+<span class="pc bpc" id="L729" title="1 of 2 branches missed.">                areFollowing = current == succ;</span>
+            }
+<span class="fc" id="L731">            return areFollowing;</span>
+        }
+    }
+
+    @Override
+    public void insert(int prev, int node) {
+<span class="fc bfc" id="L737" title="All 2 branches covered.">        if (!hasInsert(prev, node)) {</span>
+<span class="fc bfc" id="L738" title="All 4 branches covered.">            if (isNode(prev, MEMBER) &amp;&amp; isNode(node, MEMBER)) {</span>
+<span class="fc bfc" id="L739" title="All 2 branches covered.">                if (!areFollowing(prev, node)) {</span>
+<span class="fc" id="L740">                    throw new IllegalArgumentException(&quot;Cannot insert two member nodes that are not consecutive&quot;);</span>
+                }
+<span class="fc" id="L742">                return;</span>
+            } else {
+<span class="fc" id="L744">                throw INCONSISTENCY;</span>
+            }
+        }
+<span class="fc" id="L747">        int after = memberAfter(prev);</span>
+<span class="fc" id="L748">        nMember.increment();</span>
+        // reconstruct the links with predecessors and successors
+<span class="fc" id="L750">        this.succ[prev].setValue(node);</span>
+<span class="fc" id="L751">        this.succ[node].setValue(after);</span>
+<span class="fc" id="L752">        this.pred[node].setValue(prev);</span>
+<span class="fc" id="L753">        this.pred[after].setValue(node);</span>
+        // destroy the links between prev and after
+<span class="fc" id="L755">        removeEdge(prev, after);</span>
+        // require the node
+<span class="fc" id="L757">        require(node); // does not trigger an insertion</span>
+        // update the set of insertable nodes
+<span class="fc" id="L759">        insertable.remove(node);</span>
+        // update the counter of insertions and remove edges between member nodes that are not consecutive
+        //int nInsertable = fillNode(values, NOT_EXCLUDED);
+<span class="fc" id="L762">        int nPred = fillPred(node, values);</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nPred ; i++) {</span>
+<span class="fc" id="L764">            int pred = values[i];</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">            if (isNode(pred, MEMBER)) {</span>
+<span class="fc bfc" id="L766" title="All 2 branches covered.">                if (pred != prev) {</span>
+<span class="fc" id="L767">                    removeEdge(pred, node);</span>
+<span class="fc" id="L768">                    int next = memberAfter(pred);</span>
+<span class="fc" id="L769">                    removeEdge(node, next);</span>
+<span class="fc" id="L770">                }</span>
+<span class="fc bfc" id="L771" title="All 2 branches covered.">            } else if (hasInsert(prev, pred)) {</span>
+<span class="fc" id="L772">                nodes[pred].nInsert.increment();</span>
+            } else {
+                // vertex could not be inserted between prev and after
+                // this prevent vertex from being inserted between those two nodes
+<span class="fc" id="L776">                removeEdge(pred, node);</span>
+<span class="fc" id="L777">                removeEdge(node, pred);</span>
+            }
+        }
+<span class="fc" id="L780">        nodes[node].nInsert.setValue(0);</span>
+        // notify the listeners
+<span class="fc" id="L782">        nodes[node].listener.insert();</span>
+<span class="fc" id="L783">        listener.insert();</span>
+<span class="fc bfc" id="L784" title="All 2 branches covered.">        if (isFixed())</span>
+<span class="fc" id="L785">            listener.fix();</span>
+<span class="fc" id="L786">    }</span>
+
+    @Override
+    public void notBetween(int prev, int node, int succ) {
+<span class="pc bpc" id="L790" title="2 of 4 branches missed.">        if (!isNode(prev, MEMBER) || !isNode(succ, MEMBER)) {</span>
+<span class="nc" id="L791">            throw new IllegalArgumentException(&quot;A notBetween can only be applied always defined between two members nodes&quot;);</span>
+        }
+<span class="pc bpc" id="L793" title="1 of 6 branches missed.">        if (prev == node || node == succ || prev == succ) {</span>
+<span class="fc" id="L794">            return;</span>
+        }
+<span class="fc bfc" id="L796" title="All 2 branches covered.">        if (!isNode(node, EXCLUDED)) {</span>
+            // most notBetween are done between two consecutive nodes
+            // first fast check if prev and succ are consecutive nodes
+            boolean areFollowing;
+<span class="fc" id="L800">            int start = start();</span>
+<span class="fc" id="L801">            int after = memberAfter(prev);</span>
+<span class="pc bpc" id="L802" title="2 of 4 branches missed.">            if (prev == end() || succ == start)</span>
+<span class="nc" id="L803">                return;</span>
+<span class="fc bfc" id="L804" title="All 2 branches covered.">            if (after == succ) { // prev is the direct predecessor of succ</span>
+<span class="fc" id="L805">                areFollowing = true;</span>
+            } else {
+                // check if there is a chain prev -&gt; ... -&gt; succ
+<span class="fc" id="L808">                int current = after;</span>
+<span class="fc" id="L809">                areFollowing = false;</span>
+<span class="pc bpc" id="L810" title="1 of 2 branches missed.">                boolean foundNode = current == node;</span>
+<span class="pc bpc" id="L811" title="1 of 4 branches missed.">                while (!areFollowing &amp;&amp; current != start) {</span>
+<span class="fc" id="L812">                    current = memberAfter(current);</span>
+<span class="fc bfc" id="L813" title="All 2 branches covered.">                    areFollowing = current == succ;</span>
+<span class="pc bpc" id="L814" title="2 of 4 branches missed.">                    foundNode = foundNode || current == node;</span>
+                }
+<span class="pc bpc" id="L816" title="2 of 4 branches missed.">                if (areFollowing &amp;&amp; foundNode)</span>
+<span class="nc" id="L817">                    throw INCONSISTENCY;</span>
+            }
+            // only performs the notBetween if the member nodes are following each other
+            // if the member nodes are not following each other, no such subsequence can happen anyway
+<span class="pc bpc" id="L821" title="1 of 2 branches missed.">            if (areFollowing) {</span>
+<span class="fc" id="L822">                int nInsert = nodes[node].nInsert.value();</span>
+<span class="fc bfc" id="L823" title="All 2 branches covered.">                for (int endPoint = prev; endPoint != succ ;) {</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">                    if (hasInsert(endPoint, node)) {</span>
+<span class="fc" id="L825">                        removeEdge(endPoint, node);</span>
+<span class="fc" id="L826">                        endPoint = memberAfter(endPoint);</span>
+<span class="fc" id="L827">                        removeEdge(node, endPoint);</span>
+<span class="fc" id="L828">                        nInsert -= 1;</span>
+<span class="fc bfc" id="L829" title="All 2 branches covered.">                        if (nInsert == 0) {</span>
+<span class="fc" id="L830">                            exclude(node);</span>
+                        }
+<span class="fc" id="L832">                        nodes[node].listener.insertRemoved();</span>
+<span class="fc" id="L833">                        listener.insertRemoved();</span>
+                    } else {
+<span class="fc" id="L835">                        endPoint = memberAfter(endPoint);</span>
+                    }
+                }
+<span class="fc" id="L838">                nodes[node].nInsert.setValue(nInsert);</span>
+<span class="fc bfc" id="L839" title="All 4 branches covered.">                if (isNode(node, REQUIRED) &amp;&amp; nInsert == 1) {</span>
+<span class="fc" id="L840">                    insertAtOnlyRemainingPlace(node);</span>
+                }
+            }
+        }
+<span class="fc" id="L844">    }</span>
+
+    private void insertAtOnlyRemainingPlace(int node) {
+<span class="fc" id="L847">        int nPred = fillInsert(node, values);</span>
+<span class="pc bpc" id="L848" title="1 of 2 branches missed.">        assert nPred == 1;</span>
+<span class="fc" id="L849">        int pred = values[0];</span>
+<span class="fc" id="L850">        insert(pred, node);</span>
+<span class="fc" id="L851">    }</span>
+
+    /**
+     * Remove a directed edge from -&gt; to
+     * @param from origin of the edge
+     * @param to destination of the edge
+     */
+    private void removeEdge(int from, int to) {
+<span class="fc" id="L859">        nodes[from].succ.remove(to);</span>
+<span class="fc" id="L860">        nodes[to].pred.remove(from);</span>
+<span class="fc" id="L861">    }</span>
+
+    @Override
+    public void whenFixed(Runnable f) {
+<span class="fc" id="L865">        onFix.push(constraintClosure(f));</span>
+<span class="fc" id="L866">    }</span>
+
+    @Override
+    public void whenInsert(Runnable f) {
+<span class="fc" id="L870">        onInsert.push(constraintClosure(f));</span>
+<span class="fc" id="L871">    }</span>
+
+    @Override
+    public void whenInsertRemoved(Runnable f) {
+<span class="nc" id="L875">        onInsertRemoved.push(constraintClosure(f));</span>
+<span class="nc" id="L876">    }</span>
+
+    @Override
+    public void whenExclude(Runnable f) {
+<span class="fc" id="L880">        onExclude.push(constraintClosure(f));</span>
+<span class="fc" id="L881">    }</span>
+
+    @Override
+    public void whenRequire(Runnable f) {
+<span class="fc" id="L885">        onRequire.push(constraintClosure(f));</span>
+<span class="fc" id="L886">    }</span>
+
+    @Override
+    public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L890">        onFix.push(c);</span>
+<span class="fc" id="L891">    }</span>
+
+    @Override
+    public void propagateOnInsertRemoved(CPConstraint c) {
+<span class="fc" id="L895">        onInsertRemoved.push(c);</span>
+<span class="fc" id="L896">    }</span>
+
+    @Override
+    public void propagateOnInsert(CPConstraint c) {
+<span class="fc" id="L900">        onInsert.push(c);</span>
+<span class="fc" id="L901">    }</span>
+
+    @Override
+    public void propagateOnExclude(CPConstraint c) {
+<span class="fc" id="L905">        onExclude.push(c);</span>
+<span class="fc" id="L906">    }</span>
+
+    @Override
+    public void propagateOnRequire(CPConstraint c) {
+<span class="fc" id="L910">        onRequire.push(c);</span>
+<span class="fc" id="L911">    }</span>
+
+    private CPConstraint constraintClosure(Runnable f) {
+<span class="fc" id="L914">        CPConstraint c = new CPConstraintClosure(cp, f);</span>
+<span class="fc" id="L915">        getSolver().post(c, false);</span>
+<span class="fc" id="L916">        return c;</span>
+    }
+
+    private void scheduleAll(StateStack&lt;CPConstraint&gt; constraints) {
+<span class="fc bfc" id="L920" title="All 2 branches covered.">        for (int i = 0; i &lt; constraints.size(); i++)</span>
+<span class="fc" id="L921">            cp.schedule(constraints.get(i));</span>
+<span class="fc" id="L922">    }</span>
+
+    @Override
+    public String toString() {
+<span class="fc" id="L926">        return membersOrdered();</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L931">        return getSolver().getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

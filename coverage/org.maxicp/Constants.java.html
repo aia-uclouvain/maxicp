@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Constants.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp</a> &gt; <span class="el_source">Constants.java</span></div><h1>Constants.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp;
+
+/**
+ * Constants used in the MaxiCP library
+ */
+<span class="nc" id="L12">public class Constants {</span>
+
+    /**
+     * Default Scheduling maximum time horizon
+     */
+    public final static int HORIZON = 100000000;
+
+    /**
+     * High priority for a constraint in the propagation queue
+     * This is the default priority, to be used for light propagators
+     */
+    public final static int PIORITY_FAST = 0;
+
+    /**
+     * Medium priority for a constraint in the propagation queue
+     * To be used for medium complexity propagators
+     */
+    public final static int PIORITY_MEDIUM = 1;
+
+    /**
+     * Low priority for a constraint in the propagation queue
+     * To be used for heavy (slow) propagators
+     */
+    public final static int PIORITY_SLOW = 2;
+
+
+<span class="fc" id="L38">    public enum CumulativeAlgo {</span>
+<span class="fc" id="L39">        BELDICEANU_CARLSSON,</span>
+<span class="fc" id="L40">        SCHAUS_THOMAS_KAMEUGNE,</span>
+<span class="fc" id="L41">        SCHAUS_THOMAS_KAMEUGNE_BASELINE,</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

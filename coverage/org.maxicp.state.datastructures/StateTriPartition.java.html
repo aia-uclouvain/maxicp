@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StateTriPartition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.datastructures</a> &gt; <span class="el_source">StateTriPartition.java</span></div><h1>StateTriPartition.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.datastructures;
+
+
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+
+import java.util.Set;
+import java.util.function.Predicate;
+
+/**
+ * Tri-partition sparse-set data structure
+ * that can be saved and restored through
+ * the {@link org.maxicp.state.StateManager#saveState()} / {@link org.maxicp.state.StateManager#restoreState()}
+ * methods.
+ * The three partitions are the included (I), possible (P) and excluded (E) values.
+ * Initially all the elements are in the possible set and those can only be
+ * moved to the possible and excluded partitions.
+ */
+<span class="fc" id="L24">public class StateTriPartition {</span>
+
+    protected int[] elems;
+    protected int[] elemPos;
+
+    // +-----------+----------+----------+
+    // |  included | possible | excluded |
+    // +-----------+----------+----------+
+
+    protected StateInt i;  // delimiter for the included values. They are included within 0...i-1
+    protected StateInt p;  // delimiter for the possible values. They are included within i...p-1
+    protected int n; // maximum number of elements
+
+    protected int ofs; // offset
+    protected int nOmitted; // number of values that are put in the exclusion set as soon as the instance was created
+
+    /**
+     * Creates a tri-partition with the elements {@code {I : {}, P: {0,...,n-1}, E: {}}}.
+     *
+     * @param sm the state manager that will save and restore the set when
+     *        {@link org.maxicp.state.StateManager#saveState()} / {@link org.maxicp.state.StateManager#restoreState()}
+     *           methods are called.
+     * @param n number of elements within the set.
+     */
+    public StateTriPartition(StateManager sm, int n) {
+<span class="fc" id="L49">        this(sm, 0, n-1);</span>
+<span class="fc" id="L50">    }</span>
+
+    /**
+     * Creates a tri-partition with the elements {@code {I : {}, P: {min,...,max}, E: {}}}.
+     *
+     * @param sm the state manager that will save and restore the set when
+     *        {@link StateManager#saveState()} / {@link StateManager#restoreState()}
+     *           methods are called.
+     * @param minInclusive minimum value of the partition
+     * @param maxInclusive maximum value of the partition with {@code maxInclusive &gt;= minInclusive}
+     */
+<span class="fc" id="L61">    public StateTriPartition(StateManager sm, int minInclusive, int maxInclusive) {</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">        if (maxInclusive &lt; minInclusive) throw new IllegalArgumentException(minInclusive+&quot;&lt;&quot;+maxInclusive);</span>
+<span class="fc" id="L63">        n = maxInclusive - minInclusive + 1;</span>
+<span class="fc" id="L64">        ofs = minInclusive;</span>
+<span class="fc" id="L65">        nOmitted = 0;</span>
+<span class="fc" id="L66">        i = sm.makeStateInt(0);</span>
+<span class="fc" id="L67">        p = sm.makeStateInt(n);</span>
+<span class="fc" id="L68">        elems = new int[n];</span>
+<span class="fc" id="L69">        elemPos = new int[n];</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L71">            elems[i] = i;</span>
+<span class="fc" id="L72">            elemPos[i] = i;</span>
+        }
+<span class="fc" id="L74">    };</span>
+
+    /**
+     * Creates a tri-partition with the elements {@code {R : {}, P: values, E: {}}}
+     * @param sm the state manager that will save and restore the set when
+     *        {@link StateManager#saveState()} / {@link StateManager#restoreState()}
+     *           methods are called.
+     * @param values the initial values for the possible partition P
+     */
+    public StateTriPartition(StateManager sm, Set&lt;Integer&gt; values) {
+<span class="fc" id="L84">        this(sm, values.stream().min(Integer::compareTo).get(), values.stream().max(Integer::compareTo).get());</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = ofs; i &lt; n + ofs ; ++i) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (!values.contains(i)) {</span>
+<span class="fc" id="L87">                exclude(i);</span>
+<span class="fc" id="L88">                ++nOmitted;</span>
+            }
+        }
+<span class="fc" id="L91">    }</span>
+
+    /**
+     * Moves a value from the set of possible values P to the set of excluded values E.
+     *
+     * @param val the value to move to the excluded set E
+     * @return true if the value has been moved from the set of possible P to the set of excluded,
+     *         false otherwise and the method has no effect in this case.
+     */
+    public boolean exclude(int val) {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (!isPossible(val))</span>
+<span class="fc" id="L102">            return false; // the value is already in the excluded set or in the set of included</span>
+<span class="fc" id="L103">        val -= ofs;</span>
+<span class="fc" id="L104">        this.p.decrement();</span>
+<span class="fc" id="L105">        exchangePositions(val, elems[p.value()]);</span>
+<span class="fc" id="L106">        return true;</span>
+    }
+
+    /**
+     * Moves a value from the possible partition P to the included partition I.
+     *
+     * @param val the value to mark as included
+     * @return true if the value has been moved from the set of possible P to the set of included I,
+     *         false otherwise and the method has no effect in this case.
+     */
+    public boolean include(int val) {
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (!isPossible(val))</span>
+<span class="fc" id="L118">            return false; // the value is already in the excluded set or in the set of included</span>
+<span class="fc" id="L119">        val -= ofs;</span>
+<span class="fc" id="L120">        exchangePositions(val, elems[i.value()]);</span>
+<span class="fc" id="L121">        this.i.increment();</span>
+<span class="fc" id="L122">        return true;</span>
+    }
+
+    /**
+     * Sets the specified value as the only included one and move all others into the exclusion partition.
+     *
+     * @param v unique value that will be contained in the included partition.
+     * @return true if the included partition was empty and the value was possible,
+     *         false otherwise and the method has no effect.
+     */
+    public boolean includeAndExcludeOthers(int v) {
+<span class="pc bpc" id="L133" title="1 of 4 branches missed.">        if (!isPossible(v) || i.value() != 0)</span>
+<span class="fc" id="L134">            return false;</span>
+        // the value is set in the first position and the value for s and p are updated
+<span class="fc" id="L136">        int val = elems[0];</span>
+<span class="fc" id="L137">        int index = elemPos[v];</span>
+<span class="fc" id="L138">        elemPos[v] = 0;</span>
+<span class="fc" id="L139">        elems[0] = v;</span>
+<span class="fc" id="L140">        elemPos[val] = index;</span>
+<span class="fc" id="L141">        elems[index] = val;</span>
+<span class="fc" id="L142">        i.setValue(1);</span>
+<span class="fc" id="L143">        p.setValue(1);</span>
+<span class="fc" id="L144">        return true;</span>
+    }
+
+
+    /**
+     * Exchanges the position of two values.
+     *
+     * @param val1 first value to exchange
+     * @param val2 second value to exchange
+     */
+    private void exchangePositions(int val1, int val2) {
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">        assert (checkVal(val1));</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        assert (checkVal(val2));</span>
+<span class="fc" id="L157">        int v1 = val1;</span>
+<span class="fc" id="L158">        int v2 = val2;</span>
+<span class="fc" id="L159">        int i1 = elemPos[v1];</span>
+<span class="fc" id="L160">        int i2 = elemPos[v2];</span>
+<span class="fc" id="L161">        elems[i1] = v2;</span>
+<span class="fc" id="L162">        elems[i2] = v1;</span>
+<span class="fc" id="L163">        elemPos[v1] = i2;</span>
+<span class="fc" id="L164">        elemPos[v2] = i1;</span>
+<span class="fc" id="L165">    }</span>
+
+    /**
+     * @param val value to examine
+     * @return true if the value belongs to the set of values
+     */
+    private boolean checkVal(int val) {
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        assert (val &lt; elems.length);</span>
+<span class="fc" id="L173">        return true;</span>
+    }
+
+    /**
+     * Moves all possible values into the set of excluded values.
+     *
+     * @return true if the partition of possible values has been reduced
+     */
+    public boolean excludeAllPossible() {
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (p.value() == i.value())</span>
+<span class="fc" id="L183">            return false;</span>
+<span class="fc" id="L184">        this.p.setValue(i.value());</span>
+<span class="fc" id="L185">        return true;</span>
+    }
+
+    /**
+     * Moves all values, also the included ones into the set of excluded values.
+     */
+    public void excludeAll() {
+<span class="nc" id="L192">        this.i.setValue(0);</span>
+<span class="nc" id="L193">        this.p.setValue(0);</span>
+<span class="nc" id="L194">    }</span>
+
+    /**
+     * Moves all possible values into the set of included values.
+     *
+     * @return true if the partition of possible values has been reduced
+     */
+    public boolean includeAllPossible() {
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (p.value() == i.value())</span>
+<span class="nc" id="L203">            return false;</span>
+<span class="fc" id="L204">        this.i.setValue(p.value());</span>
+<span class="fc" id="L205">        return true;</span>
+    }
+
+    /**
+     * Tells if the specified value belongs to the included partition I.
+     *
+     * @param val the value to test.
+     * @return true if val belongs to the included partition I.
+     */
+    public boolean isIncluded(int val) {
+<span class="fc" id="L215">        val -= ofs;</span>
+<span class="fc bfc" id="L216" title="All 4 branches covered.">        if (val &lt; 0 || val &gt;= n)</span>
+<span class="fc" id="L217">            return false;</span>
+        else
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            return elemPos[val] &lt; i.value();</span>
+    }
+
+    /**
+     * Tells if the specified value belongs to the excluded partition E.
+     *
+     * @param val the value to test.
+     * @return true if val belongs to the included partition I.
+     */
+    public boolean isExcluded(int val) {
+<span class="fc" id="L229">        val -= ofs;</span>
+<span class="fc bfc" id="L230" title="All 4 branches covered.">        if (val &lt; 0 || val &gt;= n)</span>
+<span class="fc" id="L231">            return false;</span>
+        else
+<span class="fc bfc" id="L233" title="All 4 branches covered.">            return elemPos[val] &gt;= p.value() &amp;&amp; elemPos[val] &lt; n - nOmitted;</span>
+    }
+
+    public boolean isPossible(int val) {
+<span class="fc" id="L237">        val -= ofs;</span>
+<span class="fc bfc" id="L238" title="All 4 branches covered.">        if (val &lt; 0 || val &gt;= n)</span>
+<span class="fc" id="L239">            return false;</span>
+        else
+<span class="fc bfc" id="L241" title="All 4 branches covered.">            return elemPos[val] &lt; p.value() &amp;&amp; elemPos[val] &gt;= i.value();</span>
+    }
+
+    /**
+     * tell if a value belongs to the domain
+     * @param val value to train1
+     * @return true if the value is either included, possible or excluded
+     */
+    public boolean contains(int val) {
+<span class="fc" id="L250">        val -= ofs;</span>
+<span class="fc bfc" id="L251" title="All 4 branches covered.">        if (val &lt; 0 || val &gt;= n)</span>
+<span class="fc" id="L252">            return false;</span>
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        return elemPos[val] &lt; n - nOmitted;</span>
+    }
+
+    public int nPossible() {
+<span class="fc" id="L257">        return p.value() - i.value();</span>
+    }
+
+    public int nExcluded() {
+<span class="fc" id="L261">        return n - p.value() - nOmitted;</span>
+    }
+
+    public int nIncluded() {
+<span class="fc" id="L265">        return i.value();</span>
+    }
+
+<span class="fc" id="L268">    public int size() { return n - nOmitted;}</span>
+
+    public int fillIncluded(int[] dest) {
+<span class="fc" id="L271">        int size = i.value();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        for (int i = 0; i &lt; size ; ++i)</span>
+<span class="fc" id="L273">            dest[i] = elems[i] + ofs;</span>
+<span class="fc" id="L274">        return size;</span>
+    }
+
+    /**
+     * Sets the first values of &lt;code&gt;dest&lt;/code&gt; to the included ones
+     * that also satisfy the given filter predicate
+     *
+     * @param dest, an array large enough {@code dest.length &gt;= size()}
+     * @param filterPredicate the predicate, only elements for which the predicate is true are kept
+     * @return the size of the included set of elements satisfying the predicate
+     */
+    public int fillIncluded(int[] dest, Predicate&lt;Integer&gt; filterPredicate) {
+<span class="fc" id="L286">        int j = 0;</span>
+<span class="fc" id="L287">        int size = i.value();</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">        for (int i = 0; i &lt; size ; ++i) {</span>
+<span class="fc" id="L289">            int v = elems[i] + ofs;</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            if (filterPredicate.test(v)) {</span>
+<span class="fc" id="L291">                dest[j] = elems[i] + ofs;</span>
+<span class="fc" id="L292">                j++;</span>
+            }
+        }
+<span class="fc" id="L295">        return j;</span>
+    }
+
+    public int fillPossible(int[] dest) {
+<span class="fc" id="L299">        int begin = i.value();</span>
+<span class="fc" id="L300">        int end = p.value() - begin;</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (ofs == 0) {</span>
+<span class="fc" id="L302">            System.arraycopy(elems, begin, dest, 0, end);</span>
+        } else {
+<span class="fc bfc" id="L304" title="All 2 branches covered.">            for (int i = 0; i &lt; end ; i++) {</span>
+<span class="fc" id="L305">                dest[i] = elems[i + begin] + ofs;</span>
+            }
+        }
+<span class="fc" id="L308">        return end;</span>
+    }
+
+    /**
+     * Sets the first values of &lt;code&gt;dest&lt;/code&gt; to the possible ones
+     * that also satisfy the given filter predicate
+     *
+     * @param dest, an array large enough {@code dest.length &gt;= size()}
+     * @param filterPredicate the predicate, only elements for which the predicate is true are kept
+     * @return the size of the possible set of elements satisfying the predicate
+     */
+    public int fillPossible(int[] dest, Predicate&lt;Integer&gt; filterPredicate) {
+<span class="nc" id="L320">        int begin = i.value();</span>
+<span class="nc" id="L321">        int end = p.value() - begin;</span>
+<span class="nc" id="L322">        int j = 0;</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        for (int i = 0; i &lt; end; i++) {</span>
+<span class="nc" id="L324">            int v = elems[i + begin] + ofs;</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">            if (filterPredicate.test(v)) {</span>
+<span class="nc" id="L326">                dest[j] = v;</span>
+<span class="nc" id="L327">                j++;</span>
+            }
+        }
+<span class="nc" id="L330">        return j;</span>
+    }
+
+    public int fillIncludedAndPossible(int[] dest) {
+<span class="fc" id="L334">        int end = p.value();</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">        if (ofs == 0) {</span>
+<span class="fc" id="L336">            System.arraycopy(elems, 0, dest, 0, end);</span>
+        } else {
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            for (int i = 0; i &lt; end ; i++) {</span>
+<span class="nc" id="L339">                dest[i] = elems[i] + ofs;</span>
+            }
+        }
+<span class="fc" id="L342">        return end;</span>
+    }
+
+    /**
+     * Sets the first values of &lt;code&gt;dest&lt;/code&gt; to the included and possible ones
+     * that also satisfy the given filter predicate
+     *
+     * @param dest, an array large enough {@code dest.length &gt;= size()}
+     * @param filterPredicate the predicate, only elements for which the predicate is true are kept
+     * @return the size of the included and possible set of elements satisfying the predicate
+     */
+    public int fillIncludedAndPossible(int[] dest, Predicate&lt;Integer&gt; filterPredicate) {
+<span class="fc" id="L354">        int end = p.value();</span>
+<span class="fc" id="L355">        int j = 0;</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        for (int i = 0; i &lt; end ; i++) {</span>
+<span class="fc" id="L357">            int v = elems[i] + ofs;</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">            if (filterPredicate.test(v)) {</span>
+<span class="fc" id="L359">                dest[j] = elems[i] + ofs;</span>
+<span class="fc" id="L360">                j++;</span>
+            }
+        }
+<span class="fc" id="L363">        return j;</span>
+    }
+
+    public int fillExcluded(int[] dest) {
+<span class="fc" id="L367">        int begin = p.value();</span>
+<span class="fc" id="L368">        int end = n - begin - nOmitted;</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        if (ofs == 0) {</span>
+<span class="fc" id="L370">            System.arraycopy(elems, begin, dest, 0, end);</span>
+        } else {
+<span class="fc bfc" id="L372" title="All 2 branches covered.">            for (int i = 0; i &lt; end; i++) {</span>
+<span class="fc" id="L373">                dest[i] = elems[i + begin] + ofs;</span>
+            }
+        }
+<span class="fc" id="L376">        return end;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L381">        StringBuilder b = new StringBuilder();</span>
+<span class="fc" id="L382">        b.append(&quot;I: {&quot;);</span>
+
+<span class="fc" id="L384">        int idx = 0;</span>
+<span class="fc" id="L385">        int i = this.i.value();</span>
+<span class="fc" id="L386">        int pVal = p.value();</span>
+<span class="pc bpc" id="L387" title="1 of 2 branches missed.">        while (idx &lt; i - 1) {</span>
+<span class="nc" id="L388">            b.append(elems[idx++] + ofs);</span>
+<span class="nc" id="L389">            b.append(',');</span>
+        }
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (idx &gt; 0)</span>
+<span class="nc" id="L392">            b.append(elems[idx++] + ofs);</span>
+<span class="fc" id="L393">        b.append(&quot;}\nP: {&quot;);</span>
+
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        while (idx &lt; pVal - 1) {</span>
+<span class="fc" id="L396">            b.append(elems[idx++] + ofs);</span>
+<span class="fc" id="L397">            b.append(',');</span>
+        }
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">        if (pVal - idx &gt; 0)</span>
+<span class="fc" id="L400">            b.append(elems[idx++] + ofs);</span>
+<span class="fc" id="L401">        b.append(&quot;}\nE: {&quot;);</span>
+
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">        while (idx &lt; n - 1 - nOmitted) {</span>
+<span class="nc" id="L404">            b.append(elems[idx++] + ofs);</span>
+<span class="nc" id="L405">            b.append(',');</span>
+        }
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        if (nExcluded() &gt; 0)</span>
+<span class="nc" id="L408">            b.append(elems[idx++] + ofs);</span>
+<span class="fc" id="L409">        b.append('}');</span>
+<span class="fc" id="L410">        return b.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

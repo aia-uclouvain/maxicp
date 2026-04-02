@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EndAfter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">EndAfter.java</span></div><h1>EndAfter.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+public class EndAfter extends AbstractCPConstraint {
+
+    final CPIntervalVar interval;
+    final CPIntVar var;
+
+    /**
+     * Enforces that the end of an interval comes after or at a given variable
+     * @param interval interval to constrain
+     * @param var variable after which the interval must end
+     */
+    public EndAfter(CPIntervalVar interval, CPIntVar var) {
+<span class="fc" id="L18">        super(interval.getSolver());</span>
+<span class="fc" id="L19">        this.interval = interval;</span>
+<span class="fc" id="L20">        this.var = var;</span>
+<span class="fc" id="L21">    }</span>
+
+    @Override
+    public void post() {
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (!interval.isAbsent()) {</span>
+<span class="fc" id="L26">            interval.propagateOnChange(this);</span>
+<span class="fc" id="L27">            var.propagateOnBoundChange(this);</span>
+<span class="fc" id="L28">            propagate();</span>
+        }
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (interval.isPresent()) {</span>
+            // only filters the variable if the interval is present
+<span class="fc" id="L36">            var.removeAbove(interval.endMax());</span>
+        }
+<span class="fc" id="L38">        interval.setEndMin(var.min());</span>
+<span class="pc bpc" id="L39" title="2 of 4 branches missed.">        if (interval.isAbsent() || (interval.endMin() &gt; var.max())) {</span>
+<span class="nc" id="L40">            setActive(false);</span>
+        }
+<span class="fc" id="L42">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

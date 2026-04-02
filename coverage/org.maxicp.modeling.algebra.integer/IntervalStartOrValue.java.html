@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntervalStartOrValue.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">IntervalStartOrValue.java</span></div><h1>IntervalStartOrValue.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.util.exception.NotYetImplementedException;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+/**
+ * Gives the start of an {@link IntervalVar} or a given value if the interval is not present
+ * @param interval the interval
+ * @param value the default value if the interval is absent
+ */
+<span class="nc" id="L18">public record IntervalStartOrValue(IntervalVar interval, int value) implements SymbolicIntExpression {</span>
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        if (interval.isOptional())</span>
+<span class="nc" id="L23">            throw new VariableNotFixedException();</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        if (interval.isPresent()) {</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">            if (interval.startMin() != interval.startMax())</span>
+<span class="nc" id="L26">                throw new VariableNotFixedException();</span>
+<span class="nc" id="L27">            return interval.startMax();</span>
+        }
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        assert interval.isAbsent();</span>
+<span class="nc" id="L30">        return value;</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        if (interval.isOptional())</span>
+<span class="nc" id="L36">            return Math.min(interval.startMin(), value);</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (interval.isAbsent())</span>
+<span class="nc" id="L38">            return value;</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        assert (interval.isPresent());</span>
+<span class="nc" id="L40">        return interval.startMin();</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (interval.isOptional())</span>
+<span class="nc" id="L46">            return Math.max(interval.startMax(), value);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (interval.isAbsent())</span>
+<span class="nc" id="L48">            return value;</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        assert (interval.isPresent());</span>
+<span class="nc" id="L50">        return interval.startMax();</span>
+    }
+
+    @Override
+    public boolean defaultContains(int v) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (interval.isOptional())</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">            return v == value || intervalStartContains(v);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (interval.isAbsent())</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            return v == value;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        assert (interval.isPresent());</span>
+<span class="nc" id="L60">        return intervalStartContains(v);</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (interval.isAbsent()) {</span>
+<span class="nc" id="L66">            array[0] = value;</span>
+<span class="nc" id="L67">            return 1;</span>
+        } else {
+<span class="nc" id="L69">            int i = 0;</span>
+<span class="nc" id="L70">            int startMin = interval.startMin();</span>
+<span class="nc" id="L71">            int startMax = interval.startMax();</span>
+            // only add value if optional and not already contained in endMin...endMax
+<span class="nc bnc" id="L73" title="All 6 branches missed.">            if (interval.isOptional() &amp;&amp; (value &lt; startMin || value &gt; startMax))</span>
+<span class="nc" id="L74">                array[i++] = value;</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            for (int v = startMin; v &lt;= startMax; v++) {</span>
+<span class="nc" id="L76">                array[i++] = v;</span>
+            }
+<span class="nc" id="L78">            return i;</span>
+        }
+    }
+
+    private boolean intervalStartContains(int v) {
+<span class="nc bnc" id="L83" title="All 4 branches missed.">        return interval.startMin() &lt;= v &amp;&amp; v &lt;= interval.startMax();</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (interval.isAbsent())</span>
+<span class="nc" id="L89">            return 1;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (interval.isOptional()) {</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (intervalStartContains(value))</span>
+<span class="nc" id="L92">                return interval.startMax() - interval.startMin() + 1;</span>
+<span class="nc" id="L93">            return interval.startMax() - interval.startMin() + 2;</span>
+        }
+<span class="nc" id="L95">        return interval.startMax() - interval.startMin() + 1;</span>
+    }
+
+    @Override
+    public Collection&lt;? extends Expression&gt; computeSubexpressions() {
+<span class="nc" id="L100">        return List.of(interval);</span>
+    }
+
+    @Override
+    public IntExpression mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L105">        throw new NotYetImplementedException(&quot;not implemented&quot;);</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        return size() == 1;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L115">        return interval.getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

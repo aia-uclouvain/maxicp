@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelDispatcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp</a> &gt; <span class="el_source">ModelDispatcher.java</span></div><h1>ModelDispatcher.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp;
+
+import org.maxicp.cp.modeling.ModelProxyInstantiatorWithCP;
+import org.maxicp.modeling.*;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
+import org.maxicp.modeling.symbolic.*;
+import org.maxicp.search.BestFirstSearch;
+import org.maxicp.search.ConcurrentDFSearch;
+import org.maxicp.search.DFSearch;
+import org.maxicp.util.Ints;
+
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static org.maxicp.Constants.HORIZON;
+
+/**
+ * A class that allows to create symbolic models
+ */
+public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, ModelProxyInstantiatorWithCP, ModelProxy {
+    private Model initialModel;
+    private ThreadLocal&lt;Model&gt; currentModel;
+
+<span class="fc" id="L32">    public ModelDispatcher() {</span>
+<span class="fc" id="L33">        initialModel = SymbolicModel.emptyModel(this);</span>
+<span class="fc" id="L34">        currentModel = new ThreadLocal&lt;&gt;();</span>
+<span class="fc" id="L35">        currentModel.set(initialModel);</span>
+<span class="fc" id="L36">    }</span>
+
+    /**
+     * @return the current model
+     */
+    public Model getModel() {
+<span class="fc" id="L42">        return currentModel.get();</span>
+    }
+
+    /**
+     * Set the current model to m. m should have this base model as origin.
+     * @param m
+     */
+    public &lt;T extends Model&gt; T setModel(T m) {
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        if (m != null &amp;&amp; !m.getModelProxy().equals(this))</span>
+<span class="nc" id="L51">            throw new RuntimeException(&quot;Model being assigned to this ModelProxy does not originate from here&quot;);</span>
+<span class="fc" id="L52">        currentModel.set(m);</span>
+<span class="fc" id="L53">        return m;</span>
+    }
+
+    /**
+     * Shortcut for baseModel.getModel().getConstraints();
+     * @return an iterable with all the constraints in the current model
+     */
+    public Iterable&lt;Constraint&gt; getConstraints() {
+<span class="nc" id="L61">        return getModel().getConstraints();</span>
+    }
+
+    /**
+     * Create an array of n IntVars with domain between 0 and domSize-1, inclusive.
+     * @param n size of the array, number of IntVars
+     * @param domSize size of the domains. Domains are [0, domsize-1]
+     */
+    public IntVar[] intVarArray(int n, int domSize) {
+<span class="fc" id="L70">        IntVar[] out = new IntVar[n];</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for(int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L72">            out[i] = new IntVarRangeImpl(this, 0, domSize-1);</span>
+<span class="fc" id="L73">        return out;</span>
+    }
+
+    public IntExpression[] intVarArray(int n, Function&lt;Integer, IntExpression&gt; body) {
+<span class="fc" id="L77">        IntExpression[] t = new IntExpression[n];</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L79">            t[i] = body.apply(i);</span>
+<span class="fc" id="L80">        return t;</span>
+    }
+
+    public IntVar intVar(int min, int max) {
+<span class="fc" id="L84">        return new IntVarRangeImpl(this, min, max);</span>
+    }
+
+    public IntVar intVar(String id, int min, int max) {
+<span class="nc" id="L88">        return new IntVarRangeImpl(this, id, min, max);</span>
+    }
+
+    public IntVar intVar(int[] values) {
+<span class="nc" id="L92">        return new IntVarSetImpl(this, Set.copyOf(Ints.asList(values)));</span>
+    }
+
+    public IntVar intVar(Set&lt;Integer&gt; values) {
+<span class="fc" id="L96">        return new IntVarSetImpl(this, values);</span>
+    }
+
+    public IntVar intVar(String id, int[] values) {
+<span class="nc" id="L100">        return new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values)));</span>
+    }
+
+    public IntVar constant(int value) {
+<span class="nc" id="L104">        return intVar(value, value);</span>
+    }
+
+    public IntervalVar intervalVar(int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent) {
+<span class="fc" id="L108">        return new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent);</span>
+    }
+
+    public IntervalVar intervalVar(boolean isPresent) {
+<span class="fc" id="L112">        return intervalVar(0, HORIZON,0, HORIZON, 0, HORIZON, isPresent);</span>
+    }
+
+    public IntervalVar intervalVar(int duration, boolean isPresent) {
+<span class="nc" id="L116">        return intervalVar(0, HORIZON,0, HORIZON, duration, duration, isPresent);</span>
+    }
+
+    public IntervalVar intervalVar(int startMin, int endMax, int duration, boolean isPresent) {
+<span class="fc" id="L120">        return intervalVar(startMin, endMax - duration, startMin + duration, endMax, duration, duration, isPresent);</span>
+    }
+
+    public IntervalVar[] intervalVarArray(int n, boolean present) {
+<span class="fc" id="L124">        IntervalVar[] out = new IntervalVar[n];</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++) {</span>
+<span class="fc" id="L126">            out[i] = intervalVar(present);</span>
+        }
+<span class="fc" id="L128">        return out;</span>
+    }
+
+    public IntervalVar[] intervalVarArray(int n, Function&lt;Integer, IntervalVar&gt; body) {
+<span class="nc" id="L132">        IntervalVar[] out = new IntervalVar[n];</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (int i = 0 ; i &lt; n ; i++)</span>
+<span class="nc" id="L134">            out[i] = body.apply(i);</span>
+<span class="nc" id="L135">        return out;</span>
+    }
+
+    public BoolVar[] boolVarArray(int n) {
+<span class="nc" id="L139">        BoolVar[] out = new BoolVar[n];</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        for(int i = 0; i &lt; n; i++)</span>
+<span class="nc" id="L141">            out[i] = new BoolVarImpl(this);</span>
+<span class="nc" id="L142">        return out;</span>
+    }
+
+    public BoolVar boolVar() {
+<span class="nc" id="L146">        return new BoolVarImpl(this);</span>
+    }
+
+    public SeqVar seqVar(int nNode, int begin, int end) {
+<span class="nc" id="L150">        return new SeqVarImpl(this, nNode, begin, end);</span>
+    }
+
+    @Override
+    public void close() throws Exception {
+<span class="nc" id="L155">        currentModel.remove();</span>
+<span class="nc" id="L156">        currentModel = null;</span>
+<span class="nc" id="L157">        initialModel = null;</span>
+<span class="nc" id="L158">    }</span>
+
+    public Objective minimize(Expression v) {
+<span class="nc bnc" id="L161" title="All 3 branches missed.">        return switch (getModel()) {</span>
+<span class="nc" id="L162">            case SymbolicModel sm -&gt; sm.minimize(v);</span>
+<span class="nc" id="L163">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
+<span class="nc" id="L164">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
+        };
+    }
+
+    public Objective maximize(Expression v) {
+<span class="nc bnc" id="L169" title="All 3 branches missed.">        return switch (getModel()) {</span>
+<span class="nc" id="L170">            case SymbolicModel sm -&gt; sm.maximize(v);</span>
+<span class="nc" id="L171">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
+<span class="nc" id="L172">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
+        };
+    }
+
+    public DFSearch dfSearch(Supplier&lt;Runnable[]&gt; branching) {
+<span class="nc" id="L177">        return new DFSearch(this, branching);</span>
+    }
+
+    public ConcurrentDFSearch concurrentDFSearch(Supplier&lt;SymbolicModel[]&gt; symbolicBranching) {
+<span class="nc" id="L181">        return new ConcurrentDFSearch(this, symbolicBranching);</span>
+    }
+
+    public &lt;U extends Comparable&lt;U&gt;&gt; BestFirstSearch&lt;U&gt; bestFirstSearch(Supplier&lt;Runnable[]&gt; branching, Supplier&lt;U&gt; nodeEvaluator) {
+<span class="nc" id="L185">        return new BestFirstSearch&lt;U&gt;(this, branching, nodeEvaluator);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

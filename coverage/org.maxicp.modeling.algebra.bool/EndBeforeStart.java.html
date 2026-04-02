@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EndBeforeStart.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.bool</a> &gt; <span class="el_source">EndBeforeStart.java</span></div><h1>EndBeforeStart.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.bool;
+
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+<span class="fc" id="L13">public record EndBeforeStart(IntervalVar a, IntervalVar b) implements SymbolicBoolExpression {</span>
+
+    @Override
+    public boolean defaultEvaluateBool() throws VariableNotFixedException {
+<span class="nc bnc" id="L17" title="All 4 branches missed.">        if (a.isPresent() &amp;&amp; b.isPresent()) {</span>
+<span class="nc bnc" id="L18" title="All 2 branches missed.">            if (a.endMax() &lt;= b.startMin())</span>
+<span class="nc" id="L19">                return true;</span>
+<span class="nc bnc" id="L20" title="All 2 branches missed.">            if (b.startMax() &lt; a.endMin())</span>
+<span class="nc" id="L21">                return false;</span>
+        }
+<span class="nc" id="L23">        throw new VariableNotFixedException();</span>
+    }
+
+    @Override
+    public Collection&lt;? extends Expression&gt; computeSubexpressions() {
+<span class="nc" id="L28">        return List.of(a, b);</span>
+    }
+
+    @Override
+    public IntExpression mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L33">        return null;</span>
+    }
+
+    private boolean isTriviallyTrue() { // end(a) &lt;= start(b)
+<span class="nc bnc" id="L37" title="All 6 branches missed.">        return a.isPresent() &amp;&amp; b.isPresent() &amp;&amp; a.endMax() &lt;= b.startMin();</span>
+    }
+
+    private boolean isTriviallyFalse() { // end(a) &gt; start(b) &lt;-&gt; start(b) &lt; end(a)
+<span class="nc bnc" id="L41" title="All 6 branches missed.">        return a.isPresent() &amp;&amp; b.isPresent() &amp;&amp; b.startMax() &lt; a.endMin();</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if(getModelProxy().isConcrete())</span>
+<span class="nc" id="L47">            return getModelProxy().getConcreteModel().getConcreteVar(this).isFixed();</span>
+<span class="nc bnc" id="L48" title="All 4 branches missed.">        if (isTriviallyFalse() || isTriviallyTrue())</span>
+<span class="nc" id="L49">            return true;</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        return size() == 1;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L55">        return a.getModelProxy();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L60">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

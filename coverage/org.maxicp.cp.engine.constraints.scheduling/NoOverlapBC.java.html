@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NoOverlapBC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">NoOverlapBC.java</span></div><h1>NoOverlapBC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.ArrayList;
+
+/**
+ * Bound Consistency filtering for the NoOverlap constraint
+ *
+ * @author Pierre Schaus
+ */
+public class NoOverlapBC extends AbstractCPConstraint {
+
+    final CPIntervalVar[] vars;
+    private CPBoolVar[] precedences;
+
+    public NoOverlapBC(CPIntervalVar... vars) {
+<span class="fc" id="L28">        super(vars[0].getSolver());</span>
+<span class="fc" id="L29">        this.vars = vars;</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L34">        ArrayList&lt;CPBoolVar&gt; precedences = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            for (int j = i + 1; j &lt; vars.length; j++) {</span>
+<span class="fc" id="L38">                NoOverlapBinary binary = new NoOverlapBinary(vars[i], vars[j]);</span>
+<span class="fc" id="L39">                getSolver().post(binary);</span>
+<span class="fc" id="L40">                precedences.add(binary.before);</span>
+            }
+        }
+<span class="fc" id="L43">        this.precedences = precedences.toArray(new CPBoolVar[0]);</span>
+
+<span class="fc" id="L45">        getSolver().post(new NoOverlapBCGlobal(vars));</span>
+<span class="fc" id="L46">    }</span>
+
+    /**
+     * Return the precedence variables that are used to model the non-overlap constraint
+     * They are n*(n-1)/2 variables where n is the number of interval variables.
+     *
+     * @return an array of boolean variables
+     */
+    public CPBoolVar[] precedenceVars() {
+<span class="nc" id="L55">        return precedences;</span>
+    }
+}
+
+
+<span class="fc" id="L60">class NoOverlapBCGlobal extends AbstractCPConstraint {</span>
+    StateSparseSet activities;
+    CPIntervalVar[] intervals;
+    int[] iterator;
+
+    int[] startMin;
+    int[] endMax;
+    int[] duration;
+    boolean[] isOptional;
+
+    int n;
+
+    NoOverlapBCLeftToRight globalFilter;
+
+    NoOverlapBCGlobal(CPIntervalVar... vars) {
+<span class="fc" id="L75">        super(vars[0].getSolver());</span>
+<span class="fc" id="L76">        this.intervals = vars;</span>
+<span class="fc" id="L77">        activities = new StateSparseSet(getSolver().getStateManager(), vars.length, 0);</span>
+<span class="fc" id="L78">        iterator = new int[vars.length];</span>
+<span class="fc" id="L79">        startMin = new int[vars.length];</span>
+<span class="fc" id="L80">        endMax = new int[vars.length];</span>
+<span class="fc" id="L81">        duration = new int[vars.length];</span>
+<span class="fc" id="L82">        isOptional = new boolean[vars.length];</span>
+<span class="fc" id="L83">        globalFilter = new NoOverlapBCLeftToRight(vars.length);</span>
+<span class="fc" id="L84">    }</span>
+
+    private void update() {
+<span class="fc" id="L87">        n = activities.fillArray(iterator);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int iter = 0; iter &lt; n; iter++) {</span>
+<span class="fc" id="L89">            CPIntervalVar act = intervals[iterator[iter]];</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (act.isAbsent()) {</span>
+<span class="fc" id="L91">                activities.remove(iterator[iter]);</span>
+            }
+        }
+<span class="fc" id="L94">        filter();</span>
+<span class="fc" id="L95">        n = activities.fillArray(iterator);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int iter = 0; iter &lt; n; iter++) {</span>
+<span class="fc" id="L97">            int i = iterator[iter];</span>
+<span class="fc" id="L98">            CPIntervalVar act = intervals[i];</span>
+<span class="fc" id="L99">            startMin[iter] = act.startMin();</span>
+<span class="fc" id="L100">            endMax[iter] = act.endMax();</span>
+<span class="fc" id="L101">            duration[iter] = act.lengthMin();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            isOptional[iter] = !act.isPresent();</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">            assert (!act.isAbsent());</span>
+        }
+
+<span class="fc" id="L106">    }</span>
+
+    private void filter() {
+        // TODO
+<span class="fc" id="L110">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (CPIntervalVar interval : intervals) {</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (!interval.isAbsent()) {</span>
+<span class="fc" id="L116">                interval.propagateOnChange(this);</span>
+            }
+        }
+<span class="fc" id="L119">        propagate();</span>
+<span class="fc" id="L120">    }</span>
+
+    @Override
+    public void propagate() {
+        // left to right
+<span class="fc" id="L125">        update();</span>
+        // set lct of optional to + infinity
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (isOptional[i]) {</span>
+<span class="fc" id="L129">                endMax[i] = 1000000;</span>
+            }
+        }
+<span class="fc" id="L132">        NoOverlapBCLeftToRight.Outcome oc = globalFilter.filter(startMin, duration, endMax, n);</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {</span>
+<span class="nc" id="L134">            throw InconsistencyException.INCONSISTENCY;</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {</span>
+            // update startMin and endMax bounds
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L138">                CPIntervalVar interval = intervals[iterator[i]];</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (isOptional[i]) {</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">                    if (startMin[i] &gt; interval.endMax()) {</span>
+<span class="nc" id="L141">                        interval.setAbsent();</span>
+<span class="nc" id="L142">                        activities.remove(iterator[i]);</span>
+                    }
+                } else {
+<span class="fc" id="L145">                    intervals[iterator[i]].setStartMin(globalFilter.startMin[i]);</span>
+<span class="fc" id="L146">                    intervals[iterator[i]].setEndMax(globalFilter.endMax[i]);</span>
+                }
+            }
+        }
+
+        // right to left
+<span class="fc" id="L152">        update();</span>
+        // mirror the activities
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L155">            int startMinOld = startMin[i];</span>
+<span class="fc" id="L156">            startMin[i] = -endMax[i];</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            endMax[i] = isOptional[i] ? 1000000 : -startMinOld;</span>
+        }
+<span class="fc" id="L159">        oc = globalFilter.filter(startMin, duration, endMax, n);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {</span>
+<span class="nc" id="L161">            throw InconsistencyException.INCONSISTENCY;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {</span>
+            // update endMax variables
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L165">                CPIntervalVar interval = intervals[iterator[i]];</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                if (isOptional[i]) {</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">                    if (-startMin[i] &lt; interval.startMin()) {</span>
+<span class="nc" id="L168">                        interval.setAbsent();</span>
+<span class="nc" id="L169">                        activities.remove(iterator[i]);</span>
+                    }
+                } else {
+<span class="fc" id="L172">                    intervals[iterator[i]].setEndMax(-globalFilter.startMin[i]);</span>
+<span class="fc" id="L173">                    intervals[iterator[i]].setStartMin(-globalFilter.endMax[i]);</span>
+                }
+            }
+        }
+<span class="fc" id="L177">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

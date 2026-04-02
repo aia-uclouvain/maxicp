@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Mul.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Mul.java</span></div><h1>Mul.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+/**
+ * Constraint x * b = y where b is a boolean variable
+ */
+public class Mul extends AbstractCPConstraint {
+
+    private final CPIntVar x;
+    private final CPBoolVar b;
+    private final CPIntVar y;
+
+    /**
+     * Creates the constraint x * b = y
+     *
+     * @param x the variable on which the maximum is to be found
+     * @param y the variable that is equal to the maximum on x
+     */
+    public Mul(CPIntVar x, CPBoolVar b, CPIntVar y) {
+<span class="fc" id="L29">        super(x.getSolver());</span>
+<span class="fc" id="L30">        this.x = x;</span>
+<span class="fc" id="L31">        this.b = b;</span>
+<span class="fc" id="L32">        this.y = y;</span>
+<span class="fc" id="L33">    }</span>
+
+
+    @Override
+    public void post() {
+<span class="fc" id="L38">        x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L39">        b.propagateOnFix(this);</span>
+<span class="fc" id="L40">        y.propagateOnBoundChange(this);</span>
+<span class="fc" id="L41">        propagate();</span>
+<span class="fc" id="L42">    }</span>
+
+
+    @Override
+    public void propagate() {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (x.max() &gt; 0) {</span>
+<span class="fc" id="L48">            y.removeAbove(x.max());</span>
+        }
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (x.min() &lt; 0) {</span>
+<span class="nc" id="L51">            y.removeBelow(x.min());</span>
+        }
+
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (b.isTrue()) {</span>
+<span class="fc" id="L56">            y.removeAbove(x.max());</span>
+<span class="fc" id="L57">            y.removeBelow(x.min());</span>
+        }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (b.isFalse()) {</span>
+<span class="fc" id="L60">            y.fix(0);</span>
+        }
+<span class="pc bpc" id="L62" title="1 of 4 branches missed.">        if (y.min() &gt; 0 || y.max() &lt; 0) {</span>
+<span class="fc" id="L63">            b.fix(1);</span>
+<span class="fc" id="L64">            x.removeAbove(y.max());</span>
+<span class="fc" id="L65">            x.removeBelow(y.min());</span>
+        }
+<span class="pc bpc" id="L67" title="1 of 6 branches missed.">        if (y.isFixed() &amp;&amp; y.min() == 0 &amp;&amp; !x.contains(0)) {</span>
+<span class="fc" id="L68">            b.fix(0);</span>
+        }
+<span class="fc" id="L70">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

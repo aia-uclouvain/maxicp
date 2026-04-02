@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThetaTree.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">ThetaTree.java</span></div><h1>ThetaTree.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+/**
+ * Data Structure described in
+ * Global Constraints in Scheduling, 2008 Petr Vilim, PhD thesis
+ * See &lt;a href=&quot;http://vilim.eu/petr/disertace.pdf&quot;&gt;The thesis.&lt;/a&gt;
+ * @author Pierre Schaus
+ */
+public class ThetaTree {
+
+    private static class Node {
+
+        private int sump;
+        private int ect;
+
+<span class="fc" id="L21">        Node() {</span>
+<span class="fc" id="L22">            reset();</span>
+<span class="fc" id="L23">        }</span>
+
+        void reset() {
+<span class="fc" id="L26">            ect = Integer.MIN_VALUE;</span>
+<span class="fc" id="L27">            sump = 0;</span>
+<span class="fc" id="L28">        }</span>
+    }
+
+    // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
+    private Node[] nodes;
+    private int isize; //number of internal nodes
+
+    /**
+     * Creates a theta-tree able to store
+     * the specified number of activities, each identified
+     * as a number between 0 and size-1.
+     * The activities inserted in a theta tree are assumed
+     * to be of increasing earliest start time.
+     * That is activity identified as i must possibly start earlier than
+     * activity i+1.
+     *
+     * @param size the number of activities that can possibly be inserted in the tree
+     */
+<span class="fc" id="L46">    public ThetaTree(int size) {</span>
+<span class="fc" id="L47">        int h = 1; // height</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        while ((1 &lt;&lt; h) &lt; size) { h++; } // increase height until number of leaf nodes &gt;= size;</span>
+<span class="fc" id="L49">        isize = (1 &lt;&lt; h) ; // number of internal nodes is 2^h</span>
+<span class="fc" id="L50">        nodes = new ThetaTree.Node[1 &lt;&lt; (h+1)]; // total number of nodes is 2^(h+1)</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 1; i &lt; nodes.length; i++) {</span>
+<span class="fc" id="L52">            nodes[i] = new ThetaTree.Node();</span>
+        }
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Remove all the activities from this theta-tree
+     */
+    public void reset() {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 1; i &lt; nodes.length; i++) {</span>
+<span class="fc" id="L61">            nodes[i].reset();</span>
+        }
+<span class="fc" id="L63">    }</span>
+
+    /**
+     * Insert activity in leaf nodes at given position
+     * such that it is taken into account for the {@link #getEct()}
+     * computation.
+     *
+     * @param pos the index of the leaf node (assumed to start at 0 from left to right)
+     * @param est earliest start time
+     * @param dur duration
+     */
+    public void insert(int pos, int est, int dur) {
+        //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
+<span class="fc" id="L76">        int currPos = isize + pos;</span>
+<span class="fc" id="L77">        Node node = nodes[currPos];</span>
+<span class="fc" id="L78">        node.ect = est + dur;</span>
+<span class="fc" id="L79">        node.sump = dur;</span>
+<span class="fc" id="L80">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="fc" id="L81">    }</span>
+
+    /**
+     * Remove activity at given position that it has no impact
+     * on the earliest completion time computation
+     *
+     * @param pos the index of the leaf nodes, assumed to start at 0 from left to right
+     */
+    public void remove(int pos) {
+<span class="fc" id="L90">        int currPos = isize + pos;</span>
+<span class="fc" id="L91">        Node node = nodes[currPos];</span>
+<span class="fc" id="L92">        node.reset();</span>
+<span class="fc" id="L93">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * The earliest completion time of the activities present in the theta-tree
+     * @return the earliest completion time of the activities present in the theta-tree
+     */
+    public int getEct() {
+<span class="fc" id="L101">        return nodes[1].ect;</span>
+    }
+
+    private void reCompute(int pos) {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        while (pos &gt;= 1) {</span>
+<span class="fc" id="L106">            Node left = nodes[pos &lt;&lt; 1]; // left child</span>
+<span class="fc" id="L107">            Node right = nodes[(pos &lt;&lt; 1) + 1]; // right child</span>
+<span class="fc" id="L108">            nodes[pos].sump = left.sump + right.sump;;</span>
+<span class="fc" id="L109">            nodes[pos].ect = Math.max(right.ect, left.ect + right.sump);</span>
+<span class="fc" id="L110">            pos = pos &gt;&gt; 1; // father</span>
+<span class="fc" id="L111">        }</span>
+<span class="fc" id="L112">    }</span>
+}
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

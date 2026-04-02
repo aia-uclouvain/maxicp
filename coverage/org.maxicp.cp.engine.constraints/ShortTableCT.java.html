@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShortTableCT.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">ShortTableCT.java</span></div><h1>ShortTableCT.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.DeltaCPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.BitSet;
+import org.maxicp.state.datastructures.StateSparseBitSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+
+import static org.maxicp.cp.CPFactory.minus;
+
+/**
+ * Implementation of Compact Table for Short Table algorithm described in
+ * &lt;p&gt;&lt;i&gt;Extending Compact-Table to Negative and Short Tables&lt;/i&gt;
+ * Helene Verhaeghe, Christophe Lecoutre, Pierre Schaus
+ * &lt;p&gt;See &lt;a href=&quot;https://webperso.info.ucl.ac.be/~pschaus/assets/publi/aaai2017-shorttables.pdf&quot;&gt;The article.&lt;/a&gt;
+ */
+public class ShortTableCT extends AbstractCPConstraint {
+
+    // scope of the constraint
+    private final CPIntVar[] offx;
+    private final int scpSize;
+
+    // contains the current value of the table (i.e., tuples valid given current state)
+    private final StateSparseBitSet validTuples;
+    // supports[i][v] is the set of tuples supported by x[i]=v (i.e., tuples with this value for this variable)
+    private final StateSparseBitSet.SupportBitSet[][] supports;
+    private final StateSparseBitSet.SupportBitSet[][] supportsStar;
+
+    // keep track of the unbounded vars
+    private final int[] unbounded;
+    private final StateInt nUnbound;
+
+    // delta to keep track of the modifications in the domains
+    private final DeltaCPIntVar[] delta;
+
+    // temporary var to optimize var creation
+    private final StateSparseBitSet.CollectionBitSet collected;
+    private final int[] tempDom;
+
+    /**
+     * Create a Table constraint with short tuples.
+     * &lt;p&gt;Assignment of {@code x_0=v_0, x_1=v_1,...} only valid if there exists a
+     * row {@code (v_0|*,v_1|*, ...)} in the table.
+     *
+     * @param x     the variables to constraint. x must be non empty.
+     * @param table the array of valid solutions (second dimension must be of same size as the array x)
+     * @param star  the {@code *} symbol representing &quot;any&quot; value in the table
+     */
+    public ShortTableCT(CPIntVar[] x, int[][] table, int star) {
+<span class="fc" id="L58">        super(x[0].getSolver());</span>
+<span class="fc" id="L59">        this.scpSize = x.length;</span>
+        // variables with offset (min dom = 0)
+<span class="fc" id="L61">        this.offx = new CPIntVar[this.scpSize];</span>
+<span class="fc" id="L62">        this.delta = new DeltaCPIntVar[this.scpSize];</span>
+<span class="fc" id="L63">        this.unbounded = new int[this.scpSize];</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; this.scpSize; i++) {</span>
+<span class="fc" id="L65">            this.unbounded[i] = i;</span>
+        }
+<span class="fc" id="L67">        this.nUnbound = this.getSolver().getStateManager().makeStateInt(this.scpSize);</span>
+<span class="fc" id="L68">        int[] offset = new int[this.scpSize];</span>
+<span class="fc" id="L69">        int maxsize = 0;</span>
+
+<span class="fc" id="L71">        this.validTuples = new StateSparseBitSet(this.getSolver().getStateManager(), table.length);</span>
+<span class="fc" id="L72">        this.collected = validTuples.new CollectionBitSet();</span>
+
+        // Allocate supportedByVarVal
+<span class="fc" id="L75">        supports = new StateSparseBitSet.SupportBitSet[this.scpSize][];</span>
+<span class="fc" id="L76">        supportsStar = new StateSparseBitSet.SupportBitSet[this.scpSize][];</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (int i = 0; i &lt; this.scpSize; i++) {</span>
+<span class="fc" id="L78">            offset[i] = x[i].min();</span>
+<span class="fc" id="L79">            this.offx[i] = minus(x[i], offset[i]); // map the variables domain to start at 0</span>
+<span class="fc" id="L80">            this.delta[i] = this.offx[i].delta(this);</span>
+<span class="fc" id="L81">            maxsize = Math.max(maxsize, this.offx[i].max());</span>
+<span class="fc" id="L82">            supports[i] = new StateSparseBitSet.SupportBitSet[this.offx[i].max() + 1];</span>
+<span class="fc" id="L83">            supportsStar[i] = new StateSparseBitSet.SupportBitSet[this.offx[i].max() + 1];</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (int j = 0; j &lt; supports[i].length; j++) {</span>
+<span class="fc" id="L85">                supportsStar[i][j] = validTuples.new SupportBitSet();</span>
+            }
+        }
+
+        // Set values in supports, which contains all the tuples supported by each var-val pair
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int j = 0; j &lt; this.scpSize; j++) { //j is the index of the current variable (in x)</span>
+<span class="fc" id="L91">            BitSet stars = new BitSet(table.length);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            for (int i = 0; i &lt; table.length; i++) { //i is the index of the tuple (in table)</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (table[i][j] == star) {</span>
+<span class="fc" id="L94">                    stars.set(i);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                } else if (x[j].contains(table[i][j])) {</span>
+<span class="fc" id="L96">                    supportsStar[j][table[i][j] - offset[j]].set(i);</span>
+                }
+            }
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            for (int k = 0; k &lt; supports[j].length; k++) {</span>
+<span class="fc" id="L100">                supports[j][k] = validTuples.new SupportBitSet(supportsStar[j][k]);</span>
+<span class="fc" id="L101">                supports[j][k].union(stars);</span>
+            }
+        }
+
+<span class="fc" id="L105">        this.tempDom = new int[maxsize + 1];</span>
+<span class="fc" id="L106">    }</span>
+
+    @Override
+    public void post() {
+        //// Step 1: update validTuples to find invalid tuples
+<span class="fc" id="L111">        int nUnboundValue = this.nUnbound.value();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = nUnboundValue - 1; i &gt;= 0; i--) {</span>
+            // only previously unbounded vars can trigger modification
+
+            // get the delta of the unbounded var
+<span class="fc" id="L116">            int idx = this.unbounded[i];</span>
+
+<span class="fc" id="L118">            CPIntVar var = this.offx[idx];</span>
+
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (var.isFixed()) {</span>
+                // var has been bound, direct intersection with support
+<span class="fc" id="L122">                validTuples.intersect(supports[idx][var.min()]);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                if (validTuples.isEmpty())</span>
+<span class="fc" id="L124">                    throw InconsistencyException.INCONSISTENCY;</span>
+                // var is bound, removed from unbounded
+<span class="fc" id="L126">                nUnboundValue--;</span>
+<span class="fc" id="L127">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="fc" id="L128">                this.unbounded[nUnboundValue] = idx;</span>
+            } else {
+                // clear temp var collecting
+<span class="fc" id="L131">                collected.clear();</span>
+                // less values remaining
+<span class="fc" id="L133">                int n = var.fillArray(tempDom);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L135">                    collected.union(supports[idx][tempDom[j]]);</span>
+                }
+
+<span class="fc" id="L138">                validTuples.intersect(collected);</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                if (validTuples.isEmpty()) {</span>
+<span class="nc" id="L140">                    throw InconsistencyException.INCONSISTENCY;</span>
+                }
+
+            }
+        }
+
+        //// Step 2: filter the domains to find invalids values
+
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int i = nUnboundValue - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L149">            int idx = this.unbounded[i];</span>
+<span class="fc" id="L150">            CPIntVar var = this.offx[idx];</span>
+<span class="fc" id="L151">            this.filterDomain(var, supports[idx]);</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">            if (var.isFixed()) {</span>
+                // var is bound, removed from unbounded
+<span class="nc" id="L154">                nUnboundValue--;</span>
+<span class="nc" id="L155">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="nc" id="L156">                this.unbounded[nUnboundValue] = idx;</span>
+            }
+        }
+<span class="fc" id="L159">        this.nUnbound.setValue(nUnboundValue);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; this.scpSize; i++)</span>
+<span class="fc" id="L161">            this.offx[i].propagateOnDomainChange(this);</span>
+<span class="fc" id="L162">    }</span>
+
+    @Override
+    public void propagate() {
+
+<span class="fc" id="L167">        int nChange = 0;</span>
+<span class="fc" id="L168">        int idxChange = -1;</span>
+
+        //// Step 1: update validTuples to find invalid tuples
+
+<span class="fc" id="L172">        int nUnboundValue = this.nUnbound.value();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (int i = nUnboundValue - 1; i &gt;= 0; i--) {</span>
+            // only previously unbounded vars can trigger modification
+
+            // get the delta of the unbounded var
+<span class="fc" id="L177">            int idx = this.unbounded[i];</span>
+<span class="fc" id="L178">            DeltaCPIntVar dvar = this.delta[idx];</span>
+
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (dvar.changed()) {</span>
+                // list of valid tuples only modified for modified vars
+<span class="fc" id="L182">                nChange++;</span>
+<span class="fc" id="L183">                idxChange = idx;</span>
+
+<span class="fc" id="L185">                CPIntVar var = this.offx[idx];</span>
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                if (var.isFixed()) {</span>
+                    // var has been bound, direct intersection with support
+<span class="fc" id="L189">                    validTuples.intersect(supports[idx][var.min()]);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                    if (validTuples.isEmpty())</span>
+<span class="fc" id="L191">                        throw InconsistencyException.INCONSISTENCY;</span>
+                    // var is bound, removed from unbounded
+<span class="fc" id="L193">                    nUnboundValue--;</span>
+<span class="fc" id="L194">                    this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="fc" id="L195">                    this.unbounded[nUnboundValue] = idx;</span>
+                } else {
+                    // clear temp var collecting
+<span class="fc" id="L198">                    collected.clear();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">                    if (dvar.size() &lt; var.size()) {</span>
+                        // less values removed
+<span class="fc" id="L201">                        int n = dvar.fillArray(tempDom);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                        for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L203">                            collected.union(supportsStar[idx][tempDom[j]]);</span>
+                        }
+<span class="fc" id="L205">                        collected.invert();</span>
+<span class="fc" id="L206">                    } else {</span>
+                        // less values remaining
+<span class="fc" id="L208">                        int n = var.fillArray(tempDom);</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">                        for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L210">                            collected.union(supports[idx][tempDom[j]]);</span>
+                        }
+                    }
+<span class="fc" id="L213">                    validTuples.intersect(collected);</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">                    if (validTuples.isEmpty()) {</span>
+<span class="fc" id="L215">                        throw InconsistencyException.INCONSISTENCY;</span>
+                    }
+                }
+            }
+        }
+
+        //// Step 2: filter the domains to find invalids values
+
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        for (int i = nUnboundValue - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L224">            int idx = this.unbounded[i];</span>
+<span class="fc" id="L225">            CPIntVar var = this.offx[idx];</span>
+<span class="fc bfc" id="L226" title="All 4 branches covered.">            if (nChange &gt; 1 || idx != idxChange)</span>
+                // check all unbound left if at least two have changed or this one is not the last one changed
+<span class="fc" id="L228">                this.filterDomain(var, supports[idx]);</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            if (var.isFixed()) {</span>
+                // var is bound, removed from unbounded
+<span class="fc" id="L231">                nUnboundValue--;</span>
+<span class="fc" id="L232">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="fc" id="L233">                this.unbounded[nUnboundValue] = idx;</span>
+            }
+        }
+<span class="fc" id="L236">        this.nUnbound.setValue(nUnboundValue);</span>
+<span class="fc" id="L237">    }</span>
+
+    private void filterDomain(CPIntVar var, StateSparseBitSet.SupportBitSet[] supp) {
+<span class="fc" id="L240">        int n = var.fillArray(tempDom);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">            if (validTuples.hasEmptyIntersection(supp[tempDom[j]])) {</span>
+<span class="fc" id="L243">                var.remove(tempDom[j]);</span>
+            }
+        }
+<span class="fc" id="L246">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

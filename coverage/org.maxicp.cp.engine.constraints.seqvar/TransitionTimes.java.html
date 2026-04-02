@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransitionTimes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">TransitionTimes.java</span></div><h1>TransitionTimes.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.state.State;
+
+import java.util.Optional;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+
+/**
+ * Links a {@link CPSeqVar} with time windows, enforcing that visits happen during valid timeframes.
+ */
+<span class="fc" id="L20">public class TransitionTimes extends AbstractCPConstraint {</span>
+
+    private final CPSeqVar seqVar;              // sequence ordering the visits of nodes
+    private final CPIntVar[] time;              // time window of each node
+    private final int[][] dist;                 // distance between each pair of nodes
+    private Optional&lt;int[]&gt; serviceTime;        // time to process each node
+
+    private final int[] nodes;                  // used for fill operations over the nodes
+    private final int[] preds;                  // used for fill operations over the pred of nodes
+
+    private State&lt;Boolean&gt; masterConstraintPropagating; // set to true whenever the constraint begins to be propagated
+
+    /**
+     * Links visits of nodes within a {@link CPSeqVar} to given time windows {@link CPIntVar}.
+     * The nodes belonging to the sequence must be visited during their time window.
+     * The triangular inequality must be satisfied.
+     *
+     * @param seqVar sequence visiting the nodes
+     * @param time time windows of the nodes
+     * @param dist distance matrix between the nodes
+     */
+    public TransitionTimes(CPSeqVar seqVar, CPIntVar[] time, int[][] dist) {
+<span class="fc" id="L42">        this(seqVar, time, dist, Optional.empty());</span>
+<span class="fc" id="L43">    }</span>
+
+    /**
+     * Links visits of nodes within a {@link CPSeqVar} to given time windows {@link CPIntVar}.
+     * The nodes belonging to the sequence must be visited during their time window.
+     * The triangular inequality must be satisfied.
+     *
+     * @param seqVar sequence visiting the nodes
+     * @param time time windows of the nodes
+     * @param dist distance matrix between the nodes
+     * @param serviceTime processing time of each node
+     */
+    public TransitionTimes(CPSeqVar seqVar, CPIntVar[] time, int[][] dist, int[] serviceTime) {
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        this(seqVar, time, dist, serviceTime == null ? Optional.empty() : Optional.of(serviceTime));</span>
+<span class="fc" id="L57">    }</span>
+
+    /**
+     * Links visits of nodes within a {@link CPSeqVar} to given time windows {@link CPIntVar}.
+     * The nodes belonging to the sequence must be visited during their time window.
+     * The triangular inequality must be satisfied.
+     *
+     * @param seqVar sequence visiting the nodes
+     * @param time time windows of the nodes
+     * @param dist distance matrix between the nodes
+     * @param serviceTime processing time of each node
+     */
+    public TransitionTimes(CPSeqVar seqVar, CPIntVar[] time, int[][] dist, Optional&lt;int[]&gt; serviceTime) {
+<span class="fc" id="L70">        super(seqVar.getSolver());</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (serviceTime == null)</span>
+<span class="nc" id="L72">            serviceTime = Optional.empty();</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        assert time.length &gt;= seqVar.nNode();</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        assert dist.length &gt;= seqVar.nNode();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int[] d: dist) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            assert d.length &gt;= seqVar.nNode();</span>
+        }
+<span class="pc bpc" id="L78" title="1 of 4 branches missed.">        assert serviceTime.isEmpty() || serviceTime.get().length &gt;= seqVar.nNode();</span>
+<span class="fc" id="L79">        this.seqVar = seqVar;</span>
+<span class="fc" id="L80">        this.time = time;</span>
+<span class="fc" id="L81">        this.dist = dist;</span>
+<span class="fc" id="L82">        this.serviceTime = serviceTime;</span>
+<span class="fc" id="L83">        this.nodes = new int[seqVar.nNode()];</span>
+<span class="fc" id="L84">        this.preds = new int[seqVar.nNode()];</span>
+<span class="fc" id="L85">        masterConstraintPropagating = getSolver().getStateManager().makeStateRef(false);</span>
+<span class="fc" id="L86">        checkTriangularInequality(dist);</span>
+<span class="fc" id="L87">    }</span>
+
+    private void checkTriangularInequality(int[][] dist) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int i = 0 ; i &lt; dist.length ; i++) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            for (int j = 0 ; j &lt; dist[i].length ; j++) {</span>
+<span class="fc" id="L92">                int smallestDist = dist[i][j];</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                for (int k = 0 ; k &lt; dist.length ; k++) {</span>
+<span class="fc" id="L94">                    int distWithDetour = dist[i][k] + serviceTime(k) + dist[k][j];</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">                    if (distWithDetour &lt; smallestDist) {</span>
+<span class="nc" id="L96">                        System.err.println(&quot;[WARNING]: triangular inequality not respected with distance matrix and service time&quot;);</span>
+<span class="nc" id="L97">                        System.err.printf(&quot;[WARNING]: dist[%d][%d] + duration[%d] + dist[%d][%d] &lt; dist[%d][%d] (%d + %d + %d &lt; %d)%n&quot;, i, k, k, k, j, i, j,</span>
+<span class="nc" id="L98">                                dist[i][k], serviceTime(k), dist[k][j], dist[i][j]);</span>
+<span class="nc" id="L99">                        System.err.println(&quot;[WARNING]: this might remove some solutions&quot;);</span>
+<span class="nc" id="L100">                        return;</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L105">    }</span>
+
+    @Override
+    public void post() {
+        // first trivial filtering over insertions, taking an infinite detour length as valid
+<span class="fc" id="L110">        int nNodes = seqVar.fillNode(nodes, INSERTABLE);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nNodes ; ++i) {</span>
+<span class="fc" id="L112">            int node = nodes[i];</span>
+<span class="fc" id="L113">            filterInsertsAndPossiblyTW(node);</span>
+        }
+        // full filtering
+<span class="fc" id="L116">        propagate();</span>
+        // register the propagation
+<span class="fc" id="L118">        nNodes = seqVar.fillNode(nodes, INSERTABLE);</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nNodes ; ++i) {</span>
+<span class="fc" id="L120">            int node = nodes[i];</span>
+<span class="fc" id="L121">            new NodeTimeWindow(node).post();</span>
+        }
+<span class="fc" id="L123">        int nMember = seqVar.fillNode(nodes, MEMBER);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nMember ; ++i) {</span>
+<span class="fc" id="L125">            int node = nodes[i];</span>
+<span class="fc" id="L126">            time[node].propagateOnBoundChange(this);</span>
+        }
+<span class="fc" id="L128">        seqVar.propagateOnInsert(this);</span>
+<span class="fc" id="L129">        seqVar.propagateOnFix(this);</span>
+<span class="fc" id="L130">    }</span>
+
+    @Override
+    public void propagate() {
+        // the constraint is being propagated
+<span class="fc" id="L135">        masterConstraintPropagating.setValue(true);</span>
+<span class="fc" id="L136">        seqVar.fillNode(nodes, MEMBER_ORDERED);</span>
+        // update the time window
+<span class="fc" id="L138">        updateTWForward();</span>
+<span class="fc" id="L139">        updateTWBackward();</span>
+        // the time windows have been updated, filters the predecessors
+<span class="fc" id="L141">        filterInsertsAndPossiblyTW();</span>
+        // end of propagation
+<span class="fc" id="L143">        masterConstraintPropagating.setValue(false);</span>
+<span class="fc" id="L144">    }</span>
+
+    /**
+     * Updates the minimum start time of the time windows for member nodes.
+     * The array {@link TransitionTimes#nodes} must be filled with the nodes, in order of appearance.
+     */
+    private void updateTWForward() {
+<span class="fc" id="L151">        int nMember = seqVar.nNode(MEMBER_ORDERED);</span>
+<span class="fc" id="L152">        int pred = nodes[0];</span>
+<span class="fc" id="L153">        int predTime = time[pred].min() + serviceTime(pred);</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">        for (int i = 1 ; i &lt; nMember ; ++i) {</span>
+<span class="fc" id="L155">            int current = nodes[i];</span>
+<span class="fc" id="L156">            predTime += dist[pred][current];</span>
+<span class="fc" id="L157">            time[current].removeBelow(predTime);</span>
+            // waiting at a node is allowed
+<span class="fc" id="L159">            predTime = Math.max(predTime, time[current].min()) + serviceTime(current);</span>
+<span class="fc" id="L160">            pred = current;</span>
+        }
+<span class="fc" id="L162">    }</span>
+
+    /**
+     * Updates the maximum start time of the time windows for member nodes.
+     * The array {@link TransitionTimes#nodes} must be filled with the nodes, in order of appearance.
+     */
+    private void updateTWBackward() {
+<span class="fc" id="L169">        int n = seqVar.nNode(MEMBER_ORDERED);</span>
+<span class="fc" id="L170">        int succ = nodes[n-1];</span>
+<span class="fc" id="L171">        int succTime = time[succ].max();</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (int i = n - 2 ; i &gt;= 0 ; --i) {</span>
+<span class="fc" id="L173">            int current = nodes[i];</span>
+<span class="fc" id="L174">            succTime -= dist[current][succ] + serviceTime(current);</span>
+<span class="fc" id="L175">            time[current].removeAbove(succTime);</span>
+<span class="fc" id="L176">            succTime = time[current].max();</span>
+
+<span class="fc" id="L178">            succ = current;</span>
+        }
+<span class="fc" id="L180">    }</span>
+
+    /**
+     * Filter an edge from the sequence if it would violate the time windows.
+     * @param pred origin of the edge
+     * @param node destination of the edge
+     * @return true if the edge has been removed
+     */
+    private boolean filterInsert(int pred, int node) {
+<span class="fc" id="L189">        int succ = seqVar.memberAfter(pred);</span>
+<span class="fc" id="L190">        int timeReachingNode = time[pred].min() + serviceTime(pred) + dist[pred][node];</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        if (timeReachingNode &gt; time[node].max()) { // check that pred -&gt; current is feasible</span>
+<span class="fc" id="L192">            seqVar.notBetween(pred, node, succ);</span>
+<span class="fc" id="L193">            return true;</span>
+        } else { // check that current -&gt; succ is feasible
+<span class="fc" id="L195">            int timeDeparture = Math.max(timeReachingNode, time[node].min());</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            if (timeDeparture + serviceTime(node) + dist[node][succ] &gt; time[succ].max()) {</span>
+                // The detour pred-&gt;node-&gt;succ takes too much time.
+                // Because of triangular inequality, there is no way to get a better result by inserting some node
+                // between pred-&gt;node: this would only add a longer delay, the edge is still invalid.
+<span class="fc" id="L200">                seqVar.notBetween(pred, node, succ);</span>
+<span class="fc" id="L201">                return true;</span>
+            }
+        }
+<span class="fc" id="L204">        return false;</span>
+
+    }
+
+    /**
+     * Filter the predecessors for all the insertable nodes
+     * - if the node is required, filters all predecessors and updates the time window of the node
+     * - otherwise, filters only the member predecessors
+     */
+    private void filterInsertsAndPossiblyTW() {
+<span class="fc" id="L214">        int nInsertable = seqVar.fillNode(nodes, INSERTABLE);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nInsertable ; ++i) {</span>
+<span class="fc" id="L216">            int node = nodes[i];</span>
+<span class="fc" id="L217">            filterInsertsAndPossiblyTW(node);</span>
+        }
+<span class="fc" id="L219">    }</span>
+
+    /**
+     * Filter the insertions for an insertable node
+     * - if the node is required, filters all insertions and updates the time window of the node
+     * - otherwise, filters only the member predecessors
+     */
+    private void filterInsertsAndPossiblyTW(int node) {
+<span class="fc" id="L227">        int nPred = seqVar.fillInsert(node, preds);</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (seqVar.isNode(node, REQUIRED)) {</span>
+            // update the insertions as well as the time window
+<span class="fc" id="L230">            int earliestArrival = Integer.MAX_VALUE;</span>
+<span class="fc" id="L231">            int latestDeparture = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred; ++i) {</span>
+<span class="fc" id="L233">                int pred = preds[i];</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">                if (!filterInsert(pred, node)) {</span>
+                    // if the edge is valid, it can be used to decide the min and max departure time
+<span class="fc" id="L236">                    int arrival = time[pred].min() + serviceTime(pred) + dist[pred][node]; // min departure time</span>
+<span class="fc" id="L237">                    earliestArrival = Math.min(earliestArrival, arrival);</span>
+<span class="fc" id="L238">                    int succ = seqVar.memberAfter(pred);</span>
+<span class="fc" id="L239">                    int departure = time[succ].max() - serviceTime(node) - dist[node][succ]; // max departure time</span>
+<span class="fc" id="L240">                    latestDeparture = Math.max(latestDeparture, departure);</span>
+                }
+            }
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">            if (!seqVar.isNode(node, MEMBER)) {</span>
+                // if the node has not become inserted because of the insertions removal, update its time window
+<span class="fc" id="L245">                time[node].removeBelow(earliestArrival);</span>
+<span class="fc" id="L246">                time[node].removeAbove(latestDeparture);</span>
+            }
+<span class="fc" id="L248">        } else {</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred; ++i) {</span>
+<span class="fc" id="L250">                int pred = preds[i];</span>
+<span class="fc" id="L251">                filterInsert(pred, node);</span>
+            }
+        }
+<span class="fc" id="L254">    }</span>
+
+    /**
+     * Gives the service time at a given node
+     * @param node node whose service time must be known
+     * @return service time at the node
+     */
+    private int serviceTime(int node) {
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        return serviceTime.isPresent() ? serviceTime.get()[node] : 0;</span>
+    }
+
+    /**
+     * Handles the update over a node.
+     * The updates here are faster than by calling the full propagation from {@link TransitionTimes}
+     * but are only valid depending on certain criterion.
+     * This can be viewed as handling incremental updates
+     */
+    private class NodeTimeWindow extends AbstractCPConstraint {
+
+        private final int node;
+
+<span class="fc" id="L275">        public NodeTimeWindow(int node) {</span>
+<span class="fc" id="L276">            super(TransitionTimes.this.getSolver());</span>
+<span class="fc" id="L277">            this.node = node;</span>
+<span class="fc" id="L278">        }</span>
+
+        @Override
+        public boolean isActive() {
+            // the incremental update should only be done if
+            // - the TransitionTimes constraint is not being propagated at the moment
+            // - the filtering can do something over the time window of the node / its state: the node must not be excluded
+            // - the TransitionTimes constraint is not scheduled at the moment
+            // - the TransitionTimes constraint is still active
+<span class="fc bfc" id="L287" title="All 2 branches covered.">            return !masterConstraintPropagating.value()</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">                    &amp;&amp; !seqVar.isNode(node, EXCLUDED)</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                    &amp;&amp; !TransitionTimes.this.isScheduled()</span>
+<span class="pc bpc" id="L290" title="1 of 2 branches missed.">                    &amp;&amp; TransitionTimes.this.isActive();</span>
+        }
+
+        @Override
+        public void post() {
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (!seqVar.isNode(node, EXCLUDED)) {</span>
+<span class="fc" id="L296">                time[node].propagateOnBoundChange(this);</span>
+<span class="fc" id="L297">                seqVar.getNodeVar(node).propagateOnRequire(this);</span>
+            }
+<span class="fc" id="L299">        }</span>
+
+        @Override
+        public void propagate() {
+<span class="pc bpc" id="L303" title="2 of 4 branches missed.">            if (seqVar.isNode(node, MEMBER) &amp;&amp; !TransitionTimes.this.isScheduled()) {</span>
+                // if the node is a member, a lot of things must happen. It's better to update the whole constraint
+<span class="fc" id="L305">                getSolver().schedule(TransitionTimes.this);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">            } else if (seqVar.isNode(node, INSERTABLE)) {</span>
+<span class="nc" id="L307">                filterInsertsAndPossiblyTW(node);</span>
+            }
+<span class="fc" id="L309">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntVarImpl.java</span></div><h1>CPIntVarImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.state.datastructures.StateStack;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.security.InvalidParameterException;
+import java.util.Set;
+import java.util.function.Consumer;
+
+/**
+ * Implementation of a variable
+ * with a {@link SparseSetDomain}.
+ */
+public class CPIntVarImpl implements CPIntVar {
+
+    private CPSolver cp;
+    private IntDomain domain;
+    private StateStack&lt;CPConstraint&gt; onDomain;
+    private StateStack&lt;CPConstraint&gt; onBind;
+    private StateStack&lt;CPConstraint&gt; onBounds;
+
+<span class="fc" id="L28">    private IntDomainListener domListener = new IntDomainListener() {</span>
+        @Override
+        public void empty() {
+<span class="fc" id="L31">            throw new InconsistencyException();</span>
+            // throw InconsistencyException.INCONSISTENCY; // Integer Vars cannot be empty
+        }
+
+        @Override
+        public void bind() {
+<span class="fc" id="L37">            scheduleAll(onBind);</span>
+<span class="fc" id="L38">        }</span>
+
+        @Override
+        public void change() {
+<span class="fc" id="L42">            scheduleAll(onDomain);</span>
+<span class="fc" id="L43">        }</span>
+
+        @Override
+        public void changeMin() {
+<span class="fc" id="L47">            scheduleAll(onBounds);</span>
+<span class="fc" id="L48">        }</span>
+
+        @Override
+        public void changeMax() {
+<span class="fc" id="L52">            scheduleAll(onBounds);</span>
+<span class="fc" id="L53">        }</span>
+    };
+
+    /**
+     * Creates a variable with the elements {@code {0,...,n-1}}
+     * as initial domain.
+     *
+     * @param cp the solver in which the variable is created
+     * @param n  the number of values with {@code n &gt; 0}
+     */
+    public CPIntVarImpl(CPSolver cp, int n) {
+<span class="nc" id="L64">        this(cp, 0, n - 1);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Creates a variable with the elements {@code {min,...,max}}
+     * as initial domain.
+     *
+     * @param cp the solver in which the variable is created
+     * @param min the minimum value of the domain
+     * @param max the maximum value of the domain with {@code max &gt;= min}
+     */
+<span class="fc" id="L75">    public CPIntVarImpl(CPSolver cp, int min, int max) {</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">        if (min == Integer.MIN_VALUE || max == Integer.MAX_VALUE) throw new InvalidParameterException(&quot;consider reducing the domains, Integer.MIN _VALUE and Integer.MAX_VALUE not allowed&quot;);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (min &gt; max) throw new InvalidParameterException(&quot;at least one setValue in the domain&quot;);</span>
+<span class="fc" id="L78">        this.cp = cp;</span>
+<span class="fc" id="L79">        domain = new SparseSetDomain(cp.getStateManager(), min, max);</span>
+<span class="fc" id="L80">        onDomain = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L81">        onBind = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L82">        onBounds = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L83">    }</span>
+
+
+
+    /**
+     * Creates a variable with a given set of values as initial domain.
+     *
+     * @param cp the solver in which the variable is created
+     * @param values the initial values in the domain, it must be nonempty
+     */
+    public CPIntVarImpl(CPSolver cp, Set&lt;Integer&gt; values) {
+<span class="fc" id="L94">        this(cp, values.stream().min(Integer::compare).get(), values.stream().max(Integer::compare).get());</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (values.isEmpty()) throw new InvalidParameterException(&quot;at least one setValue in the domain&quot;);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        for (int i = min(); i &lt; max(); i++) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (!values.contains(i)) {</span>
+                try {
+<span class="fc" id="L99">                    this.remove(i);</span>
+<span class="nc" id="L100">                } catch (InconsistencyException e) {</span>
+<span class="fc" id="L101">                }</span>
+            }
+        }
+<span class="fc" id="L104">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L108">        return cp;</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        return domain.size() == 1;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L118">        return show();</span>
+    }
+
+    @Override
+    public void whenFixed(Runnable f) {
+<span class="fc" id="L123">        onBind.push(constraintClosure(f));</span>
+<span class="fc" id="L124">    }</span>
+
+    @Override
+    public void whenBoundChange(Runnable f) {
+<span class="fc" id="L128">        onBounds.push(constraintClosure(f));</span>
+<span class="fc" id="L129">    }</span>
+
+    @Override
+    public void whenDomainChange(Runnable f) {
+<span class="fc" id="L133">        onDomain.push(constraintClosure(f));</span>
+<span class="fc" id="L134">    }</span>
+    @Override
+    public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+<span class="fc" id="L137">        CPConstraint c = new CPConstraintClosureWithDelta(cp,this,f);</span>
+<span class="fc" id="L138">        getSolver().post(c, false);</span>
+<span class="fc" id="L139">    }</span>
+
+    private CPConstraint constraintClosure(Runnable f) {
+<span class="fc" id="L142">        CPConstraint c = new CPConstraintClosure(cp, f);</span>
+<span class="fc" id="L143">        getSolver().post(c, false);</span>
+<span class="fc" id="L144">        return c;</span>
+    }
+
+    @Override
+    public void propagateOnDomainChange(CPConstraint c) {
+<span class="fc" id="L149">        onDomain.push(c);</span>
+<span class="fc" id="L150">    }</span>
+
+    @Override
+    public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L154">        onBind.push(c);</span>
+<span class="fc" id="L155">    }</span>
+
+    @Override
+    public void propagateOnBoundChange(CPConstraint c) {
+<span class="fc" id="L159">        onBounds.push(c);</span>
+<span class="fc" id="L160">    }</span>
+
+
+    protected void scheduleAll(StateStack&lt;CPConstraint&gt; constraints) {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int i = 0; i &lt; constraints.size(); i++)</span>
+<span class="fc" id="L165">            cp.schedule(constraints.get(i));</span>
+<span class="fc" id="L166">    }</span>
+
+    @Override
+    public int min() {
+<span class="fc" id="L170">        return domain.min();</span>
+    }
+
+    @Override
+    public int max() {
+<span class="fc" id="L175">        return domain.max();</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L180">        return domain.size();</span>
+    }
+
+    @Override
+    public int fillArray(int[] dest) {
+<span class="fc" id="L185">        return domain.fillArray(dest);</span>
+    }
+
+    @Override
+    public boolean contains(int v) {
+<span class="fc" id="L190">        return domain.contains(v);</span>
+    }
+
+    @Override
+    public void remove(int v) {
+<span class="fc" id="L195">        domain.remove(v, domListener);</span>
+<span class="fc" id="L196">    }</span>
+
+    @Override
+    public void fix(int v) {
+<span class="fc" id="L200">        domain.removeAllBut(v, domListener);</span>
+<span class="fc" id="L201">    }</span>
+
+    @Override
+    public void removeBelow(int v) {
+<span class="fc" id="L205">        domain.removeBelow(v, domListener);</span>
+<span class="fc" id="L206">    }</span>
+
+    @Override
+    public void removeAbove(int v) {
+<span class="fc" id="L210">        domain.removeAbove(v, domListener);</span>
+<span class="fc" id="L211">    }</span>
+
+    @Override
+    public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int [] arr) {
+<span class="fc" id="L215">        return domain.fillDeltaArray(oldMin,oldMax,oldSize,arr);</span>
+    }
+
+    @Override
+    public DeltaCPIntVar delta(CPConstraint c) {
+<span class="fc" id="L220">        DeltaCPIntVar delta = new DeltaCPIntVarImpl(this);</span>
+<span class="fc" id="L221">        c.registerDelta(delta);</span>
+<span class="fc" id="L222">        return delta;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L227">        return getSolver().getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

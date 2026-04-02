@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractConcurrentSearchMethod.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">AbstractConcurrentSearchMethod.java</span></div><h1>AbstractConcurrentSearchMethod.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.search;
+
+import org.maxicp.modeling.symbolic.SymbolicModel;
+import org.maxicp.state.StateManager;
+
+import javax.lang.model.type.NullType;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * An abstract search method that can be used concurrently: it is stoppable and can be work-stealed.
+ *
+ * An additional constraint w.r.t. AbstractSearchMethod is that an AbstractConcurrentSearchMethod
+ * MUST NOT be running more than one solving process at a time.
+ */
+public abstract class AbstractConcurrentSearchMethod extends AbstractSearchMethod&lt;SymbolicModel&gt; {
+    protected SearchStatistics statistics;
+    protected Runnable onNodeVisit;
+    private final BlockingQueue&lt;Message&gt; queue;
+
+    private sealed interface Message {
+        void cancel(Throwable ex);
+    };
+
+<span class="nc" id="L34">    private record StopMessage(CompletableFuture&lt;NullType&gt; future) implements Message {</span>
+        @Override
+        public void cancel(Throwable ex) {
+<span class="nc" id="L37">            future.completeExceptionally(ex);</span>
+<span class="nc" id="L38">        }</span>
+    };
+
+<span class="nc" id="L41">    private record StealMessage(CompletableFuture&lt;SymbolicModel&gt; future) implements Message {</span>
+        @Override
+        public void cancel(Throwable ex) {
+<span class="nc" id="L44">            future.completeExceptionally(ex);</span>
+<span class="nc" id="L45">        }</span>
+    };
+
+    public AbstractConcurrentSearchMethod(StateManager sm, Supplier&lt;SymbolicModel[]&gt; branching) {
+<span class="nc" id="L49">        super(sm, branching);</span>
+<span class="nc" id="L50">        statistics = null;</span>
+<span class="nc" id="L51">        onNodeVisit = null;</span>
+<span class="nc" id="L52">        queue = new LinkedBlockingQueue&lt;&gt;();</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * @return true if there are no more nodes to visit
+     */
+    protected abstract boolean done();
+
+    /**
+     * Called when a new search is started
+     */
+    protected abstract void initSolve();
+
+    /**
+     * process the next step of the search procedure.
+     * done() must be false to call this function.
+     */
+    protected abstract void processNextStep();
+
+    /**
+     * Called when the current search is finished
+     */
+    protected abstract void finishSolve();
+
+    /**
+     * Remove a model from the &quot;list of open models&quot; and returns it.
+     * This function will be called on the same thread as startSolve if it's running, and is not needed to be thread-safe.
+     *
+     * The function is allowed to return null if and only if there is no Model left to visit.
+     */
+    protected abstract SymbolicModel extractModel();
+
+    /**
+     * Steal a (yet non-visited) model from this search method. Thread-safe.
+     *
+     * The function is allowed to return null if and only if there is no Model left to visit.
+     */
+    public Future&lt;SymbolicModel&gt; steal() {
+<span class="nc" id="L90">        CompletableFuture&lt;SymbolicModel&gt; future = new CompletableFuture&lt;&gt;();</span>
+<span class="nc" id="L91">        queue.add(new StealMessage(future));</span>
+<span class="nc" id="L92">        return future;</span>
+    }
+
+    /**
+     * Stop a solving process (thread-safely)
+     * @return a Fu
+     */
+    public Future&lt;NullType&gt; stop() {
+<span class="nc" id="L100">        CompletableFuture&lt;NullType&gt; future = new CompletableFuture&lt;&gt;();</span>
+<span class="nc" id="L101">        queue.add(new StopMessage(future));</span>
+<span class="nc" id="L102">        return future;</span>
+    }
+
+    private void processQueue() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        while (!queue.isEmpty()) {</span>
+<span class="nc" id="L107">            Message message = queue.poll();</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            switch (message) {</span>
+<span class="nc" id="L109">                case StealMessage stealMessage -&gt; stealMessage.future.complete(extractModel());</span>
+<span class="nc" id="L110">                case StopMessage stopMessage -&gt; {</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">                    while (!queue.isEmpty()) {</span>
+<span class="nc" id="L112">                        Message bis = queue.poll();</span>
+<span class="nc" id="L113">                        bis.cancel(new StopSearchException());</span>
+<span class="nc" id="L114">                    }</span>
+<span class="nc" id="L115">                    stopMessage.future.complete(null);</span>
+<span class="nc" id="L116">                    throw new StopSearchException();</span>
+                }
+            }
+<span class="nc" id="L119">        }</span>
+<span class="nc" id="L120">    }</span>
+
+    @Override
+    protected void startSolve(SearchStatistics statistics, Predicate&lt;SearchStatistics&gt; limit, Runnable onNodeVisit) {
+<span class="nc" id="L124">        this.statistics = statistics;</span>
+<span class="nc" id="L125">        this.onNodeVisit = onNodeVisit;</span>
+<span class="nc" id="L126">        sm.withNewState(() -&gt; {</span>
+<span class="nc" id="L127">            initSolve();</span>
+            try {
+<span class="nc bnc" id="L129" title="All 2 branches missed.">                while(!done()) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">                    if (limit.test(statistics)) throw new StopSearchException();</span>
+<span class="nc" id="L131">                    processQueue();</span>
+<span class="nc" id="L132">                    processNextStep();</span>
+                }
+            }
+            finally {
+<span class="nc" id="L136">                finishSolve();</span>
+            }
+<span class="nc" id="L138">        });</span>
+<span class="nc" id="L139">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

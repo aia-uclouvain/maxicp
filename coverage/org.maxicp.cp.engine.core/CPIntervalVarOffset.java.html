@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntervalVarOffset.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntervalVarOffset.java</span></div><h1>CPIntervalVarOffset.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.ModelProxy;
+
+import static org.maxicp.Constants.HORIZON;
+
+/**
+ * Provides a view of a CPIntervalVar that is delayed by a fixed offset value.
+ *
+ */
+public class CPIntervalVarOffset implements CPIntervalVar {
+
+    private final CPIntervalVar interval;
+    private final int offset;
+
+<span class="fc" id="L22">    public CPIntervalVarOffset(CPIntervalVar intervalVar, int offset) {</span>
+<span class="fc" id="L23">        this.interval = intervalVar;</span>
+<span class="fc" id="L24">        this.offset = offset;</span>
+<span class="fc" id="L25">        setStartMin(0); // ensures that the interval does not span in negative values</span>
+<span class="fc" id="L26">        setEndMax(HORIZON); // ensures that the interval does not go above the horizon</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L31">        return interval.getSolver();</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="nc" id="L36">        return interval.isFixed();</span>
+    }
+
+    @Override
+    public void propagateOnChange(CPConstraint c) {
+<span class="fc" id="L41">        interval.propagateOnChange(c);</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public int startMin() {
+<span class="fc" id="L46">        return interval.startMin() + offset;</span>
+    }
+
+    @Override
+    public int startMax() {
+<span class="fc" id="L51">        return interval.startMax() + offset;</span>
+    }
+
+    @Override
+    public int endMin() {
+<span class="fc" id="L56">        return interval.endMin() + offset;</span>
+    }
+
+    @Override
+    public int endMax() {
+<span class="fc" id="L61">        return interval.endMax() + offset;</span>
+    }
+
+    @Override
+    public int lengthMin() {
+<span class="nc" id="L66">        return interval.lengthMin();</span>
+    }
+
+    @Override
+    public int lengthMax() {
+<span class="nc" id="L71">        return interval.lengthMax();</span>
+    }
+
+    @Override
+    public boolean isPresent() {
+<span class="fc" id="L76">        return interval.isPresent();</span>
+    }
+
+    @Override
+    public boolean isAbsent() {
+<span class="fc" id="L81">        return interval.isAbsent();</span>
+    }
+
+    @Override
+    public boolean isOptional() {
+<span class="nc" id="L86">        return interval.isOptional();</span>
+    }
+
+    @Override
+    public CPBoolVar status() {
+<span class="nc" id="L91">        return interval.status();</span>
+    }
+
+    @Override
+    public void setStartMin(int v) {
+<span class="fc" id="L96">        interval.setStartMin(v - offset);</span>
+<span class="fc" id="L97">    }</span>
+
+    @Override
+    public void setStartMax(int v) {
+<span class="fc" id="L101">        interval.setStartMax(v - offset);</span>
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public void setStart(int v) {
+<span class="nc" id="L106">        interval.setStart(v - offset);</span>
+<span class="nc" id="L107">    }</span>
+
+    @Override
+    public void setEndMin(int v) {
+<span class="fc" id="L111">        interval.setEndMin(v - offset);</span>
+<span class="fc" id="L112">    }</span>
+
+    @Override
+    public void setEndMax(int v) {
+<span class="fc" id="L116">        interval.setEndMax(v - offset);</span>
+<span class="fc" id="L117">    }</span>
+
+    @Override
+    public void setEnd(int v) {
+<span class="nc" id="L121">        interval.setEnd(v - offset);</span>
+<span class="nc" id="L122">    }</span>
+
+    @Override
+    public void setLengthMin(int v) {
+<span class="nc" id="L126">        interval.setLengthMin(v);</span>
+<span class="nc" id="L127">    }</span>
+
+    @Override
+    public void setLengthMax(int v) {
+<span class="nc" id="L131">        interval.setLengthMax(v);</span>
+<span class="nc" id="L132">    }</span>
+
+    @Override
+    public void setLength(int v) {
+<span class="nc" id="L136">        interval.setLength(v);</span>
+<span class="nc" id="L137">    }</span>
+
+    @Override
+    public void setPresent() {
+<span class="nc" id="L141">        interval.setPresent();</span>
+<span class="nc" id="L142">    }</span>
+
+    @Override
+    public void setAbsent() {
+<span class="nc" id="L146">        interval.setAbsent();</span>
+<span class="nc" id="L147">    }</span>
+
+    @Override
+    public int slack() {
+<span class="nc" id="L151">        return interval.slack();</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L156">        return interval.getModelProxy();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L161">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

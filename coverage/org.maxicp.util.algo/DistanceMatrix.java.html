@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DistanceMatrix.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util.algo</a> &gt; <span class="el_source">DistanceMatrix.java</span></div><h1>DistanceMatrix.java</h1><pre class="source lang-java linenums">package org.maxicp.util.algo;
+
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
+<span class="nc" id="L8">public class DistanceMatrix {</span>
+
+
+    /**
+     * Enforces the triangular inequality on the given distance
+     * matrix using the Bellman-Ford algorithm.
+     * The shortest paths are computed between all pairs of nodes and
+     * the distance matrix is updated accordingly.
+     * @param distance a distance matrix
+     */
+    public static void enforceTriangularInequality(int[][] distance) {
+<span class="fc" id="L19">        int n = distance.length;</span>
+<span class="fc" id="L20">        int[][] edges = new int[n * n][3];</span>
+<span class="fc" id="L21">        int edgeCount = 0;</span>
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L24">                edges[edgeCount][0] = i;</span>
+<span class="fc" id="L25">                edges[edgeCount][1] = j;</span>
+<span class="fc" id="L26">                edges[edgeCount][2] = distance[i][j];</span>
+<span class="fc" id="L27">                edgeCount++;</span>
+            }
+        }
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L31">            long[] dist = new long[n];</span>
+            try {
+<span class="fc" id="L33">                bellmanFord(n, edgeCount, edges, i, dist);</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">                for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L35">                    distance[i][j] = (int) dist[j];</span>
+                }
+<span class="nc" id="L37">            } catch (Exception e) {</span>
+<span class="nc" id="L38">                System.out.println(&quot;negative cycle&quot;);</span>
+<span class="fc" id="L39">            }</span>
+        }
+<span class="fc" id="L41">    }</span>
+
+    private static void bellmanFord(int numNodes, int edgeCount, int[][] edges, int src, long[] dist) throws Exception {
+        // Initially distance from source to all other vertices
+        // is not known(Infinite).
+<span class="fc" id="L46">        int INF = Integer.MAX_VALUE;</span>
+<span class="fc" id="L47">        Arrays.fill(dist, INF);</span>
+<span class="fc" id="L48">        dist[src] = 0;</span>
+        // Relaxation of all the edges V times, not (V - 1) as we
+        // need one additional relaxation to detect negative cycle
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            for (int ne = 0; ne &lt; edgeCount; ne++) {</span>
+<span class="fc" id="L53">                int u = edges[ne][0];</span>
+<span class="fc" id="L54">                int v = edges[ne][1];</span>
+<span class="fc" id="L55">                int wt = edges[ne][2];</span>
+<span class="fc bfc" id="L56" title="All 4 branches covered.">                if (dist[u] != INF &amp;&amp; dist[u] + wt &lt; dist[v]) {</span>
+                    // V_th relaxation =&gt; negative cycle
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">                    if (i == numNodes - 1) {</span>
+<span class="nc" id="L59">                        throw new Exception();</span>
+                    }
+                    // Update shortest distance to node v
+<span class="fc" id="L62">                    dist[v] = dist[u] + wt;</span>
+                }
+            }
+        }
+<span class="fc" id="L66">    }</span>
+
+
+
+    /**
+     * Position between points
+     * @param x x-coordinate
+     * @param y y-coordinate
+     */
+<span class="fc" id="L75">    private record Position(double x, double y) {</span>
+
+        private double euclideanDistance(Position o) {
+<span class="fc" id="L78">            return Math.sqrt(Math.pow(o.x - x, 2) + Math.pow(o.y - y, 2));</span>
+        }
+
+        private int ceilEuclideanDistance(Position o) {
+<span class="fc" id="L82">            return (int) Math.ceil(euclideanDistance(o));</span>
+        }
+
+    }
+
+    /**
+     * Checks whether a distance matrix respects the triangular inequality.
+     * Prints a warning message on stderr if the triangular inequality is not enforced
+     * @param dist distance matrix
+     */
+    public static void checkTriangularInequality(int[][] dist) {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0 ; i &lt; dist.length ; i++) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            for (int j = 0 ; j &lt; dist[i].length ; j++) {</span>
+<span class="nc" id="L95">                int smallestDist = dist[i][j];</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                for (int k = 0 ; k &lt; dist.length ; k++) {</span>
+<span class="nc" id="L97">                    int distWithDetour = dist[i][k] + dist[k][j];</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                    if (distWithDetour &lt; smallestDist) {</span>
+<span class="nc" id="L99">                        System.err.println(&quot;[WARNING]: triangular inequality not respected with distance matrix&quot;);</span>
+<span class="nc" id="L100">                        System.err.printf(&quot;[WARNING]: dist[%d][%d] + dist[%d][%d] &lt; dist[%d][%d] (%d + %d &lt; %d)%n&quot;, i, k, k, j, i, j,</span>
+<span class="nc" id="L101">                                dist[i][k], dist[k][j], dist[i][j]);</span>
+<span class="nc" id="L102">                        System.err.println(&quot;[WARNING]: this might remove some solutions&quot;);</span>
+<span class="nc" id="L103">                        return;</span>
+                    }
+                }
+            }
+        }
+<span class="nc" id="L108">    }</span>
+
+    /**
+     * Extend a matrix, adding new rows and columns corresponding to other entries already present in the matrix.
+     * This is typically done for extending a distance matrix if node are duplicated
+     * &lt;p&gt;
+     * Example:
+     *  - matrix = {{0, 1}, {2, 3}}
+     *  - duplication = [0]
+     *  - result = row 2 and column 2 added, corresponding to node 0: {{0, 1, 0}, {2, 3, 2}, {0, 1, 0}}
+     *
+     * @param matrix matrix that must be extended
+     * @param duplication one element per new row and column to add, telling
+     * @return
+     */
+    public static int[][] extendMatrixAtEnd(int[][] matrix, List&lt;Integer&gt; duplication) {
+<span class="fc" id="L124">        int n = matrix.length;</span>
+<span class="fc" id="L125">        int nDuplicate = duplication.size();</span>
+<span class="fc" id="L126">        int extendedSize = matrix.length + nDuplicate;</span>
+<span class="fc" id="L127">        int[][] extendedMatrix = new int[extendedSize][extendedSize];</span>
+        /* extended matrix:
+         *  A | B
+         *  -----
+         *  C | D
+         * where A is the original matrix
+         */
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L135">            System.arraycopy(matrix[i], 0, extendedMatrix[i], 0, n);  // fill A</span>
+        }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int i = 0; i &lt; nDuplicate; i++) {</span>
+<span class="fc" id="L138">            int extendedIndex = n + i;</span>
+<span class="fc" id="L139">            int originIndex = duplication.get(i);</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">            if (originIndex &lt; 0 || originIndex &gt;= n)</span>
+<span class="nc" id="L141">                throw new IllegalArgumentException(</span>
+<span class="nc" id="L142">                        String.format(&quot;Cannot duplicate row %d in matrix of size %d%n&quot;, originIndex, n));</span>
+            // fill C
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            for (int j = 0 ; j &lt; n ; j++)</span>
+<span class="fc" id="L145">                extendedMatrix[extendedIndex][j] = matrix[originIndex][j];</span>
+            // fill B
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            for (int j = 0 ; j &lt; n ; j++)</span>
+<span class="fc" id="L148">                extendedMatrix[j][extendedIndex] = matrix[j][originIndex];</span>
+        }
+        // fill D
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nDuplicate ; i++) {</span>
+<span class="fc" id="L152">            int extendedIndexI = n + i;</span>
+<span class="fc" id="L153">            int originIndexI = duplication.get(i);</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            for (int j = 0 ; j &lt; nDuplicate ; j++) {</span>
+<span class="fc" id="L155">                int extendedIndexJ = n + j;</span>
+<span class="fc" id="L156">                int originIndexJ = duplication.get(j);</span>
+<span class="fc" id="L157">                extendedMatrix[extendedIndexI][extendedIndexJ] = matrix[originIndexI][originIndexJ];</span>
+            }
+        }
+<span class="fc" id="L160">        return extendedMatrix;</span>
+    }
+
+    /**
+     * Generate a random distance matrix where the triangular inequality is enforced
+     * @param nNodes number of rows and columns in the distance matrix
+     * @return distance matrix of nNodes rows and columns
+     */
+    public static int[][] randomDistanceMatrix(int nNodes) {
+<span class="nc" id="L169">        return randomDistanceMatrix(nNodes, 1000, 42);</span>
+    }
+
+    /**
+     * Generate a random distance matrix where the triangular inequality is enforced
+     * @param nNodes number of rows and columns in the distance matrix
+     * @param bound for the generation, points will be considered as lying on a bound X bound square.
+     *              The larger the value of bound, the larger will the distances be
+     * @return distance matrix of nNodes rows and columns
+     */
+    public static int[][] randomDistanceMatrix(int nNodes, int bound) {
+<span class="nc" id="L180">        return randomDistanceMatrix(nNodes, bound, 42);</span>
+    }
+
+    /**
+     * Generate a random distance matrix where the triangular inequality is enforced
+     *
+     * @param nNodes number of rows and columns in the distance matrix
+     * @param bound  for the generation, points will be considered as lying on a bound X bound square.
+     *               The larger the value of bound, the larger will the distances be
+     * @param seed   seed used for random number generation
+     * @return distance matrix of nNodes rows and columns
+     */
+    public static int[][] randomDistanceMatrix(int nNodes, int bound, int seed) {
+<span class="fc" id="L193">        Random random = new Random(seed);</span>
+<span class="fc" id="L194">        Position[] nodes = new Position[nNodes];</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nNodes ; i++)</span>
+<span class="fc" id="L196">            nodes[i] = new Position(random.nextDouble(bound), random.nextDouble(bound));</span>
+<span class="fc" id="L197">        int[][] distance = new int[nNodes][nNodes];</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nNodes ; i++) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            for (int j = i+1 ; j &lt; nNodes; j++) {</span>
+<span class="fc" id="L200">                int dist = nodes[i].ceilEuclideanDistance(nodes[j]);</span>
+<span class="fc" id="L201">                distance[i][j] = dist;</span>
+            }
+        }
+<span class="fc" id="L204">        return distance;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

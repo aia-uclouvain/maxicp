@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntVarConstant.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntVarConstant.java</span></div><h1>CPIntVarConstant.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.ModelProxy;
+
+import java.util.function.Consumer;
+
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+public class CPIntVarConstant implements CPIntVar{
+
+    private final CPSolver cp;
+    private final int value;
+
+<span class="fc" id="L14">    public CPIntVarConstant(CPSolver cp, int value) {</span>
+<span class="fc" id="L15">        this.cp = cp;</span>
+<span class="fc" id="L16">        this.value = value;</span>
+<span class="fc" id="L17">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L21">        return cp;</span>
+    }
+
+    @Override
+    public void whenFixed(Runnable f) {
+
+<span class="nc" id="L27">    }</span>
+
+    @Override
+    public void whenBoundChange(Runnable f) {
+
+<span class="nc" id="L32">    }</span>
+
+    @Override
+    public void whenDomainChange(Runnable f) {
+
+<span class="nc" id="L37">    }</span>
+
+    @Override
+    public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public void propagateOnDomainChange(CPConstraint c) {
+
+<span class="fc" id="L47">    }</span>
+
+    @Override
+    public void propagateOnFix(CPConstraint c) {
+
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public void propagateOnBoundChange(CPConstraint c) {
+
+<span class="fc" id="L57">    }</span>
+
+    @Override
+    public int min() {
+<span class="fc" id="L61">        return value;</span>
+    }
+
+    @Override
+    public int max() {
+<span class="fc" id="L66">        return value;</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L71">        return 1;</span>
+    }
+
+    @Override
+    public int fillArray(int[] dest) {
+<span class="fc" id="L76">        dest[0] = value;</span>
+<span class="fc" id="L77">        return 1;</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc" id="L82">        return true;</span>
+    }
+
+    @Override
+    public boolean contains(int v) {
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        return v == value;</span>
+    }
+
+    @Override
+    public void remove(int v) {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (v == value)</span>
+<span class="fc" id="L93">            throw INCONSISTENCY;</span>
+<span class="fc" id="L94">    }</span>
+
+    @Override
+    public void fix(int v) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (v != value)</span>
+<span class="fc" id="L99">            throw INCONSISTENCY;</span>
+<span class="fc" id="L100">    }</span>
+
+    @Override
+    public void removeBelow(int v) {
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (v &gt; value)</span>
+<span class="fc" id="L105">            throw INCONSISTENCY;</span>
+<span class="fc" id="L106">    }</span>
+
+    @Override
+    public void removeAbove(int v) {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (v &lt; value)</span>
+<span class="fc" id="L111">            throw INCONSISTENCY;</span>
+<span class="fc" id="L112">    }</span>
+
+    @Override
+    public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] dest) {
+<span class="nc" id="L116">        return 0;</span>
+    }
+
+    @Override
+    public DeltaCPIntVar delta(CPConstraint c) {
+<span class="nc" id="L121">        return null;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L126">        return getSolver().getModelProxy();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L131">        return Integer.toString(value);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

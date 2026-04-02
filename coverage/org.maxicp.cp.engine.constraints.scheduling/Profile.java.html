@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Profile.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">Profile.java</span></div><h1>Profile.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
+/**
+ * Representation of a cumulated Profile data structure as a contiguous sequence of {@link Rectangle}
+ * built from a set of {@link Rectangle} using a sweep-line algorithm.
+ */
+public class Profile {
+    //TODO : class only used in some tests. Should we remove it?
+<span class="nc" id="L17">    private record Entry(int key, int value) implements Comparable&lt;Entry&gt; {</span>
+        @Override
+        public int compareTo(Entry other) {
+<span class="nc" id="L20">            return Integer.compare(key, other.key);</span>
+        }
+    }
+
+    private final Rectangle[] profileRectangles;
+
+    /**
+     * Get the cumulated Profile from the rectangles passed in argument
+     * to the constructor.
+     *
+     * @return the cumulated profile is a contiguous sequence of {@link Rectangle}
+     */
+    public Rectangle[] rectangles() {
+<span class="nc" id="L33">        return profileRectangles;</span>
+    }
+
+<span class="nc" id="L36">    public Profile(Rectangle... rectangles) {</span>
+<span class="nc" id="L37">        ArrayList&lt;Rectangle&gt; profile = new ArrayList&lt;Rectangle&gt;();</span>
+<span class="nc" id="L38">        Entry[] points = new Entry[2 * rectangles.length + 2];</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        for (int i = 0; i &lt; rectangles.length; i++) {</span>
+<span class="nc" id="L40">            Rectangle r = rectangles[i];</span>
+<span class="nc" id="L41">            points[i] = new Entry(r.start, r.height);</span>
+<span class="nc" id="L42">            points[rectangles.length + i] = new Entry(r.end, -r.height);</span>
+        }
+<span class="nc" id="L44">        points[2 * rectangles.length] = new Entry(Integer.MIN_VALUE, 0);</span>
+<span class="nc" id="L45">        points[2 * rectangles.length + 1] = new Entry(Integer.MAX_VALUE, 0);</span>
+
+<span class="nc" id="L47">        Arrays.sort(points);</span>
+
+<span class="nc" id="L49">        int sweepHeight = 0;</span>
+<span class="nc" id="L50">        int sweepTime = points[0].key;</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        for (Entry e : points) {</span>
+<span class="nc" id="L52">            int t = e.key;</span>
+<span class="nc" id="L53">            int h = e.value;</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (t != sweepTime) {</span>
+                //System.out.println(sweep_t+&quot; &quot;+t);
+<span class="nc" id="L56">                profile.add(new Rectangle(sweepTime, t, sweepHeight));</span>
+<span class="nc" id="L57">                sweepTime = t;</span>
+            }
+<span class="nc" id="L59">            sweepHeight += h;</span>
+        }
+<span class="nc" id="L61">        this.profileRectangles = profile.toArray(new Rectangle[0]);</span>
+<span class="nc" id="L62">    }</span>
+
+    /**
+     * Retrieves the rectangle index of the profile that overlaps a given time.
+     *
+     * @param t the time at which we want to retrieve the overlapping rectangle
+     * @return the rectangle index r of the profile such that {@code r.start &lt;= t} and {@code r.end &gt; t}
+     */
+    public int rectangleIndex(int t) {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        for (int i = 0; i &lt; profileRectangles.length; i++) {</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">            if (profileRectangles[i].start &lt;= t &amp;&amp; profileRectangles[i].end &gt; t)</span>
+<span class="nc" id="L73">                return i;</span>
+        }
+<span class="nc" id="L75">        return -1;</span>
+    }
+
+    /**
+     * Return the number of rectangles in the profile.
+     *
+     * @return the number of rectangles in the profile
+     */
+    public int size() {
+<span class="nc" id="L84">        return profileRectangles.length;</span>
+    }
+
+    /**
+     * @param i the rectangle index
+     * @return the rectangle of the profile at index i
+     * @see #rectangleIndex(int)
+     */
+    public Rectangle get(int i) {
+<span class="nc" id="L93">        return profileRectangles[i];</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L98">        return Arrays.toString(profileRectangles);</span>
+    }
+
+    /**
+     * Represents a rectangle which is part of the {@link Profile} datastructure
+     */
+<span class="fc" id="L104">    public static class Rectangle {</span>
+        private final int start;
+        private final long dur;
+        private final int height;
+        private final int end;
+
+<span class="fc" id="L110">        Rectangle(int start, int end, int height) {</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            assert (end &gt; start);</span>
+<span class="fc" id="L112">            this.start = start;</span>
+<span class="fc" id="L113">            this.end = end;</span>
+<span class="fc" id="L114">            this.dur = ((long) end) - start;</span>
+<span class="fc" id="L115">            this.height = height;</span>
+<span class="fc" id="L116">        }</span>
+
+        int start() {
+<span class="fc" id="L119">            return start;</span>
+        }
+
+        long dur() {
+<span class="nc" id="L123">            return dur;</span>
+        }
+
+        final int height() {
+<span class="fc" id="L127">            return height;</span>
+        }
+
+        int end() {
+<span class="fc" id="L131">            return end;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="nc" id="L136">            return &quot;[solve:&quot; + start + &quot; dur:&quot; + dur + &quot; end:&quot; + (end) + &quot;] h:&quot; + height;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

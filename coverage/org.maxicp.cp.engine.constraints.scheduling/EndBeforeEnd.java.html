@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EndBeforeEnd.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">EndBeforeEnd.java</span></div><h1>EndBeforeEnd.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+/**
+ * Constrains interval A to end before or at the end of interval B.
+ *
+ * @author Charles Thomas
+ */
+public class EndBeforeEnd extends AbstractCPConstraint {
+
+    final CPIntervalVar A, B;
+
+    public EndBeforeEnd(CPIntervalVar A, CPIntervalVar B) {
+<span class="fc" id="L22">        super(A.getSolver());</span>
+<span class="fc" id="L23">        this.A = A;</span>
+<span class="fc" id="L24">        this.B = B;</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public void post() {
+<span class="pc bpc" id="L29" title="2 of 4 branches missed.">        if (!A.isAbsent() &amp;&amp; !B.isAbsent()) {</span>
+<span class="fc" id="L30">            A.propagateOnChange(this);</span>
+<span class="fc" id="L31">            B.propagateOnChange(this);</span>
+<span class="fc" id="L32">            propagate();</span>
+        }
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (A.isPresent()) {</span>
+<span class="fc" id="L39">            B.setEndMin(Math.max(A.endMin(), B.endMin()));</span>
+        }
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (B.isPresent()) {</span>
+<span class="fc" id="L42">            A.setEndMax(Math.min(B.endMax(), A.endMax()));</span>
+        }
+<span class="pc bpc" id="L44" title="2 of 4 branches missed.">        if (A.isAbsent() || B.isAbsent()) {</span>
+<span class="nc" id="L45">            setActive(false);</span>
+        }
+<span class="fc" id="L47">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

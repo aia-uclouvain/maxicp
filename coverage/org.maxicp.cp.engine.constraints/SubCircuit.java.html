@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SubCircuit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">SubCircuit.java</span></div><h1>SubCircuit.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.Stack;
+
+/**
+ *
+ * Ensures that only one Hamiltonian circuit appears in the provided successor variables.
+ * The nodes not belonging to the main circuit have themselves as successor.
+ * @author pschaus
+ */
+<span class="fc" id="L17">public class SubCircuit extends AbstractCPConstraint {</span>
+
+    int n;
+    private final CPIntVar[] x;
+
+    private final StateInt[] dest;
+    private final StateInt[] orig;
+    private final StateInt nSubCircuits;
+    private final boolean[] inMainCircuit;
+
+    /**
+     * Creates a SubCircuit Constraint.
+     * Nodes with x[i] == i are considered outside the active circuit.
+     *
+     * @param x the variables representing the successor array
+     */
+    public SubCircuit(CPIntVar[] x) {
+<span class="fc" id="L34">        super(x[0].getSolver());</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        assert (x.length &gt; 0);</span>
+<span class="fc" id="L36">        this.x = x;</span>
+<span class="fc" id="L37">        this.n = x.length;</span>
+
+<span class="fc" id="L39">        inMainCircuit = new boolean[n];</span>
+
+<span class="fc" id="L41">        dest = new StateInt[x.length];</span>
+<span class="fc" id="L42">        orig = new StateInt[x.length];</span>
+
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L45">            dest[i] = getSolver().getStateManager().makeStateInt(i);</span>
+<span class="fc" id="L46">            orig[i] = getSolver().getStateManager().makeStateInt(i);</span>
+        }
+<span class="fc" id="L48">        nSubCircuits = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (CPIntVar var: x) {</span>
+<span class="fc" id="L54">            var.removeBelow(0);</span>
+<span class="fc" id="L55">            var.removeAbove(x.length - 1);</span>
+        }
+
+<span class="fc" id="L58">        getSolver().post(new AllDifferentDC(x));</span>
+
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (!x[i].isFixed()) {</span>
+<span class="fc" id="L62">                int idx = i;</span>
+<span class="fc" id="L63">                x[idx].whenFixed(() -&gt; fixed(idx));</span>
+<span class="fc" id="L64">            } else {</span>
+<span class="fc" id="L65">                fixed(i);</span>
+            }
+        }
+<span class="fc" id="L68">    }</span>
+
+    public void fixed(int u) {
+<span class="fc" id="L71">        int v = x[u].min();</span>
+
+        // If the node points to itself, it's not part of the active subcircuit.
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (u == v) {</span>
+<span class="fc" id="L75">            return;</span>
+        }
+
+        // s -&gt;* u -&gt; v -&gt;* d
+
+<span class="fc" id="L80">        int s = orig[u].value();</span>
+<span class="fc" id="L81">        int d = dest[v].value();</span>
+
+        // Update the extremities of the path
+<span class="fc" id="L84">        orig[d].setValue(s);</span>
+<span class="fc" id="L85">        dest[s].setValue(d);</span>
+
+        // Update the number of active sub-circuits
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (d != v) {</span>
+<span class="fc" id="L89">            nSubCircuits.setValue(nSubCircuits.value() - 1);</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        } else if (s == u) {</span>
+<span class="fc" id="L91">            nSubCircuits.setValue(nSubCircuits.value() + 1);</span>
+        }
+
+        // We can only have one main sub-circuit, so if we would close this one now,
+        // it means that there would be more than one sub-circuit, which is not allowed.
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (nSubCircuits.value() &gt; 1) {</span>
+<span class="fc" id="L97">            x[d].remove(s);</span>
+        }
+
+        // Check if the circuit has closed, if so, nodes not this subcircuit should point to themselves.
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (s == v) {</span>
+<span class="fc" id="L102">            close(s);</span>
+        }
+<span class="fc" id="L104">    }</span>
+
+    /**
+     * Closes the sub-circuit by forcing all remaining unassigned nodes
+     * to point to themselves (self-loops).
+     */
+    private void close(int start) {
+<span class="fc" id="L111">        Arrays.fill(inMainCircuit, false);</span>
+<span class="fc" id="L112">        int v = start;</span>
+        do {
+<span class="fc" id="L114">            inMainCircuit[v] = true;</span>
+<span class="fc" id="L115">            v = x[v].min();</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        } while (v != start);</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (!inMainCircuit[i]) {</span>
+<span class="fc" id="L119">                x[i].fix(i); // In MaxiCP, fix() will throw InconsistencyException if 'i' is removed</span>
+            }
+        }
+<span class="fc" id="L122">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

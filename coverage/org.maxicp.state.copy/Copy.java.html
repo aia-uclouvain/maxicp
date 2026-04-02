@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Copy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.copy</a> &gt; <span class="el_source">Copy.java</span></div><h1>Copy.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.copy;
+
+import org.maxicp.state.State;
+import org.maxicp.state.StateEntry;
+import org.maxicp.state.StateManager;
+import org.maxicp.state.Storage;
+
+/**
+ * Implementation of {@link State} with copy strategy
+ * @see Copier
+ * @see StateManager#makeStateRef(Object)
+ * @param &lt;T&gt; the type of the value wrapped in this state
+ */
+public class Copy&lt;T&gt; implements Storage, State&lt;T&gt; {
+
+    class CopyStateEntry implements StateEntry {
+        private final T v;
+
+<span class="fc" id="L24">        CopyStateEntry(T v) {</span>
+<span class="fc" id="L25">            this.v = v;</span>
+<span class="fc" id="L26">        }</span>
+        @Override public void restore() {
+<span class="fc" id="L28">            Copy.this.v = v;</span>
+<span class="fc" id="L29">        }</span>
+    }
+
+    private T v;
+
+<span class="fc" id="L34">    protected Copy(T initial) {</span>
+<span class="fc" id="L35">        v = initial;</span>
+<span class="fc" id="L36">    }</span>
+
+    @Override
+    public T setValue(T v) {
+<span class="fc" id="L40">        this.v = v;</span>
+<span class="fc" id="L41">        return v;</span>
+    }
+
+    @Override
+    public T value() {
+<span class="fc" id="L46">        return v;</span>
+    }
+
+
+    @Override
+    public String toString() {
+<span class="nc" id="L52">        return String.valueOf(v);</span>
+    }
+
+    @Override
+    public StateEntry save() {
+<span class="fc" id="L57">        return new CopyStateEntry(v);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

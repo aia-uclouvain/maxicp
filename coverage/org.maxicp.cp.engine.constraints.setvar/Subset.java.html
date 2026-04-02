@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Subset.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.setvar</a> &gt; <span class="el_source">Subset.java</span></div><h1>Subset.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.setvar;
+
+import org.maxicp.cp.engine.constraints.LessOrEqual;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPSetVar;
+
+/**
+ * Constraint that enforces that one set variable is a subset of another set variable.
+ */
+public class Subset extends AbstractCPConstraint {
+
+    private CPSetVar set1;
+    private CPSetVar set2;
+    private int[] values;
+
+    /**
+     * Creates a constraint that enforces that set1 is a subset of set2.
+     * @param set1 the first set variable
+     * @param set2 the second set variable
+     */
+    public Subset(CPSetVar set1, CPSetVar set2) {
+<span class="fc" id="L22">        super(set1.getSolver());</span>
+<span class="fc" id="L23">        this.set1 = set1;</span>
+<span class="fc" id="L24">        this.set2 = set2;</span>
+<span class="fc" id="L25">        values = new int[Math.max(set1.size(), set2.size())];</span>
+<span class="fc" id="L26">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L30">        set1.propagateOnDomainChange(this);</span>
+<span class="fc" id="L31">        set2.propagateOnDomainChange(this);</span>
+<span class="fc" id="L32">        this.getSolver().post(new LessOrEqual(set1.card(), set2.card()));</span>
+<span class="fc" id="L33">        propagate();</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public void propagate() {
+        // remove from set1 all values that are not in set2
+<span class="fc" id="L39">        int nExcluded = set2.fillExcluded(values);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i = 0; i &lt; nExcluded; i++) {</span>
+<span class="fc" id="L41">            set1.exclude(values[i]);</span>
+        }
+        // include all values of set1 in set2
+<span class="fc" id="L44">        int nIncluded = set1.fillIncluded(values);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int i = 0; i &lt; nIncluded; i++) {</span>
+<span class="fc" id="L46">            set2.include(values[i]);</span>
+        }
+<span class="fc bfc" id="L48" title="All 4 branches covered.">        if(set1.isFixed() || set2.isFixed()) {</span>
+<span class="fc" id="L49">            setActive(false);</span>
+        }
+
+<span class="fc" id="L52">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

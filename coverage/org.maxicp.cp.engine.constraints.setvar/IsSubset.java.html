@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsSubset.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.setvar</a> &gt; <span class="el_source">IsSubset.java</span></div><h1>IsSubset.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.setvar;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.IsLessOrEqual;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPConstraint;
+import org.maxicp.cp.engine.core.CPSetVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+/**
+ * Constraint that enforces a boolean variable is
+ * true if one set is a subset of another set.
+ */
+public class IsSubset extends AbstractCPConstraint {
+
+    private CPSetVar set1;
+    private CPSetVar set2;
+    private CPBoolVar b;
+    private int[] values; // array to iterate
+    private CPConstraint subsetConstraint;
+    private CPConstraint notSubsetConstraint;
+
+    /**
+     * Creates a constraint that enforces the boolean variable b to be true
+     * if and only set1 is a subset (not necessarily strict) of set2 .
+     *
+     * @param b    the boolean variable
+     * @param set1 the first set than can be included in the second set
+     * @param set2 the second set
+     */
+    public IsSubset(CPBoolVar b, CPSetVar set1, CPSetVar set2) {
+<span class="fc" id="L38">        super(b.getSolver());</span>
+<span class="fc" id="L39">        this.set1 = set1;</span>
+<span class="fc" id="L40">        this.set2 = set2;</span>
+<span class="fc" id="L41">        this.b = b;</span>
+<span class="fc" id="L42">        values = new int[Math.max(set1.size(), set2.size())];</span>
+<span class="fc" id="L43">        subsetConstraint = new Subset(set1, set2);</span>
+<span class="fc" id="L44">        notSubsetConstraint = new NotSubset(set1, set2);</span>
+
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L50">        set1.propagateOnDomainChange(this);</span>
+<span class="fc" id="L51">        set2.propagateOnDomainChange(this);</span>
+<span class="fc" id="L52">        set1.card().propagateOnBoundChange(this);</span>
+<span class="fc" id="L53">        set2.card().propagateOnBoundChange(this);</span>
+<span class="fc" id="L54">        b.propagateOnFix(this);</span>
+<span class="fc" id="L55">        propagate();</span>
+<span class="fc" id="L56">    }</span>
+
+
+    /**
+     * Detect if set1 is not a subset of set2 by
+     * comparing the cardinalities of the two sets.
+     * checking if at least one included value of set1 is excluded in set2
+     *
+     * @return true if set1 is not a subset of set2
+     */
+    private boolean detectNotSubset() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (set1.card().min() &gt; set2.card().max()) {</span>
+<span class="fc" id="L68">            return true;</span>
+        }
+
+<span class="fc" id="L71">        int nIncluded = set1.fillIncluded(values);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (int j = 0; j &lt; nIncluded; j++) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (set2.isExcluded(values[j])) {</span>
+<span class="fc" id="L74">                return true;</span>
+            }
+        }
+<span class="fc" id="L77">        return false;</span>
+
+    }
+
+    /**
+     * Detect if set1 is a subset of set2 by
+     * comparing the cardinalities of the two sets.
+     * comparing the number of included and possible values of set1 and set2
+     * and checking if all included or possible values of set1 are included in set2
+     *
+     * @return true if set1 is a subset of set2
+     */
+    private boolean detectSubset() {
+<span class="fc bfc" id="L90" title="All 4 branches covered.">        if (set1.card().min() &gt; set2.card().max() || set1.nPossible() + set1.nIncluded() &gt; set2.nIncluded()) {</span>
+<span class="fc" id="L91">            return false;</span>
+        }
+<span class="fc" id="L93">        int nIncluded = set1.fillIncluded(values);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int j = 0; j &lt; nIncluded; j++) {</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            if (!set2.isIncluded(values[j])) {</span>
+<span class="fc" id="L96">                return false;</span>
+            }
+        }
+<span class="fc" id="L99">        int nPossible = set1.fillPossible(values);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (int j = 0; j &lt; nPossible; j++) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (!set2.isIncluded(values[j])) {</span>
+<span class="fc" id="L102">                return false;</span>
+            }
+        }
+<span class="fc" id="L105">        return true;</span>
+    }
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (detectNotSubset()) {</span>
+<span class="fc" id="L111">            b.fix(false);</span>
+        }
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (detectSubset()) {</span>
+<span class="fc" id="L114">            b.fix(true);</span>
+        }
+
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (b.isTrue()) {</span>
+<span class="fc" id="L118">            setActive(false);</span>
+<span class="fc" id="L119">            getSolver().post(subsetConstraint, false);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        } else if (b.isFalse()) {</span>
+<span class="fc" id="L121">            setActive(false);</span>
+<span class="fc" id="L122">            getSolver().post(notSubsetConstraint, false);</span>
+        }
+<span class="fc" id="L124">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

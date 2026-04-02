@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsEndBefore.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">IsEndBefore.java</span></div><h1>IsEndBefore.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.*;
+
+public class IsEndBefore extends AbstractCPConstraint {
+
+    private final CPIntervalVar intervalVar;
+    private final CPIntVar end;
+    private final CPBoolVar boolVar;
+
+    private final CPConstraint endBefore;
+    private final CPConstraint endAfter;
+
+    public IsEndBefore(CPBoolVar boolVar, CPIntervalVar intervalVar, CPIntVar var) {
+<span class="fc" id="L16">        super(intervalVar.getSolver());</span>
+<span class="fc" id="L17">        this.boolVar = boolVar;</span>
+<span class="fc" id="L18">        this.intervalVar = intervalVar;</span>
+<span class="fc" id="L19">        this.end = var;</span>
+<span class="fc" id="L20">        endBefore = new EndBefore(intervalVar, end);</span>
+<span class="fc" id="L21">        endAfter = new EndAfter(intervalVar, CPFactory.plus(end, 1));</span>
+<span class="fc" id="L22">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L26">        intervalVar.propagateOnChange(this);</span>
+<span class="fc" id="L27">        end.propagateOnBoundChange(this);</span>
+<span class="fc" id="L28">        boolVar.propagateOnFix(this);</span>
+<span class="fc" id="L29">        propagate();</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (intervalVar.isAbsent()) {</span>
+<span class="nc" id="L35">            setActive(false);</span>
+        } else {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">            if (boolVar.isFixed()) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">                if (boolVar.isTrue()) {</span>
+<span class="fc" id="L39">                    getSolver().post(endBefore, false);</span>
+                } else {
+<span class="fc" id="L41">                    getSolver().post(endAfter, false);</span>
+                }
+<span class="fc" id="L43">                setActive(false);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            } else if (intervalVar.isPresent()) {</span>
+                // only case for setting the boolean variable:
+                // changing it with absent interval has no meaning
+<span class="fc bfc" id="L47" title="All 2 branches covered.">                if (intervalVar.endMax() &lt;= end.min()) {</span>
+<span class="fc" id="L48">                    boolVar.fix(true);</span>
+<span class="fc" id="L49">                    setActive(false);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                } else if (intervalVar.endMin() &gt; end.max()) {</span>
+<span class="fc" id="L51">                    boolVar.fix(false);</span>
+<span class="fc" id="L52">                    setActive(false);</span>
+                }
+            }
+        }
+<span class="fc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

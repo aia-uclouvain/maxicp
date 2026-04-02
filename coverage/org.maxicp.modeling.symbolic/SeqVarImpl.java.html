@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SeqVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.symbolic</a> &gt; <span class="el_source">SeqVarImpl.java</span></div><h1>SeqVarImpl.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.symbolic;
+
+
+import org.maxicp.modeling.BoolVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+
+import java.util.Set;
+
+public class SeqVarImpl implements SymbolicSeqVar {
+
+    private final ModelProxy modelProxy;
+    private final int start;
+    private final int end;
+    private final int nNode;
+
+<span class="nc" id="L17">    public SeqVarImpl(ModelProxy modelProxy, int nNode, int start, int end) {</span>
+<span class="nc" id="L18">        this.modelProxy = modelProxy;</span>
+<span class="nc" id="L19">        this.nNode = nNode;</span>
+<span class="nc" id="L20">        this.start = start;</span>
+<span class="nc" id="L21">        this.end = end;</span>
+<span class="nc" id="L22">    }</span>
+
+    /**
+     * Fill an array with values between 0 and nNode, except for values marked as forbidden
+     *
+     * A lot of operations fill all nodes from 0 between n except a few ones.
+     * This method is suited for those operations directly
+     * @param dest array where values must be written
+     * @param forbidden values that cannot be written in the array
+     * @return number of values written in the array
+     */
+    private int fillAllNodesExcept(int[] dest, Set&lt;Integer&gt; forbidden) {
+<span class="nc" id="L34">        int cnt = 0;</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">        for (int node = 0 ; node &lt; nNode ; node++) {</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">            if (!forbidden.contains(node)) {</span>
+<span class="nc" id="L37">                dest[cnt++] = node;</span>
+            }
+        }
+<span class="nc" id="L40">        return cnt;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L45">        return modelProxy;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (getModelProxy().isConcrete()) {</span>
+<span class="nc" id="L51">            return getModelProxy().getConcreteModel().getConcreteVar(this).toString();</span>
+        }
+<span class="nc" id="L53">        return String.format(&quot;%d -&gt; %d&quot;, start, end);</span>
+    }
+
+    @Override
+    public int defaultStart() {
+<span class="nc" id="L58">        return start;</span>
+    }
+
+    @Override
+    public int defaultEnd() {
+<span class="nc" id="L63">        return end;</span>
+    }
+
+    @Override
+    public int defaultNNode() {
+<span class="nc" id="L68">        return nNode;</span>
+    }
+
+    @Override
+    public int defaultFillNode(int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L73" title="All 4 branches missed.">        return switch (status) {</span>
+            case REQUIRED, MEMBER, MEMBER_ORDERED -&gt; {
+<span class="nc" id="L75">                dest[0] = start;</span>
+<span class="nc" id="L76">                dest[1] = end;</span>
+<span class="nc" id="L77">                yield 2;</span>
+            }
+<span class="nc" id="L79">            case POSSIBLE, INSERTABLE -&gt; fillAllNodesExcept(dest, Set.of(start, end));</span>
+<span class="nc" id="L80">            case EXCLUDED, INSERTABLE_REQUIRED -&gt; 0;</span>
+<span class="nc" id="L81">            case NOT_EXCLUDED -&gt; fillAllNodesExcept(dest, Set.of());</span>
+        };
+    }
+
+    @Override
+    public int defaultNNode(SeqStatus status) {
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        return switch (status) {</span>
+<span class="nc" id="L88">            case REQUIRED, MEMBER, MEMBER_ORDERED -&gt; 2;</span>
+<span class="nc" id="L89">            case POSSIBLE, INSERTABLE -&gt; nNode - 2;</span>
+<span class="nc" id="L90">            case EXCLUDED, INSERTABLE_REQUIRED -&gt; 0;</span>
+<span class="nc" id="L91">            case NOT_EXCLUDED -&gt; nNode;</span>
+        };
+    }
+
+    @Override
+    public boolean defaultIsNode(int node, SeqStatus status) {
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        return switch (status) {</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">            case REQUIRED, MEMBER, MEMBER_ORDERED -&gt; node == start || node == end;</span>
+<span class="nc bnc" id="L99" title="All 8 branches missed.">            case POSSIBLE, INSERTABLE -&gt; node &gt;= 0 &amp;&amp; node &lt; nNode &amp;&amp; node != start &amp;&amp; node != end;</span>
+<span class="nc" id="L100">            case EXCLUDED, INSERTABLE_REQUIRED -&gt; false;</span>
+<span class="nc bnc" id="L101" title="All 4 branches missed.">            case NOT_EXCLUDED -&gt; node &gt;= 0 &amp;&amp; node &lt; nNode;</span>
+        };
+    }
+
+    @Override
+    public int defaultMemberAfter(int node) {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (node == start)</span>
+<span class="nc" id="L108">            return end;</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (node == end)</span>
+<span class="nc" id="L110">            return start;</span>
+<span class="nc" id="L111">        return node;</span>
+    }
+
+    @Override
+    public int defaultMemberBefore(int node) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (node == start)</span>
+<span class="nc" id="L117">            return end;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (node == end)</span>
+<span class="nc" id="L119">            return start;</span>
+<span class="nc" id="L120">        return node;</span>
+    }
+
+    @Override
+    public int defaultFillPred(int node, int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (node == start)</span>
+<span class="nc" id="L126">            return 0;</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">        return switch (status) {</span>
+            case REQUIRED, MEMBER, MEMBER_ORDERED -&gt; {
+<span class="nc" id="L129">                dest[0] = start;</span>
+<span class="nc" id="L130">                yield 1;</span>
+            }
+<span class="nc" id="L132">            case POSSIBLE, INSERTABLE -&gt; fillAllNodesExcept(dest, Set.of(start, node, end));</span>
+<span class="nc" id="L133">            case EXCLUDED, INSERTABLE_REQUIRED -&gt; 0;</span>
+<span class="nc" id="L134">            case NOT_EXCLUDED -&gt; fillAllNodesExcept(dest, Set.of(node, end));</span>
+        };
+    }
+
+    @Override
+    public int defaultNPred(int node) {
+<span class="nc bnc" id="L140" title="All 6 branches missed.">        if (node == start || node &lt; 0 || node &gt;= nNode)</span>
+<span class="nc" id="L141">            return 0;</span>
+<span class="nc" id="L142">        return nNode - 2;</span>
+    }
+
+    @Override
+    public int defaultFillSucc(int node, int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (node == end)</span>
+<span class="nc" id="L148">            return 0;</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">        return switch (status) {</span>
+            case REQUIRED, MEMBER, MEMBER_ORDERED -&gt; {
+<span class="nc" id="L151">                dest[0] = end;</span>
+<span class="nc" id="L152">                yield 1;</span>
+            }
+<span class="nc" id="L154">            case POSSIBLE, INSERTABLE -&gt; fillAllNodesExcept(dest, Set.of(start, node, end));</span>
+<span class="nc" id="L155">            case EXCLUDED, INSERTABLE_REQUIRED -&gt; 0;</span>
+<span class="nc" id="L156">            case NOT_EXCLUDED -&gt; fillAllNodesExcept(dest, Set.of(node, start));</span>
+        };
+    }
+
+    @Override
+    public int defaultNSucc(int node) {
+<span class="nc bnc" id="L162" title="All 6 branches missed.">        if (node == end || node &lt; 0 || node &gt;= nNode)</span>
+<span class="nc" id="L163">            return 0;</span>
+<span class="nc" id="L164">        return nNode - 2;</span>
+    }
+
+    @Override
+    public int defaultFillInsert(int node, int[] dest) {
+<span class="nc bnc" id="L169" title="All 8 branches missed.">        if (node &lt; 0 || node &gt;= nNode || node == start || node == end)</span>
+<span class="nc" id="L170">            return 0;</span>
+<span class="nc" id="L171">        dest[0] = start;</span>
+<span class="nc" id="L172">        return 1;</span>
+    }
+
+    @Override
+    public int defaultNInsert(int node) {
+<span class="nc bnc" id="L177" title="All 8 branches missed.">        if (node &lt; 0 || node &gt;= nNode || node == start || node == end)</span>
+<span class="nc" id="L178">            return 0;</span>
+<span class="nc" id="L179">        return 1;</span>
+    }
+
+    @Override
+    public boolean defaultHasEdge(int from, int to) {
+<span class="nc bnc" id="L184" title="All 8 branches missed.">        if (to == start || to &lt; 0 || to &gt;= nNode || to == from)</span>
+<span class="nc" id="L185">            return false;</span>
+<span class="nc bnc" id="L186" title="All 6 branches missed.">        if (from == end || from &lt; 0 || from &gt;= nNode)</span>
+<span class="nc" id="L187">            return false;</span>
+<span class="nc" id="L188">        return true;</span>
+    }
+
+    @Override
+    public boolean defaultHasInsert(int prev, int node) {
+<span class="nc bnc" id="L193" title="All 4 branches missed.">        return prev == start &amp;&amp; isNode(node, SeqStatus.INSERTABLE);</span>
+    }
+
+    @Override
+    public BoolVar isNodeRequired(int node) {
+<span class="nc" id="L198">        return new IsNodeRequired(this, node);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

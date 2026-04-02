@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EqHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.utils</a> &gt; <span class="el_source">EqHelper.java</span></div><h1>EqHelper.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.utils;
+
+import org.maxicp.modeling.Constraint;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.modeling.algebra.integer.Constant;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.constraints.ExpressionIsTrue;
+import org.maxicp.modeling.symbolic.SymbolicIntVar;
+import org.maxicp.util.HashMultimap;
+
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+/**
+ * EqHelper preprocesses Symbolic Models and build the &quot;Equality Graph&quot; of all the {@link IntExpression}
+ * that should be equal. The graph is composed of connected components, each of them
+ * representing a set of equal expressions. EqHelper chooses one of them as a representative for
+ * each connected component.
+ *
+ * The output is a list of {@link Constraint}, that should be managed *first*. The list is composed
+ * of these types of constraints:
+ * - {@link EqInstantiateAndCache} constraint that contains a representative for each connected component.
+ * - {@link EqInstantiateAndReuse} constraint that contains an Expression and its representative.
+ *
+ * The order in which they are returned *is important* (it avoids unresolved dependencies).
+ *
+ * If the {@link EqInstantiateAndCache}/{@link EqInstantiateAndReuse} are processed first, 
+ * the instantiation process can then safely ignore the {@code ExpressionIsTrue(Eq(...))} constraints 
+ * and should never need to post any {@link Eq} constraint directly.
+ */
+<span class="nc" id="L39">public class EqHelper {</span>
+<span class="fc" id="L40">    public record EqSimplified(List&lt;EqInstantiate&gt; newConstraints, LinkedHashSet&lt;Constraint&gt; oldConstraints) {};</span>
+
+    public interface EqInstantiate extends Constraint {}
+<span class="fc" id="L43">    public record EqInstantiateAndCache(IntExpression expr) implements EqInstantiate {</span>
+        @Override
+        public Collection&lt;? extends Expression&gt; scope() {
+<span class="nc" id="L46">            return List.of(expr);</span>
+        }
+    }
+<span class="fc" id="L49">    public record EqInstantiateAndReuse(IntExpression expr, IntExpression repr) implements EqInstantiate {</span>
+        @Override
+        public Collection&lt;? extends Expression&gt; scope() {
+<span class="nc" id="L52">            return List.of(expr, repr);</span>
+        }
+    }
+
+    public static EqSimplified preprocess(Iterable&lt;Constraint&gt; constraints) {
+<span class="nc" id="L57">        return preprocess(constraints, (x) -&gt; x);</span>
+    }
+
+    public static EqSimplified preprocess(Iterable&lt;Constraint&gt; constraints, Function&lt;IntExpression, IntExpression&gt; viewOf) {
+<span class="fc" id="L61">        LinkedList&lt;EqInstantiate&gt; output = new LinkedList&lt;&gt;();</span>
+
+        //Find all the Equalities
+<span class="fc" id="L64">        LinkedHashSet&lt;Constraint&gt; oldConstraints = StreamSupport.stream(constraints.spliterator(), false)</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">                .filter(x -&gt; (x instanceof ExpressionIsTrue) &amp;&amp; ((ExpressionIsTrue) x).expr() instanceof Eq)</span>
+<span class="fc" id="L66">                .collect(Collectors.toCollection(LinkedHashSet::new));</span>
+<span class="fc" id="L67">        Eq[] equalities = oldConstraints.stream().map(x -&gt; (Eq) ((ExpressionIsTrue) x).expr()).toArray(Eq[]::new);</span>
+
+
+<span class="fc" id="L70">        UnionFind&lt;IntExpression&gt; uf = new UnionFind&lt;&gt;();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for(Eq eq: equalities)</span>
+<span class="fc" id="L72">            uf.union(eq.a(), eq.b());</span>
+<span class="fc" id="L73">        LinkedHashSet&lt;IntExpression&gt; allExpressions = new LinkedHashSet&lt;&gt;(uf.representative.keySet());</span>
+
+        //For all expressions, find possible &quot;other representative&quot; that are equivalent
+        //for example, in CP, the var for -x is a view of x, so an instantiated x can be a representative
+        //for a set containing -x.
+<span class="fc" id="L78">        LinkedHashMap&lt;IntExpression, IntExpression&gt; trueRepr = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L79">        HashMultimap&lt;IntExpression, IntExpression&gt; trueReprReversed = new HashMultimap&lt;&gt;();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for(IntExpression expr: allExpressions) {</span>
+<span class="fc" id="L81">            IntExpression trueR = viewOf.apply(expr);</span>
+<span class="fc" id="L82">            trueRepr.put(expr, trueR);</span>
+<span class="fc" id="L83">            trueReprReversed.put(trueR, expr);</span>
+<span class="fc" id="L84">        }</span>
+<span class="fc" id="L85">        allExpressions.addAll(trueReprReversed.keySet());</span>
+
+
+
+        //Each connected component has a representative, that we call a UF representative.
+        //We will now elect, for each connected component, another representative (the Var representative)
+        //that will be the expression to be instantiated first and reused.
+        //
+        //In order to avoid cases with dependencies like x==Sum(x, y), where choosing Sum(x,y) as representive
+        //would instantiate x and force us to post an Equal constraint, we toposort the expression and select
+        //the first expression in each connected component that has no (remaining) dependencies.
+        //
+        //If multiple representative are equivalent in the toposort, we select the one with the smaller domain
+<span class="fc" id="L98">        List&lt;List&lt;IntExpression&gt;&gt; topoSort = ExpressionsTopoSort.toposort(allExpressions, viewOf);</span>
+        //We will process each list one after the other. Let's first sort them by domain size.
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for(List&lt;IntExpression&gt; layer: topoSort)</span>
+<span class="fc" id="L101">            layer.sort(domainSizeComparator);</span>
+
+        //hashMap containing the UF representative of each connected
+        //component who already has a Var representative
+<span class="fc" id="L105">        LinkedHashMap&lt;IntExpression, IntExpression&gt; doneCC = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L106">        HashMultimap&lt;IntExpression, IntExpression&gt; waiting = new HashMultimap&lt;&gt;();</span>
+
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        for(List&lt;IntExpression&gt; layer: topoSort) {</span>
+            //Add the Expressions from the layer in the waiting list
+            //... at least, if they have no representant yet
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            for(IntExpression expr: layer) {</span>
+<span class="fc" id="L112">                IntExpression ufRepr = uf.find(expr);</span>
+<span class="fc" id="L113">                IntExpression repr = doneCC.get(ufRepr);</span>
+<span class="pc bpc" id="L114" title="3 of 4 branches missed.">                if(repr != null &amp;&amp; !repr.equals(expr)) {</span>
+<span class="nc" id="L115">                    output.addLast(new EqInstantiateAndReuse(expr, doneCC.get(ufRepr)));</span>
+<span class="nc" id="L116">                    addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, expr);</span>
+                }
+                else {
+<span class="fc" id="L119">                    waiting.put(ufRepr, expr);</span>
+                }
+<span class="fc" id="L121">            }</span>
+
+            //Now we want to find new representatives and instantiate as many things as we can
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            for(IntExpression expr: layer) {</span>
+<span class="fc" id="L125">                IntExpression ufRepr = uf.find(expr);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                if(doneCC.containsKey(ufRepr))</span>
+<span class="fc" id="L127">                    continue;</span>
+
+<span class="fc" id="L129">                doneCC.put(ufRepr, expr);</span>
+<span class="fc" id="L130">                output.addLast(new EqInstantiateAndCache(expr));</span>
+<span class="fc" id="L131">                addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, expr);</span>
+
+<span class="fc" id="L133">                waiting.remove(ufRepr, expr);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                for(IntExpression w: waiting.get(ufRepr)) {</span>
+<span class="fc" id="L135">                    output.addLast(new EqInstantiateAndReuse(w, expr));</span>
+<span class="fc" id="L136">                    addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, w);</span>
+<span class="fc" id="L137">                }</span>
+<span class="fc" id="L138">                waiting.removeAll(ufRepr);</span>
+<span class="fc" id="L139">            }</span>
+<span class="fc" id="L140">        }</span>
+
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        assert waiting.isEmpty();</span>
+
+<span class="fc" id="L144">        return new EqSimplified(output, oldConstraints);</span>
+    }
+
+    private static void addTrueRepr(LinkedHashMap&lt;IntExpression, IntExpression&gt; trueRepr,
+                                    HashMultimap&lt;IntExpression, IntExpression&gt; trueReprReversed,
+                                    LinkedHashMap&lt;IntExpression, IntExpression&gt; doneCC,
+                                    UnionFind&lt;IntExpression&gt; uf,
+                                    HashMultimap&lt;IntExpression, IntExpression&gt; waiting,
+                                    LinkedList&lt;EqInstantiate&gt; output,
+                                    IntExpression origExpr) {
+<span class="fc" id="L154">        IntExpression repr = trueRepr.getOrDefault(origExpr, origExpr);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for(IntExpression other: trueReprReversed.get(repr)) {</span>
+<span class="fc" id="L156">            IntExpression otherUfRepr = uf.find(other);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if(!doneCC.containsKey(otherUfRepr)) {</span>
+<span class="nc" id="L158">                doneCC.put(otherUfRepr, other);</span>
+<span class="nc" id="L159">                output.addLast(new EqInstantiateAndCache(other));</span>
+
+<span class="nc" id="L161">                waiting.remove(otherUfRepr, other);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                for(IntExpression w: waiting.get(otherUfRepr)) {</span>
+<span class="nc" id="L163">                    output.addLast(new EqInstantiateAndReuse(w, other));</span>
+<span class="nc" id="L164">                    addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, w);</span>
+<span class="nc" id="L165">                }</span>
+<span class="nc" id="L166">                waiting.removeAll(otherUfRepr);</span>
+            }
+<span class="fc" id="L168">        }</span>
+<span class="fc" id="L169">    }</span>
+
+<span class="fc" id="L171">    private static final Comparator&lt;IntExpression&gt; domainSizeComparator = new Comparator&lt;IntExpression&gt;() {</span>
+        @Override
+        public int compare(IntExpression o1, IntExpression o2) {
+<span class="fc" id="L174">            int a = getSize(o1);</span>
+<span class="fc" id="L175">            int b = getSize(o2);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            if(a == b)</span>
+<span class="fc" id="L177">                return 0;</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            if(a == Integer.MAX_VALUE)</span>
+<span class="nc" id="L179">                return Integer.MAX_VALUE;</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">            if(b == Integer.MAX_VALUE)</span>
+<span class="nc" id="L181">                return Integer.MIN_VALUE;</span>
+<span class="fc" id="L182">            return a-b;</span>
+        }
+
+        private int getSize(IntExpression o) {
+            //This is a heuristic. We want to prioritize selecting Constant as representatives,
+            //so we put their &quot;size&quot; at 0 rather than 1.
+<span class="pc bpc" id="L188" title="1 of 3 branches missed.">            return switch (o) {</span>
+<span class="fc" id="L189">                case Constant c -&gt; 0;</span>
+<span class="nc" id="L190">                case SymbolicIntVar iv -&gt; iv.defaultSize();</span>
+<span class="fc" id="L191">                default -&gt; Integer.MAX_VALUE - 10;</span>
+            };
+        }
+    };
+
+    /**
+     * A very simple UnionFind implementation based on HashMap (so we can discover new nodes &quot;on the fly&quot;)
+     * It implements path-compression but merges randomly (it does not attempt to minimize the size of the resulting tree).
+     * @param &lt;T&gt;
+     */
+    private static class UnionFind&lt;T&gt; {
+        public LinkedHashMap&lt;T, T&gt; representative;
+<span class="fc" id="L203">        public UnionFind() {</span>
+<span class="fc" id="L204">            representative = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L205">        }</span>
+
+        public void union(T a, T b) {
+<span class="fc" id="L208">            a = find(a);</span>
+<span class="fc" id="L209">            b = find(b);</span>
+<span class="pc bpc" id="L210" title="1 of 2 branches missed.">            if(a.equals(b))</span>
+<span class="nc" id="L211">                return;</span>
+<span class="fc" id="L212">            representative.put(a, b);</span>
+<span class="fc" id="L213">        }</span>
+
+        public T find(T elem) {
+<span class="fc" id="L216">            T repr = representative.get(elem);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">            if(repr == null) {</span>
+<span class="fc" id="L218">                representative.put(elem, elem);</span>
+<span class="fc" id="L219">                return elem;</span>
+            }
+<span class="fc bfc" id="L221" title="All 2 branches covered.">            if(repr.equals(elem))</span>
+<span class="fc" id="L222">                return elem;</span>
+
+<span class="fc" id="L224">            T repr2 = find(repr);</span>
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">            if(!repr2.equals(repr))</span>
+<span class="nc" id="L226">                representative.put(elem, repr2);</span>
+<span class="fc" id="L227">            return repr2;</span>
+        }
+
+        public LinkedHashSet&lt;T&gt;[] sets() {
+<span class="nc" id="L231">            HashMultimap&lt;T, T&gt; map = new HashMultimap&lt;&gt;();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">            for(T expr: representative.keySet())</span>
+<span class="nc" id="L233">                map.put(find(expr), expr);</span>
+<span class="nc" id="L234">            return map.keySet().stream().map(x -&gt; map.get(x)).toArray(LinkedHashSet[]::new);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

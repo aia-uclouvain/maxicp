@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BinaryKnapsack.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">BinaryKnapsack.java</span></div><h1>BinaryKnapsack.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.State;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.Comparator;
+
+/**
+ * A Binary Knapsack constraint ensures that the total load
+ * is equal to the sum of the weights of the selected items.
+ *
+ * &lt;p&gt;This constraint models
+ *  &lt;pre&gt;
+ *       load = sum_i (b[i] * weights[i])
+ *  &lt;/pre&gt;
+ * where:
+ * &lt;ul&gt;
+ *     &lt;li&gt;{@code b[i]} is a binary decision variable indicating whether item {@code i} is selected (1) or not (0).&lt;/li&gt;
+ *     &lt;li&gt;{@code weights[i]} represents the weight of item {@code i}.&lt;/li&gt;
+ *     &lt;li&gt;{@code load} is an integer variable representing the total weight of selected items.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @author pschaus
+ */
+<span class="fc" id="L38">public class BinaryKnapsack extends AbstractCPConstraint {</span>
+
+    CPBoolVar[] x;
+    int [] w;
+    CPIntVar c;
+
+    State&lt;Boolean&gt;[]  candidate; //index of unfixed items(we don't know if they are packed)
+    StateInt rcap;      //required cap: sum of weight of required items with x=1 (packed for sure in the knapsack)
+    StateInt   pcap;      //possible cap: sum of weight of possible items (candidate + the ones already packed)
+    StateInt   nb;        //number of possible items
+
+    StateSparseSet notFixed; //index of items that are not fixed
+    int [] notFixedArray;
+
+    int alpha_;
+    int beta_;
+    int [] X;
+<span class="fc" id="L55">    int n = -1; //number of element in the knapsack</span>
+
+    public BinaryKnapsack(CPBoolVar [] b, final int [] weights, CPIntVar load, int n) {
+<span class="nc" id="L58">        this(b,weights,load);</span>
+<span class="nc" id="L59">        this.n = n;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        assert (n &gt; 0);</span>
+<span class="nc" id="L61">    }</span>
+
+    public BinaryKnapsack(CPBoolVar [] b, final int [] weights, int load, int n) {
+<span class="nc" id="L64">        this(b,weights,load);</span>
+<span class="nc" id="L65">        this.n = n;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        assert (n &gt; 0);</span>
+<span class="nc" id="L67">    }</span>
+
+    /**
+     * A Binary Knapsack constraint ensures that the total load
+     * is equal to the sum of the weights of the selected items.
+     *
+     * @param b an array of {@link CPBoolVar} variables where {@code b[i]} is 1 if the item is selected, otherwise 0.
+     * @param weights an array of non-negative integers representing the weights of the items. Must have the same length as {@code b}.
+     * @param load a {@link CPIntVar} variable representing the total weight of selected items in the knapsack.
+     */
+    public BinaryKnapsack(CPBoolVar [] b, final int [] weights, CPIntVar load) {
+<span class="fc" id="L78">        super(b[0].getSolver());</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        assert(b.length == weights.length);</span>
+<span class="fc" id="L80">        Integer [] perm = new Integer [weights.length];</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; perm.length; i++) {</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            assert (weights[i] &gt;= 0);</span>
+<span class="fc" id="L83">            perm[i] = i;</span>
+        }
+
+<span class="fc" id="L86">        Arrays.sort(perm, Comparator.comparingInt(i -&gt; -weights[i])); // Sort by values</span>
+
+<span class="fc" id="L88">        w = new int[weights.length];</span>
+<span class="fc" id="L89">        x = new CPBoolVar[weights.length];</span>
+<span class="fc" id="L90">        c = load;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L92">            w[i] = weights[perm[i]];</span>
+<span class="fc" id="L93">            x[i] = b[perm[i]];</span>
+        }
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * Constraint: load is the sum of the weights of items selected in to the knapsack. &lt;br&gt;
+     * load = sum_i b[i]*weights[i] &lt;br&gt;
+     * Available propagation strength are Weak and Strong (the default)
+     * @param b
+     * @param weights a vector of non-negative integers of the same length as b
+     * @param load
+     */
+    public BinaryKnapsack(CPBoolVar [] b, final int [] weights, int load) {
+<span class="nc" id="L106">        this(b,weights, CPFactory.makeIntVar(b[0].getSolver(),load,load));</span>
+<span class="nc" id="L107">    }</span>
+
+    @Override
+    public void post() {
+
+        //getSolver().post(new LightBinaryKnapsack(x,w,c));
+
+        // post sum_i x[i]*w[i] = c (decomposition of the constraint)
+<span class="fc" id="L115">        CPIntVar[] loadExpr = new CPIntVar[x.length];</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L117">            loadExpr[i] = CPFactory.mul(x[i], w[i]);</span>
+        }
+<span class="fc" id="L119">        getSolver().post(new Sum(loadExpr, c));</span>
+
+
+<span class="fc" id="L122">        candidate = new State[x.length];</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        for (int i = 0; i &lt; candidate.length; i++) {</span>
+<span class="fc" id="L124">            candidate[i] = getSolver().getStateManager().makeStateRef(true);</span>
+        }
+<span class="fc" id="L126">        int S = Arrays.stream(w).sum();</span>
+<span class="fc" id="L127">        rcap = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L128">        pcap = getSolver().getStateManager().makeStateInt(S);</span>
+<span class="fc" id="L129">        nb = getSolver().getStateManager().makeStateInt(x.length);</span>
+
+<span class="fc" id="L131">        notFixed = new StateSparseSet(getSolver().getStateManager(), x.length,0);</span>
+<span class="fc" id="L132">        notFixedArray = new int[x.length];</span>
+
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (!x[i].isFixed()) {</span>
+<span class="fc" id="L136">                x[i].propagateOnDomainChange(this); // propagate</span>
+            }
+        }
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (!c.isFixed()) c.propagateOnBoundChange(this);</span>
+
+<span class="fc" id="L141">        alpha_ = 0;</span>
+<span class="fc" id="L142">        beta_ = 0;</span>
+<span class="fc" id="L143">        X = new int[x.length];</span>
+
+<span class="fc" id="L145">        propagate();</span>
+<span class="fc" id="L146">    }</span>
+
+
+    private void bind(int i) {
+<span class="fc" id="L150">        int wi = w[i];</span>
+<span class="fc" id="L151">        int nrcap = rcap.value() + wi;</span>
+<span class="fc" id="L152">        c.removeBelow(nrcap) ;</span>
+<span class="fc" id="L153">        rcap.setValue(nrcap);</span>
+<span class="fc" id="L154">        candidate[i].setValue(false);</span>
+<span class="fc" id="L155">        nb.decrement(); //nb--</span>
+<span class="fc" id="L156">    }</span>
+
+    private void remove(int i) {
+<span class="fc" id="L159">        pcap.setValue(pcap.value() - w[i]);</span>
+<span class="fc" id="L160">        c.removeAbove(pcap.value()); ;</span>
+<span class="fc" id="L161">        candidate[i].setValue(false);</span>
+<span class="fc" id="L162">        nb.decrement();</span>
+<span class="fc" id="L163">    }</span>
+
+
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L169">        int nUnfixed = notFixed.fillArray(notFixedArray);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        for (int i = 0; i &lt; nUnfixed; i++) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            if (x[notFixedArray[i]].isFixed()) {</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                if (x[notFixedArray[i]].isTrue()) {</span>
+<span class="fc" id="L173">                    bind(notFixedArray[i]);</span>
+                }
+                else {
+<span class="fc" id="L176">                    remove(notFixedArray[i]);</span>
+                }
+<span class="fc" id="L178">                notFixed.remove(notFixedArray[i]);</span>
+            }
+        }
+
+<span class="fc" id="L182">        this.alpha_ = 0;</span>
+<span class="fc" id="L183">        this.beta_ = 0;</span>
+<span class="fc" id="L184">        int leftover = c.max() - rcap.value();</span>
+<span class="fc" id="L185">        int slack = pcap.value() - c.min();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (candidate[k].value()) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                if (w[k] &gt; leftover) {</span>
+<span class="fc" id="L189">                    x[k].remove(1);</span>
+<span class="fc" id="L190">                    return;</span>
+                }
+<span class="fc bfc" id="L192" title="All 2 branches covered.">                if (w[k] &gt; slack) {</span>
+<span class="fc" id="L193">                    x[k].fix(1);</span>
+<span class="fc" id="L194">                    return;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L199">        boolean pruneMore = false;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        if (nb.value() &lt;= 2)</span>
+<span class="fc" id="L201">            return;</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        if (noSumPossible(c.min() - rcap.value(), c.max() - rcap.value()))</span>
+<span class="nc" id="L203">            throw InconsistencyException.INCONSISTENCY;</span>
+
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">        if (pruneMore) {</span>
+<span class="nc" id="L206">            int lastsize = -1;</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">            for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="nc bnc" id="L208" title="All 4 branches missed.">                if (candidate[k].value() &amp;&amp; w[k] != lastsize) {</span>
+<span class="nc" id="L209">                    lastsize = w[k];</span>
+<span class="nc" id="L210">                    candidate[k].setValue(false);</span>
+<span class="nc" id="L211">                    boolean toremove = noSumPossible(Math.max(c.min(), rcap.value() + w[k]) - rcap.value() - w[k], c.max() - rcap.value() - w[k]);</span>
+<span class="nc" id="L212">                    candidate[k].setValue(true);</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">                    if (toremove) {</span>
+<span class="nc" id="L214">                        x[k].remove(1);</span>
+<span class="nc" id="L215">                        return;</span>
+                    }
+                }
+            }
+<span class="nc" id="L219">            lastsize = -1;</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="nc bnc" id="L221" title="All 4 branches missed.">                if (candidate[k].value() &amp;&amp; w[k] != lastsize) {</span>
+<span class="nc" id="L222">                    lastsize = w[k];</span>
+<span class="nc" id="L223">                    candidate[k].setValue(false);</span>
+<span class="nc" id="L224">                    boolean toinsert = noSumPossible(c.min() - rcap.value(),</span>
+<span class="nc" id="L225">                            Math.min(c.max(), pcap.value() - w[k]) - rcap.value());</span>
+<span class="nc" id="L226">                    candidate[k].setValue(true);</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                    if (toinsert) {</span>
+<span class="nc" id="L228">                        x[k].fix(1);</span>
+                    }
+                }
+            }
+        }
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">        if (noSumPossible(c.min() - rcap.value(), c.min() - rcap.value())) {</span>
+<span class="nc" id="L234">            c.removeBelow(rcap.value() + beta_);</span>
+        }
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        if (noSumPossible(c.max() - rcap.value(), c.max() - rcap.value())) {</span>
+<span class="fc" id="L237">            c.removeAbove(rcap.value() + alpha_);</span>
+        }
+<span class="fc" id="L239">    }</span>
+
+
+    private boolean noSumPossible(int alpha, int beta) {
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">        assert (alpha &lt;= beta);</span>
+
+<span class="fc bfc" id="L245" title="All 4 branches covered.">        if (alpha &lt;= 0 || beta &gt;= pcap.value()) {</span>
+<span class="fc" id="L246">            return false;</span>
+        }
+
+<span class="fc" id="L249">        int Xs = 0;</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">            if (candidate[i].value()) Xs++;</span>
+        }
+
+<span class="fc" id="L254">        int sumX = 0;</span>
+<span class="fc" id="L255">        int l = 0;</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        for (int i = 0; i &lt; Xs; i++) {</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">            while (!candidate[l].value()) {</span>
+<span class="fc" id="L258">                l++;</span>
+            }
+<span class="fc" id="L260">            X[i] = w[l];</span>
+<span class="fc" id="L261">            sumX += X[i];</span>
+<span class="fc" id="L262">            l++;</span>
+        }
+
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (beta &gt;= sumX) {</span>
+<span class="fc" id="L266">            return false;</span>
+        }
+
+<span class="fc" id="L269">        int Sa = 0;</span>
+<span class="fc" id="L270">        int Sb = 0;</span>
+<span class="fc" id="L271">        int Sc = 0;</span>
+<span class="fc" id="L272">        int k = 0;</span>
+<span class="fc" id="L273">        int k_ = 0;</span>
+
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        while (Sc + X[Xs - k_ - 1] &lt; alpha) {</span>
+<span class="fc" id="L276">            Sc += X[Xs - k_ - 1];</span>
+<span class="fc" id="L277">            k_++;</span>
+        }
+<span class="fc" id="L279">        Sb = X[Xs - k_ - 1];</span>
+<span class="fc bfc" id="L280" title="All 4 branches covered.">        while (Sa &lt; alpha &amp;&amp; Sb &lt;= beta) {</span>
+<span class="fc" id="L281">            k++;</span>
+<span class="fc" id="L282">            Sa += X[k - 1];</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">            if (Sa &lt; alpha) {</span>
+<span class="fc" id="L284">                k_--;</span>
+<span class="fc" id="L285">                Sb += X[Xs - k_ - 1];</span>
+<span class="fc" id="L286">                Sc -= X[Xs - k_ - 1];</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">                while (Sa + Sc &gt;= alpha) {</span>
+<span class="fc" id="L288">                    k_--;</span>
+<span class="fc" id="L289">                    Sc -= X[Xs - k_ - 1];</span>
+<span class="fc" id="L290">                    Sb += X[Xs - k_ - 1] - X[Xs - k_ - k - 1 - 1];</span>
+                }
+            }
+        }
+<span class="fc" id="L294">        alpha_ = Sa + Sc;</span>
+<span class="fc" id="L295">        beta_ = Sb;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        return Sa &lt; alpha;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

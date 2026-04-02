@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Expression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra</a> &gt; <span class="el_source">Expression.java</span></div><h1>Expression.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra;
+
+import org.maxicp.modeling.ModelProxy;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.function.Function;
+
+/**
+ * An expression, that can be integer, boolean, or a sequence
+ */
+public interface Expression extends Serializable {
+    /**
+     * Should be implemented by all subclasses, but not used directly. Use subexpressions() instead, which is a cached version of this.
+     *
+     * Returns a collection that contains all sub-expressions of this expression.
+     * It should not be modified. In practice, it should actually be unmutable or a copy.
+     */
+    Collection&lt;? extends Expression&gt; computeSubexpressions();
+
+    /**
+     * Returns a collection that contains all sub-expressions of this expression.
+     * It should not be modified. In practice, it should actually be unmutable or a copy.
+     *
+     * Cached counterpart of computeSubexpressions().
+     */
+    default Collection&lt;? extends Expression&gt; subexpressions() {
+<span class="fc" id="L31">        return SubexpressionsCache.cache.computeIfAbsent(this, Expression::computeSubexpressions);</span>
+    }
+
+
+
+    /**
+     * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+     * This function should return a value that is of the same class as the object that was given to it.
+     */
+    Expression mapSubexpressions(Function&lt;Expression, Expression&gt; f);
+
+    /**
+     * True if the expression is fixed
+     */
+    boolean isFixed();
+
+    /**
+     * Returns the ModelDispatcher linked to this Expression
+     */
+    ModelProxy getModelProxy();
+}
+
+<span class="nc" id="L53">class SubexpressionsCache {</span>
+<span class="fc" id="L54">    static Map&lt;Expression, Collection&lt;? extends Expression&gt;&gt; cache = Collections.synchronizedMap(new WeakHashMap&lt;&gt;());</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPSetVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPSetVarImpl.java</span></div><h1>CPSetVarImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.setvar.SetCard;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.concrete.ConcreteVar;
+import org.maxicp.state.datastructures.StateStack;
+import org.maxicp.state.datastructures.StateTriPartition;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.security.InvalidParameterException;
+
+/**
+ * Implementation of a set variable.
+ * &lt;p&gt;
+ * A set variable is a variable that can take a set of values
+ * from a finite domain. The possible values are represented
+ * as a tri-partition of the domain.
+ * &lt;p&gt;
+ * The implementation uses a {@link StateTriPartition} to represent
+ * the possible values and a {@link CPIntVar} to represent the cardinality
+ * of the set.
+ */
+public class CPSetVarImpl implements CPSetVar {
+
+    private CPSolver cp;
+    private StateTriPartition domain;
+    private CPIntVar card;
+    private StateStack&lt;CPConstraint&gt; onDomain;
+
+    /**
+     * Creates a set variable with the elements {@code {0,...,n-1}}
+     * as initial possible domain.
+     *
+     * @param cp the solver in which the variable is created
+     * @param n  the number of values with {@code n &gt; 0}
+     */
+<span class="fc" id="L43">    public CPSetVarImpl(CPSolver cp, int n) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (n &lt; 1) throw new InvalidParameterException(&quot;at least one setValue in the domain&quot;);</span>
+<span class="fc" id="L45">        this.cp = cp;</span>
+<span class="fc" id="L46">        this.domain = new StateTriPartition(cp.getStateManager(), n);</span>
+<span class="fc" id="L47">        this.card = CPFactory.makeIntVar(cp, 0, n);</span>
+<span class="fc" id="L48">        this.onDomain = new StateStack&lt;&gt;(cp.getStateManager());</span>
+<span class="fc" id="L49">        cp.post(new SetCard(this, card));</span>
+<span class="fc" id="L50">    }</span>
+
+    public int size() {
+<span class="fc" id="L53">        return domain.size();</span>
+    }
+
+    /**
+     * Excludes a value from the set variable. throws an InconsistencyException if the value
+     * is already included in the set. calls the propagate method of the constraint
+     *
+     * @param v the value to exclude
+     */
+    public void exclude(int v) {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (domain.isIncluded(v)) {</span>
+<span class="fc" id="L64">            throw new InconsistencyException();</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (domain.isPossible(v)) {</span>
+<span class="fc" id="L67">            domain.exclude(v);</span>
+<span class="fc" id="L68">            scheduleAll(onDomain);</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L74">        return card.toString() + &quot; &quot; + domain.toString();</span>
+    }
+
+    public CPIntVar card() {
+<span class="fc" id="L78">        return card;</span>
+    }
+
+    /**
+     * Includes a value in the set variable. throws an InconsistencyException if the value
+     * is already excluded from the set. calls the propagate method of the constraint
+     *
+     * @param v the value to include
+     */
+    public void include(int v) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (domain.isExcluded(v)) {</span>
+<span class="fc" id="L89">            throw new InconsistencyException();</span>
+        }
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (domain.isPossible(v)) {</span>
+<span class="fc" id="L92">            domain.include(v);</span>
+<span class="fc" id="L93">            scheduleAll(onDomain);</span>
+        }
+<span class="fc" id="L95">    }</span>
+
+    /**
+     * Returns true if the set variable is fixed.
+     * A set variable is fixed if its cardinality is fixed and the number of
+     * included values is equal to the minimum of the cardinality.
+     *
+     * @return true if the set variable is fixed, false otherwise
+     */
+    public boolean isFixed() {
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">        return card.isFixed() &amp;&amp; domain.nIncluded() == card.min();</span>
+    }
+
+    protected void scheduleAll(StateStack&lt;CPConstraint&gt; constraints) {
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        for (int i = 0; i &lt; constraints.size(); i++) {</span>
+<span class="fc" id="L110">            cp.schedule(constraints.get(i));</span>
+        }
+<span class="fc" id="L112">    }</span>
+
+    public void propagateOnDomainChange(CPConstraint c) {
+<span class="fc" id="L115">        onDomain.push(c);</span>
+<span class="fc" id="L116">    }</span>
+
+    public CPSolver getSolver() {
+<span class="fc" id="L119">        return cp;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L124">        return getSolver().getModelProxy();</span>
+    }
+
+    public int nIncluded() {
+<span class="fc" id="L128">        return domain.nIncluded();</span>
+    }
+
+    public int nPossible() {
+<span class="fc" id="L132">        return domain.nPossible();</span>
+    }
+
+    public int nExcluded() {
+<span class="fc" id="L136">        return domain.nExcluded();</span>
+    }
+
+    public void includeAll() {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (domain.nPossible() &gt; 0) {</span>
+<span class="fc" id="L141">            domain.includeAllPossible();</span>
+<span class="fc" id="L142">            card.fix(domain.nIncluded());</span>
+<span class="fc" id="L143">            scheduleAll(onDomain);</span>
+        }
+<span class="fc" id="L145">    }</span>
+
+    public void excludeAll() {
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (domain.nPossible() &gt; 0) {</span>
+<span class="fc" id="L149">            domain.excludeAllPossible();</span>
+<span class="fc" id="L150">            card.fix(domain.nIncluded());</span>
+<span class="fc" id="L151">            scheduleAll(onDomain);</span>
+        }
+<span class="fc" id="L153">    }</span>
+
+    public int fillPossible(int[] dest) {
+<span class="fc" id="L156">        return domain.fillPossible(dest);</span>
+    }
+
+    public int fillIncluded(int[] dest) {
+<span class="fc" id="L160">        return domain.fillIncluded(dest);</span>
+    }
+
+    public int fillExcluded(int[] dest) {
+<span class="fc" id="L164">        return domain.fillExcluded(dest);</span>
+    }
+
+    public boolean isPossible(int v) {
+<span class="fc" id="L168">        return domain.isPossible(v);</span>
+    }
+
+    public boolean isIncluded(int v) {
+<span class="fc" id="L172">        return domain.isIncluded(v);</span>
+    }
+
+    public boolean isExcluded(int v) {
+<span class="fc" id="L176">        return domain.isExcluded(v);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

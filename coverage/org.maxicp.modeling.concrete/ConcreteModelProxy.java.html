@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConcreteModelProxy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.concrete</a> &gt; <span class="el_source">ConcreteModelProxy.java</span></div><h1>ConcreteModelProxy.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.concrete;
+
+import org.maxicp.modeling.Constraint;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.bool.BoolExpression;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.algebra.scheduling.IntervalExpression;
+import org.maxicp.modeling.algebra.sequence.SeqExpression;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+import org.maxicp.search.Objective;
+import org.maxicp.state.State;
+import org.maxicp.state.StateManager;
+
+import java.util.function.Supplier;
+
+/**
+ * A base class for some &quot;Layer models&quot; that can locally override some methods
+ * but redirect everything else to a bottom layer.
+ */
+public class ConcreteModelProxy implements ConcreteModel {
+    private final ConcreteModel model;
+
+<span class="nc" id="L23">    public ConcreteModelProxy(ConcreteModel model) {</span>
+<span class="nc" id="L24">        this.model = model;</span>
+<span class="nc" id="L25">    }</span>
+
+    @Override
+    public ConcreteIntVar getConcreteVar(IntExpression expr) {
+<span class="nc" id="L29">        return model.getConcreteVar(expr);</span>
+    }
+
+    @Override
+    public ConcreteBoolVar getConcreteVar(BoolExpression expr) {
+<span class="nc" id="L34">        return model.getConcreteVar(expr);</span>
+    }
+
+    @Override
+    public ConcreteSeqVar getConcreteVar(SeqExpression expr) {
+<span class="nc" id="L39">        return model.getConcreteVar(expr);</span>
+    }
+
+    @Override
+    public ConcreteIntervalVar getConcreteVar(IntervalExpression expr) {
+<span class="nc" id="L44">        return model.getConcreteVar(expr);</span>
+    }
+
+    @Override
+    public void add(Constraint c, boolean enforceFixPoint) {
+<span class="nc" id="L49">        model.add(c, enforceFixPoint);</span>
+<span class="nc" id="L50">    }</span>
+
+    @Override
+    public void jumpTo(SymbolicModel m, boolean enforceFixPoint) {
+<span class="nc" id="L54">        model.jumpTo(m, enforceFixPoint);</span>
+<span class="nc" id="L55">    }</span>
+
+    @Override
+    public void jumpToChild(SymbolicModel m, boolean enforceFixPoint) {
+<span class="nc" id="L59">        model.jumpToChild(m, enforceFixPoint);</span>
+<span class="nc" id="L60">    }</span>
+
+    @Override
+    public Objective createObjective(org.maxicp.modeling.symbolic.Objective obj) {
+<span class="nc" id="L64">        return model.createObjective(obj);</span>
+    }
+
+    @Override
+    public SymbolicModel symbolicCopy() {
+<span class="nc" id="L69">        return model.symbolicCopy();</span>
+    }
+
+    @Override
+    public Iterable&lt;Constraint&gt; getConstraints() {
+<span class="nc" id="L74">        return model.getConstraints();</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L79">        return model.getModelProxy();</span>
+    }
+
+    @Override
+    public StateManager getStateManager() {
+<span class="nc" id="L84">        return model.getStateManager();</span>
+    }
+
+    public static ConcreteModel noFixPoint(ConcreteModel model) {
+<span class="nc" id="L88">        return new ConcreteModelProxy(model) {</span>
+            @Override
+            public void add(Constraint c, boolean ignored) {
+<span class="nc" id="L91">                model.add(c, false);</span>
+<span class="nc" id="L92">            }</span>
+
+            @Override
+            public void jumpTo(SymbolicModel m, boolean ignored) {
+<span class="nc" id="L96">                model.jumpTo(m, false);</span>
+<span class="nc" id="L97">            }</span>
+        };
+    }
+
+    public static void noFixPoint(ModelProxy modelProxy, Runnable r) {
+<span class="nc" id="L102">        modelProxy.runWithModel(noFixPoint(modelProxy.getConcreteModel()), r);</span>
+<span class="nc" id="L103">    }</span>
+
+    public static &lt;T&gt; T noFixPoint(ModelProxy modelProxy, Supplier&lt;T&gt; r) {
+<span class="nc" id="L106">        return modelProxy.runWithModel(noFixPoint(modelProxy.getConcreteModel()), r);</span>
+    }
+
+    public static SymbolicModel symbolicExecution(ModelProxy modelProxy, Runnable r) {
+<span class="nc" id="L110">        SymbolicExecution se = new SymbolicExecution(modelProxy.getConcreteModel());</span>
+<span class="nc" id="L111">        StateManager sm = se.getStateManager();</span>
+<span class="nc" id="L112">        final int level = sm.getLevel();</span>
+<span class="nc" id="L113">        sm.saveState();</span>
+        try {
+<span class="nc" id="L115">            modelProxy.runWithModel(se, r);</span>
+<span class="nc" id="L116">            return se.symbolicCopy();</span>
+        }
+        finally {
+<span class="nc" id="L119">            sm.restoreStateUntil(level);</span>
+        }
+    }
+
+    private static class SymbolicExecution extends ConcreteModelProxy {
+        private final State&lt;SymbolicModel&gt; trueModel;
+        public SymbolicExecution(ConcreteModel model) {
+<span class="nc" id="L126">            super(model);</span>
+<span class="nc" id="L127">            trueModel = model.getStateManager().makeStateRef(model.symbolicCopy());</span>
+<span class="nc" id="L128">        }</span>
+
+        @Override
+        public void add(Constraint c, boolean ignored) {
+<span class="nc" id="L132">            trueModel.setValue(trueModel.value().add(c));</span>
+<span class="nc" id="L133">        }</span>
+
+        @Override
+        public void jumpTo(SymbolicModel m, boolean ignored) {
+<span class="nc" id="L137">            throw new UnsupportedOperationException(&quot;jumpTo is not authorized while in a Symbolic Execution&quot;);</span>
+        }
+
+        @Override
+        public void jumpToChild(SymbolicModel m, boolean ignored) {
+<span class="nc" id="L142">            throw new UnsupportedOperationException(&quot;jumpToChild is not authorized while in a Symbolic Execution&quot;);</span>
+        }
+
+        @Override
+        public SymbolicModel symbolicCopy() {
+<span class="nc" id="L147">            return trueModel.value();</span>
+        }
+
+        @Override
+        public Iterable&lt;Constraint&gt; getConstraints() {
+<span class="nc" id="L152">            return trueModel.value().getConstraints();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

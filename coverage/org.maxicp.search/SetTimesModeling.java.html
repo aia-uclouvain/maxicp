@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SetTimesModeling.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">SetTimesModeling.java</span></div><h1>SetTimesModeling.java</h1><pre class="source lang-java linenums">package org.maxicp.search;
+
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.OptionalInt;
+import java.util.function.IntFunction;
+import java.util.function.Supplier;
+
+import static org.maxicp.modeling.Factory.start;
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
+
+public class SetTimesModeling implements Supplier&lt;Runnable[]&gt; {
+
+    private final IntervalVar[] intervals;
+    private final IntFunction&lt;Integer&gt; tieBreaker;
+
+    private final int nTasks;
+    private final int[] unassignedIterator;
+    private final StateSparseSet selectableTasks;
+    private final StateInt[] oldEst;
+    private final ModelProxy model;
+
+<span class="fc" id="L30">    public SetTimesModeling(IntervalVar[] intervals, IntFunction&lt;Integer&gt; tieBreaker) {</span>
+<span class="fc" id="L31">        nTasks = intervals.length;</span>
+<span class="fc" id="L32">        this.intervals = intervals;</span>
+<span class="fc" id="L33">        this.tieBreaker = tieBreaker;</span>
+<span class="fc" id="L34">        this.model = intervals[0].getModelProxy();</span>
+<span class="fc" id="L35">        StateManager sm = model.getConcreteModel().getStateManager();</span>
+<span class="fc" id="L36">        selectableTasks = new StateSparseSet(sm, nTasks, 0);</span>
+<span class="fc" id="L37">        unassignedIterator = new int[nTasks];</span>
+<span class="fc" id="L38">        this.oldEst = Arrays.stream(new int[nTasks]).mapToObj(i -&gt; sm.makeStateInt(Integer.MIN_VALUE)).toArray(StateInt[]::new);</span>
+<span class="fc" id="L39">    }</span>
+
+    public SetTimesModeling(IntervalVar... intervals) {
+<span class="fc" id="L42">        this(intervals, i -&gt; i);</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public Runnable[] get() {
+        // select task with minimum est
+<span class="fc" id="L48">        OptionalInt taskCandidate = validTaskWithMinEst();</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (taskCandidate.isEmpty()) { // no task suitable for selection</span>
+<span class="fc" id="L50">            return EMPTY;</span>
+        }
+<span class="fc" id="L52">        int task = taskCandidate.getAsInt();</span>
+<span class="fc" id="L53">        int est = intervals[task].startMin();</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (existsPostponedForever(est)) {</span>
+<span class="nc" id="L55">            throw InconsistencyException.INCONSISTENCY;</span>
+        } else {
+<span class="fc" id="L57">            IntervalVar taskInterval = intervals[task];</span>
+<span class="fc" id="L58">            int lct = taskInterval.endMax();</span>
+            // select the minimum ect of a task that is not current one, and has an ect greater than lct
+            // we just fix it since no other tasks are competing for this time
+<span class="fc" id="L61">            int minEct = getMinEct(est, task);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (minEct &gt;= lct) {</span>
+<span class="nc" id="L63">                return branch(() -&gt; {</span>
+<span class="nc" id="L64">                    model.add(start(taskInterval, est));</span>
+<span class="nc" id="L65">                    selectableTasks.remove(task);</span>
+<span class="nc" id="L66">                });</span>
+            } else {
+<span class="fc" id="L68">                return branch(() -&gt; {</span>
+                    // start = est
+<span class="fc" id="L70">                    model.add(start(taskInterval, est));</span>
+<span class="fc" id="L71">                    selectableTasks.remove(task);</span>
+<span class="fc" id="L72">                    dominanceCheck();</span>
+<span class="fc" id="L73">                }, () -&gt; {</span>
+                    // postpone the task
+<span class="fc" id="L75">                    model.fixpoint();</span>
+<span class="fc" id="L76">                    oldEst[task].setValue(est);</span>
+<span class="fc" id="L77">                    dominanceCheck();</span>
+<span class="fc" id="L78">                });</span>
+            }
+        }
+    }
+
+    private void dominanceCheck() {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (!selectableTasks.isEmpty()) {</span>
+<span class="fc" id="L85">            int nUnassigned = selectableTasks.fillArray(unassignedIterator);</span>
+<span class="fc" id="L86">            boolean failed = true;</span>
+<span class="fc bfc" id="L87" title="All 4 branches covered.">            for (int i = 0; i &lt; nUnassigned &amp;&amp; failed; i++) {</span>
+<span class="fc" id="L88">                int task = unassignedIterator[i];</span>
+<span class="fc" id="L89">                failed = isPostponed(task) /*&amp;&amp; durations[taskId].max() != 0*/;</span>
+            }
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (failed) {</span>
+<span class="fc" id="L92">                throw InconsistencyException.INCONSISTENCY;</span>
+            }
+        }
+<span class="fc" id="L95">    }</span>
+
+    private int getMinEct(int value, int forbiddenTask) {
+<span class="fc" id="L98">        int minEct = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int task = 0 ; task &lt; nTasks ; task++) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (task != forbiddenTask) {</span>
+<span class="fc" id="L101">                int ect = intervals[task].endMin();</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">                if (ect &lt; minEct &amp;&amp; ect &gt; value) {</span>
+<span class="fc" id="L103">                    minEct = ect;</span>
+                }
+            }
+        }
+<span class="fc" id="L107">        return minEct;</span>
+    }
+
+    /**
+     * Selects the non-postponed task with minimum earliest start time
+     * @return non-postponed task with minimum earliest start time
+     */
+    private OptionalInt validTaskWithMinEst() {
+<span class="fc" id="L115">        int nTasks = selectableTasks.fillArray(unassignedIterator);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (nTasks == 0)</span>
+<span class="nc" id="L117">            return OptionalInt.empty();</span>
+<span class="fc" id="L118">        int bestTask = -1;</span>
+<span class="fc" id="L119">        int minEst = Integer.MAX_VALUE;</span>
+<span class="fc" id="L120">        int minTie = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nTasks ; i++) {</span>
+<span class="fc" id="L122">            int task = unassignedIterator[i];</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (intervals[task].isFixed()) {</span>
+<span class="fc" id="L124">                selectableTasks.remove(task);</span>
+            } else {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                if (!isPostponed(task)) {</span>
+<span class="fc" id="L127">                    int est = intervals[task].startMin();</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                    if (est &lt; minEst) {</span>
+<span class="fc" id="L129">                        minEst = est;</span>
+<span class="fc" id="L130">                        minTie = tieBreaker.apply(task);</span>
+<span class="fc" id="L131">                        bestTask = task;</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">                    } else if (est == minEst) {</span>
+<span class="fc" id="L133">                        int tie = tieBreaker.apply(task);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                        if (tie &lt; minTie) {</span>
+<span class="fc" id="L135">                            minTie = tie;</span>
+<span class="fc" id="L136">                            bestTask = task;</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (bestTask == -1) {</span>
+<span class="fc" id="L143">            return OptionalInt.empty();</span>
+        } else {
+<span class="fc" id="L145">            return OptionalInt.of(bestTask);</span>
+        }
+    }
+
+    /**
+     * Returns true if there exists at least one postponed activity that cannot be scheduled given the current est
+     * @param currentEst current earliest start time, used to detect if an activity will always be postponed
+     * @return true if an activity will always be postponed given the current est
+     */
+    private boolean existsPostponedForever(int currentEst) {
+<span class="fc" id="L155">        int nUnassigned = selectableTasks.fillArray(unassignedIterator);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (int i = 0; i &lt; nUnassigned; i++) {</span>
+<span class="fc" id="L157">            int task = unassignedIterator[i];</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (isPostponed(task)) {</span>
+                // Once an activity is postponed, it must always be scheduled after the current est.
+                // Since the currentEst can only increase down a branch,
+                // ends(taskId).min &lt;= est implies that taskId will remain postponed forever.
+                // starts(taskId).max &lt;= est implies that it would never be possible to schedule taskId after est.
+                // If one of these two cases occurs, we can safely fail.
+<span class="pc bpc" id="L164" title="2 of 4 branches missed.">                if (intervals[task].endMin() &lt;= currentEst || intervals[task].startMax() &lt;= currentEst) {</span>
+<span class="nc" id="L165">                    return true;</span>
+                }
+            }
+        }
+<span class="fc" id="L169">        return false;</span>
+    }
+
+    private boolean isPostponed(int task) {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        return oldEst[task].value() &gt;= intervals[task].startMin();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

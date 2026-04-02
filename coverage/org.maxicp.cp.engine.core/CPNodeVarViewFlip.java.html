@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPNodeVarViewFlip.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPNodeVarViewFlip.java</span></div><h1>CPNodeVarViewFlip.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+
+import java.util.function.Predicate;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER_ORDERED;
+
+public class CPNodeVarViewFlip implements CPNodeVar {
+
+    private final CPNodeVar nodeVar;
+
+<span class="fc" id="L13">    public CPNodeVarViewFlip(CPNodeVar nodeVar) {</span>
+<span class="fc" id="L14">        this.nodeVar = nodeVar;</span>
+<span class="fc" id="L15">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="nc" id="L19">        return nodeVar.getSolver();</span>
+    }
+
+    @Override
+    public CPSeqVar getSeqVar() {
+<span class="nc" id="L24">        return nodeVar.getSeqVar();</span>
+    }
+
+    @Override
+    public int node() {
+<span class="fc" id="L29">        return nodeVar.node();</span>
+    }
+
+    @Override
+    public boolean isNode(SeqStatus status) {
+<span class="nc" id="L34">        return nodeVar.isNode(status);</span>
+    }
+
+    @Override
+    public CPBoolVar isRequired() {
+<span class="nc" id="L39">        return nodeVar.isRequired();</span>
+    }
+
+    @Override
+    public int fillPred(int[] dest, SeqStatus status) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (status == MEMBER_ORDERED) {</span>
+<span class="fc" id="L45">            int me = node();</span>
+<span class="fc" id="L46">            return fillOrdered(dest, i -&gt; nodeVar.getSeqVar().hasEdge(me, i));</span>
+        } else {
+<span class="fc" id="L48">            return nodeVar.fillSucc(dest, status);</span>
+        }
+    }
+
+    @Override
+    public int fillPred(int[] dest) {
+<span class="nc" id="L54">        return nodeVar.fillSucc(dest);</span>
+    }
+
+    @Override
+    public int nPred() {
+<span class="fc" id="L59">        return nodeVar.nSucc();</span>
+    }
+
+    private int fillOrdered(int[] dest, Predicate&lt;Integer&gt; predicate) {
+<span class="fc" id="L63">        int i = 0;</span>
+<span class="fc" id="L64">        int current = nodeVar.getSeqVar().end();</span>
+<span class="fc" id="L65">        int start = nodeVar.getSeqVar().start();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        while (current != start) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            if (predicate.test(current)) {</span>
+<span class="fc" id="L68">                dest[i++] = current;</span>
+            }
+<span class="fc" id="L70">            current = nodeVar.getSeqVar().memberBefore(current);</span>
+        }
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (predicate.test(start)) {</span>
+<span class="fc" id="L73">            dest[i] = current;</span>
+<span class="fc" id="L74">            i++;</span>
+        }
+<span class="fc" id="L76">        return i;</span>
+    }
+
+    @Override
+    public int fillSucc(int[] dest, SeqStatus status) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (status == MEMBER_ORDERED) {</span>
+<span class="fc" id="L82">            int me = node();</span>
+<span class="fc" id="L83">            return fillOrdered(dest, i -&gt; nodeVar.getSeqVar().hasEdge(i, me));</span>
+        } else {
+<span class="fc" id="L85">            return nodeVar.fillPred(dest, status);</span>
+        }
+    }
+
+    @Override
+    public int fillSucc(int[] dest) {
+<span class="nc" id="L91">        return nodeVar.fillPred(dest);</span>
+    }
+
+    @Override
+    public int nSucc() {
+<span class="fc" id="L96">        return nodeVar.nPred();</span>
+    }
+
+    @Override
+    public int fillInsert(int[] dest) {
+<span class="fc" id="L101">        int nInsert = nodeVar.fillInsert(dest);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        for (int i = 0 ; i &lt; nInsert ; i++) {</span>
+<span class="fc" id="L103">            int pred = dest[i];</span>
+<span class="fc" id="L104">            int succ = nodeVar.getSeqVar().memberAfter(pred);</span>
+<span class="fc" id="L105">            dest[i] = succ;</span>
+        }
+<span class="fc" id="L107">        return nInsert;</span>
+    }
+
+    @Override
+    public int nInsert() {
+<span class="fc" id="L112">        return nodeVar.nInsert();</span>
+    }
+
+    @Override
+    public void whenInsert(Runnable f) {
+<span class="nc" id="L117">        nodeVar.whenInsert(f);</span>
+<span class="nc" id="L118">    }</span>
+
+    @Override
+    public void whenExclude(Runnable f) {
+<span class="nc" id="L122">        nodeVar.whenExclude(f);</span>
+<span class="nc" id="L123">    }</span>
+
+    @Override
+    public void whenRequire(Runnable f) {
+<span class="nc" id="L127">        nodeVar.whenRequire(f);</span>
+<span class="nc" id="L128">    }</span>
+
+    @Override
+    public void whenInsertRemoved(Runnable f) {
+<span class="nc" id="L132">        nodeVar.whenInsertRemoved(f);</span>
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public void propagateOnInsert(CPConstraint c) {
+<span class="nc" id="L137">        nodeVar.propagateOnInsert(c);</span>
+<span class="nc" id="L138">    }</span>
+
+    @Override
+    public void propagateOnExclude(CPConstraint c) {
+<span class="nc" id="L142">        nodeVar.propagateOnExclude(c);</span>
+<span class="nc" id="L143">    }</span>
+
+    @Override
+    public void propagateOnRequire(CPConstraint c) {
+<span class="nc" id="L147">        nodeVar.propagateOnRequire(c);</span>
+<span class="nc" id="L148">    }</span>
+
+    @Override
+    public void propagateOnInsertRemoved(CPConstraint c) {
+<span class="nc" id="L152">        nodeVar.propagateOnInsertRemoved(c);</span>
+<span class="nc" id="L153">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Absolute.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Absolute.java</span></div><h1>Absolute.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+/**
+ * Absolute value constraint
+ */
+public class Absolute extends AbstractCPConstraint {
+
+    private final CPIntVar x;
+    private final CPIntVar y;
+
+    /**
+     * Creates the absolute value constraint {@code y = |x|}.
+     *
+     * @param x the input variable such that its absolut value is equal to y
+     * @param y the variable that represents the absolute value of x
+     */
+    public Absolute(CPIntVar x, CPIntVar y) {
+<span class="fc" id="L26">        super(x.getSolver());</span>
+<span class="fc" id="L27">        this.x = x;</span>
+<span class="fc" id="L28">        this.y = y;</span>
+<span class="fc" id="L29">    }</span>
+
+    public void post() {
+<span class="fc" id="L32">        y.removeBelow(0);</span>
+<span class="fc" id="L33">        x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L34">        y.propagateOnBoundChange(this);</span>
+<span class="fc" id="L35">        propagate();</span>
+<span class="fc" id="L36">    }</span>
+
+    @Override
+    public void propagate() {
+        // y = |x|
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (x.isFixed()) {</span>
+<span class="fc" id="L42">            y.fix(Math.abs(x.min()));</span>
+<span class="fc" id="L43">            setActive(false);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        } else if (y.isFixed()) { // y is fixed</span>
+            // y = |x|
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">            if (!x.contains(-y.min())) {</span>
+<span class="nc" id="L47">                x.fix(y.min());</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            } else if (!x.contains(y.min())) {</span>
+<span class="fc" id="L49">                x.fix(-y.min());</span>
+            } else {
+                // x can be (y or -y)
+                // remove everything except y and -y from x
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                for (int v = x.min(); v &lt;= x.max(); v++) {</span>
+<span class="nc bnc" id="L54" title="All 4 branches missed.">                    if (v != y.min() &amp;&amp; v != -y.min()) {</span>
+<span class="nc" id="L55">                        x.remove(v);</span>
+                    }
+                }
+            }
+<span class="fc" id="L59">            setActive(false);</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">        } else if (x.min() &gt;= 0) {</span>
+<span class="nc" id="L61">            y.removeBelow(x.min());</span>
+<span class="nc" id="L62">            y.removeAbove(x.max());</span>
+<span class="nc" id="L63">            x.removeBelow(y.min());</span>
+<span class="nc" id="L64">            x.removeAbove(y.max());</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        } else if (x.max() &lt;= 0) {</span>
+<span class="fc" id="L66">            y.removeBelow(-x.max());</span>
+<span class="fc" id="L67">            y.removeAbove(-x.min());</span>
+<span class="fc" id="L68">            x.removeBelow(-y.max());</span>
+<span class="fc" id="L69">            x.removeAbove(-y.min());</span>
+        } else {
+<span class="fc" id="L71">            int maxAbs = Math.max(x.max(), -x.min());</span>
+<span class="fc" id="L72">            y.removeAbove(maxAbs);</span>
+<span class="fc" id="L73">            x.removeAbove(y.max());</span>
+<span class="fc" id="L74">            x.removeBelow(-y.max());</span>
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">            while (!x.contains(y.min()) &amp;&amp; !x.contains(-y.min())) {</span>
+<span class="fc" id="L76">                y.remove(y.min());</span>
+            }
+        }
+<span class="fc" id="L79">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

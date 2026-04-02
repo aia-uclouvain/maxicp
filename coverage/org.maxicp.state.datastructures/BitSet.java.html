@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BitSet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.datastructures</a> &gt; <span class="el_source">BitSet.java</span></div><h1>BitSet.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.datastructures;
+
+
+import java.util.Arrays;
+
+/**
+ * Bitset abstract class
+ */
+public class BitSet {
+    protected long[] words;
+    protected int nbWords;
+
+    /**
+     * Initializes a bit-set.
+     * All the bits are initially unset. The set it represents is thus empty.
+     */
+<span class="fc" id="L22">    public BitSet(int nWords) {</span>
+<span class="fc" id="L23">        words = new long[nWords];</span>
+<span class="fc" id="L24">        nbWords = nWords;</span>
+<span class="fc" id="L25">    }</span>
+
+    /**
+     * Copy a bitset.
+     * The bit set in anotherBitSet are also set here.
+     *
+     * @param anotherBitSet bitset to be copied
+     */
+    public BitSet(BitSet anotherBitSet) {
+<span class="nc" id="L34">        this(anotherBitSet,false);</span>
+<span class="nc" id="L35">    }</span>
+
+    /**
+     * Copy or share a bitset.
+     * If the sharing is chosen, operations on one impacts the other as well
+     *
+     * @param anotherBitSet bitset to be copied/shared
+     * @param shared true if the internal representation is meant to be shared between multiple bitsets
+     */
+<span class="fc" id="L44">    public BitSet(BitSet anotherBitSet, boolean shared) {</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        words = shared ? anotherBitSet.words : anotherBitSet.words.clone();</span>
+<span class="fc" id="L46">        nbWords = anotherBitSet.nbWords;</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Set the ith bit up (value 1).
+     *
+     * @param i the bit to set
+     */
+    public void set(int i) {
+<span class="fc" id="L55">        words[i &gt;&gt;&gt; 6] |= 1L &lt;&lt; i; // &lt;&lt; is a cyclic shift, (1L &lt;&lt; 64) == 1L</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * Set the ith bit down (value 0).
+     *
+     * @param i the bit to set
+     */
+    public void unset(int i) {
+<span class="nc" id="L64">        words[i &gt;&gt;&gt; 6] &amp;= ~(1L &lt;&lt; i);</span>
+<span class="nc" id="L65">    }</span>
+
+    /**
+     * Unset all the bits
+     */
+    public void clear() {
+<span class="nc" id="L71">        Arrays.fill(words, 0L);</span>
+<span class="nc" id="L72">    }</span>
+
+    /**
+     * Makes the union with another bit-set but
+     * only on non zero-words of the outer sparse-bit-set.
+     *
+     * @param other the other bit-set to make the union with
+     */
+    public void union(BitSet other) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; words.length; i++) {</span>
+<span class="fc" id="L82">            words[i] |= other.words[i];</span>
+        }
+<span class="fc" id="L84">    }</span>
+
+    /**
+     * Makes the intersection with another bit-set but
+     * only on non zero-words of the outer sparse-bit-set.
+     *
+     * @param other the other bit-set to make the intersection with
+     */
+    public void intersect(BitSet other) {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        for (int i = 0; i &lt; words.length; i++) {</span>
+<span class="nc" id="L94">            words[i] &amp;= other.words[i];</span>
+        }
+<span class="nc" id="L96">    }</span>
+
+    public void invert() {
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; words.length; i++) {</span>
+<span class="fc" id="L100">            words[i] = ~words[i];</span>
+        }
+<span class="fc" id="L102">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L106">        String res = &quot;&quot;;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (int i = 0; i &lt; nbWords; i++) {</span>
+<span class="nc" id="L108">            res += &quot; w&quot; + words[i] + &quot;=&quot; + Long.toBinaryString(words[i]);</span>
+        }
+<span class="nc" id="L110">        return res;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

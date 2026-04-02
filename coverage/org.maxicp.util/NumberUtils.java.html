@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NumberUtils.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util</a> &gt; <span class="el_source">NumberUtils.java</span></div><h1>NumberUtils.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.util;
+
+<span class="pc" id="L8">public class NumberUtils {</span>
+
+    public static boolean isPerfectSquare(int n) {
+<span class="nc bnc" id="L11" title="All 2 branches missed.">        if (n &lt; 0)</span>
+<span class="nc" id="L12">            return false;</span>
+<span class="nc bnc" id="L13" title="All 2 branches missed.">        switch((int)(n &amp; 0x3F))</span>
+        {
+            case 0x00: case 0x01: case 0x04: case 0x09: case 0x10: case 0x11:
+            case 0x19: case 0x21: case 0x24: case 0x29: case 0x31: case 0x39:
+            int sqrt;
+<span class="nc bnc" id="L18" title="All 2 branches missed.">            if (n &lt; 410881L) {</span>
+                //John Carmack hack, converted to Java.
+                // See: http://www.codemaestro.com/reviews/9
+                int i;
+                float x2, y;
+
+<span class="nc" id="L24">                x2 = n * 0.5F;</span>
+<span class="nc" id="L25">                y  = n;</span>
+<span class="nc" id="L26">                i  = Float.floatToRawIntBits(y);</span>
+<span class="nc" id="L27">                i  = 0x5f3759df - ( i &gt;&gt; 1 );</span>
+<span class="nc" id="L28">                y  = Float.intBitsToFloat(i);</span>
+<span class="nc" id="L29">                y  = y * ( 1.5F - ( x2 * y * y ) );</span>
+
+<span class="nc" id="L31">                sqrt = (int)(1.0F/y);</span>
+<span class="nc" id="L32">            }</span>
+            else
+            {
+                //Carmack hack gives incorrect answer for n &gt;= 410881.
+<span class="nc" id="L36">                sqrt = (int) Math.sqrt(n);</span>
+            }
+<span class="nc bnc" id="L38" title="All 2 branches missed.">            return sqrt*sqrt == n;</span>
+
+            default:
+<span class="nc" id="L41">                return false;</span>
+        }
+    }
+
+    public static boolean negativeProduct(int v1, int v2) {
+<span class="pc bpc" id="L46" title="3 of 10 branches missed.">        return (v2 &lt; 0 ^ v1 &lt; 0) &amp;&amp; (v1 != 0 &amp;&amp; v2 != 0);</span>
+    }
+
+    public static boolean positiveProduct(int v1, int v2) {
+<span class="pc bpc" id="L50" title="4 of 8 branches missed.">        return (v2 &gt; 0 &amp;&amp; v1 &gt; 0) || (v1 &lt; 0 &amp;&amp; v2 &lt; 0);</span>
+    }
+
+    /**
+     * @param v1
+     * @param v2 != 0
+     * @return ceil(v1/v2)
+     */
+    public static int ceilDiv(int v1, int v2) {
+<span class="fc bfc" id="L59" title="All 4 branches covered.">        return v1 / v2 + (((v1%v2 != 0) &amp;&amp; positiveProduct(v1,v2)) ? 1 : 0);</span>
+    }
+
+    /**
+     * @param v1
+     * @param v2 != 0
+     * @return floor(v1/v2)
+     */
+    public static int floorDiv(int v1, int v2) {
+<span class="fc bfc" id="L68" title="All 4 branches covered.">        return v1 / v2 - (((v1%v2 != 0) &amp;&amp; negativeProduct(v1,v2)) ? 1 : 0);</span>
+    }
+
+    /**
+     * @param c != 0
+     * @param vals different from 0
+     * @return min(ceil(c/v)) with v in vals
+     */
+    public static int minCeilDiv(int c, int ... vals)  {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        assert(vals.length &gt; 0);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        assert(vals[0] != 0);</span>
+<span class="fc" id="L79">        int res = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i&lt; vals.length; i++) {</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            assert (vals[i] != 0);</span>
+<span class="fc" id="L82">            int tmp = ceilDiv(c, vals[i]);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (tmp &lt; res) res = tmp;</span>
+        }
+<span class="fc" id="L85">        return res;</span>
+    }
+
+    /**
+     * @param c != 0
+     * @param vals different from 0
+     * @return max(floor(c/v)) with v in vals
+     */
+    public static int maxFloorDiv(int c, int ... vals)  {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        assert(vals.length &gt; 0);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        assert(vals[0] != 0);</span>
+<span class="fc" id="L96">        int res = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        for (int i = 0; i&lt; vals.length; i++) {</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">            assert (vals[i] != 0);</span>
+<span class="fc" id="L99">            int tmp = floorDiv(c, vals[i]);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (tmp &gt; res) res = tmp;</span>
+        }
+<span class="fc" id="L102">        return res;</span>
+    }
+
+
+    /**
+     * @param a
+     * @param b
+     * @return true if a*b generates an overflow
+     */
+    public static boolean overFlowMul(int a, int b) {
+<span class="fc bfc" id="L112" title="All 4 branches covered.">        if (a == 0 || b == 0) return false;</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        return (a * b) / b != a;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @param b
+     * @return a*b (rounded to Integer.MAX_VALUE /Integer.MIN_VALUE in case of overflow)
+     */
+    public static int safeMul(int a, int b) {
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        if (overFlowMul(a, b)) {</span>
+<span class="nc" id="L124">            System.out.println(&quot;warning: overflow multiplying &quot;+a+&quot;*&quot;+b);</span>
+<span class="nc bnc" id="L125" title="All 8 branches missed.">            if ((a &gt; 0 &amp;&amp; b &gt; 0) || (a &lt; 0 &amp;&amp; b &lt; 0)) {</span>
+<span class="nc" id="L126">                return Integer.MAX_VALUE;</span>
+            } else {
+<span class="nc" id="L128">                return Integer.MIN_VALUE;</span>
+            }
+        } else {
+<span class="fc" id="L131">            return a*b;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LightBinaryKnapsack.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">LightBinaryKnapsack.java</span></div><h1>LightBinaryKnapsack.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+
+import java.util.Arrays;
+
+public class LightBinaryKnapsack extends AbstractCPConstraint {
+
+    private final CPBoolVar[] items;
+    private final int[] weights;
+    private final CPIntVar load;
+    private final int nItems;
+    private final int[] unassigned;
+    private final StateInt nUnassignedRev;
+    private final StateInt requiredLoadRev;
+    private final StateInt possibleLoadRev;
+    private int nUnassigned;
+    private int requiredLoad;
+    private int possibleLoad;
+
+    public LightBinaryKnapsack(CPBoolVar[] items, int[] weights, CPIntVar load) {
+<span class="nc" id="L31">        super(items[0].getSolver());</span>
+
+<span class="nc" id="L33">        this.items = items;</span>
+<span class="nc" id="L34">        this.weights = weights;</span>
+<span class="nc" id="L35">        this.load = load;</span>
+
+<span class="nc" id="L37">        this.nItems = items.length;</span>
+<span class="nc" id="L38">        this.unassigned = new int[nItems];</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        for (int i = 0; i &lt; nItems; i++) {</span>
+<span class="nc" id="L40">            unassigned[i] = i;</span>
+        }
+
+<span class="nc" id="L43">        this.nUnassignedRev = getSolver().getStateManager().makeStateInt(nItems);</span>
+<span class="nc" id="L44">        this.requiredLoadRev = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="nc" id="L45">        this.possibleLoadRev = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="nc" id="L46">    }</span>
+
+    @Override
+    public void post() {
+<span class="nc" id="L50">        init();</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        for (CPBoolVar item : items) {</span>
+<span class="nc" id="L52">            item.propagateOnDomainChange(this);</span>
+        }
+<span class="nc" id="L54">        load.propagateOnDomainChange(this);</span>
+<span class="nc" id="L55">    }</span>
+
+    private void init() {
+        // Reset structures
+<span class="nc" id="L59">        nUnassigned = nItems;</span>
+<span class="nc" id="L60">        requiredLoad = 0;</span>
+<span class="nc" id="L61">        possibleLoad = 0;</span>
+
+        // Compute loads
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        for (int i = 0; i &lt; nItems; i++) {</span>
+<span class="nc" id="L65">            int itemId = unassigned[i];</span>
+<span class="nc" id="L66">            CPBoolVar item = items[itemId];</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">            if (!item.isFixed()) {</span>
+<span class="nc" id="L68">                possibleLoad += weights[i];</span>
+            } else {
+                // Remove from set
+<span class="nc" id="L71">                nUnassigned--;</span>
+<span class="nc" id="L72">                unassigned[i] = unassigned[nUnassigned];</span>
+<span class="nc" id="L73">                unassigned[nUnassigned] = itemId;</span>
+
+                // Update loads
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                if (item.isTrue()) {</span>
+<span class="nc" id="L77">                    int weight = weights[itemId];</span>
+<span class="nc" id="L78">                    requiredLoad += weight;</span>
+<span class="nc" id="L79">                    possibleLoad += weight;</span>
+                }
+            }
+        }
+<span class="nc" id="L83">        filterItems();</span>
+<span class="nc" id="L84">        nUnassignedRev.setValue(nUnassigned);</span>
+<span class="nc" id="L85">        requiredLoadRev.setValue(requiredLoad);</span>
+<span class="nc" id="L86">        possibleLoadRev.setValue(possibleLoad);</span>
+<span class="nc" id="L87">    }</span>
+    @Override
+    public void propagate() {
+        // Cache
+<span class="nc" id="L91">        nUnassigned = nUnassignedRev.value();</span>
+<span class="nc" id="L92">        requiredLoad = requiredLoadRev.value();</span>
+<span class="nc" id="L93">        possibleLoad = possibleLoadRev.value();</span>
+
+        // Filtering
+<span class="nc" id="L96">        updateAssignedItems();</span>
+<span class="nc" id="L97">        filterItems();</span>
+
+<span class="nc" id="L99">        nUnassignedRev.setValue(nUnassigned);</span>
+<span class="nc" id="L100">        requiredLoadRev.setValue(requiredLoad);</span>
+<span class="nc" id="L101">        possibleLoadRev.setValue(possibleLoad);</span>
+
+<span class="nc" id="L103">    }</span>
+
+    private void updateAssignedItems() {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (int i = nUnassigned - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L107">            int itemId = unassigned[i];</span>
+<span class="nc" id="L108">            CPBoolVar item = items[itemId];</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">            if (item.isFixed()) {</span>
+                // Remove from set
+<span class="nc" id="L111">                nUnassigned--;</span>
+<span class="nc" id="L112">                unassigned[i] = unassigned[nUnassigned];</span>
+<span class="nc" id="L113">                unassigned[nUnassigned] = itemId;</span>
+
+                // Update loads
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (item.isTrue()) {</span>
+<span class="nc" id="L117">                    requiredLoad += weights[itemId];</span>
+                } else {
+<span class="nc" id="L119">                    possibleLoad -= weights[itemId];</span>
+                }
+            }
+        }
+<span class="nc" id="L123">    }</span>
+
+    private void filterItems() {
+<span class="nc" id="L126">        boolean fixed = false;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        while (!fixed) { // Inner fixed point</span>
+<span class="nc" id="L128">            fixed = true;</span>
+<span class="nc" id="L129">            load.removeAbove(possibleLoad);</span>
+<span class="nc" id="L130">            load.removeBelow(requiredLoad);</span>
+<span class="nc" id="L131">            int maxWeight = load.max() - requiredLoad;</span>
+<span class="nc" id="L132">            int minWeight = possibleLoad - load.min();</span>
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">            for (int i = nUnassigned - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L135">                int itemId = unassigned[i];</span>
+<span class="nc" id="L136">                CPBoolVar item = items[itemId];</span>
+<span class="nc" id="L137">                int weight = weights[itemId];</span>
+
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                if (weight &gt; maxWeight) {</span>
+<span class="nc" id="L140">                    item.fix(false);</span>
+                    // Remove from set
+<span class="nc" id="L142">                    nUnassigned--;</span>
+<span class="nc" id="L143">                    unassigned[i] = unassigned[nUnassigned];</span>
+<span class="nc" id="L144">                    unassigned[nUnassigned] = itemId;</span>
+
+                    // Update loads
+<span class="nc" id="L147">                    possibleLoad -= weight;</span>
+<span class="nc" id="L148">                    fixed = false;</span>
+
+<span class="nc bnc" id="L150" title="All 2 branches missed.">                } else if (minWeight &lt; weight) {</span>
+<span class="nc" id="L151">                    item.fix(true);</span>
+
+                    // Remove from set
+<span class="nc" id="L154">                    nUnassigned--;</span>
+<span class="nc" id="L155">                    unassigned[i] = unassigned[nUnassigned];</span>
+<span class="nc" id="L156">                    unassigned[nUnassigned] = itemId;</span>
+
+                    // Update loads
+<span class="nc" id="L159">                    requiredLoad += weight;</span>
+<span class="nc" id="L160">                    fixed = false;</span>
+                }
+            }
+<span class="nc" id="L163">        }</span>
+<span class="nc" id="L164">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

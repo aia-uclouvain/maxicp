@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NoOverlapLeftToRight.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">NoOverlapLeftToRight.java</span></div><h1>NoOverlapLeftToRight.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.Comparator;
+
+public class NoOverlapLeftToRight {
+
+<span class="fc" id="L16">    public enum Outcome {</span>
+<span class="fc" id="L17">        NO_CHANGE, CHANGE, INCONSISTENCY</span>
+    }
+
+    public final int[] startMin, endMax;
+    private final int[] startMinNew, startMax, duration, endMin;
+    int n;
+    private final Integer[] permEst, rankEst, permLct, permLst, permEct;
+
+    private final boolean[] inserted;
+
+    private final ThetaTree thetaTree;
+    private final ThetaLambdaTree thetaLambdaTree;
+
+<span class="fc" id="L30">    public NoOverlapLeftToRight(int nMax) {</span>
+<span class="fc" id="L31">        startMin = new int[nMax];</span>
+<span class="fc" id="L32">        startMinNew = new int[nMax];</span>
+<span class="fc" id="L33">        startMax = new int[nMax];</span>
+<span class="fc" id="L34">        duration = new int[nMax];</span>
+<span class="fc" id="L35">        endMin = new int[nMax];</span>
+<span class="fc" id="L36">        endMax = new int[nMax];</span>
+
+<span class="fc" id="L38">        permEst = new Integer[nMax];</span>
+<span class="fc" id="L39">        rankEst = new Integer[nMax];</span>
+<span class="fc" id="L40">        permLct = new Integer[nMax];</span>
+<span class="fc" id="L41">        permLst = new Integer[nMax];</span>
+<span class="fc" id="L42">        permEct = new Integer[nMax];</span>
+<span class="fc" id="L43">        inserted = new boolean[nMax];</span>
+
+<span class="fc" id="L45">        thetaTree = new ThetaTree(nMax);</span>
+<span class="fc" id="L46">        thetaLambdaTree = new ThetaLambdaTree(nMax);</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Applies all the filtering algorithms Overload Checker, Not-Last, Detectable Precedence
+     * in a loop until a fix point is reached, or an inconsistency is detected.
+     * Those algorithms are the ones of Peter Vilim's thesis.
+     *
+     * @param startMin the minimum start time of each activity
+     * @param duration the duration of each activity
+     * @param endMax   the maximum end time of each activity
+     * @param n        a number between 0 and startMin.length-1, is the number of activities to consider (prefix),
+     *                 The other ones are just ignored
+     * @return the outcome of the filtering, either NO_CHANGE, CHANGE or INCONSISTENCY.
+     * If a change is detected, the time windows of the instance variables (startMin and endMax) are reduced.
+     */
+    public Outcome filter(int[] startMin, int[] duration, int[] endMax, int n) {
+<span class="fc" id="L63">        update(startMin, duration, endMax, n);</span>
+<span class="fc" id="L64">        return fixPoint();</span>
+    }
+
+
+    /**
+     * @return false if an inconsistency is detected, true otherwise
+     */
+    private Outcome fixPoint() {
+<span class="fc" id="L72">        boolean fixed = false;</span>
+<span class="fc" id="L73">        boolean changed = false;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        while (!fixed) {</span>
+<span class="fc" id="L75">            fixed = true;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (!overLoadChecker()) return Outcome.INCONSISTENCY;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            fixed = !detectablePrecedence();</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (inconsistency()) return Outcome.INCONSISTENCY;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            fixed = fixed &amp; !notLast();</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (inconsistency()) return Outcome.INCONSISTENCY;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            fixed = fixed &amp; !edgeFinding();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (inconsistency()) return Outcome.INCONSISTENCY;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (!fixed) changed = true;</span>
+        }
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (changed) return Outcome.CHANGE;</span>
+<span class="fc" id="L86">        else return Outcome.NO_CHANGE;</span>
+    }
+
+    protected void update(int[] startMin, int[] duration, int[] endMax, int n) {
+<span class="fc" id="L90">        this.n = n;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L92">            this.startMin[i] = startMin[i];</span>
+<span class="fc" id="L93">            this.startMinNew[i] = startMin[i];</span>
+<span class="fc" id="L94">            this.startMax[i] = endMax[i] - duration[i];</span>
+<span class="fc" id="L95">            this.duration[i] = duration[i];</span>
+<span class="fc" id="L96">            this.endMin[i] = startMin[i] + duration[i];</span>
+<span class="fc" id="L97">            this.endMax[i] = endMax[i];</span>
+
+<span class="fc" id="L99">            this.permEst[i] = i;</span>
+<span class="fc" id="L100">            this.permLct[i] = i;</span>
+<span class="fc" id="L101">            this.permLst[i] = i;</span>
+<span class="fc" id="L102">            this.permEct[i] = i;</span>
+        }
+<span class="fc" id="L104">        Arrays.sort(permEst, 0, n, Comparator.comparingInt(i -&gt; startMin[i]));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L106">            rankEst[permEst[i]] = i;</span>
+        }
+<span class="fc" id="L108">    }</span>
+
+    /**
+     * @return false if the overload checker detects an overload, true if no overload is detected
+     */
+    protected boolean overLoadChecker() {
+<span class="fc" id="L114">        update(startMin, duration, endMax, n);</span>
+<span class="fc" id="L115">        Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -&gt; endMax[i]));</span>
+<span class="fc" id="L116">        thetaTree.reset();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L118">            int activity = permLct[i];</span>
+<span class="fc" id="L119">            thetaTree.insert(rankEst[activity], startMin[activity], duration[activity]);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (thetaTree.getEct() &gt; endMax[activity]) {</span>
+<span class="fc" id="L121">                return false;</span>
+            }
+        }
+<span class="fc" id="L124">        return true;</span>
+    }
+
+    /**
+     * @return true if one domain was changed by the detectable precedence algo
+     */
+    protected boolean detectablePrecedence() {
+<span class="fc" id="L131">        update(startMin, duration, endMax, n);</span>
+<span class="fc" id="L132">        Arrays.sort(permLst, 0, n, Comparator.comparingInt(i -&gt; endMax[i] - duration[i]));</span>
+<span class="fc" id="L133">        Arrays.sort(permEct, 0, n, Comparator.comparingInt(i -&gt; startMin[i] + duration[i]));</span>
+<span class="fc" id="L134">        Arrays.fill(inserted, 0, n, false);</span>
+<span class="fc" id="L135">        int idxj = 0; // j = permLst[idxj];</span>
+<span class="fc" id="L136">        thetaTree.reset();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L138">            int acti = permEct[i];</span>
+<span class="fc bfc" id="L139" title="All 4 branches covered.">            while (idxj &lt; n &amp;&amp; endMin[acti] &gt; startMax[permLst[idxj]]) {</span>
+<span class="fc" id="L140">                int j = permLst[idxj];</span>
+<span class="fc" id="L141">                inserted[j] = true;</span>
+<span class="fc" id="L142">                thetaTree.insert(rankEst[j], startMin[j], duration[j]);</span>
+<span class="fc" id="L143">                idxj++;</span>
+<span class="fc" id="L144">            }</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (inserted[acti]) {</span>
+<span class="fc" id="L146">                thetaTree.remove(rankEst[acti]);</span>
+<span class="fc" id="L147">                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getEct());</span>
+<span class="fc" id="L148">                thetaTree.insert(rankEst[acti], startMin[acti], duration[acti]);</span>
+            } else {
+<span class="fc" id="L150">                startMinNew[acti] = Math.max(startMin[acti], thetaTree.getEct());</span>
+            }
+        }
+
+<span class="fc" id="L154">        boolean changed = false;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">            changed |= startMinNew[i] &gt; startMin[i];</span>
+<span class="fc" id="L157">            startMin[i] = startMinNew[i];</span>
+        }
+<span class="fc" id="L159">        return changed;</span>
+    }
+
+    /**
+     * @return true if one domain was changed by the not last algo
+     */
+    protected boolean notLast() {
+<span class="fc" id="L166">        update(startMin, duration, endMax, n);</span>
+<span class="fc" id="L167">        boolean changed = false;</span>
+<span class="fc" id="L168">        Arrays.sort(permLst, 0, n, Comparator.comparingInt(i -&gt; startMax[i]));</span>
+<span class="fc" id="L169">        Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -&gt; endMax[i]));</span>
+<span class="fc" id="L170">        Arrays.fill(inserted, 0, n, false);</span>
+<span class="fc" id="L171">        int idxj = 0;</span>
+<span class="fc" id="L172">        int j = permLst[idxj];</span>
+<span class="fc" id="L173">        thetaTree.reset();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L175">            int acti = permLct[i];</span>
+<span class="fc bfc" id="L176" title="All 4 branches covered.">            while (idxj &lt; n &amp;&amp; endMax[acti] &gt; startMax[permLst[idxj]]) {</span>
+<span class="fc" id="L177">                j = permLst[idxj];</span>
+<span class="fc" id="L178">                inserted[j] = true;</span>
+<span class="fc" id="L179">                thetaTree.insert(rankEst[j], startMin[j], duration[j]);</span>
+<span class="fc" id="L180">                idxj++;</span>
+            }
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (inserted[acti]) {</span>
+<span class="fc" id="L183">                thetaTree.remove(rankEst[acti]);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">                if (thetaTree.getEct() &gt; startMax[acti]) {</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">                    if (startMax[j] &lt; endMax[acti]) {</span>
+<span class="fc" id="L186">                        endMax[acti] = startMax[j];</span>
+<span class="fc" id="L187">                        changed = true;</span>
+                    }
+<span class="fc" id="L189">                    endMax[acti] = startMax[j];</span>
+                }
+<span class="fc" id="L191">                thetaTree.insert(rankEst[acti], startMin[acti], duration[acti]);</span>
+            } else {
+<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (thetaTree.getEct() &gt; startMax[acti]) {</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                    if (startMax[j] &lt; endMax[acti]) {</span>
+<span class="nc" id="L195">                        endMax[acti] = startMax[j];</span>
+<span class="nc" id="L196">                        changed = true;</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L201">        return changed;</span>
+    }
+
+    /**
+     * @return true if one domain was changed by the edge finding algo
+     *
+     */
+    protected boolean edgeFinding() {
+<span class="fc" id="L209">        update(startMin, duration, endMax, n);</span>
+<span class="fc" id="L210">        thetaLambdaTree.reset();</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L212">            int acti = permEst[i];</span>
+<span class="fc" id="L213">            thetaLambdaTree.insertTheta(i, startMin[acti], duration[acti]);</span>
+        }
+<span class="fc" id="L215">        boolean changed = false;</span>
+<span class="fc" id="L216">        Arrays.sort(permLct, 0, n, Comparator.comparingInt(i -&gt; -endMax[i]));</span>
+<span class="fc" id="L217">        int j = 0;</span>
+<span class="fc" id="L218">        int actj = permLct[j];</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        while (j &lt; n-1) {</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (thetaLambdaTree.getThetaEct() &gt; endMax[actj]) {</span>
+<span class="fc" id="L221">                throw InconsistencyException.INCONSISTENCY;</span>
+            }
+<span class="fc" id="L223">            thetaLambdaTree.moveFromThetaToLambda(rankEst[actj]);</span>
+<span class="fc" id="L224">            actj = permLct[++j];</span>
+<span class="fc bfc" id="L225" title="All 2 branches covered.">            while (thetaLambdaTree.getThetaLambdaEct() &gt; endMax[actj]) {</span>
+<span class="fc" id="L226">                int i = thetaLambdaTree.getResponsibleForThetaLambdaEct();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">                if (i == ThetaLambdaTree.UNDEF) {</span>
+<span class="fc" id="L228">                    throw InconsistencyException.INCONSISTENCY;</span>
+                }
+<span class="fc" id="L230">                int acti = permEst[i];</span>
+<span class="fc" id="L231">                int oldStartMin = startMin[acti];</span>
+<span class="fc" id="L232">                startMin[acti] = Math.max(startMin[acti], thetaLambdaTree.getThetaEct());</span>
+<span class="fc bfc" id="L233" title="All 4 branches covered.">                changed = changed || startMin[acti] &gt; oldStartMin;</span>
+<span class="fc" id="L234">                thetaLambdaTree.remove(i);</span>
+<span class="fc" id="L235">            }</span>
+        }
+<span class="fc" id="L237">        return changed;</span>
+    }
+
+    private boolean changed() {
+<span class="nc" id="L241">        boolean changed = false;</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">            changed |= startMinNew[i] &gt; startMin[i];</span>
+<span class="nc" id="L244">            startMinNew[i] = startMin[i];</span>
+        }
+<span class="nc" id="L246">        return false;</span>
+    }
+
+    private boolean inconsistency() {
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">            if (startMin[i] &gt; endMax[i]) return true;</span>
+        }
+<span class="fc" id="L253">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

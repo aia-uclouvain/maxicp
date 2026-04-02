@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DeltaCPIntVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">DeltaCPIntVarImpl.java</span></div><h1>DeltaCPIntVarImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.state.State;
+
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+
+public class DeltaCPIntVarImpl implements DeltaCPIntVar {
+
+    private State&lt;DeltaState&gt; deltaState;
+    private CPIntVar x;
+
+    private int [] iteratorValues;
+<span class="fc" id="L19">    private int iteratorSize = -1;</span>
+    private int iteratorTimeStamp;
+
+<span class="fc" id="L22">    public DeltaCPIntVarImpl(CPIntVar x) {</span>
+<span class="fc" id="L23">        this.deltaState = x.getSolver().getStateManager().makeStateRef(null);</span>
+<span class="fc" id="L24">        this.x = x;</span>
+<span class="fc" id="L25">        iteratorValues = new int[x.size()];</span>
+<span class="fc" id="L26">    }</span>
+
+    @Override
+    public CPIntVar variable() {
+<span class="nc" id="L30">        return x;</span>
+    }
+
+    @Override
+    public int oldMin() {
+<span class="fc" id="L35">        return deltaState.value().oldMin();</span>
+    }
+
+    @Override
+    public int oldMax() {
+<span class="fc" id="L40">        return deltaState.value().oldMax();</span>
+    }
+
+    @Override
+    public int oldSize() {
+<span class="fc" id="L45">        return deltaState.value().oldSize();</span>
+    }
+
+    @Override
+    public boolean changed() {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        return oldSize() != x.size();</span>
+    }
+
+    @Override
+    public boolean minChanged() {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        return oldMin() != x.min();</span>
+    }
+
+    @Override
+    public boolean maxChanged() {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        return oldMax() != x.max();</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L65">        return oldSize()-x.size();</span>
+    }
+
+    @Override
+    public Iterator&lt;Integer&gt; iterator() {
+<span class="nc" id="L70">        iteratorSize = fillArray(iteratorValues);</span>
+<span class="nc" id="L71">        return new Iterator&lt;Integer&gt;() {</span>
+<span class="nc" id="L72">            final int ts = iteratorTimeStamp;</span>
+<span class="nc" id="L73">            int i = 0;</span>
+            @Override
+            public boolean hasNext() {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                if (ts == iteratorTimeStamp) {</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                    return i &lt; iteratorSize;</span>
+                } else {
+<span class="nc" id="L79">                    throw new ConcurrentModificationException(&quot;outdated delta iterator&quot;);</span>
+                }
+            }
+
+            @Override
+            public Integer next() {
+<span class="nc" id="L85">                return iteratorValues[i++];</span>
+            }
+        };
+    }
+
+    @Override
+    public int fillArray(int[] values) {
+<span class="fc" id="L92">        DeltaState ds = deltaState.value();</span>
+<span class="fc" id="L93">        return x.fillDeltaArray(ds.oldMin(),ds.oldMax(),ds.oldSize(), values);</span>
+    }
+
+    @Override
+    public void update() {
+<span class="fc" id="L98">        iteratorTimeStamp++;</span>
+<span class="fc" id="L99">        deltaState.setValue(new DeltaState(x.size(),x.min(),x.max()));</span>
+<span class="fc" id="L100">    }</span>
+}
+
+<span class="fc" id="L103">record DeltaState (int oldSize, int oldMin, int oldMax){}</span>
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

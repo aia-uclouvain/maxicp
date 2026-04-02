@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Arrays.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util</a> &gt; <span class="el_source">Arrays.java</span></div><h1>Arrays.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.util;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Random;
+
+<span class="pc" id="L12">public class Arrays {</span>
+
+    public static int argMax(int [] values) {
+<span class="fc" id="L15">        int max = Integer.MIN_VALUE;</span>
+<span class="fc" id="L16">        int argMax = -1;</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">        for(int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">            if(values[i] &gt; max) {</span>
+<span class="fc" id="L19">                max = values[i];</span>
+<span class="fc" id="L20">                argMax = i;</span>
+            }
+        }
+<span class="fc" id="L23">        return argMax;</span>
+    }
+
+    public static int argMin(int [] values) {
+<span class="fc" id="L27">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L28">        int argMin = -1;</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        for(int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">            if(values[i] &lt; min) {</span>
+<span class="fc" id="L31">                min = values[i];</span>
+<span class="fc" id="L32">                argMin = i;</span>
+            }
+        }
+<span class="fc" id="L35">        return argMin;</span>
+    }
+
+    public static int argProb(double [] proba) {
+<span class="nc" id="L39">        double r = Math.random();</span>
+<span class="nc" id="L40">        double sum = 0;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        for(int i = 0; i &lt; proba.length; i++) {</span>
+<span class="nc" id="L42">            sum += proba[i];</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">            if (sum &gt;= r) {</span>
+<span class="nc" id="L44">                return i;</span>
+            }
+        }
+<span class="nc" id="L47">        return proba.length - 1;</span>
+    }
+
+    public static double [] softMax(int [] values) {
+<span class="fc" id="L51">        double [] res = new double[values.length];</span>
+<span class="fc" id="L52">        double sum = 0;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for(int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc" id="L54">            res[i] = Math.exp(values[i]);</span>
+<span class="fc" id="L55">            sum += res[i];</span>
+        }
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for(int i = 0; i &lt; values.length; ++i) {</span>
+<span class="fc" id="L58">            res[i] /= sum;</span>
+        }
+<span class="fc" id="L60">        return res;</span>
+    }
+
+    public static int argSoftMax(int [] values) {
+<span class="nc" id="L64">        double [] proba = softMax(values);</span>
+<span class="nc" id="L65">        return argProb(proba);</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the maximum value in a
+     */
+    public static int max(int ... a) {
+<span class="fc" id="L74">        int v = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L76">            v = Math.max(v, a[i]);</span>
+        }
+<span class="fc" id="L78">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the maximum value in a
+     */
+    public static int max(int [][] a) {
+<span class="nc" id="L87">        int v = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc" id="L89">            v = Math.max(v, max(a[i]));</span>
+        }
+<span class="nc" id="L91">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the minimum value in a
+     */
+    public static int min(int ... a) {
+<span class="fc" id="L100">        int v = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L102">            v = Math.min(v, a[i]);</span>
+        }
+<span class="fc" id="L104">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return  the minimum value in a
+     */
+    public static int min(int [][] a) {
+<span class="nc" id="L113">        int v = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc" id="L115">            v = Math.min(v, min(a[i]));</span>
+        }
+<span class="nc" id="L117">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the sum of the values in a
+     */
+    public static int sum(int [] a) {
+<span class="nc" id="L126">        int v = 0;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        for (int i: a) {</span>
+<span class="nc" id="L128">            v += i;</span>
+        }
+<span class="nc" id="L130">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the sum of the values in a
+     */
+    public static double sum(double [] a) {
+<span class="nc" id="L139">        double v = 0;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">        for (double i: a) {</span>
+<span class="nc" id="L141">            v += i;</span>
+        }
+<span class="nc" id="L143">        return v;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the sum of the values in a
+     */
+    public static int sum(int [][] a) {
+<span class="nc" id="L152">        int s = 0;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc" id="L154">            s += sum(a[i]);</span>
+        }
+<span class="nc" id="L156">        return s;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @return the product of values in a
+     */
+    public static int prod(int [] a) {
+<span class="nc" id="L165">        int v = 1;</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        for (int i: a) {</span>
+<span class="nc" id="L167">            v *= i;</span>
+        }
+<span class="nc" id="L169">        return v;</span>
+    }
+
+
+    /**
+     *
+     * @param a matrix array
+     * @return  the column c that is [a[0][c] , ... , a[n-1][c]]
+     */
+    public static int[] getSlice(int[][] a, int c) {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        assert(c &gt; 0);</span>
+<span class="nc" id="L180">        int [] res = new int[a.length];</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            assert(c &lt; a[i].length);</span>
+<span class="nc" id="L183">            res[i] = a[i][c];</span>
+        }
+<span class="nc" id="L185">        return res;</span>
+    }
+
+    /**
+     *
+     * @param v
+     * @param n
+     * @return an array of length n each entry with value v
+     */
+    public static int[] replicate(int v, int n) {
+<span class="nc" id="L195">        int [] res = new int[n];</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L197">            res[i] = v;</span>
+        }
+<span class="nc" id="L199">        return res;</span>
+    }
+
+    /**
+     *
+     * @param a
+     * @param &lt;E&gt;
+     * @return a flattened array list of all elements in a
+     */
+    public static&lt;E&gt; ArrayList&lt;E&gt; flatten(E [][] a) {
+<span class="nc" id="L209">        ArrayList&lt;E&gt; res = new ArrayList&lt;E&gt;();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">            for (int j = 0; j &lt; a[i].length; j++) {</span>
+<span class="nc" id="L212">                res.add(a[i][j]);</span>
+            }
+        }
+<span class="nc" id="L215">        return res;</span>
+
+    }
+
+
+    /**
+     * Generates a random permutation
+     * @param n
+     * @param seed for the random number generator
+     * @return  a random permutation from 0 to n-1
+     */
+    public static int[] getRandomPermutation(int n, int seed) {
+<span class="nc" id="L227">        int [] perm = new int[n];</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        for (int i = 0; i &lt; perm.length; i++) {</span>
+<span class="nc" id="L229">            perm[i] = i;</span>
+        }
+<span class="nc" id="L231">        Random rand = new Random(seed);</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        for (int i = 0; i &lt; perm.length; i++) {</span>
+<span class="nc" id="L233">            int ind1 = rand.nextInt(n);</span>
+<span class="nc" id="L234">            int ind2 = rand.nextInt(n);</span>
+<span class="nc" id="L235">            int temp = perm[ind1];</span>
+<span class="nc" id="L236">            perm[ind1] = perm[ind2];</span>
+<span class="nc" id="L237">            perm[ind2] = temp;</span>
+        }
+<span class="nc" id="L239">        return perm;</span>
+    }
+
+    /**
+     *
+     * @param x
+     * @param permutation a valid permutation of x (all numbers from 0 to x.length-1 present), &lt;br&gt;
+     *        permutation[i] represents the index of the entry of x that must come in position i in the permuted array
+     * @param &lt;E&gt;
+     */
+    public static &lt;E&gt; void  applyPermutation(E [] x, int [] permutation) {
+<span class="nc bnc" id="L250" title="All 2 branches missed.">        assert (x.length  == permutation.length);</span>
+<span class="nc" id="L251">        Object [] objs = new Object[x.length];</span>
+<span class="nc" id="L252">        int sum = 0;</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        for (int i = 0; i &lt; permutation.length; i++) {</span>
+<span class="nc" id="L254">            sum += permutation[i];</span>
+<span class="nc" id="L255">            objs[i] = x[i];</span>
+        }
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        assert (sum == (x.length-1)*(x.length-2)/2); // check the permutation is valid</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        for (int i = 0; i &lt; permutation.length; i++) {</span>
+<span class="nc" id="L259">            x[i] = (E) objs[permutation[i]];</span>
+        }
+<span class="nc" id="L261">        objs = null;</span>
+<span class="nc" id="L262">    }</span>
+
+    /**
+     * permutes x according to the permutation
+     * @param x the array to permute
+     * @param permutation
+     */
+    public static void  applyPermutation(int [] x, int [] permutation) {
+<span class="nc" id="L270">        int [] xcopy = java.util.Arrays.copyOf(x,x.length);</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        for (int i = 0; i &lt; permutation.length; i++) {</span>
+<span class="nc" id="L272">            x[i] = xcopy[permutation[i]];</span>
+        }
+<span class="nc" id="L274">    }</span>
+
+    /**
+     *
+     * @param w
+     * @return the sorting permutation perm of w, i.e. w[perm[0]],w[perm[1]],...,w[perm[w.length-1]] is sorted increasingly
+     */
+    public static int []  sortPerm(final int [] w) {
+<span class="nc" id="L282">        Integer [] perm = new Integer[w.length];</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">        for (int i = 0; i &lt; perm.length; i++) {</span>
+<span class="nc" id="L284">            perm[i] = i;</span>
+        }
+<span class="nc" id="L286">        java.util.Arrays.sort(perm,new Comparator&lt;Integer&gt;() {</span>
+            public int compare(Integer o1, Integer o2) {
+<span class="nc" id="L288">                return w[o1]-w[o2];</span>
+            }
+        });
+<span class="nc" id="L291">        int [] res = new int[w.length];</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        for (int i = 0; i &lt; perm.length; i++) {</span>
+<span class="nc" id="L293">            res[i] = perm[i];</span>
+        }
+<span class="nc" id="L295">        return res;</span>
+    }
+
+
+
+
+    /**
+     * sorts x increasingly according to the weights w
+     * @param x
+     * @param w
+     */
+    public static &lt;E&gt; void  sort(E [] x, int [] w) {
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        assert (x.length == w.length);</span>
+<span class="nc" id="L308">        applyPermutation(x,sortPerm(w));</span>
+<span class="nc" id="L309">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

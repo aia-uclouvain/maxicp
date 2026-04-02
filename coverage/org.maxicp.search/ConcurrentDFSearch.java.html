@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConcurrentDFSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">ConcurrentDFSearch.java</span></div><h1>ConcurrentDFSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search;
+
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.ArrayDeque;
+import java.util.function.Supplier;
+
+public class ConcurrentDFSearch extends AbstractConcurrentSearchMethod {
+    private final ArrayDeque&lt;DFSTodoElement&gt; alternatives;
+    private final ModelProxy modelProxy;
+<span class="nc" id="L13">    private static final DFSTodoElement restore = new Restore();</span>
+<span class="nc" id="L14">    private static final DFSTodoElement save = new Save();</span>
+
+    private sealed interface DFSTodoElement {};
+<span class="nc" id="L17">    private record SymbolicModelToRun(SymbolicModel m) implements DFSTodoElement {};</span>
+    private record Save() implements DFSTodoElement {};
+    private record Restore() implements DFSTodoElement {};
+
+    public ConcurrentDFSearch(ModelProxy mp, Supplier&lt;SymbolicModel[]&gt; branching) {
+<span class="nc" id="L22">        super(mp.getConcreteModel().getStateManager(), branching);</span>
+<span class="nc" id="L23">        modelProxy = mp;</span>
+<span class="nc" id="L24">        alternatives = new ArrayDeque&lt;&gt;();</span>
+<span class="nc" id="L25">    }</span>
+
+    @Override
+    protected void initSolve() {
+<span class="nc" id="L29">        alternatives.clear();</span>
+<span class="nc" id="L30">        expandNode();</span>
+<span class="nc" id="L31">        modelProxy.getConcreteModel().getStateManager().saveState();</span>
+<span class="nc" id="L32">    }</span>
+
+    @Override
+    protected boolean done() {
+<span class="nc" id="L36">        return alternatives.isEmpty();</span>
+    }
+
+    @Override
+    protected void processNextStep() {
+<span class="nc" id="L41">        boolean hasSeenNode = false;</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        while (!alternatives.isEmpty()) {</span>
+<span class="nc bnc" id="L43" title="All 3 branches missed.">            switch (alternatives.getLast()) {</span>
+<span class="nc" id="L44">                case Save() -&gt; {</span>
+<span class="nc" id="L45">                    alternatives.removeLast();</span>
+<span class="nc" id="L46">                    sm.saveState();</span>
+<span class="nc" id="L47">                }</span>
+<span class="nc" id="L48">                case Restore() -&gt; {</span>
+<span class="nc" id="L49">                    alternatives.removeLast();</span>
+<span class="nc" id="L50">                    sm.restoreState();</span>
+<span class="nc" id="L51">                }</span>
+<span class="nc" id="L52">                case SymbolicModelToRun(SymbolicModel m) -&gt; {</span>
+                    //if we don't have seen a node yet, process it
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                    if(!hasSeenNode) {</span>
+<span class="nc" id="L55">                        hasSeenNode = true;</span>
+<span class="nc" id="L56">                        alternatives.removeLast();</span>
+                        try {
+<span class="nc" id="L58">                            statistics.incrNodes();</span>
+<span class="nc" id="L59">                            onNodeVisit.run();</span>
+<span class="nc" id="L60">                            modelProxy.getConcreteModel().jumpToChild(m);</span>
+<span class="nc" id="L61">                            expandNode();</span>
+<span class="nc" id="L62">                        } catch (InconsistencyException e) {</span>
+<span class="nc" id="L63">                            statistics.incrFailures();</span>
+<span class="nc" id="L64">                            notifyFailure(statistics);</span>
+<span class="nc" id="L65">                        }</span>
+                    }
+                    else {
+<span class="nc" id="L68">                        return;</span>
+                    }
+<span class="nc" id="L70">                }</span>
+            }
+        }
+<span class="nc" id="L73">    }</span>
+
+    @Override
+    protected void finishSolve() {
+<span class="nc" id="L77">        alternatives.clear();</span>
+<span class="nc" id="L78">        modelProxy.getConcreteModel().getStateManager().restoreState();</span>
+<span class="nc" id="L79">    }</span>
+
+    private void expandNode() {
+<span class="nc" id="L82">        SymbolicModel[] alts = branching.get();</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (alts.length == 0) {</span>
+<span class="nc" id="L84">            statistics.incrSolutions();</span>
+<span class="nc" id="L85">            notifySolution(statistics);</span>
+        }
+        else {
+<span class="nc" id="L88">            boolean first = true;</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            for (int i = alts.length - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L90">                SymbolicModel model = alts[i];</span>
+
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                if(!first)</span>
+<span class="nc" id="L93">                    alternatives.add(restore);</span>
+<span class="nc" id="L94">                alternatives.add(new SymbolicModelToRun(model));</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                if(!first)</span>
+<span class="nc" id="L96">                    alternatives.add(save);</span>
+                else
+<span class="nc" id="L98">                    first = false;</span>
+            }
+        }
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    protected SymbolicModel extractModel() {
+        //SymbolicModel firstNode = alternatives.removeFirst();
+<span class="nc" id="L106">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

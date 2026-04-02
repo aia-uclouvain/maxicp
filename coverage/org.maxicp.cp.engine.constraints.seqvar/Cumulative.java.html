@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Cumulative.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">Cumulative.java</span></div><h1>Cumulative.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.Constants;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.*;
+import java.util.stream.IntStream;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+<span class="fc" id="L20">public class Cumulative extends AbstractCPConstraint {</span>
+
+    // only activities in 0..nValidActivities are considered (the remaining ones are excluded from the sequence)
+    private final int[] activities;
+    private final StateInt nValidActivities;
+
+    private final CPSeqVar seqVar;
+    private final int[] starts;
+    private final int[] ends;
+    private final int[] load;
+
+    // used with fill operations over the sequence
+    private int nMember;
+    private final int[] order;
+    protected Profile profile;
+    // closestNodeToCheck[activity] = best predecessor to insert the non-inserted node of a partially inserted activity
+    private final int[] closestNodeToCheck;
+<span class="fc" id="L37">    private final List&lt;Integer&gt; partiallyInsertedActivities = new ArrayList&lt;&gt;();</span>
+
+    // used to mark the insertions that are infeasible for non-inserted activities
+<span class="fc" id="L40">    private final Set&lt;Integer&gt; startInsertionsPos = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L41">    private final Set&lt;Integer&gt; endInsertionsPos = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L42">    private final List&lt;Integer&gt; activeStartInsertionsPos = new ArrayList&lt;&gt;();</span>
+
+    public class Profile {
+
+        private final int[] loadBefore; // indexed by position (loadAt[3] = load right before the visit of node 3 in the sequence)
+        private final int[] loadAt; // indexed by position (loadAt[3] = load right at the visit of node 3 in the sequence)
+        private final int[] loadAfter; // indexed by position (loadAfter[3] = min load between visit of node 3 and its successor)
+<span class="fc" id="L49">        private int maxLoad = 0;</span>
+        private final int maxCapacity;
+
+<span class="fc" id="L52">        public Profile(int maxCapacity) {</span>
+<span class="fc" id="L53">            this.maxCapacity = maxCapacity;</span>
+<span class="fc" id="L54">            this.loadAt = new int[seqVar.nNode()];</span>
+<span class="fc" id="L55">            this.loadAfter = new int[seqVar.nNode()];</span>
+<span class="fc" id="L56">            this.loadBefore = new int[seqVar.nNode()];</span>
+<span class="fc" id="L57">        }</span>
+
+        public int loadBefore(int node) {
+<span class="fc" id="L60">            return loadBefore[node];</span>
+        }
+
+        public int loadAt(int node) {
+<span class="fc" id="L64">            return loadAt[node];</span>
+        }
+
+        public int loadAfter(int node) {
+<span class="fc" id="L68">            return loadAfter[node];</span>
+        }
+
+        /**
+         * Set the load at the visit of a node
+         *
+         * @param node node whose load must be set
+         * @param load load set at the given position
+         * @throws InconsistencyException if the given load is negative or exceeds the capacity
+         */
+        public void incrementLoadAtBy(int node, int load) {
+<span class="fc" id="L79">            load += loadAt(node);</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">            if (load &lt; 0 || load &gt; maxCapacity)</span>
+<span class="fc" id="L81">                throw INCONSISTENCY;</span>
+<span class="fc" id="L82">            maxLoad = Math.max(maxLoad, load);</span>
+<span class="fc" id="L83">            loadAt[node] = load;</span>
+<span class="fc" id="L84">        }</span>
+
+        /**
+         * Set the load after the visit of a node
+         *
+         * @param node node after which the load must be set
+         * @param load load set after the given position
+         * @throws InconsistencyException if the given load is negative or exceeds the capacity
+         */
+        public void incrementLoadAfterBy(int node, int load) {
+<span class="fc" id="L94">            load += loadAfter(node);</span>
+<span class="pc bpc" id="L95" title="2 of 4 branches missed.">            if (load &lt; 0 || load &gt; maxCapacity)</span>
+<span class="nc" id="L96">                throw INCONSISTENCY;</span>
+<span class="fc" id="L97">            maxLoad = Math.max(maxLoad, load);</span>
+<span class="fc" id="L98">            loadAfter[node] = load;</span>
+<span class="fc" id="L99">        }</span>
+
+        /**
+         * Set the load after the visit of a node
+         *
+         * @param node node after which the load must be set
+         * @param load load set after the given position
+         * @throws InconsistencyException if the given load is negative or exceeds the capacity
+         */
+        public void incrementLoadBeforeBy(int node, int load) {
+<span class="fc" id="L109">            load += loadBefore(node);</span>
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">            if (load &lt; 0 || load &gt; maxCapacity)</span>
+<span class="fc" id="L111">                throw INCONSISTENCY;</span>
+<span class="fc" id="L112">            maxLoad = Math.max(maxLoad, load);</span>
+<span class="fc" id="L113">            loadBefore[node] = load;</span>
+<span class="fc" id="L114">        }</span>
+
+        public void reset() {
+<span class="fc" id="L117">            maxLoad = 0;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            for (int i = 0; i &lt; nMember; i++) {</span>
+<span class="fc" id="L119">                int node = order[i];</span>
+<span class="fc" id="L120">                loadBefore[node] = 0;</span>
+<span class="fc" id="L121">                loadAt[node] = 0;</span>
+<span class="fc" id="L122">                loadAfter[node] = 0;</span>
+            }
+<span class="fc" id="L124">        }</span>
+    }
+
+    /**
+     * Gives a maximum capacity for a resource over a sequence.
+     * A set of activity (i.e. a start and corresponding ending node for an activity) can consume the resource.
+     * The resource consumption can never exceed the maximum capacity of the resource.
+     *
+     * @param seqVar   sequence over which the constraint is applied.
+     * @param starts   start of the activities.
+     * @param ends     corresponding end of each activity. ends[i] is the end activity of i, beginning at starts[i].
+     * @param load     consumption of each activity.
+     * @param capacity maximum capacity for the resource.
+     */
+    public Cumulative(CPSeqVar seqVar, int[] starts, int[] ends, int[] load, int capacity) {
+<span class="fc" id="L139">        super(seqVar.getSolver());</span>
+<span class="fc" id="L140">        this.seqVar = seqVar;</span>
+<span class="fc" id="L141">        this.starts = starts;</span>
+<span class="fc" id="L142">        this.ends = ends;</span>
+<span class="fc" id="L143">        this.load = load;</span>
+<span class="fc" id="L144">        profile = new Profile(capacity);</span>
+<span class="fc" id="L145">        this.order = new int[seqVar.nNode()];</span>
+<span class="fc" id="L146">        closestNodeToCheck = new int[starts.length];</span>
+        // never hurts to have a bit of protection
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">        if (starts.length != ends.length)</span>
+<span class="nc" id="L149">            throw new IllegalArgumentException(&quot;Every activity must have a start and a matching end&quot;);</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (starts.length &gt; load.length)</span>
+<span class="nc" id="L151">            throw new IllegalArgumentException(&quot;Every activity must have a matching capacity&quot;);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int activity = 0; activity &lt; starts.length; activity++) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">            if (load[activity] &lt; 0)</span>
+<span class="nc" id="L154">                throw new IllegalArgumentException(&quot;The capacity of an activity cannot be negative&quot;);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            if (starts[activity] == ends[activity])</span>
+<span class="fc" id="L156">                throw new IllegalArgumentException(&quot;The start and the of an activity cannot be the same node&quot;);</span>
+        }
+<span class="fc" id="L158">        activities = IntStream.range(0, starts.length).toArray();</span>
+<span class="fc" id="L159">        nValidActivities = getSolver().getStateManager().makeStateInt(activities.length);</span>
+<span class="fc" id="L160">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int i = 0; i &lt; starts.length; ++i) {</span>
+            // the start of the activity must come before its end
+<span class="fc" id="L166">            getSolver().post(new Precedence(seqVar, true, starts[i], ends[i]));</span>
+        }
+<span class="fc" id="L168">        seqVar.propagateOnInsert(this);</span>
+<span class="fc" id="L169">        seqVar.propagateOnInsertRemoved(this);</span>
+<span class="fc" id="L170">        this.propagate();</span>
+<span class="fc" id="L171">    }</span>
+
+    @Override
+    public void propagate() {
+        // build the profile
+        // note: in the loop, the recomputation of the profile after the forced insertion of a node may be done incrementally
+<span class="fc" id="L177">        boolean changed = true;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        while (changed) {</span>
+<span class="fc" id="L179">            nMember = seqVar.fillNode(order, MEMBER_ORDERED);</span>
+<span class="fc" id="L180">            buildProfile();</span>
+            // filter the insertions
+<span class="fc" id="L182">            changed = filterInsertionsForPartiallyInserted();</span>
+<span class="pc bpc" id="L183" title="1 of 4 branches missed.">            changed = changed || filterInsertionsForNonInserted();</span>
+        }
+<span class="fc" id="L185">    }</span>
+
+    /**
+     * Build the profile for the current sequence
+     *
+     * @throws InconsistencyException if the profile exceeds the load
+     */
+    private void buildProfile() {
+<span class="fc" id="L193">        partiallyInsertedActivities.clear();</span>
+<span class="fc" id="L194">        profile.reset();</span>
+<span class="fc" id="L195">        int nValid = nValidActivities.value();</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (int i = 0; i &lt; nValid; i++) {</span>
+<span class="fc" id="L197">            int activity = activities[i];</span>
+<span class="fc" id="L198">            int start = starts[activity];</span>
+<span class="fc" id="L199">            int end = ends[activity];</span>
+<span class="fc" id="L200">            int load = this.load[activity];</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">            if (isFullyInserted(activity)) {</span>
+<span class="fc" id="L202">                addLoadFullyInserted(start, end, load);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            } else if (isPartiallyInserted(activity)) {</span>
+<span class="fc" id="L204">                partiallyInsertedActivities.add(activity);</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (seqVar.isNode(start, MEMBER)) {</span>
+<span class="fc" id="L206">                    addLoadOnlyStartInserted(activity, start, end, load);</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">                } else if (seqVar.isNode(end, MEMBER)) {</span>
+<span class="fc" id="L208">                    addLoadOnlyEndInserted(activity, start, end, load);</span>
+                }
+<span class="fc bfc" id="L210" title="All 2 branches covered.">            } else if (isFullyExcluded(activity)) { // remove from the sparse set</span>
+<span class="fc" id="L211">                nValid--;</span>
+<span class="fc" id="L212">                activities[i] = activities[nValid];</span>
+<span class="fc" id="L213">                activities[nValid] = activity;</span>
+<span class="fc" id="L214">                i--; // next iteration needs to consider this index</span>
+            }
+        }
+<span class="fc" id="L217">        nValidActivities.setValue(nValid);</span>
+<span class="fc" id="L218">    }</span>
+
+    private void addLoadFullyInserted(int start, int end, int load) {
+<span class="fc" id="L221">        int node = start;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        while (node != end) {</span>
+<span class="fc" id="L223">            profile.incrementLoadAtBy(node, load);</span>
+<span class="fc" id="L224">            profile.incrementLoadAfterBy(node, load);</span>
+<span class="fc" id="L225">            node = seqVar.memberAfter(node);</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">            if (node == seqVar.start())</span>
+<span class="nc" id="L227">                throw INCONSISTENCY;</span>
+<span class="fc" id="L228">            profile.incrementLoadBeforeBy(node, load);</span>
+        }
+<span class="fc" id="L230">    }</span>
+
+    private void addLoadOnlyStartInserted(int activity, int start, int end, int load) {
+<span class="fc" id="L233">        int node = start;</span>
+<span class="fc" id="L234">        profile.incrementLoadAtBy(node, load);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        while (!seqVar.hasInsert(node, end)) {</span>
+<span class="fc" id="L236">            profile.incrementLoadAfterBy(node, load);</span>
+<span class="fc" id="L237">            node = seqVar.memberAfter(node);</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">            if (node == seqVar.start())</span>
+<span class="nc" id="L239">                throw INCONSISTENCY;</span>
+<span class="fc" id="L240">            profile.incrementLoadBeforeBy(node, load);</span>
+<span class="fc" id="L241">            profile.incrementLoadAtBy(node, load);</span>
+        }
+<span class="fc" id="L243">        closestNodeToCheck[activity] = seqVar.memberAfter(node);</span>
+<span class="fc" id="L244">    }</span>
+
+    private void addLoadOnlyEndInserted(int activity, int start, int end, int load) {
+<span class="fc" id="L247">        profile.incrementLoadBeforeBy(end, load);</span>
+<span class="fc" id="L248">        int node = seqVar.memberBefore(end);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        while (!seqVar.hasInsert(node, start)) {</span>
+<span class="fc" id="L250">            profile.incrementLoadAfterBy(node, load);</span>
+<span class="fc" id="L251">            profile.incrementLoadAtBy(node, load);</span>
+<span class="fc" id="L252">            profile.incrementLoadBeforeBy(node, load);</span>
+<span class="fc" id="L253">            node = seqVar.memberBefore(node);</span>
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">            if (node == seqVar.end())</span>
+<span class="nc" id="L255">                throw INCONSISTENCY;</span>
+        }
+<span class="fc" id="L257">        closestNodeToCheck[activity] = node;</span>
+<span class="fc" id="L258">    }</span>
+
+    /**
+     * Filter the insertions for the partially inserted activities
+     * Preconditions:
+     * - partiallyInsertedNodes must be filled with the position of the activities partially inserted
+     * - profile must be up-to-date
+     * - closestPosition[activity] contains the position of the closest node that can be used to insert the
+     * remaining node of the activity
+     *
+     * @return true if a node was inserted because of the operations
+     */
+    private boolean filterInsertionsForPartiallyInserted() {
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int activity : partiallyInsertedActivities) {</span>
+<span class="fc" id="L272">            int start = starts[activity];</span>
+<span class="fc" id="L273">            int end = ends[activity];</span>
+<span class="fc" id="L274">            int loadChange = this.load[activity];</span>
+<span class="fc" id="L275">            int closestNode = this.closestNodeToCheck[activity];</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            if (seqVar.isNode(start, MEMBER)) {</span>
+                // start inserted, check if end positions are valid.
+<span class="fc bfc" id="L278" title="All 2 branches covered.">                for (int node = closestNode; node != seqVar.start(); node = seqVar.memberAfter(node)) {</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                    if (Math.max(profile.loadAt(node), profile.loadBefore(node)) + loadChange &gt; profile.maxCapacity) {</span>
+<span class="fc" id="L280">                        seqVar.notBetween(node, end, seqVar.end());</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">                        if (seqVar.isNode(end, MEMBER))</span>
+<span class="fc" id="L282">                            return true;</span>
+                    }
+                }
+            } else {
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">                assert seqVar.isNode(end, MEMBER);</span>
+                // end inserted, check if start positions are valid.
+<span class="fc bfc" id="L288" title="All 2 branches covered.">                for (int node = closestNode; node != seqVar.end(); node = seqVar.memberBefore(node)) {</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                    if (Math.max(profile.loadAt(node), profile.loadBefore(node)) + loadChange &gt; profile.maxCapacity) {</span>
+<span class="fc" id="L290">                        seqVar.notBetween(seqVar.start(), start, node);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">                        if (seqVar.isNode(start, MEMBER))</span>
+<span class="fc" id="L292">                            return true;</span>
+                    }
+                }
+            }
+<span class="fc" id="L296">        }</span>
+<span class="fc" id="L297">        return false;</span>
+    }
+
+    /**
+     * Filter the insertions for non-inserted activities.
+     * This performs a filtering similar to Thomas, C., Kameugne, R., &amp; Schaus, P.
+     * Insertion sequence variables for hybrid routing and scheduling problems. CPAIOR 2020.
+     *
+     * @return true if an insertion occurred
+     */
+    private boolean filterInsertionsForNonInserted() {
+<span class="fc" id="L308">        int nValid = nValidActivities.value();</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">        for (int i = 0; i &lt; nValid; i++) {</span>
+<span class="fc" id="L310">            int activity = activities[i];</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">            if (isNonInserted(activity)) {</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">                if (this.load[activity] + profile.maxLoad &lt;= profile.maxCapacity) {</span>
+                    // can always insert the activity, no matter where. This filtering will do nothing
+<span class="fc" id="L314">                    continue;</span>
+                }
+<span class="fc" id="L316">                int start = starts[activity];</span>
+<span class="fc" id="L317">                int end = ends[activity];</span>
+<span class="fc" id="L318">                int capacity = profile.maxCapacity - this.load[activity];</span>
+<span class="fc" id="L319">                startInsertionsPos.clear();</span>
+<span class="fc" id="L320">                endInsertionsPos.clear();</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">                for (int pos = 0; pos &lt; nMember - 1; pos++) {</span>
+<span class="fc" id="L322">                    startInsertionsPos.add(pos);</span>
+<span class="fc" id="L323">                    endInsertionsPos.add(pos);</span>
+                }
+<span class="fc" id="L325">                boolean canClose = false;</span>
+<span class="fc" id="L326">                activeStartInsertionsPos.clear();</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                for (int pos = 0; pos &lt; nMember; pos++) {</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                    if (seqVar.hasInsert(order[pos], start)) {</span>
+<span class="fc" id="L329">                        activeStartInsertionsPos.add(pos);</span>
+<span class="fc" id="L330">                        canClose = true;</span>
+                    }
+                    // check the load between two nodes
+<span class="fc" id="L333">                    int load = profile.loadAfter(order[pos]);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">                    if (load &gt; capacity) {</span>
+                        // capacity exceeded, cannot close the active start
+<span class="fc" id="L336">                        activeStartInsertionsPos.clear();</span>
+<span class="fc" id="L337">                        canClose = false;</span>
+                    }
+<span class="fc bfc" id="L339" title="All 4 branches covered.">                    if (canClose &amp;&amp; seqVar.hasInsert(order[pos], end)) {</span>
+<span class="fc" id="L340">                        endInsertionsPos.remove(pos); // current end has at least one matching start</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">                        for (int startPos : activeStartInsertionsPos)</span>
+<span class="fc" id="L342">                            startInsertionsPos.remove(startPos); // all starts stored have a matching end</span>
+<span class="fc" id="L343">                        activeStartInsertionsPos.clear();</span>
+                    }
+                }
+                // all points not marked for insertions must be removed
+<span class="fc bfc" id="L347" title="All 2 branches covered.">                for (int pos : endInsertionsPos)</span>
+<span class="fc" id="L348">                    seqVar.notBetween(order[pos], end, order[pos + 1]);</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">                for (int pos : startInsertionsPos)</span>
+<span class="fc" id="L350">                    seqVar.notBetween(order[pos], start, order[pos + 1]);</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">                if (seqVar.nNode(MEMBER) != nMember) {</span>
+                    // an insertion happened and profile may be updated
+<span class="nc" id="L353">                    return true;</span>
+                }
+            }
+        }
+<span class="fc" id="L357">        return false;</span>
+    }
+
+    private boolean isFullyExcluded(int activity) {
+<span class="pc bpc" id="L361" title="1 of 4 branches missed.">        return seqVar.isNode(starts[activity], EXCLUDED) &amp;&amp; seqVar.isNode(ends[activity], EXCLUDED);</span>
+    }
+
+    private boolean isFullyInserted(int activity) {
+<span class="fc bfc" id="L365" title="All 4 branches covered.">        return seqVar.isNode(starts[activity], MEMBER) &amp;&amp; seqVar.isNode(ends[activity], MEMBER);</span>
+    }
+
+    private boolean isNonInserted(int activity) {
+<span class="fc bfc" id="L369" title="All 4 branches covered.">        return !seqVar.isNode(starts[activity], MEMBER) &amp;&amp; !seqVar.isNode(ends[activity], MEMBER);</span>
+    }
+
+    private boolean isPartiallyInserted(int activity) {
+<span class="pc bpc" id="L373" title="1 of 4 branches missed.">        return !isFullyInserted(activity) &amp;&amp; !isNonInserted(activity);</span>
+    }
+
+    @Override
+    public int priority() {
+<span class="fc" id="L378">        return Constants.PIORITY_MEDIUM;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

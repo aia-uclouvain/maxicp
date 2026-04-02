@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CostCardinalityMaxDC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">CostCardinalityMaxDC.java</span></div><h1>CostCardinalityMaxDC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
+
+/**
+ * Implementation of the Global Cardinality Constraint with Costs from the paper
+ * &lt;p&gt;
+ * Margaux Schmied, Jean-Charles Régin:
+ * Efficient Implementation of the Global Cardinality Constraint with Costs. CP 2024
+ *
+ * @author Margaux Schmied
+ */
+public class CostCardinalityMaxDC extends AbstractCPConstraint {
+
+    // create an enum for the type of algorithm used SCHMIED_REGIN_2024 or REGIN_2002
+<span class="fc" id="L29">    public enum Algorithm {</span>
+<span class="fc" id="L30">        SCHMIED_REGIN_2024, REGIN_2002</span>
+    }
+
+<span class="fc" id="L33">    private final int INF</span>
+            = Integer.MAX_VALUE;
+    private final CPIntVar[] x;
+    private final int[] upper;
+    private final int nValues;
+    private final int nVars;
+    private final int[][] costs;
+    private final CPIntVar H; // Maximum cost allowed
+
+    private final StateInt[] assignment;
+    private final MinCostMaxFlow minCostMaxFlow;
+    private int minCostAssignment;
+
+    private final int numNodes;
+    private final int[][] costNetworkFlow;
+    private final int[][] capMaxNetworkFlow;
+
+    private final int[][] capMaxResidualGraph;
+    private final int[][] costResidualGraph;
+
+    private final int[][] edges;
+    private final int[][] edgesReverse;
+    private int edgeCount;
+    private int costArcMax;
+
+    private final int[][] domain;
+    private final int[] domainSize;
+
+    private final long[][] dist; // dist[i][j] is the shortest distance from node i to node j in the residual graph
+    private final long[][] distReverse; // distReverse[i][j] is the shortest distance from node j to node i in the reverse residual graph
+
+    private final SCC scc;
+    private int[] sccByNode;
+    private final int[] degreeMaxBySCC;
+    private final int[] pivots;
+    private final long[] distMaxIn;
+    private final long[] distMaxOut;
+
+    private final Algorithm algorithm; // the algorithm to use for the constraint, either SCHMIED_REGIN_2024 or REGIN_2002
+
+
+
+    /**
+     * Constraint the maximum number of occurrences of a range of values in x.
+     *
+     * @param x     The variables to constraint (at least one), only non-negative values
+     * @param upper The upper cardinality bounds,
+     *              upper[i] is the maximum number of occurrences of value i in x
+     *              The size of upper must be equal to the number of columns in costs and equal to the larest value in x.
+     * @param costs The costs associated with each value in x.
+     * @param H     The maximum cost allowed for the assignment.
+     * @param algorithm The algorithm to use for the constraint, either SCHMIED_REGIN_2024 or REGIN_2002.
+     */
+    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H, Algorithm algorithm)  {
+<span class="fc" id="L87">        super(x[0].getSolver());</span>
+<span class="fc" id="L88">        nVars = x.length;</span>
+<span class="fc" id="L89">        this.x = CPFactory.makeIntVarArray(nVars, i -&gt; x[i]);</span>
+<span class="fc" id="L90">        this.costs = costs;</span>
+<span class="fc" id="L91">        this.nValues = upper.length;</span>
+<span class="fc" id="L92">        this.upper = new int[upper.length];</span>
+<span class="fc" id="L93">        this.H = H;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = 0; i &lt; upper.length; i++) {</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (upper[i] &lt; 0) throw new IllegalArgumentException(&quot;upper bounds must be non negative&quot; + upper[i]);</span>
+<span class="fc" id="L96">            this.upper[i] = upper[i];</span>
+        }
+        // largest value in x
+<span class="fc" id="L99">        int largest = Stream.of(x).mapToInt(CPIntVar::max).max().getAsInt();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (nValues &lt; largest) {</span>
+<span class="nc" id="L101">            throw new IllegalArgumentException(&quot;upper bounds length must be at least as large as the largest value in x&quot;);</span>
+        }
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (costs.length != x.length) {</span>
+<span class="nc" id="L104">            throw new IllegalArgumentException(&quot;costs must have the same length as upper bounds&quot;);</span>
+        }
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        if (costs[0].length != nValues) {</span>
+<span class="nc" id="L107">            throw new IllegalArgumentException(&quot;costs must have the same number of columns as upper bounds&quot;);</span>
+        }
+<span class="fc" id="L109">        assignment = new StateInt[nVars];</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc" id="L111">            assignment[i] = getSolver().getStateManager().makeStateInt(-1); // -1 means unassigned</span>
+<span class="fc" id="L112">            this.x[i] = x[i];</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (x[i].min() &lt; 0) {</span>
+<span class="nc" id="L114">                throw new IllegalArgumentException(&quot;variable domains must be non-negative&quot;);</span>
+            }
+        }
+
+<span class="fc" id="L118">        numNodes = nValues + nVars + 2; // source, variables, values, sink</span>
+<span class="fc" id="L119">        minCostMaxFlow = new MinCostMaxFlow(H.max(), numNodes);</span>
+<span class="fc" id="L120">        scc = new SCC(numNodes);</span>
+
+<span class="fc" id="L122">        costNetworkFlow = new int[numNodes][numNodes];</span>
+<span class="fc" id="L123">        capMaxNetworkFlow = new int[numNodes][numNodes];</span>
+<span class="fc" id="L124">        capMaxResidualGraph = new int[numNodes][numNodes];</span>
+<span class="fc" id="L125">        costResidualGraph = new int[numNodes][numNodes];</span>
+
+<span class="fc" id="L127">        edges = new int[numNodes * numNodes][3];</span>
+<span class="fc" id="L128">        edgesReverse = new int[numNodes * numNodes][3];</span>
+
+        // domain[i][0..domainSize[i]-1] contains the values of variable i
+<span class="fc" id="L131">        domain = new int[nVars][nValues];</span>
+<span class="fc" id="L132">        domainSize = new int[nVars];</span>
+
+<span class="fc" id="L134">        dist = new long[numNodes][numNodes];</span>
+<span class="fc" id="L135">        distReverse = new long[numNodes][numNodes];</span>
+
+<span class="fc" id="L137">        degreeMaxBySCC = new int[numNodes];</span>
+<span class="fc" id="L138">        pivots = new int[numNodes];</span>
+<span class="fc" id="L139">        distMaxIn = new long[numNodes];</span>
+<span class="fc" id="L140">        distMaxOut = new long[numNodes];</span>
+<span class="fc" id="L141">        this.algorithm = algorithm;</span>
+<span class="fc" id="L142">    }</span>
+
+    /**
+     * Constraint the maximum number of occurrences of a range of values in x.
+     *
+     * @param x     The variables to constraint (at least one), only non-negative values
+     * @param upper The upper cardinality bounds,
+     *              upper[i] is the maximum number of occurrences of value i in x
+     *              The size of upper must be equal to the number of columns in costs and equal to the larest value in x.
+     * @param costs The costs associated with each value in x.
+     * @param H     The maximum cost allowed for the assignment.
+     */
+    public CostCardinalityMaxDC(CPIntVar[] x, int[] upper, int[][] costs, CPIntVar H)  {
+<span class="fc" id="L155">        this(x, upper, costs, H, Algorithm.SCHMIED_REGIN_2024);</span>
+<span class="fc" id="L156">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (CPIntVar var : x) {</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (!var.isFixed())</span>
+<span class="fc" id="L162">                var.propagateOnDomainChange(this);</span>
+        }
+<span class="fc" id="L164">        propagate();</span>
+<span class="fc" id="L165">    }</span>
+
+
+    @Override
+    public void propagate() {
+
+<span class="fc" id="L171">        cleanDataStructures();</span>
+
+<span class="fc" id="L173">        updateDomains();</span>
+
+<span class="fc" id="L175">        buildNetworkFlow(costNetworkFlow, capMaxNetworkFlow);</span>
+
+<span class="fc" id="L177">        minCostMaxFlow.run(0, numNodes-1, capMaxNetworkFlow, costNetworkFlow);</span>
+
+<span class="fc" id="L179">        minCostAssignment = minCostMaxFlow.getTotalCost();</span>
+
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (minCostMaxFlow.getTotalFlow() != nVars) throw InconsistencyException.INCONSISTENCY;</span>
+<span class="fc" id="L182">        H.removeBelow(minCostAssignment);</span>
+
+        // fill the assignment
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) { // from variables to values</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">            for (int j = 0; j &lt; domainSize[i]; j++) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">                if (minCostMaxFlow.getFlow()[i + 1][nVars + 1 + domain[i][j]] &gt; 0) {</span>
+<span class="fc" id="L188">                    assignment[i].setValue(domain[i][j]); // assign the value to the variable</span>
+<span class="fc" id="L189">                    break; // only one value can be assigned to a variable</span>
+                }
+            }
+        }
+
+<span class="fc" id="L194">        builResidualGraph(capMaxNetworkFlow, costNetworkFlow, minCostMaxFlow.getFlow());</span>
+
+        // call the algorithm depending on the enum type
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (algorithm == Algorithm.SCHMIED_REGIN_2024) {</span>
+<span class="fc" id="L198">            removeArcNotConsistentPivot();</span>
+        }
+        else {
+<span class="nc" id="L201">            removeArcNotConsistent();</span>
+        }
+<span class="fc" id="L203">    }</span>
+
+    private void updateDomains() {
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) { // from variables to values</span>
+<span class="fc" id="L207">            domainSize[i] = x[i].fillArray(domain[i]);</span>
+        }
+<span class="fc" id="L209">    }</span>
+
+    private void cleanDataStructures() {
+<span class="fc" id="L212">        edgeCount = 0;</span>
+<span class="fc" id="L213">        costArcMax = 0;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc" id="L215">            Arrays.fill(capMaxResidualGraph[i], 0);</span>
+<span class="fc" id="L216">            Arrays.fill(costResidualGraph[i], 0);</span>
+<span class="fc" id="L217">            Arrays.fill(dist[i], INF);</span>
+        }
+<span class="fc" id="L219">    }</span>
+
+    private void removeArcNotConsistentPivot() {
+
+<span class="fc" id="L223">        createListOfEdges();</span>
+
+<span class="fc" id="L225">        scc.findSCC(capMaxResidualGraph);</span>
+<span class="fc" id="L226">        int numSCC = scc.getNumSCC();</span>
+<span class="fc" id="L227">        sccByNode = scc.getSccByNode();</span>
+
+<span class="fc" id="L229">        selectPivotBySCC();</span>
+
+        // For each SCC, compute the shortest path from the pivot to all other nodes and from all nodes to the pivot
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        for (int indexSCC = 0; indexSCC &lt; numSCC; indexSCC++) {</span>
+<span class="fc" id="L233">            int pivot = pivots[indexSCC];</span>
+<span class="fc" id="L234">            bellmanFord(edgeCount, edges, pivot, dist[pivot]); // Compute shortest path from pivot to all nodes</span>
+<span class="fc" id="L235">            bellmanFord(edgeCount, edgesReverse, pivot, distReverse[pivot]); // Compute shortest path from all nodes to pivot</span>
+        }
+
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc" id="L239">            int indexSCC = sccByNode[i];</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (indexSCC == -1) continue; // Node is not in any SCC</span>
+<span class="fc" id="L241">            int pivot = pivots[indexSCC];</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">            if (distReverse[pivot][i] != 0) {</span>
+<span class="fc" id="L243">                dist[i][pivot] = distReverse[pivot][i]; // Store the reverse distance</span>
+            }
+<span class="fc bfc" id="L245" title="All 4 branches covered.">            if (distMaxOut[indexSCC] &lt; dist[pivot][i] &amp;&amp; dist[pivot][i] != INF) {</span>
+<span class="fc" id="L246">                distMaxOut[indexSCC] = dist[pivot][i]; // Maximum distance from pivot to any node in the SCC</span>
+            }
+<span class="fc bfc" id="L248" title="All 4 branches covered.">            if (distMaxIn[indexSCC] &lt; dist[i][pivot] &amp;&amp; dist[i][pivot] != INF) {</span>
+<span class="fc" id="L249">                distMaxIn[indexSCC] = dist[i][pivot]; // Maximum distance from any node in the SCC to the pivot</span>
+            }
+        }
+
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc" id="L254">            int varNode = i + 1; // node representing variable i</span>
+            //iterate over all values of variable i
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            for (int j = 0; j &lt; domainSize[i]; j++) {</span>
+<span class="fc" id="L257">                int valueNode = nVars + 1 + domain[i][j]; // node representing value j of variable i</span>
+<span class="fc" id="L258">                int indexSCC = sccByNode[valueNode];</span>
+
+<span class="fc bfc" id="L260" title="All 2 branches covered.">                if (assignment[i].value() == domain[i][j])</span>
+<span class="fc" id="L261">                    continue; // skip if already assigned</span>
+
+<span class="fc bfc" id="L263" title="All 4 branches covered.">                if (sccByNode[varNode] != sccByNode[valueNode] || indexSCC == -1) {</span>
+                    // there is no way to reach varNode from valueNode so:
+                    // Arc is not consistent, remove it
+<span class="fc" id="L266">                    x[i].remove(domain[i][j]);</span>
+<span class="fc" id="L267">                    continue;</span>
+                }
+                // Check the SCC with the pivot
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                if (distMaxIn[indexSCC] + distMaxOut[indexSCC] &lt;= H.max() - minCostAssignment - costArcMax) {</span>
+                    // SCC is consistent, keep it
+<span class="fc" id="L272">                    continue;</span>
+                }
+                // Check arc with the pivot
+<span class="fc bfc" id="L275" title="All 2 branches covered.">                if (dist[valueNode][pivots[indexSCC]] + dist[pivots[indexSCC]][varNode] &lt;= H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {</span>
+                    // Arc is consistent, keep it
+<span class="fc" id="L277">                    continue;</span>
+                }
+
+<span class="fc bfc" id="L280" title="All 2 branches covered.">                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it</span>
+<span class="fc" id="L281">                    bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);</span>
+                }
+                // Check if the arc (varNode, valueNode) is consistent with Régin 2002
+<span class="fc bfc" id="L284" title="All 2 branches covered.">                if (dist[valueNode][varNode] &gt; H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {</span>
+                    // Arc is not consistent, remove it
+<span class="fc" id="L286">                    x[i].remove(domain[i][j]);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L291">    }</span>
+
+    private void removeArcNotConsistent() {
+
+<span class="nc" id="L295">        createListOfEdges();</span>
+
+<span class="nc bnc" id="L297" title="All 2 branches missed.">        for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="nc" id="L298">            int varNode = i + 1; // node representing variable i</span>
+            //iterate over all values of variable i
+<span class="nc bnc" id="L300" title="All 2 branches missed.">            for (int j = 0; j &lt; domainSize[i]; j++) {</span>
+<span class="nc" id="L301">                int valueNode = nVars + 1 + domain[i][j]; // node representing value j of variable i</span>
+
+<span class="nc bnc" id="L303" title="All 2 branches missed.">                if (assignment[i].value() == domain[i][j])</span>
+<span class="nc" id="L304">                    continue; // skip if already assigned</span>
+
+<span class="nc bnc" id="L306" title="All 2 branches missed.">                if (dist[valueNode][valueNode] == INF) { // If the distance is not computed yet, compute it</span>
+<span class="nc" id="L307">                    bellmanFord(edgeCount, edges, valueNode, dist[valueNode]);</span>
+                }
+                // Check if the arc (varNode, valueNode) is consistent with Régin 2002
+<span class="nc bnc" id="L310" title="All 2 branches missed.">                if (dist[valueNode][varNode] &gt; H.max() - minCostAssignment - costResidualGraph[varNode][valueNode]) {</span>
+                    // Arc is not consistent, remove it
+<span class="nc" id="L312">                    x[i].remove(domain[i][j]);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L317">    }</span>
+
+    private void createListOfEdges() {
+        // Create a list of edges
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">            for (int j = 0; j &lt; numNodes; j++) {</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                if (capMaxResidualGraph[i][j] &gt; 0) {</span>
+<span class="fc" id="L324">                    edges[edgeCount][0] = i;</span>
+<span class="fc" id="L325">                    edges[edgeCount][1] = j;</span>
+<span class="fc" id="L326">                    edges[edgeCount][2] = costResidualGraph[i][j];</span>
+
+<span class="fc" id="L328">                    edgesReverse[edgeCount][0] = j;</span>
+<span class="fc" id="L329">                    edgesReverse[edgeCount][1] = i;</span>
+<span class="fc" id="L330">                    edgesReverse[edgeCount][2] = costResidualGraph[i][j];</span>
+
+<span class="fc" id="L332">                    edgeCount++;</span>
+                }
+<span class="fc bfc" id="L334" title="All 2 branches covered.">                if (costArcMax &lt; costResidualGraph[i][j]) {</span>
+<span class="fc" id="L335">                    costArcMax = costResidualGraph[i][j]; // Find the maximum cost of an arc</span>
+                }
+            }
+        }
+<span class="fc" id="L339">    }</span>
+
+    private void selectPivotBySCC() {
+        int degreeIn;
+        int degreeOut;
+        int tmp;
+<span class="fc bfc" id="L345" title="All 2 branches covered.">        for (int node = 0; node &lt; numNodes; node++) {</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">            if (sccByNode[node] == -1) {</span>
+<span class="fc" id="L347">                continue;</span>
+            }
+<span class="fc" id="L349">            degreeIn = 0;</span>
+<span class="fc" id="L350">            degreeOut = 0;</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">            for (int k = 0; k &lt; numNodes; k++) {  // search deg+(node) and deg-(node)</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">                if (capMaxResidualGraph[node][k] &gt; 0) {</span>
+<span class="fc" id="L353">                    degreeOut++;</span>
+                }
+<span class="fc bfc" id="L355" title="All 2 branches covered.">                if (capMaxResidualGraph[k][node] &gt; 0) {</span>
+<span class="fc" id="L356">                    degreeIn++;</span>
+                }
+            }
+<span class="fc" id="L359">            tmp = (degreeIn + degreeOut) * Math.min(degreeIn, degreeOut);</span>
+<span class="fc bfc" id="L360" title="All 2 branches covered.">            if (tmp &gt; degreeMaxBySCC[sccByNode[node]]) { // if node is a better pivot for his own SCC</span>
+<span class="fc" id="L361">                degreeMaxBySCC[sccByNode[node]] = tmp;</span>
+<span class="fc" id="L362">                pivots[sccByNode[node]] = node;</span>
+            }
+        }
+<span class="fc" id="L365">    }</span>
+
+    private void builResidualGraph(int[][] capMaxNetworkFlow, int[][] costNetworkFlow, int[][] flow) {
+        // Build the residual graph from the flow and the original network flow capacities and costs
+<span class="fc bfc" id="L369" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">            for (int j = 0; j &lt; numNodes; j++) {</span>
+<span class="fc bfc" id="L371" title="All 4 branches covered.">                if (capMaxNetworkFlow[i][j] &gt; 0 &amp;&amp; flow[i][j] &lt; capMaxNetworkFlow[i][j]) {</span>
+<span class="fc" id="L372">                    costResidualGraph[i][j] = costNetworkFlow[i][j];</span>
+<span class="fc" id="L373">                    capMaxResidualGraph[i][j] = capMaxNetworkFlow[i][j] - flow[i][j];</span>
+                }
+<span class="fc bfc" id="L375" title="All 4 branches covered.">                if (capMaxNetworkFlow[i][j] &gt; 0 &amp;&amp; flow[i][j] &gt; 0) {</span>
+<span class="fc" id="L376">                    costResidualGraph[j][i] = -1 * costNetworkFlow[i][j];</span>
+<span class="fc" id="L377">                    capMaxResidualGraph[j][i] = flow[i][j];</span>
+                }
+            }
+        }
+<span class="fc" id="L381">    }</span>
+
+    private void buildNetworkFlow(int[][] costNetworkFlow, int[][] capMaxNetworkFlow) {
+
+<span class="fc bfc" id="L385" title="All 2 branches covered.">        for (int i = 1; i &lt;= nVars; i++) { // from source to variables</span>
+<span class="fc" id="L386">            capMaxNetworkFlow[0][i] = 1;</span>
+        }
+
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) { // from variables to values</span>
+<span class="fc" id="L390">            Arrays.fill(capMaxNetworkFlow[i + 1], 0);</span>
+<span class="fc" id="L391">            Arrays.fill(costNetworkFlow[i + 1], 0);</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">            for (int j = 0; j &lt; domainSize[i]; j++) {</span>
+<span class="fc" id="L393">                capMaxNetworkFlow[i + 1][nVars + 1 + domain[i][j]] = 1; // capacity of 1 for each variable to value edge</span>
+<span class="fc" id="L394">                costNetworkFlow[i + 1][nVars + 1 + domain[i][j]] = costs[i][domain[i][j]]; // cost of assigning variable i to value j</span>
+            }
+        }
+
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        for (int i = 0; i &lt; nValues; i++) { // from values to sink</span>
+<span class="fc" id="L399">            capMaxNetworkFlow[nVars + 1 + i][nVars + nValues + 1] = upper[i];</span>
+        }
+<span class="fc" id="L401">    }</span>
+
+    /**
+     * Shortest path distance from the src to all other nodes using Bellman-Ford algorithm.
+     * Return null if a negative cycle is detected.
+     */
+    private void bellmanFord(int edgeCount, int[][] edges, int src, long[] dist) {
+        // Initially distance from source to all other vertices
+        // is not known(Infinite).
+<span class="fc" id="L410">        Arrays.fill(dist, INF);</span>
+<span class="fc" id="L411">        dist[src] = 0;</span>
+        // Relaxation of all the edges V times, not (V - 1) as we
+        // need one additional relaxation to detect negative cycle
+<span class="fc bfc" id="L414" title="All 2 branches covered.">        for (int i = 0; i &lt; numNodes; i++) {</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            for (int ne = 0; ne &lt; edgeCount; ne++) {</span>
+<span class="fc" id="L416">                int u = edges[ne][0];</span>
+<span class="fc" id="L417">                int v = edges[ne][1];</span>
+<span class="fc" id="L418">                int wt = edges[ne][2];</span>
+<span class="fc bfc" id="L419" title="All 4 branches covered.">                if (dist[u] != INF &amp;&amp; dist[u] + wt &lt; dist[v]) {</span>
+                    // V_th relaxation =&gt; negative cycle
+<span class="pc bpc" id="L421" title="1 of 2 branches missed.">                    if (i == numNodes - 1) {</span>
+<span class="nc" id="L422">                        throw InconsistencyException.INCONSISTENCY;</span>
+                    }
+                    // Update shortest distance to node v
+<span class="fc" id="L425">                    dist[v] = dist[u] + wt;</span>
+                }
+            }
+        }
+<span class="fc" id="L429">    }</span>
+
+    public int getMinCostAssignment() {
+<span class="fc" id="L432">        return minCostAssignment;</span>
+    }
+
+    public StateInt[] getAssignment() {
+<span class="fc" id="L436">        return assignment;</span>
+    }
+}
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

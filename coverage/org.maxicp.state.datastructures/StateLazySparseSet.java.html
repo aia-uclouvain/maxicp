@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StateLazySparseSet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.datastructures</a> &gt; <span class="el_source">StateLazySparseSet.java</span></div><h1>StateLazySparseSet.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.datastructures;
+
+import org.maxicp.state.State;
+import org.maxicp.state.StateManager;
+
+/**
+ * A sparse-set that lazily switch
+ * from a dense interval representation
+ * to a sparse-set representation
+ * when a hole is created in the interval.
+ */
+<span class="fc" id="L17">public class StateLazySparseSet {</span>
+
+    private StateManager sm;
+
+    private StateSparseSet sparse;
+    private StateInterval interval;
+
+
+    private State&lt;Boolean&gt; intervalRep;
+<span class="fc" id="L26">    private boolean switched = false;</span>
+
+    private boolean isInterval() {
+<span class="fc" id="L29">        return intervalRep.value();</span>
+    }
+
+    /**
+     * Creates a set containing the elements {@code {ofs,ofs+1,...,ofs+n-1}}.
+     *
+     * @param sm the state manager that will save and restore the set when
+     *        {@link StateManager#saveState()} / {@link StateManager#restoreState()}
+     *           mehtods are called
+     * @param n  the number of elements in the set
+     * @param ofs the minimum value in the set containing {@code {ofs,ofs+1,...,ofs+n-1}}
+     */
+<span class="fc" id="L41">    public StateLazySparseSet(StateManager sm, int n, int ofs) {</span>
+<span class="fc" id="L42">        this.sm = sm;</span>
+<span class="fc" id="L43">        interval = new StateInterval(sm, ofs, ofs + n - 1);</span>
+<span class="fc" id="L44">        intervalRep = sm.makeStateRef(true);</span>
+
+        // optimization to avoid trashing with the creation of sparse rep
+<span class="fc" id="L47">        sm.onRestore(() -&gt; {</span>
+<span class="fc bfc" id="L48" title="All 4 branches covered.">            if (switched &amp;&amp; isInterval()) buildSparse();</span>
+<span class="fc" id="L49">        });</span>
+<span class="fc" id="L50">    }</span>
+
+    private void buildSparse() {
+<span class="fc" id="L53">        sparse = new StateSparseSet(sm, max() - min() + 1, min());</span>
+<span class="fc" id="L54">        intervalRep.setValue(false);</span>
+<span class="fc" id="L55">        switched = true;</span>
+<span class="fc" id="L56">    }</span>
+
+    /**
+     * @return true if the set is empty
+     */
+    public boolean isEmpty() {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        return isInterval() ? interval.isEmpty() : sparse.isEmpty();</span>
+    }
+
+    /**
+     * @return the size of the set
+     */
+    public int size() {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        return isInterval() ? interval.size() : sparse.size();</span>
+    }
+
+    /**
+     * Returns the minimum value in the set.
+     *
+     * @return the minimum value in the set
+     */
+    public int min() {
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L79">            return interval.min();</span>
+        } else {
+<span class="fc" id="L81">            return sparse.min();</span>
+        }
+    }
+
+    /**
+     * Returns the maximum value in the set.
+     *
+     * @return the maximum value in the set
+     */
+    public int max() {
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L92">            return interval.max();</span>
+        } else {
+<span class="fc" id="L94">            return sparse.max();</span>
+        }
+    }
+
+    /**
+     * Checks if a value is in the set.
+     *
+     * @param val the value to check
+     * @return true if val is in the set
+     */
+    public boolean contains(int val) {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L106">            return interval.contains(val);</span>
+        } else {
+<span class="fc" id="L108">            return sparse.contains(val);</span>
+        }
+    }
+
+    /**
+     * Sets the first values of &lt;code&gt;dest&lt;/code&gt; to the ones
+     * present in the set.
+     *
+     * @param dest, an array large enough {@code dest.length &gt;= size()}
+     * @return the size of the set
+     */
+    public int fillArray(int[] dest) {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L121">            int s = size();</span>
+<span class="fc" id="L122">            int from = min();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            for (int i = 0; i &lt; s; i++)</span>
+<span class="fc" id="L124">                dest[i] = from + i;</span>
+<span class="fc" id="L125">            return s;</span>
+<span class="fc" id="L126">        } else return sparse.fillArray(dest);</span>
+    }
+
+    /**
+     * Removes the given value from the set.
+     *
+     * @param val the value to remove.
+     * @return true if val was in the set, false otherwise
+     */
+    public boolean remove(int val) {
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">            if (!interval.contains(val)) {</span>
+<span class="nc" id="L138">                return false;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            } else if (val == interval.min()) {</span>
+<span class="fc" id="L140">                interval.removeBelow(val + 1);</span>
+<span class="fc" id="L141">                return true;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            } else if (val == interval.max()) {</span>
+<span class="fc" id="L143">                interval.removeAbove(val - 1);</span>
+<span class="fc" id="L144">                return true;</span>
+            } else {
+<span class="fc" id="L146">                buildSparse();</span>
+<span class="fc" id="L147">                return sparse.remove(val);</span>
+            }
+<span class="fc" id="L149">        } else return sparse.remove(val);</span>
+    }
+
+    /**
+     * Removes all the element from the set except the given value.
+     *
+     * @param v is an element in the set
+     */
+    public void removeAllBut(int v) {
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L159">            interval.removeAllBut(v);</span>
+        } else {
+<span class="fc" id="L161">            sparse.removeAllBut(v);</span>
+        }
+<span class="fc" id="L163">    }</span>
+
+    /**
+     * Removes all the values in the set.
+     */
+    public void removeAll() {
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L170">            interval.removeAll();</span>
+        } else {
+<span class="fc" id="L172">            sparse.removeAll();</span>
+        }
+<span class="fc" id="L174">    }</span>
+
+    /**
+     * Remove all the values less than the given value from the set
+     *
+     * @param value a value such that all the ones smaller are removed
+     */
+    public void removeBelow(int value) {
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L183">            interval.removeBelow(value);</span>
+        } else {
+<span class="fc" id="L185">            sparse.removeBelow(value);</span>
+        }
+<span class="fc" id="L187">    }</span>
+
+    /**
+     * Remove all the values larger than the given value from the set
+     *
+     * @param value a value such that all the ones greater are removed
+     */
+    public void removeAbove(int value) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">        if (isInterval()) {</span>
+<span class="fc" id="L196">            interval.removeAbove(value);</span>
+        } else {
+<span class="fc" id="L198">            sparse.removeAbove(value);</span>
+        }
+<span class="fc" id="L200">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L204" title="All 2 branches missed.">        if (isInterval()) {</span>
+<span class="nc" id="L205">            return interval.toString();</span>
+        } else {
+<span class="nc" id="L207">            return sparse.toString();</span>
+        }
+    }
+
+    public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int [] arr) {
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (switched) {</span>
+
+            // must be cautious here because the bounds might have changed before the sparse-set creation
+<span class="fc" id="L215">            int oldMinSparseSet = Math.max(sparse.initMin(),oldMin);</span>
+<span class="fc" id="L216">            int oldMaxSparseSet = Math.min(sparse.initMax(),oldMax);</span>
+<span class="fc" id="L217">            int oldSizeSparseSet = Math.min(sparse.initSize(),oldSize);</span>
+
+<span class="fc" id="L219">            int s =  sparse.fillDeltaArray(oldMinSparseSet,oldMaxSparseSet,oldSizeSparseSet,arr);</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            for (int v = oldMin; v &lt; oldMinSparseSet; v++) {</span>
+<span class="fc" id="L221">                arr[s++] = v;</span>
+            }
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            for (int v = oldMaxSparseSet + 1; v &lt;= oldMax; v++) {</span>
+<span class="fc" id="L224">                arr[s++] = v;</span>
+            }
+<span class="fc" id="L226">            return s;</span>
+        } else {
+<span class="fc" id="L228">            int i = 0;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">            for (int v = oldMin; v &lt; min(); v++) {</span>
+<span class="fc" id="L230">                arr[i++] = v;</span>
+            }
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            for (int v = max() + 1; v &lt;= oldMax; v++) {</span>
+<span class="fc" id="L233">                arr[i++] = v;</span>
+            }
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            assert(i == oldSize - size());</span>
+<span class="fc" id="L236">            return i;</span>
+        }
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

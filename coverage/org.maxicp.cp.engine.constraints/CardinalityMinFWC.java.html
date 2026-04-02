@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CardinalityMinFWC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">CardinalityMinFWC.java</span></div><h1>CardinalityMinFWC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+
+public class CardinalityMinFWC extends AbstractCPConstraint {
+
+    private final CPIntVar [] x;
+    private final int [] lower;
+    private final int nValues ;
+    private final int nVars;
+
+    // ----- Reversible  state -----
+
+    // for each value, variables indices with this value in their domain
+    StateSparseSet[] possibleVars;
+
+    // Iterators array to be used with fillArray methods
+    int [] iterVariables;
+    int [] iterValues;
+
+    /**
+     * Constraint the minimum number of occurences of a range of values in X.
+     * @param x The variables to constraint (at least one)
+     * @param lower The upper cardinality bounds,
+     *              lower[i] is the maximum number of occurences of value i in X
+     *
+     * @author Pierre Schaus
+     */
+    public CardinalityMinFWC(CPIntVar [] x, int [] lower) {
+<span class="fc" id="L41">        super(x[0].getSolver());</span>
+<span class="fc" id="L42">        this.x = new CPIntVar[x.length];</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L44">            this.x[i] = x[i];</span>
+        }
+<span class="fc" id="L46">        this.lower = new int[lower.length];</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; lower.length; i++) {</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            if (lower[i] &lt; 0) throw new IllegalArgumentException(&quot;lower bounds must be non negative&quot; + lower[i]);</span>
+<span class="fc" id="L49">            this.lower[i] = lower[i];</span>
+        }
+<span class="fc" id="L51">        nValues = lower.length;</span>
+<span class="fc" id="L52">        nVars = x.length;</span>
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L57">        iterVariables = new int [nVars];</span>
+<span class="fc" id="L58">        iterValues = new int [Arrays.stream(x).map(var -&gt; var.size()).max(Integer::compare).get()];</span>
+<span class="fc" id="L59">        possibleVars = new StateSparseSet[nValues];</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; nValues; i++) {</span>
+<span class="fc" id="L61">            possibleVars[i] = new StateSparseSet(getSolver().getStateManager(), nVars,0);</span>
+        }
+
+        // Initial fix-point
+<span class="fc" id="L65">        boolean fixed = false;</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        while (!fixed) {</span>
+<span class="fc" id="L67">            fixed = true;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (int v = 0; v &lt; nValues; v++) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                    if (!x[i].contains(v)) {</span>
+<span class="fc" id="L71">                        possibleVars[v].remove(i);</span>
+                    }
+                }
+            }
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int v = 0; v &lt; nValues; v++) {</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (possibleVars[v].size() &lt; lower[v]) {</span>
+<span class="nc" id="L77">                    throw InconsistencyException.INCONSISTENCY;</span>
+                }
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (possibleVars[v].size() == lower[v]) {</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">                    fixed = !fixPossibles(possibleVars[v],v);</span>
+                }
+            }
+        }
+        // Incremental propagation based on delta
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc" id="L86">            int finalI = i;</span>
+<span class="fc" id="L87">            x[i].whenDomainChange(delta -&gt; {</span>
+<span class="fc" id="L88">                int deltaSize = delta.fillArray(iterValues);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                for (int iter = 0; iter &lt; deltaSize; iter++) {</span>
+<span class="fc" id="L90">                    int v = iterValues[iter];</span>
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">                    if (0 &lt;= v &amp;&amp; v &lt; nValues) { // possible that domain of x vars is larger than 0..nValues-1 initially</span>
+<span class="fc" id="L92">                        possibleVars[v].remove(finalI);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                        if (possibleVars[v].size() == lower[v]) {</span>
+<span class="fc" id="L94">                            fixPossibles(possibleVars[v],v);</span>
+                        }
+                    }
+                }
+<span class="fc" id="L98">            });</span>
+        }
+<span class="fc" id="L100">    }</span>
+
+    // #vars were v appears  = lower[v], thus fix all vars where it appears to v
+    private boolean fixPossibles(StateSparseSet possibleUnfixedVars, int v) {
+<span class="fc" id="L104">        boolean changed = false;</span>
+<span class="fc" id="L105">        int n = possibleUnfixedVars.fillArray(iterVariables);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (int iter = 0; iter &lt; n; iter++) {</span>
+<span class="fc" id="L107">            int i = iterVariables[iter];</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (!x[i].isFixed()) changed = true;</span>
+<span class="fc" id="L109">            x[i].fix(v);</span>
+        }
+<span class="fc" id="L111">        return changed;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

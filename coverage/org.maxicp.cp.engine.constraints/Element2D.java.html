@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Element2D.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Element2D.java</span></div><h1>Element2D.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.IntStream;
+
+
+/**
+ *
+ * Element Constraint modeling {@code matrix[x][y] = z}
+ *
+ */
+public class Element2D extends AbstractCPConstraint {
+
+    private final int[][] matrix;
+    private final CPIntVar x, y, z;
+    private int n, m;
+    private final StateInt[] nRowsSup;
+    private final StateInt[] nColsSup;
+
+    private final StateInt low;
+    private final StateInt up;
+    private final ArrayList&lt;Triple&gt; xyz;
+
+    private static final class Triple implements Comparable&lt;Triple&gt; {
+        private final int x, y, z;
+
+<span class="fc" id="L39">        private Triple(int x, int y, int z) {</span>
+<span class="fc" id="L40">            this.x = x;</span>
+<span class="fc" id="L41">            this.y = y;</span>
+<span class="fc" id="L42">            this.z = z;</span>
+<span class="fc" id="L43">        }</span>
+
+        @Override
+        public int compareTo(Triple t) {
+<span class="fc" id="L47">            return z - t.z;</span>
+        }
+    }
+
+    /**
+     * Creates an element constraint {@code mat[x][y] = z}
+     *
+     * @param mat the 2d array representing a matrix to index
+     * @param x the first dimension index variable
+     * @param y the second dimention index variable
+     * @param z the result variable
+     */
+    public Element2D(int[][] mat, CPIntVar x, CPIntVar y, CPIntVar z) {
+<span class="fc" id="L60">        super(x.getSolver());</span>
+<span class="fc" id="L61">        this.matrix = mat;</span>
+<span class="fc" id="L62">        this.x = x;</span>
+<span class="fc" id="L63">        this.y = y;</span>
+<span class="fc" id="L64">        this.z = z;</span>
+<span class="fc" id="L65">        n = matrix.length;</span>
+<span class="fc" id="L66">        this.m = matrix[0].length;</span>
+<span class="fc" id="L67">        this.xyz = new ArrayList&lt;Triple&gt;();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix.length; i++)</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++)</span>
+<span class="fc" id="L70">                xyz.add(new Triple(i, j, matrix[i][j]));</span>
+<span class="fc" id="L71">        Collections.sort(xyz);</span>
+<span class="fc" id="L72">        StateManager sm = getSolver().getStateManager();</span>
+<span class="fc" id="L73">        low = sm.makeStateInt(0);</span>
+<span class="fc" id="L74">        up = sm.makeStateInt(xyz.size() - 1);</span>
+<span class="fc" id="L75">        nColsSup = IntStream.range(0, n).mapToObj(i -&gt; sm.makeStateInt(this.m)).toArray(StateInt[]::new);</span>
+<span class="fc" id="L76">        nRowsSup = IntStream.range(0, this.m).mapToObj(i -&gt; sm.makeStateInt(n)).toArray(StateInt[]::new);</span>
+<span class="fc" id="L77">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L81">        x.removeBelow(0);</span>
+<span class="fc" id="L82">        x.removeAbove(n - 1);</span>
+<span class="fc" id="L83">        y.removeBelow(0);</span>
+<span class="fc" id="L84">        y.removeAbove(m - 1);</span>
+<span class="fc" id="L85">        x.propagateOnDomainChange(this);</span>
+<span class="fc" id="L86">        y.propagateOnDomainChange(this);</span>
+<span class="fc" id="L87">        z.propagateOnBoundChange(this);</span>
+<span class="fc" id="L88">        propagate();</span>
+<span class="fc" id="L89">    }</span>
+
+    private void updateSupports(int lostPos) {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (nColsSup[xyz.get(lostPos).x].decrement() == 0)</span>
+<span class="fc" id="L93">            x.remove(xyz.get(lostPos).x);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (nRowsSup[xyz.get(lostPos).y].decrement() == 0)</span>
+<span class="fc" id="L95">            y.remove(xyz.get(lostPos).y);</span>
+<span class="fc" id="L96">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L100">        int l = low.value(), u = up.value();</span>
+<span class="fc" id="L101">        int zMin = z.min(), zMax = z.max();</span>
+
+<span class="fc bfc" id="L103" title="All 6 branches covered.">        while (xyz.get(l).z &lt; zMin || !x.contains(xyz.get(l).x) || !y.contains(xyz.get(l).y)) {</span>
+<span class="fc" id="L104">            updateSupports(l++);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (l &gt; u) throw new InconsistencyException();</span>
+        }
+<span class="fc bfc" id="L107" title="All 6 branches covered.">        while (xyz.get(u).z &gt; zMax || !x.contains(xyz.get(u).x) || !y.contains(xyz.get(u).y)) {</span>
+<span class="fc" id="L108">            updateSupports(u--);</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (l &gt; u) throw new InconsistencyException();</span>
+        }
+<span class="fc" id="L111">        z.removeBelow(xyz.get(l).z);</span>
+<span class="fc" id="L112">        z.removeAbove(xyz.get(u).z);</span>
+<span class="fc" id="L113">        low.setValue(l);</span>
+<span class="fc" id="L114">        up.setValue(u);</span>
+<span class="fc" id="L115">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

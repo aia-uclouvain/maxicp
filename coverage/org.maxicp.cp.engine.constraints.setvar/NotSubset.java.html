@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotSubset.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.setvar</a> &gt; <span class="el_source">NotSubset.java</span></div><h1>NotSubset.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.setvar;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPSetVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+/**
+ * Constraint that enforces that the first set variable is not a subset of the second set variable.
+ */
+public class NotSubset extends AbstractCPConstraint {
+
+    private CPSetVar set1;
+    private CPSetVar set2;
+    private int[] values;
+
+    /**
+     * Creates a constraint that enforces that set1 is not a subset of set2.
+     *
+     * @param set1 the first set variable
+     * @param set2 the second set variable
+     */
+    public NotSubset(CPSetVar set1, CPSetVar set2) {
+<span class="fc" id="L23">        super(set1.getSolver());</span>
+<span class="fc" id="L24">        this.set1 = set1;</span>
+<span class="fc" id="L25">        this.set2 = set2;</span>
+<span class="fc" id="L26">        values = new int[Math.max(set1.size(), set2.size())];</span>
+<span class="fc" id="L27">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L31">        set1.propagateOnDomainChange(this);</span>
+<span class="fc" id="L32">        set2.propagateOnDomainChange(this);</span>
+<span class="fc" id="L33">        propagate();</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public void propagate() {
+        // if one value in set1 is excluded in set2, set1 is not a subset of set2
+        // if only one value can prevent set1 to be a subset of set2, include it in set1 and exclude it from set2
+        // values preventing set1 to be a subset of set2 are in I1 U P1 INTER E2 U P2
+
+<span class="fc" id="L42">        int nPossibleExcluded = 0;</span>
+<span class="fc" id="L43">        int value = -1;</span>
+<span class="fc" id="L44">        int nIncluded = set1.fillIncluded(values);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        for (int i = 0; i &lt; nIncluded; i++) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (set2.isExcluded(values[i])) {</span>
+<span class="fc" id="L47">                setActive(false);</span>
+<span class="fc" id="L48">                return;</span>
+            }
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (set2.isPossible(values[i])) {</span>
+<span class="fc" id="L51">                nPossibleExcluded++;</span>
+<span class="fc" id="L52">                value = values[i];</span>
+            }
+
+        }
+
+<span class="fc" id="L57">        int nPossible = set1.fillPossible(values);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; nPossible; i++) {</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            if (!set2.isIncluded(values[i])) {</span>
+<span class="fc" id="L60">                nPossibleExcluded++;</span>
+<span class="fc" id="L61">                value = values[i];</span>
+            }
+        }
+
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (nPossibleExcluded == 1) {</span>
+<span class="fc" id="L66">            set1.include(value);</span>
+<span class="fc" id="L67">            set2.exclude(value);</span>
+<span class="fc" id="L68">            setActive(false);</span>
+
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (nPossibleExcluded == 0) { // if nothing can prevent set1 to be a subset of set2</span>
+<span class="fc" id="L71">            throw new InconsistencyException();</span>
+        }
+<span class="fc" id="L73">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntVarRangeImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.symbolic</a> &gt; <span class="el_source">IntVarRangeImpl.java</span></div><h1>IntVarRangeImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.modeling.symbolic;
+
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+<span class="fc" id="L11">public class IntVarRangeImpl implements SymbolicIntVar {</span>
+
+    private final int min;
+    private final int max;
+    private final ModelProxy modelProxy;
+    private final String id;
+
+<span class="fc" id="L18">    public IntVarRangeImpl(ModelProxy modelProxy, String id, int min, int max) {</span>
+<span class="fc" id="L19">        this.min = min;</span>
+<span class="fc" id="L20">        this.max = max;</span>
+<span class="pc bpc" id="L21" title="1 of 2 branches missed.">        assert min &lt;= max;</span>
+<span class="fc" id="L22">        this.id = id;</span>
+<span class="fc" id="L23">        this.modelProxy = modelProxy;</span>
+<span class="fc" id="L24">    }</span>
+
+    public IntVarRangeImpl(ModelProxy modelProxy, int min, int max) {
+<span class="fc" id="L27">        this(modelProxy, null, min, max);</span>
+<span class="fc" id="L28">    }</span>
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if(defaultMin() == defaultMax()) return defaultMin();</span>
+<span class="nc" id="L33">        throw new VariableNotFixedException();</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="fc" id="L38">        return this.min;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="fc" id="L43">        return this.max;</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="fc" id="L48">        return max-min+1;</span>
+    }
+
+    @Override
+    public boolean defaultContains(int v) {
+<span class="nc bnc" id="L53" title="All 4 branches missed.">        return min &lt;= v &amp;&amp; v &lt;= max;</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; defaultSize(); i++)</span>
+<span class="fc" id="L59">            array[i] = min + i;</span>
+<span class="fc" id="L60">        return defaultSize();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (getModelProxy().isConcrete()) {</span>
+<span class="nc" id="L66">            return getModelProxy().getConcreteModel().getConcreteVar(this).toString();</span>
+        }
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if(id != null)</span>
+<span class="nc" id="L69">            return id;</span>
+<span class="nc" id="L70">        return &quot;{&quot;+defaultMin()+&quot;..&quot;+defaultMax()+&quot;}&quot;;</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L75">        return modelProxy;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

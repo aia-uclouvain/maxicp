@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MulCteRes.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">MulCteRes.java</span></div><h1>MulCteRes.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntVarConstant;
+import org.maxicp.util.NumberUtils;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Multiplication Constraint x * y = c
+ * @author Pierre Schaus
+ */
+<span class="fc" id="L23">public class MulCteRes extends AbstractCPConstraint {</span>
+
+    private CPIntVar x, y;
+    private int c;
+
+    /**
+     * x * y == c
+     * @param x
+     * @param y
+     * @param c
+     */
+    public MulCteRes(CPIntVar x, CPIntVar y, int c) {
+<span class="fc" id="L35">        super(x.getSolver());</span>
+<span class="fc" id="L36">        this.x = x;</span>
+<span class="fc" id="L37">        this.y = y;</span>
+<span class="fc" id="L38">        this.c = c;</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public void post() {
+
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (x == y) {</span>
+<span class="nc" id="L45">            getSolver().post(new Square(x,new CPIntVarConstant(getSolver(),c)));</span>
+<span class="nc" id="L46">            setActive(false);</span>
+<span class="nc" id="L47">            return;</span>
+        }
+<span class="pc bpc" id="L49" title="1 of 6 branches missed.">        if (c == 0 &amp;&amp; x.contains(0) &amp;&amp; y.contains(0)) {</span>
+<span class="fc" id="L50">            x.propagateOnDomainChange(this);</span>
+<span class="fc" id="L51">            y.propagateOnDomainChange(this);</span>
+        } else {
+<span class="fc" id="L53">            x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L54">            y.propagateOnBoundChange(this);</span>
+        }
+        // propagate must be called after attaching events because this propagator may not reach fix-point it-self.
+<span class="fc" id="L57">        propagate();</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    public void propagate() {
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (c != 0) {</span>
+<span class="fc" id="L64">            x.remove(0);</span>
+<span class="fc" id="L65">            y.remove(0);</span>
+        }
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (x.isFixed()) {</span>
+<span class="fc" id="L68">            getSolver().post(new MulCte(y,x.min(),new CPIntVarConstant(getSolver(),c)));</span>
+<span class="fc" id="L69">            setActive(false);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (y.isFixed()) {</span>
+<span class="fc" id="L71">            getSolver().post(new MulCte(x,y.min(),new CPIntVarConstant(getSolver(),c)));</span>
+<span class="fc" id="L72">            setActive(false);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        } else if (c == 0) {</span>
+<span class="fc" id="L74">            boolean xZero = x.contains(0);</span>
+<span class="fc" id="L75">            boolean yZero = y.contains(0);</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">            if (xZero || yZero) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (xZero ^ yZero) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                    if (xZero) {</span>
+<span class="fc" id="L79">                        x.fix(0);</span>
+                    } else {
+<span class="fc" id="L81">                        y.fix(0);</span>
+                    }
+<span class="fc" id="L83">                    setActive(false);</span>
+                }
+            }
+            else {
+<span class="nc" id="L87">                throw InconsistencyException.INCONSISTENCY;</span>
+            }
+<span class="fc" id="L89">        }</span>
+        else { // c != 0
+<span class="fc" id="L91">            propagateVar(x,y);</span>
+<span class="fc" id="L92">            propagateVar(y,x);</span>
+        }
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * Filter domain of z with w * z == c with c!=0
+     */
+    private void propagateVar(CPIntVar w , CPIntVar z) {
+<span class="fc" id="L100">        int a = w.min();</span>
+<span class="fc" id="L101">        int b = w.max();</span>
+
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        assert (c != 0);</span>
+        //assert(a &lt; b);
+
+<span class="pc bpc" id="L106" title="1 of 4 branches missed.">        if (a &gt; 0 || b &lt; 0) {</span>
+            // [a,b] &gt; 0 or [a,b] &lt; 0
+<span class="fc" id="L108">            z.removeBelow(NumberUtils.minCeilDiv(c,a,b));</span>
+<span class="fc" id="L109">            z.removeAbove(NumberUtils.maxFloorDiv(c,a,b));</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        } else if (a == 0) {</span>
+<span class="nc" id="L111">            int after0 = w.after(0);</span>
+            // a=0 ... after0 ... b
+<span class="nc" id="L113">            z.removeBelow(NumberUtils.minCeilDiv(c,after0,b));</span>
+<span class="nc" id="L114">            z.removeAbove(NumberUtils.maxFloorDiv(c,after0,b));</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        } else if (b == 0) {</span>
+<span class="nc" id="L116">            int before0 = w.before(0);</span>
+            // a ... before0 ... b=0
+<span class="nc" id="L118">            z.removeBelow(NumberUtils.minCeilDiv(c,before0,a));</span>
+<span class="nc" id="L119">            z.removeAbove(NumberUtils.maxFloorDiv(c,before0,a));</span>
+<span class="nc" id="L120">        } else { // a ... 0 ... b</span>
+<span class="fc" id="L121">            int before0 = w.before(0);</span>
+<span class="fc" id="L122">            int after0 = w.after(0);</span>
+<span class="fc" id="L123">            z.removeBelow(NumberUtils.minCeilDiv(c, a, before0, after0, b));</span>
+<span class="fc" id="L124">            z.removeAbove(NumberUtils.maxFloorDiv(c, a, before0, after0, b));</span>
+        }
+<span class="fc" id="L126">    }</span>
+}
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotBetween.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">NotBetween.java</span></div><h1>NotBetween.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.Delta;
+
+public class NotBetween extends AbstractCPConstraint {
+
+    private final CPSeqVar seqVar;
+    private final int prev;
+    private final int node;
+    private final int succ;
+<span class="fc" id="L13">    private boolean scheduled = false;</span>
+
+    public NotBetween(CPSeqVar seqVar, int prev, int node, int succ) {
+<span class="fc" id="L16">        super(seqVar.getSolver());</span>
+<span class="fc" id="L17">        this.seqVar = seqVar;</span>
+<span class="fc" id="L18">        this.prev = prev;</span>
+<span class="fc" id="L19">        this.node = node;</span>
+<span class="fc" id="L20">        this.succ = succ;</span>
+<span class="fc" id="L21">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L25">        seqVar.notBetween(prev, node, succ);</span>
+<span class="fc" id="L26">    }</span>
+
+    @Override
+    public void propagate() {
+
+<span class="nc" id="L31">    }</span>
+
+    public void setScheduled(boolean scheduled) {
+<span class="nc" id="L34">        this.scheduled = scheduled;</span>
+<span class="nc" id="L35">    }</span>
+
+    public boolean isScheduled() {
+<span class="nc" id="L38">        return scheduled;</span>
+    }
+
+    @Override
+    public void setActive(boolean active) {
+
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public boolean isActive() {
+<span class="nc" id="L48">        return true;</span>
+    }
+
+    @Override
+    public void registerDelta(Delta delta) {
+
+<span class="nc" id="L54">    }</span>
+
+    @Override
+    public void updateDeltas() {
+
+<span class="nc" id="L59">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

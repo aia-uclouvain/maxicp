@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MaxiCP.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">MaxiCP.java</span></div><h1>MaxiCP.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.Constants;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.concrete.BasicModelProxy;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+import org.maxicp.search.IntObjective;
+import org.maxicp.state.StateManager;
+import org.maxicp.util.PQueue;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.*;
+
+
+public class MaxiCP implements CPSolver {
+
+<span class="fc" id="L24">    private final PQueue&lt;CPConstraint&gt; propagationQueue = new PQueue&lt;&gt;(Constants.PIORITY_SLOW+1);</span>
+<span class="fc" id="L25">    private final List&lt;Runnable&gt; fixPointListeners = new LinkedList&lt;&gt;();</span>
+
+    private final StateManager sm;
+    private final ModelProxy modelProxy;
+
+<span class="fc" id="L30">    public MaxiCP(StateManager sm) {</span>
+<span class="fc" id="L31">        this.sm = sm;</span>
+        //use a very simple ModelProxy to allow usage of Expression-based searches
+<span class="fc" id="L33">        this.modelProxy = new BasicModelProxy();</span>
+<span class="fc" id="L34">        this.modelProxy.setModel(new ConcreteCPModel(this.modelProxy, this, SymbolicModel.emptyModel(this.modelProxy)));</span>
+<span class="fc" id="L35">    }</span>
+
+<span class="fc" id="L37">    public MaxiCP(StateManager sm, ModelProxy modelProxy) {</span>
+<span class="fc" id="L38">        this.sm = sm;</span>
+<span class="fc" id="L39">        this.modelProxy = modelProxy;</span>
+<span class="fc" id="L40">    }</span>
+
+    @Override
+    public StateManager getStateManager() {
+<span class="fc" id="L44">        return sm;</span>
+    }
+
+    public void schedule(CPConstraint c) {
+<span class="fc bfc" id="L48" title="All 4 branches covered.">        if (c.isActive() &amp;&amp; !c.isScheduled()) {</span>
+<span class="fc" id="L49">            c.setScheduled(true);</span>
+<span class="fc" id="L50">            propagationQueue.add(c, c.priority());</span>
+        }
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public void onFixPoint(Runnable listener) {
+<span class="nc" id="L56">        fixPointListeners.add(listener);</span>
+<span class="nc" id="L57">    }</span>
+
+    private void notifyFixPoint() {
+<span class="fc" id="L60">        fixPointListeners.forEach(Runnable::run);</span>
+<span class="fc" id="L61">    }</span>
+
+    @Override
+    public void fixPoint() {
+        try {
+<span class="fc" id="L66">            notifyFixPoint();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            while (!propagationQueue.isEmpty()) {</span>
+<span class="fc" id="L68">                propagate(propagationQueue.poll());</span>
+            }
+<span class="fc" id="L70">        } catch (InconsistencyException e) {</span>
+            // empty the queue and unset the scheduled status
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            while (!propagationQueue.isEmpty())</span>
+<span class="fc" id="L73">                propagationQueue.poll().setScheduled(false);</span>
+<span class="fc" id="L74">            throw e;</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
+
+    private void propagate(CPConstraint c) {
+<span class="fc" id="L79">        c.setScheduled(false);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (c.isActive()) {</span>
+<span class="fc" id="L81">            c.propagate();</span>
+<span class="fc" id="L82">            c.updateDeltas();</span>
+        }
+<span class="fc" id="L84">    }</span>
+
+    @Override
+    public IntObjective minimize(CPIntVar x) {
+<span class="fc" id="L88">        return new Minimize(x);</span>
+    }
+
+    @Override
+    public IntObjective maximize(CPIntVar x) {
+<span class="fc" id="L93">        return minimize(CPFactory.minus(x));</span>
+    }
+
+    @Override
+    public void post(CPConstraint c) {
+<span class="fc" id="L98">        post(c, true);</span>
+<span class="fc" id="L99">    }</span>
+
+    @Override
+    public void post(CPConstraint c, boolean enforceFixPoint) {
+<span class="fc" id="L103">        c.post();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (enforceFixPoint) fixPoint();</span>
+<span class="fc" id="L105">    }</span>
+
+    @Override
+    public void post(CPBoolVar b) {
+<span class="fc" id="L109">        b.fix(true);</span>
+<span class="fc" id="L110">        fixPoint();</span>
+<span class="fc" id="L111">    }</span>
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L115">        return modelProxy;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L120">        return String.format(&quot;MaxiCP(%s)&quot;, sm);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

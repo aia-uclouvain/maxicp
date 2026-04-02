@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolicBoolExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.bool</a> &gt; <span class="el_source">SymbolicBoolExpression.java</span></div><h1>SymbolicBoolExpression.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.bool;
+
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.modeling.algebra.integer.SymbolicIntExpression;
+
+<span class="pc bpc" id="L6" title="1 of 2 branches missed.">public interface SymbolicBoolExpression extends BoolExpression, SymbolicIntExpression {</span>
+    @Override
+    default int defaultMin() {
+<span class="nc bnc" id="L9" title="All 2 branches missed.">        if (isFixed()) {</span>
+            try {
+<span class="nc" id="L11">                return evaluate();</span>
+<span class="nc" id="L12">            } catch (VariableNotFixedException ex) {</span>
+<span class="nc" id="L13">                throw new RuntimeException();</span>
+            }
+        }
+<span class="nc" id="L16">        return 0;</span>
+    }
+
+    @Override
+    default int defaultMax() {
+<span class="nc bnc" id="L21" title="All 2 branches missed.">        if (isFixed()) {</span>
+            try {
+<span class="nc" id="L23">                return evaluate();</span>
+<span class="nc" id="L24">            } catch (VariableNotFixedException ex) {</span>
+<span class="nc" id="L25">                throw new RuntimeException();</span>
+            }
+        }
+<span class="nc" id="L28">        return 1;</span>
+    }
+
+    @Override
+    default int defaultFillArray(int[] array) {
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (isFixed()) {</span>
+            try {
+<span class="nc" id="L35">                array[0] = evaluate();</span>
+<span class="nc" id="L36">                return 1;</span>
+<span class="nc" id="L37">            } catch (VariableNotFixedException ex) {</span>
+                //never happens
+<span class="nc bnc" id="L39" title="All 2 branches missed.">                assert (false);</span>
+            }
+        }
+<span class="nc" id="L42">        array[0] = 0;</span>
+<span class="nc" id="L43">        array[1] = 1;</span>
+<span class="nc" id="L44">        return 2;</span>
+    }
+
+    @Override
+    default int defaultSize() {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        return isFixed() ? 1 : 2;</span>
+    }
+
+    @Override
+    default boolean defaultContains(int v) {
+<span class="nc bnc" id="L54" title="All 4 branches missed.">        return min() &lt;= v &amp;&amp; v &lt;= max();</span>
+    }
+
+    @Override
+    default int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        return evaluateBool() ? 1 : 0;</span>
+    }
+
+    boolean defaultEvaluateBool() throws VariableNotFixedException;
+
+    default boolean evaluateBool() throws VariableNotFixedException {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L66">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluateBool();</span>
+<span class="nc" id="L67">        return defaultEvaluateBool();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

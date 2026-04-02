@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CumulativeDecomposition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">CumulativeDecomposition.java</span></div><h1>CumulativeDecomposition.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.IsLessOrEqual;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+import java.util.Arrays;
+
+import static org.maxicp.cp.CPFactory.*;
+
+/**
+ * Cumulative constraint with sum decomposition (very slow).
+ */
+public class CumulativeDecomposition extends AbstractCPConstraint {
+
+    private final CPIntVar[] start;
+    private final int[] duration;
+    private final CPIntVar[] end;
+    private final int[] demand;
+    private final int capa;
+
+    /**
+     * Creates a cumulative constraint with a decomposition into sum constraint.
+     * At any time-point t, the sum of the demands
+     * of the activities overlapping t do not overlap the capacity.
+     *
+     * @param start    the start time of each activities
+     * @param duration the duration of each activities (non negative)
+     * @param demand   the demand of each activities, non negative
+     * @param capa     the capacity of the constraint
+     */
+    public CumulativeDecomposition(CPIntVar[] start, int[] duration, int[] demand, int capa) {
+<span class="fc" id="L40">        super(start[0].getSolver());</span>
+<span class="fc" id="L41">        this.start = start;</span>
+<span class="fc" id="L42">        this.duration = duration;</span>
+<span class="fc" id="L43">        this.end = CPFactory.makeIntVarArray(start.length, i -&gt; plus(start[i], duration[i]));</span>
+<span class="fc" id="L44">        this.demand = demand;</span>
+<span class="fc" id="L45">        this.capa = capa;</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L50">        int min = Arrays.stream(start).map(s -&gt; s.min()).min(Integer::compare).get();</span>
+<span class="fc" id="L51">        int max = Arrays.stream(end).map(e -&gt; e.max()).max(Integer::compare).get();</span>
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int t = min; t &lt; max; t++) {</span>
+
+<span class="fc" id="L55">            CPBoolVar[] overlaps = new CPBoolVar[start.length];</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (int i = 0; i &lt; start.length; i++) {</span>
+<span class="fc" id="L57">                overlaps[i] = makeBoolVar(getSolver());</span>
+<span class="fc" id="L58">                CPBoolVar startsBefore = makeBoolVar(getSolver());</span>
+<span class="fc" id="L59">                CPBoolVar endsAfter = makeBoolVar(getSolver());</span>
+<span class="fc" id="L60">                getSolver().post(new IsLessOrEqual(startsBefore, start[i], t));</span>
+<span class="fc" id="L61">                getSolver().post(new IsLessOrEqual(endsAfter, minus(plus(start[i], duration[i] - 1)), -t));</span>
+<span class="fc" id="L62">                final int capa = -2;</span>
+                // overlaps = endsAfter &amp; startsBefore
+<span class="fc" id="L64">                getSolver().post(new IsLessOrEqual(overlaps[i], minus(sum(new CPIntVar[]{startsBefore, endsAfter})), capa));</span>
+            }
+
+<span class="fc" id="L67">            CPIntVar[] overlapHeights = CPFactory.makeIntVarArray(start.length, i -&gt; mul(overlaps[i], demand[i]));</span>
+<span class="fc" id="L68">            CPIntVar cumHeight = sum(overlapHeights);</span>
+<span class="fc" id="L69">            cumHeight.removeAbove(capa);</span>
+        }
+<span class="fc" id="L71">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

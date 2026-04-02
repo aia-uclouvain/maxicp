@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntervalExpression.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.scheduling</a> &gt; <span class="el_source">IntervalExpression.java</span></div><h1>IntervalExpression.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.modeling.algebra.scheduling;
+
+import org.maxicp.modeling.algebra.Expression;
+
+public interface IntervalExpression extends Expression {
+
+    int startMin();
+
+    int startMax();
+
+    int endMin();
+
+    int endMax();
+
+    int lengthMin();
+
+    int lengthMax();
+
+    boolean isPresent();
+
+    boolean isAbsent();
+
+    boolean isOptional();
+
+    /**
+     * Gives the current domain of the interval var as a human-readable String.
+     * If the var is fixed, a single number is returned.
+     * Otherwise, if the domain can be represented as an interval, it is represented by &quot;{min..max}&quot;.
+     * Otherwise, all values are enumerated in brackets, without any guarantee on the value ordering (i.e. &quot;{v2, v0, v1}&quot;)
+     *
+     * @return representation of the current domain, in human-readable format.
+     */
+    default String show() {
+<span class="fc" id="L40">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (isPresent()) {</span>
+<span class="fc" id="L42">            builder.append(&quot;present &quot;);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        } else if (isAbsent()) {</span>
+<span class="fc" id="L44">            builder.append(&quot;absent &quot;);</span>
+        } else {
+<span class="fc" id="L46">            builder.append(&quot;optional &quot;);</span>
+        }
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (startMin() == startMax()) {</span>
+<span class="fc" id="L49">            builder.append(&quot;start = &quot; + startMin() + &quot; &quot;);</span>
+        } else {
+<span class="fc" id="L51">            builder.append(&quot;start = [&quot; + startMin() + &quot;,&quot; + startMax() + &quot;] &quot;);</span>
+        }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (lengthMin() == lengthMax()) {</span>
+<span class="fc" id="L54">            builder.append(&quot;length = &quot; + lengthMin() + &quot; &quot;);</span>
+        } else {
+<span class="nc" id="L56">            builder.append(&quot;length = [&quot; + lengthMin() + &quot;,&quot; + lengthMax() + &quot;] &quot;);</span>
+        }
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        if (endMin() == endMax()) {</span>
+<span class="fc" id="L59">            builder.append(&quot;end = &quot; + endMin());</span>
+        } else {
+<span class="fc" id="L61">            builder.append(&quot;end = [&quot; + endMin() + &quot;,&quot; + endMax() + &quot;]&quot;);</span>
+        }
+<span class="fc" id="L63">        return builder.toString();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AtLeastNValueDC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">AtLeastNValueDC.java</span></div><h1>AtLeastNValueDC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+
+/**
+ * Domain Consistency Filtering for AtLeastNValue constraint.
+ *
+ * @author Pierre Schaus pschaus@gmail.com
+ */
+<span class="fc" id="L18">public class AtLeastNValueDC extends AbstractCPConstraint {</span>
+
+    private static final int NONE = -Integer.MIN_VALUE;
+
+    private boolean posted;
+
+    private CPIntVar[] x;
+
+    private CPIntVar nValueVar;
+
+    private int[] match;
+    private int[] varSeen;
+
+    private int min;
+    private int max;
+    private int valSize;
+    private int[] valMatch;
+    private int sizeMatching;
+    private int[] valSeen;
+    private int magic;
+
+    private int dfs;
+    private int component;
+
+    private int[] varComponent;
+    private int[] varDfs;
+    private int[] varHigh;
+
+    private int[] valComponent;
+    private int[] valDfs;
+    private int[] valHigh;
+
+    private int[] stack;
+    private int[] type;
+    private int top;
+
+    private int[][] domArray;
+    private int[] unBoundIdx;
+    private int nUnBound;
+
+
+    public AtLeastNValueDC(CPIntVar[] x, CPIntVar nVal) {
+<span class="fc" id="L60">        super(x[0].getSolver());</span>
+<span class="fc" id="L61">        this.x = x;</span>
+<span class="fc" id="L62">        this.posted = false;</span>
+<span class="fc" id="L63">        this.nValueVar = nVal;</span>
+<span class="fc" id="L64">    }</span>
+
+    public AtLeastNValueDC(CPIntVar[] x, CPIntVar nval, boolean dontPostFWC) {
+<span class="nc" id="L67">        this(x, nval);</span>
+<span class="nc" id="L68">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L72">        posted = true;</span>
+
+<span class="fc" id="L74">        findValueRange();</span>
+
+<span class="fc" id="L76">        unBoundIdx = new int[x.length];</span>
+<span class="fc" id="L77">        domArray = new int[x.length][valSize];</span>
+
+<span class="fc" id="L79">        initMatching();</span>
+
+<span class="fc" id="L81">        findInitialMatching();</span>
+
+<span class="fc" id="L83">        int sizeMatching = findMaximalMatching();</span>
+
+<span class="fc" id="L85">        nValueVar.removeAbove(sizeMatching);</span>
+
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (nValueVar.min() &gt; sizeMatching) {</span>
+<span class="nc" id="L88">            throw InconsistencyException.INCONSISTENCY;</span>
+        }
+
+<span class="fc" id="L91">        allocateSCC();</span>
+
+<span class="fc" id="L93">        propagate();</span>
+
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (!x[k].isFixed()) {</span>
+<span class="fc" id="L97">                x[k].propagateOnDomainChange(this);</span>
+            }
+        }
+
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (!nValueVar.isFixed()) {</span>
+<span class="nc" id="L102">            nValueVar.propagateOnBoundChange(this);</span>
+        }
+<span class="fc" id="L104">    }</span>
+
+    public boolean hasValInBestAssignment(int i) {
+<span class="nc bnc" id="L107" title="All 8 branches missed.">        if (posted &amp;&amp; i &gt;= 0 &amp;&amp; i &lt; x.length &amp;&amp; match[i] != NONE) return true;</span>
+<span class="nc" id="L108">        return false;</span>
+    }
+
+    public int getValInBestAssignment(int i) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (hasValInBestAssignment(i))</span>
+<span class="nc" id="L113">            return match[i];</span>
+<span class="nc bnc" id="L114" title="All 6 branches missed.">        else if (i &gt;= 0 &amp;&amp; i &lt; x.length &amp;&amp; posted)</span>
+<span class="nc" id="L115">            return x[i].min();</span>
+<span class="nc" id="L116">        return Integer.MIN_VALUE;</span>
+    }
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L121">        nUnBound = 0;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (match[k] != NONE) {</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">                if (!x[k].contains(match[k])) {</span>
+<span class="fc" id="L125">                    valMatch[match[k] - min] = -1;</span>
+<span class="fc" id="L126">                    match[k] = NONE;</span>
+<span class="fc" id="L127">                    sizeMatching--;</span>
+                }
+            }
+<span class="fc bfc" id="L130" title="All 2 branches covered.">            if (!x[k].isFixed()) {</span>
+<span class="fc" id="L131">                unBoundIdx[nUnBound] = k;</span>
+<span class="fc" id="L132">                nUnBound++;</span>
+            }
+        }
+
+<span class="fc" id="L136">        int maxMatching = findMaximalMatching();</span>
+<span class="fc" id="L137">        nValueVar.removeAbove(maxMatching);</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">        if (nValueVar.min() &gt; maxMatching) {</span>
+<span class="nc" id="L139">            throw InconsistencyException.INCONSISTENCY;</span>
+        }
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        else if (nValueVar.min() == maxMatching) {</span>
+<span class="fc" id="L142">            prune(maxMatching);</span>
+        }
+<span class="fc" id="L144">    }</span>
+
+    private void findValueRange() {
+<span class="fc" id="L147">        min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L148">        max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L150">            min = Math.min(min, x[i].min());</span>
+<span class="fc" id="L151">            max = Math.max(max, x[i].max());</span>
+        }
+<span class="fc" id="L153">        valSize = max - min + 1;</span>
+<span class="fc" id="L154">        valMatch = new int[valSize];</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int k = 0; k &lt; valSize; k++)</span>
+<span class="fc" id="L156">            valMatch[k] = -1;  // unmatched</span>
+<span class="fc" id="L157">    }</span>
+
+    private void initMatching() {
+<span class="fc" id="L160">        magic = 0;</span>
+<span class="fc" id="L161">        match = new int[x.length];</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L163">            match[k] = NONE; // unmatched</span>
+        }
+<span class="fc" id="L165">        varSeen = new int[x.length];</span>
+<span class="fc" id="L166">        valSeen = new int[valSize];</span>
+<span class="fc" id="L167">    }</span>
+
+    private void findInitialMatching() {
+<span class="fc" id="L170">        sizeMatching = 0;</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L172">            int mx = x[k].min();</span>
+<span class="fc" id="L173">            int Mx = x[k].max();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            for (int i = mx; i &lt;= Mx; i++)</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">                if (valMatch[i - min] &lt; 0) // unmatched</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                    if (x[k].contains(i)) {</span>
+<span class="fc" id="L177">                        match[k] = i;</span>
+<span class="fc" id="L178">                        valMatch[i - min] = k;</span>
+<span class="fc" id="L179">                        sizeMatching++;</span>
+<span class="fc" id="L180">                        break;</span>
+                    }
+        }
+<span class="fc" id="L183">    }</span>
+
+    private int findMaximalMatching() {
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (sizeMatching &lt; x.length) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">                if (match[k] == NONE) {</span>
+<span class="fc" id="L189">                    magic++;</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                    if (findAlternatingPath(k)) {</span>
+<span class="fc" id="L191">                        sizeMatching++;</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L196">        return sizeMatching;</span>
+    }
+
+    private boolean findAlternatingPath(int i) {
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">        if (varSeen[i] != magic) {</span>
+<span class="fc" id="L201">            varSeen[i] = magic;</span>
+<span class="fc" id="L202">            int mx = x[i].min();</span>
+<span class="fc" id="L203">            int Mx = x[i].max();</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            for (int v = mx; v &lt;= Mx; v++) {</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (match[i] != v) {</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                    if (x[i].contains(v)) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                        if (findAlternatingPathValue(v)) {</span>
+<span class="fc" id="L208">                            match[i] = v;</span>
+<span class="fc" id="L209">                            valMatch[v - min] = i;</span>
+<span class="fc" id="L210">                            return true;</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L216">        return false;</span>
+    }
+
+    private boolean findAlternatingPathValue(int v) {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (valSeen[v - min] != magic) {</span>
+<span class="fc" id="L221">            valSeen[v - min] = magic;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (valMatch[v - min] == -1)</span>
+<span class="fc" id="L223">                return true;</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (findAlternatingPath(valMatch[v - min]))</span>
+<span class="fc" id="L225">                return true;</span>
+        }
+<span class="fc" id="L227">        return false;</span>
+    }
+
+    private void allocateSCC() {
+<span class="fc" id="L231">        varComponent = new int[x.length * 2];</span>
+<span class="fc" id="L232">        varDfs = new int[x.length * 2];</span>
+<span class="fc" id="L233">        varHigh = new int[x.length * 2];</span>
+
+<span class="fc" id="L235">        valComponent = new int[valSize];</span>
+<span class="fc" id="L236">        valDfs = new int[valSize * 2];</span>
+<span class="fc" id="L237">        valHigh = new int[valSize * 2];</span>
+
+<span class="fc" id="L239">        stack = new int[(x.length + valSize) * 2];</span>
+<span class="fc" id="L240">        type = new int[(x.length + valSize) * 2];</span>
+<span class="fc" id="L241">    }</span>
+
+    private void initSCC() {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L245">            varComponent[k] = 0;</span>
+<span class="fc" id="L246">            varDfs[k] = 0;</span>
+<span class="fc" id="L247">            varHigh[k] = 0;</span>
+        }
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        for (int v = min; v &lt;= max; v++) {</span>
+<span class="fc" id="L250">            valComponent[v - min] = 0;</span>
+<span class="fc" id="L251">            valDfs[v - min] = 0;</span>
+<span class="fc" id="L252">            valHigh[v - min] = 0;</span>
+        }
+<span class="fc" id="L254">        top = 0;</span>
+<span class="fc" id="L255">        dfs = x.length + valSize;</span>
+<span class="fc" id="L256">        component = 0;</span>
+<span class="fc" id="L257">    }</span>
+
+    private void findSCC() {
+<span class="fc" id="L260">        initSCC();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        for (int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (varDfs[k] == 0)</span>
+<span class="fc" id="L263">                findSCCvar(k);</span>
+        }
+<span class="fc" id="L265">    }</span>
+
+    private void findSCCvar(int k) {
+<span class="fc" id="L268">        varDfs[k] = dfs--;</span>
+<span class="fc" id="L269">        varHigh[k] = varDfs[k];</span>
+<span class="fc" id="L270">        stack[top] = k;</span>
+<span class="fc" id="L271">        type[top] = 0;</span>
+<span class="fc" id="L272">        top++;</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        assert (top &lt;= x.length + valSize);</span>
+
+        // a variable can go to values in its domain that it doesn't match
+<span class="fc" id="L276">        int nVal = x[k].fillArray(domArray[k]);</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">        for (int i = 0; i &lt; nVal; i++) {</span>
+<span class="fc" id="L278">            int w = domArray[k][i];</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">            if (match[k] != w) {</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">                if (valDfs[w - min] == 0) {</span>
+<span class="fc" id="L281">                    findSCCval(w);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">                    if (valHigh[w - min] &gt; varHigh[k])</span>
+<span class="fc" id="L283">                        varHigh[k] = valHigh[w - min];</span>
+<span class="fc bfc" id="L284" title="All 4 branches covered.">                } else if ((valDfs[w - min] &gt; varDfs[k]) &amp;&amp; (valComponent[w - min] == 0)) {</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">                    if (valDfs[w - min] &gt; varHigh[k])</span>
+<span class="fc" id="L286">                        varHigh[k] = valDfs[w - min];</span>
+                }
+            }
+
+        }
+
+        // matched variable can go to other unmatched variables
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (match[k] != NONE) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">                if (match[i] == NONE) {</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                    if (varDfs[i] == 0) {</span>
+<span class="fc" id="L297">                        findSCCvar(i);</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">                        if (varHigh[i] &gt; varHigh[k])</span>
+<span class="nc" id="L299">                            varHigh[k] = varHigh[i];</span>
+<span class="fc bfc" id="L300" title="All 4 branches covered.">                    } else if ((varDfs[i] &gt; varDfs[k]) &amp;&amp; (varComponent[i] == 0)) {</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">                        if (varDfs[i] &gt; varHigh[k])</span>
+<span class="fc" id="L302">                            varHigh[k] = varDfs[i];</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        if (varHigh[k] == varDfs[k]) {</span>
+<span class="fc" id="L309">            component++;</span>
+            do {
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">                assert (top &gt; 0);</span>
+<span class="fc" id="L312">                int v = stack[--top];</span>
+<span class="fc" id="L313">                int t = type[top];</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">                if (t == 0)</span>
+<span class="fc" id="L315">                    varComponent[v] = component;</span>
+                else
+<span class="fc" id="L317">                    valComponent[v - min] = component;</span>
+<span class="fc bfc" id="L318" title="All 4 branches covered.">                if (t == 0 &amp;&amp; v == k)</span>
+<span class="fc" id="L319">                    break;</span>
+<span class="fc" id="L320">            } while (true);</span>
+        }
+<span class="fc" id="L322">    }</span>
+
+    private void findSCCval(int k) {
+        int i;
+<span class="fc" id="L326">        valDfs[k - min] = dfs--;</span>
+<span class="fc" id="L327">        valHigh[k - min] = valDfs[k - min];</span>
+<span class="fc" id="L328">        stack[top] = k;</span>
+<span class="fc" id="L329">        type[top] = 1;</span>
+<span class="fc" id="L330">        top++;</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        assert (top &lt;= x.length + valSize);</span>
+        // matched value can go to the variable that match it
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        if (valMatch[k - min] != -1) {</span>
+<span class="fc" id="L334">            int w = valMatch[k - min];</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">            if (varDfs[w] == 0) {</span>
+<span class="fc" id="L336">                findSCCvar(w);</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">                if (varHigh[w] &gt; valHigh[k - min])</span>
+<span class="fc" id="L338">                    valHigh[k - min] = varHigh[w];</span>
+<span class="pc bpc" id="L339" title="1 of 4 branches missed.">            } else if ((varDfs[w] &gt; valDfs[k - min]) &amp;&amp; (varComponent[w] == 0)) {</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">                if (varDfs[w] &gt; valHigh[k - min])</span>
+<span class="fc" id="L341">                    valHigh[k - min] = varDfs[w];</span>
+            }
+<span class="fc" id="L343">        } else {</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            for (i = 0; i &lt; x.length; i++) {</span>
+                //unmatched value can go to every matched value
+<span class="fc bfc" id="L346" title="All 2 branches covered.">                if (match[i] != NONE) {</span>
+<span class="fc" id="L347">                    int w = match[i];</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">                    if (valDfs[w - min] == 0) {</span>
+<span class="fc" id="L349">                        findSCCval(w);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">                        if (valHigh[w - min] &gt; valHigh[k - min])</span>
+<span class="fc" id="L351">                            valHigh[k - min] = valHigh[w - min];</span>
+<span class="fc bfc" id="L352" title="All 4 branches covered.">                    } else if ((valDfs[w - min] &gt; valDfs[k - min]) &amp;&amp; (valComponent[w - min] == 0)) {</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">                        if (valDfs[w - min] &gt; valHigh[k - min])</span>
+<span class="fc" id="L354">                            valHigh[k - min] = valDfs[w - min];</span>
+                    }
+<span class="fc" id="L356">                }</span>
+                //unmatched value can go to every unmatched variable
+                else {
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">                    if (varDfs[i] == 0) {</span>
+<span class="nc" id="L360">                        findSCCvar(i);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">                        if (varHigh[i] &gt; valHigh[k - min])</span>
+<span class="nc" id="L362">                            valHigh[k - min] = varHigh[i];</span>
+<span class="pc bpc" id="L363" title="2 of 4 branches missed.">                    } else if ((varDfs[i] &gt; valDfs[k - min]) &amp;&amp; (varComponent[i] == 0)) {</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">                        if (varDfs[i] &gt; valHigh[k - min])</span>
+<span class="nc" id="L365">                            valHigh[k - min] = varDfs[i];</span>
+                    }
+                }
+            }
+        }
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (valHigh[k - min] == valDfs[k - min]) {</span>
+<span class="fc" id="L371">            component++;</span>
+            do {
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">                assert (top &gt; 0);</span>
+<span class="fc" id="L374">                int v = stack[--top];</span>
+<span class="fc" id="L375">                int t = type[top];</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">                if (t == 0)</span>
+<span class="fc" id="L377">                    varComponent[v] = component;</span>
+                else
+<span class="fc" id="L379">                    valComponent[v - min] = component;</span>
+<span class="fc bfc" id="L380" title="All 4 branches covered.">                if (t == 1 &amp;&amp; v == k)</span>
+<span class="fc" id="L381">                    break;</span>
+<span class="fc" id="L382">            } while (true);</span>
+        }
+<span class="fc" id="L384">    }</span>
+
+    private void prune(int sizeMatching) {
+<span class="fc" id="L387">        findSCC();</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">        for (int j = 0; j &lt; nUnBound; j++) {</span>
+<span class="fc" id="L389">            int k = unBoundIdx[j];</span>
+<span class="fc" id="L390">            int nVal = x[k].fillArray(domArray[k]);</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">            for (int i = 0; i &lt; nVal; i++) {</span>
+<span class="fc" id="L392">                int w = domArray[k][i];</span>
+<span class="fc bfc" id="L393" title="All 4 branches covered.">                if (match[k] != w &amp;&amp; varComponent[k] != valComponent[w - min]) {</span>
+<span class="fc" id="L394">                    x[k].remove(w);</span>
+                }
+            }
+        }
+<span class="fc" id="L398">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CardinalityMaxFWC.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">CardinalityMaxFWC.java</span></div><h1>CardinalityMaxFWC.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2025 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+
+public class CardinalityMaxFWC extends AbstractCPConstraint {
+
+    private final CPIntVar [] x;
+    private final int [] upper;
+    private final int nValues ;
+    private final int nVars;
+
+    // ----- Reversible  state -----
+
+    // The number of variables that are fixed
+    private StateInt nFixed;
+
+    // Permutation array of indices of variables,
+    // the nFixed first ones are the fixed variable indices
+    private int[] fixed;
+
+    // for each value, the number of variables that are fixed to the value
+    private StateInt[] nValuesFixed;
+
+
+    /**
+     * Constraint the maximum number of occurrences of a range of values in X.
+     * @param x The variables to constraint (at least one)
+     * @param upper The upper cardinality bounds,
+     *              upper[i] is the maximum number of occurrences of value i in X
+     *
+     * @author Pierre Schaus
+     */
+    public CardinalityMaxFWC(CPIntVar [] x, int upper []) {
+<span class="fc" id="L46">        super(x[0].getSolver());</span>
+<span class="fc" id="L47">        nVars = x.length;</span>
+<span class="fc" id="L48">        this.x = new CPIntVar[x.length];</span>
+<span class="fc" id="L49">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L50">        fixed = new int[nVars];</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L52">            this.x[i] = x[i];</span>
+<span class="fc" id="L53">            fixed[i] = i;</span>
+        }
+
+<span class="fc" id="L56">        this.nValues = upper.length;</span>
+<span class="fc" id="L57">        nValuesFixed = new StateInt[nValues];</span>
+<span class="fc" id="L58">        this.upper = new int[upper.length];</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; upper.length; i++) {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            if (upper[i] &lt; 0) throw new IllegalArgumentException(&quot;upper bounds must be non negative&quot; + upper[i]);</span>
+<span class="fc" id="L61">            this.upper[i] = upper[i];</span>
+<span class="fc" id="L62">            nValuesFixed[i] = getSolver().getStateManager().makeStateInt(0);</span>
+        }
+<span class="fc" id="L64">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (CPIntVar var : x) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (!var.isFixed())</span>
+<span class="fc" id="L70">                var.propagateOnFix(this);</span>
+        }
+<span class="fc" id="L72">        propagate();</span>
+<span class="fc" id="L73">    }</span>
+
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L78">        int nF = nFixed.value();</span>
+        // iterate over non fixed variables
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = nF; i &lt; x.length; i++) {</span>
+<span class="fc" id="L81">            int idx = fixed[i];</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (x[idx].isFixed()) {</span>
+<span class="fc" id="L83">                int val = x[fixed[i]].min(); // value to remove from unfixed</span>
+<span class="fc" id="L84">                fixed[i] = fixed[nF]; // Swap the variables</span>
+<span class="fc" id="L85">                fixed[nF] = idx;</span>
+<span class="fc" id="L86">                nF++;</span>
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">                if (val &gt;= 0 &amp;&amp; val &lt; nValues) {</span>
+<span class="fc" id="L88">                    nValuesFixed[val].increment();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                    if (nValuesFixed[val].value() &gt; upper[val]) {</span>
+<span class="fc" id="L90">                        throw new InconsistencyException();</span>
+                    }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                    if (nValuesFixed[val].value() == upper[val]) {</span>
+                        // remove the value from the possible values of the unfixed variables
+<span class="fc bfc" id="L94" title="All 2 branches covered.">                        for (int j = nF; j &lt; x.length; j++) {</span>
+<span class="fc" id="L95">                            x[fixed[j]].remove(val);</span>
+                        }
+                    }
+                }
+            }
+        }
+<span class="fc" id="L101">        nFixed.setValue(nF);</span>
+<span class="fc" id="L102">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

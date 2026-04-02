@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Min.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">Min.java</span></div><h1>Min.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+<span class="nc" id="L12">public record Min(IntExpression[] exprs) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="nc" id="L15">        return List.of(exprs);</span>
+    }
+
+    @Override
+    public Min mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L20">        return new Min(Arrays.stream(exprs).map(x -&gt; (IntExpression) f.apply(x)).toArray(IntExpression[]::new));</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc" id="L25">        int min = Integer.MAX_VALUE;</span>
+<span class="nc" id="L26">        boolean isMinKnown = false;</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">        for (IntExpression expr : exprs) {</span>
+            try {
+<span class="nc" id="L29">                int thisMin = expr.evaluate();</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">                if (thisMin &lt;= min) {</span>
+<span class="nc" id="L31">                    min = thisMin;</span>
+<span class="nc" id="L32">                    isMinKnown = true;</span>
+                }
+<span class="nc" id="L34">            } catch (VariableNotFixedException e) {</span>
+<span class="nc" id="L35">                int thisMin = expr.min();</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">                if (thisMin &lt; min) {</span>
+<span class="nc" id="L37">                    min = thisMin;</span>
+<span class="nc" id="L38">                    isMinKnown = false;</span>
+                }
+<span class="nc" id="L40">            }</span>
+        }
+
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (isMinKnown)</span>
+<span class="nc" id="L44">            return min;</span>
+        else
+<span class="nc" id="L46">            throw new VariableNotFixedException();</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc" id="L51">        int min = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        for (IntExpression expr : exprs)</span>
+<span class="nc" id="L53">            min = Math.min(min, expr.min());</span>
+<span class="nc" id="L54">        return min;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc" id="L59">        int min = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        for (IntExpression expr : exprs)</span>
+<span class="nc" id="L61">            min = Math.min(min, expr.max());</span>
+<span class="nc" id="L62">        return min;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L67">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

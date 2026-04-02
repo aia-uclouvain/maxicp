@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntVarViewOpposite.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntVarViewOpposite.java</span></div><h1>CPIntVarViewOpposite.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.ModelProxy;
+
+import java.util.function.Consumer;
+
+
+/**
+ * A view on a variable of type {@code -x}
+ */
+public class CPIntVarViewOpposite implements CPIntVar {
+
+    private final CPIntVar x;
+
+<span class="fc" id="L21">    public CPIntVarViewOpposite(CPIntVar x) {</span>
+<span class="fc" id="L22">        this.x = x;</span>
+<span class="fc" id="L23">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L27">        return x.getSolver();</span>
+    }
+
+    @Override
+    public void whenFixed(Runnable f) {
+<span class="nc" id="L32">        x.whenFixed(f);</span>
+<span class="nc" id="L33">    }</span>
+
+    @Override
+    public void whenBoundChange(Runnable f) {
+<span class="fc" id="L37">        x.whenBoundChange(f);</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public void whenDomainChange(Runnable f) {
+<span class="nc" id="L42">        x.whenDomainChange(f);</span>
+<span class="nc" id="L43">    }</span>
+
+    @Override
+    public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+<span class="nc" id="L47">        CPConstraint c = new CPConstraintClosureWithDelta(getSolver(),this,f);</span>
+<span class="nc" id="L48">        getSolver().post(c, false);</span>
+<span class="nc" id="L49">    }</span>
+
+    @Override
+    public void propagateOnDomainChange(CPConstraint c) {
+<span class="nc" id="L53">        x.propagateOnDomainChange(c);</span>
+<span class="nc" id="L54">    }</span>
+
+    @Override
+    public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L58">        x.propagateOnFix(c);</span>
+<span class="fc" id="L59">    }</span>
+
+    @Override
+    public void propagateOnBoundChange(CPConstraint c) {
+<span class="fc" id="L63">        x.propagateOnBoundChange(c);</span>
+<span class="fc" id="L64">    }</span>
+
+    @Override
+    public int min() {
+<span class="fc" id="L68">        return -x.max();</span>
+    }
+
+    @Override
+    public int max() {
+<span class="fc" id="L73">        return -x.min();</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L78">        return x.size();</span>
+    }
+
+    @Override
+    public int fillArray(int[] dest) {
+<span class="nc" id="L83">        int s = x.fillArray(dest);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (int i = 0; i &lt; s; i++) {</span>
+<span class="nc" id="L85">            dest[i] = -dest[i];</span>
+        }
+<span class="nc" id="L87">        return s;</span>
+    }
+
+    @Override
+    public DeltaCPIntVar delta(CPConstraint c) {
+<span class="nc" id="L92">        DeltaCPIntVar delta = new DeltaCPIntVarImpl(this);</span>
+<span class="nc" id="L93">        c.registerDelta(delta);</span>
+<span class="nc" id="L94">        return delta;</span>
+    }
+
+    @Override
+    public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] arr) {
+<span class="nc" id="L99">        int s = x.fillDeltaArray(-oldMax,-oldMin,oldSize,arr);</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        for (int i = 0; i &lt; s; i++) {</span>
+<span class="nc" id="L101">            arr[i] = - arr[i];</span>
+        }
+<span class="nc" id="L103">        return s;</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc" id="L108">        return x.isFixed();</span>
+    }
+
+    @Override
+    public boolean contains(int v) {
+<span class="fc" id="L113">        return x.contains(-v);</span>
+    }
+
+    @Override
+    public void remove(int v) {
+<span class="fc" id="L118">        x.remove(-v);</span>
+<span class="fc" id="L119">    }</span>
+
+    @Override
+    public void fix(int v) {
+<span class="fc" id="L123">        x.fix(-v);</span>
+<span class="fc" id="L124">    }</span>
+
+    @Override
+    public void removeBelow(int v) {
+<span class="fc" id="L128">        x.removeAbove(-v);</span>
+<span class="fc" id="L129">    }</span>
+
+    @Override
+    public void removeAbove(int v) {
+<span class="fc" id="L133">        x.removeBelow(-v);</span>
+<span class="fc" id="L134">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L138">        return show();</span>
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="nc" id="L143">        return getSolver().getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

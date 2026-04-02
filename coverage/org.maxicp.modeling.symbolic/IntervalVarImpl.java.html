@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IntervalVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.symbolic</a> &gt; <span class="el_source">IntervalVarImpl.java</span></div><h1>IntervalVarImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.modeling.symbolic;
+
+import org.maxicp.modeling.BoolVar;
+import org.maxicp.modeling.ModelProxy;
+
+public class IntervalVarImpl implements SymbolicIntervalVar {
+    private final ModelProxy modelProxy;
+    private final int startMin;
+    private final int startMax;
+    private final int endMin;
+    private final int endMax;
+    private final int lengthMin;
+    private final int lengthMax;
+    private final boolean isPresent;
+    private final boolean isAbsent;
+
+<span class="fc" id="L23">    public IntervalVarImpl(ModelProxy modelProxy, int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent) {</span>
+<span class="fc" id="L24">        this.modelProxy = modelProxy;</span>
+<span class="fc" id="L25">        this.startMin = startMin;</span>
+<span class="fc" id="L26">        this.startMax = startMax;</span>
+<span class="fc" id="L27">        this.endMin = endMin;</span>
+<span class="fc" id="L28">        this.endMax = endMax;</span>
+<span class="fc" id="L29">        this.lengthMin = lengthMin;</span>
+<span class="fc" id="L30">        this.lengthMax = lengthMax;</span>
+<span class="fc" id="L31">        this.isPresent = isPresent;</span>
+<span class="fc" id="L32">        this.isAbsent = false;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L37">        return modelProxy;</span>
+    }
+
+    @Override
+    public int defaultStartMin() {
+<span class="fc" id="L42">        return startMin;</span>
+    }
+
+    @Override
+    public int defaultStartMax() {
+<span class="fc" id="L47">        return startMax;</span>
+    }
+
+    @Override
+    public int defaultEndMin() {
+<span class="fc" id="L52">        return endMin;</span>
+    }
+
+    @Override
+    public int defaultEndMax() {
+<span class="fc" id="L57">        return endMax;</span>
+    }
+
+    @Override
+    public int defaultLengthMin() {
+<span class="fc" id="L62">        return lengthMin;</span>
+    }
+
+    @Override
+    public int defaultLengthMax() {
+<span class="fc" id="L67">        return lengthMax;</span>
+    }
+
+    @Override
+    public boolean defaultIsPresent() {
+<span class="fc" id="L72">        return isPresent;</span>
+    }
+
+    @Override
+    public boolean defaultIsAbsent() {
+<span class="fc" id="L77">        return isAbsent;</span>
+    }
+
+    @Override
+    public boolean defaultIsOptional() {
+<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        return !isPresent &amp;&amp; !isAbsent;</span>
+    }
+
+    @Override
+    public BoolVar defaultStatus() {
+<span class="fc" id="L87">        return new IntervalStatus(this);</span>
+    }
+
+    @Override
+    public String toString() {
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (getModelProxy().isConcrete()) {</span>
+<span class="nc" id="L94">            System.out.println(&quot;toString Concrete&quot;);</span>
+<span class="nc" id="L95">            System.out.println(&quot;concreteVar &quot;+getModelProxy().getConcreteModel().getConcreteVar(this));</span>
+<span class="nc" id="L96">            return getModelProxy().getConcreteModel().getConcreteVar(this).toString();</span>
+        }
+<span class="nc" id="L98">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

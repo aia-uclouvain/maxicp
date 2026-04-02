@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MinCostMaxFlow.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">MinCostMaxFlow.java</span></div><h1>MinCostMaxFlow.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints;
+
+import java.util.Arrays;
+
+public class MinCostMaxFlow {
+    // Stores the found edges
+    private final boolean[] found;
+
+    private int[][] cost;
+    private int[][] capMax;
+
+    private final int[][] flow;
+    private final int numNodes;
+
+
+    // Stores the distance from each node
+    // and picked edges for each node
+    private final int[] dad;
+    private final int[] dist, pi;
+
+<span class="fc" id="L21">    private final int INF</span>
+            = Integer.MAX_VALUE;
+    private final int H;
+
+    private int totalCost;
+    private int totalFlow;
+
+<span class="fc" id="L28">    private final int[] result= new int[2];</span>
+
+
+
+<span class="fc" id="L32">    public MinCostMaxFlow(int H, int numNodes) {</span>
+<span class="fc" id="L33">        this.numNodes = numNodes;</span>
+<span class="fc" id="L34">        this.H = H;</span>
+
+<span class="fc" id="L36">        this.found = new boolean[numNodes];</span>
+<span class="fc" id="L37">        this.flow = new int[numNodes][numNodes];</span>
+<span class="fc" id="L38">        this.dist = new int[numNodes + 1];</span>
+<span class="fc" id="L39">        this.dad = new int[numNodes];</span>
+<span class="fc" id="L40">        this.pi = new int[numNodes];</span>
+<span class="fc" id="L41">    }</span>
+
+    public boolean run(int source, int dest, int[][] capMaxNetworkFlow, int[][] costNetworkFlow) {
+<span class="fc" id="L44">        this.cost = costNetworkFlow;</span>
+<span class="fc" id="L45">        this.capMax = capMaxNetworkFlow;</span>
+<span class="fc" id="L46">        getMaxFlowByMaxCapacity(source, dest, numNodes);</span>
+
+<span class="fc" id="L48">        totalFlow = result[0];</span>
+<span class="fc" id="L49">        totalCost = result[1];</span>
+
+<span class="fc" id="L51">        return true;</span>
+    }
+
+
+    // Function to check if it is possible to
+    // have a flow from the src to sink
+    private boolean searchByMaxCapacity(int source, int dest) {
+        // Initialise found[] to false
+<span class="fc" id="L59">        Arrays.fill(found, false);</span>
+
+        // Initialise the dist[] to INF
+<span class="fc" id="L62">        Arrays.fill(dist, INF);</span>
+
+        // Distance from the source node
+<span class="fc" id="L65">        dist[source] = 0;</span>
+
+        // Iterate until src reaches N
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        while (source != numNodes) {</span>
+
+<span class="fc" id="L70">            int best = numNodes;</span>
+<span class="fc" id="L71">            found[source] = true;</span>
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            for (int k = 0; k &lt; numNodes; k++) {</span>
+
+                // If already found
+<span class="fc bfc" id="L76" title="All 2 branches covered.">                if (found[k])</span>
+<span class="fc" id="L77">                    continue;</span>
+
+                // Evaluate while flow
+                // is still in supply
+<span class="fc bfc" id="L81" title="All 2 branches covered.">                if (flow[k][source] != 0) {</span>
+
+                    // Obtain the total value
+<span class="fc" id="L84">                    int val</span>
+                            = (int) (dist[source] + pi[source]
+                            - pi[k] - cost[k][source]);
+
+                    // If dist[k] is &gt; minimum value
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                    if (dist[k] &gt; val) {</span>
+
+                        // Update
+<span class="fc" id="L92">                        dist[k] = val;</span>
+<span class="fc" id="L93">                        dad[k] = source;</span>
+                    }
+                }
+
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (flow[source][k] &lt; capMax[source][k]) {</span>
+<span class="fc" id="L98">                    int val = (int) (dist[source] + pi[source]</span>
+                            - pi[k] + cost[source][k]);
+
+                    // If dist[k] is &gt; minimum value
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                    if (dist[k] &gt; val) {</span>
+
+                        // Update
+<span class="fc" id="L105">                        dist[k] = val;</span>
+<span class="fc" id="L106">                        dad[k] = source;</span>
+                    }
+                }
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                if (dist[k] &lt; dist[best])</span>
+<span class="fc" id="L111">                    best = k;</span>
+            }
+
+            // Update src to best for
+            // next iteration
+<span class="fc" id="L116">            source = best;</span>
+<span class="fc" id="L117">        }</span>
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (int k = 0; k &lt; numNodes; k++)</span>
+<span class="fc" id="L120">            pi[k]</span>
+<span class="fc" id="L121">                    = Math.min(pi[k] + dist[k],</span>
+                    INF);
+
+        // Return the value obtained at sink
+<span class="fc" id="L125">        return found[dest];</span>
+    }
+
+    // Function to obtain the maximum Flow
+    private void getMaxFlowByMaxCapacity(int source, int dest, int maxFlowAuthorized) {
+<span class="fc" id="L130">        Arrays.fill(found, false);</span>
+<span class="fc" id="L131">        Arrays.fill(dist, 0);</span>
+<span class="fc" id="L132">        Arrays.fill(dad, 0);</span>
+<span class="fc" id="L133">        Arrays.fill(pi, 0);</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int k = 0; k &lt; numNodes; k++) {</span>
+<span class="fc" id="L136">            Arrays.fill(flow[k], 0);</span>
+        }
+
+
+<span class="fc" id="L140">        int totflow = 0, totcost = 0;</span>
+
+        // If a path exist from src to sink
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        while (searchByMaxCapacity(source, dest)) {</span>
+
+            // Set the default amount
+<span class="fc" id="L146">            int amt = 1; //INF;</span>
+//            for (int x = dest; x != source; x = dad[x])
+//
+//                amt = Math.min(amt,
+//                        flow[x][dad[x]] != 0
+//                                ? flow[x][dad[x]]
+//                                : capMax[dad[x]][x]
+//                                - flow[dad[x]][x]);
+
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            for (int x = dest; x != source; x = dad[x]) {</span>
+
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                if (flow[x][dad[x]] != 0) {</span>
+<span class="fc" id="L158">                    flow[x][dad[x]] -= amt;</span>
+<span class="fc" id="L159">                    totcost -= amt * cost[x][dad[x]];</span>
+                } else {
+<span class="fc" id="L161">                    flow[dad[x]][x] += amt;</span>
+<span class="fc" id="L162">                    totcost += amt * cost[dad[x]][x];</span>
+                }
+            }
+<span class="fc" id="L165">            totflow += amt;</span>
+
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (totflow == maxFlowAuthorized) {</span>
+<span class="nc" id="L168">                break;</span>
+            }
+<span class="fc" id="L170">        }</span>
+
+        // Return pair total cost and sink
+<span class="fc" id="L173">        result[0] = totflow;</span>
+<span class="fc" id="L174">        result[1] = totcost;</span>
+//        return result;
+<span class="fc" id="L176">    }</span>
+
+    public int getTotalCost() {
+<span class="fc" id="L179">        return totalCost;</span>
+    }
+
+    public int getTotalFlow() {
+<span class="fc" id="L183">        return totalFlow;</span>
+    }
+
+    public int[][] getFlow() {
+<span class="fc" id="L187">        return flow;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

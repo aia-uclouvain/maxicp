@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Trailer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.trail</a> &gt; <span class="el_source">Trailer.java</span></div><h1>Trailer.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.trail;
+
+
+import org.maxicp.state.*;
+import org.maxicp.state.copy.Copier;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
+
+/**
+ * StateManager that will lazily store
+ * the state of state object
+ * at each {@link #saveState()} call.
+ * Only the one that effectively change are stored
+ * and at most once between any to call to {@link #saveState()}.
+ * This can be seen as an optimized version of {@link Copier}.
+ */
+public class Trailer implements StateManager {
+
+    static class Backup extends Stack&lt;StateEntry&gt; {
+<span class="fc" id="L27">        Backup() {</span>
+<span class="fc" id="L28">        }</span>
+
+        void restore() {
+<span class="fc bfc" id="L31" title="All 2 branches covered.">            while (!isEmpty())</span>
+<span class="fc" id="L32">                pop().restore();</span>
+<span class="fc" id="L33">        }</span>
+    }
+
+    private Stack&lt;Backup&gt; prior;
+    private Backup current;
+<span class="fc" id="L38">    private long magic = 0L;</span>
+
+    private List&lt;Runnable&gt; onRestoreListeners;
+
+<span class="fc" id="L42">    public Trailer() {</span>
+<span class="fc" id="L43">        prior = new Stack&lt;Backup&gt;();</span>
+<span class="fc" id="L44">        current = new Backup();</span>
+<span class="fc" id="L45">        onRestoreListeners = new LinkedList&lt;Runnable&gt;();</span>
+<span class="fc" id="L46">    }</span>
+
+    private void notifyRestore() {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (Runnable l : onRestoreListeners) {</span>
+<span class="fc" id="L50">            l.run();</span>
+<span class="fc" id="L51">        }</span>
+<span class="fc" id="L52">    }</span>
+
+    @Override
+    public void onRestore(Runnable listener) {
+<span class="fc" id="L56">        onRestoreListeners.add(listener);</span>
+<span class="fc" id="L57">    }</span>
+
+    public long getMagic() {
+<span class="fc" id="L60">        return magic;</span>
+    }
+
+    public void pushState(StateEntry entry) {
+<span class="fc" id="L64">        current.push(entry);</span>
+<span class="fc" id="L65">    }</span>
+
+    @Override
+    public int getLevel() {
+<span class="fc" id="L69">        return prior.size() - 1;</span>
+    }
+
+    @Override
+    public void saveState() {
+<span class="fc" id="L74">        prior.add(current);</span>
+<span class="fc" id="L75">        current = new Backup();</span>
+<span class="fc" id="L76">        magic++;</span>
+<span class="fc" id="L77">    }</span>
+
+
+    @Override
+    public void restoreState() {
+<span class="fc" id="L82">        current.restore();</span>
+<span class="fc" id="L83">        current = prior.pop();</span>
+<span class="fc" id="L84">        magic++;</span>
+<span class="fc" id="L85">        notifyRestore();</span>
+<span class="fc" id="L86">    }</span>
+
+    @Override
+    public void restoreStateUntil(int level) {
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        while (getLevel() &gt; level)</span>
+<span class="fc" id="L91">            restoreState();</span>
+<span class="fc" id="L92">    }</span>
+
+    @Override
+    public &lt;T&gt; State&lt;T&gt; makeStateRef(T initValue) {
+<span class="fc" id="L96">        return new Trail&lt;&gt;(this,initValue);</span>
+    }
+
+    @Override
+    public StateInt makeStateInt(int initValue) {
+<span class="fc" id="L101">        return new TrailInt(this,initValue);</span>
+    }
+
+    @Override
+    public StateLong makeStateLong(long initValue) {
+<span class="fc" id="L106">        return new TrailLong(this,initValue);</span>
+    }
+
+    @Override
+    public &lt;K, V&gt; StateMap&lt;K, V&gt; makeStateMap() {
+<span class="fc" id="L111">        return new TrailMap&lt;K,V&gt;(this);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L116">        return &quot;Trailer&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

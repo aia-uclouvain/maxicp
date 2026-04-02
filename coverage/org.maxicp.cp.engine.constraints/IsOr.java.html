@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsOr.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">IsOr.java</span></div><h1>IsOr.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.state.StateInt;
+
+
+/**
+ * Reified logical or constraint
+ */
+public class IsOr extends AbstractCPConstraint { // b &lt;=&gt; x1 or x2 or ... xn
+
+    private final CPBoolVar b;
+    private final CPBoolVar[] x;
+    private final int n;
+
+    private int[] notFixed;
+    private StateInt nNotFixed;
+
+    private final Or or;
+
+    /**
+     * Creates a constraint such that
+     * the boolean b is true if and only if
+     * at least variable in x is true.
+     *
+     * @param b the boolean that is true if at least one variable in x is true
+     * @param x an non empty array of variables
+     */
+    public IsOr(CPBoolVar b, CPBoolVar[] x) {
+<span class="fc" id="L36">        super(b.getSolver());</span>
+<span class="fc" id="L37">        this.b = b;</span>
+<span class="fc" id="L38">        this.x = x;</span>
+<span class="fc" id="L39">        this.n = x.length;</span>
+<span class="fc" id="L40">        or = new Or(x);</span>
+
+<span class="fc" id="L42">        nNotFixed = getSolver().getStateManager().makeStateInt(n);</span>
+<span class="fc" id="L43">        notFixed = new int[n];</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L45">            notFixed[i] = i;</span>
+<span class="fc" id="L46">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L50">        b.propagateOnFix(this);</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (CPBoolVar xi : x)</span>
+<span class="fc" id="L52">            xi.propagateOnFix(this);</span>
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (b.isTrue()) {</span>
+<span class="fc" id="L58">            setActive(false);</span>
+<span class="fc" id="L59">            getSolver().post(or, false);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        } else if (b.isFalse()) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (CPBoolVar xi : x)</span>
+<span class="fc" id="L62">                xi.fix(false);</span>
+<span class="fc" id="L63">            setActive(false);</span>
+        } else {
+<span class="fc" id="L65">            int nU = nNotFixed.value();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            for (int i = nU - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L67">                int idx = notFixed[i];</span>
+<span class="fc" id="L68">                CPBoolVar y = x[idx];</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                if (y.isFixed()) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                    if (y.isTrue()) {</span>
+<span class="fc" id="L71">                        b.fix(true);</span>
+<span class="fc" id="L72">                        setActive(false);</span>
+<span class="fc" id="L73">                        return;</span>
+                    }
+                    // Swap the variable
+<span class="fc" id="L76">                    notFixed[i] = notFixed[nU - 1];</span>
+<span class="fc" id="L77">                    notFixed[nU - 1] = idx;</span>
+<span class="fc" id="L78">                    nU--;</span>
+                }
+            }
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (nU == 0) {</span>
+<span class="fc" id="L82">                b.fix(false);</span>
+<span class="fc" id="L83">                setActive(false);</span>
+            }
+<span class="fc" id="L85">            nNotFixed.setValue(nU);</span>
+        }
+<span class="fc" id="L87">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

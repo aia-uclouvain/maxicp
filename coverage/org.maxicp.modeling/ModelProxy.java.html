@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelProxy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling</a> &gt; <span class="el_source">ModelProxy.java</span></div><h1>ModelProxy.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling;
+
+import org.maxicp.modeling.algebra.bool.BoolExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
+import org.maxicp.modeling.constraints.ExpressionIsTrue;
+import org.maxicp.modeling.constraints.NoOpConstraint;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+
+import java.util.function.Supplier;
+
+/**
+ * Maintains the current model and proxies calls to it.
+ */
+public interface ModelProxy {
+
+    Model getModel();
+
+    default boolean isSymbolic() {
+<span class="nc" id="L19">        return getModel() instanceof SymbolicModel;</span>
+    }
+
+    default boolean isConcrete() {
+<span class="fc" id="L23">        return getModel() instanceof ConcreteModel;</span>
+    }
+
+    /**
+     * Returns the current symbolic model (if isConcrete() is true, it returns a symbolic copy of the current Concrete
+     * model)
+     */
+    default SymbolicModel getSymbolicModel() {
+<span class="nc" id="L31">        return getModel().symbolicCopy();</span>
+    }
+
+    /**
+     * Returns the current ConcreteModel. isConcrete() needs to be true, otherwise it raises NotConcreteException.
+     */
+    default ConcreteModel getConcreteModel() throws NotConcreteException {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        return switch (getModel()) {</span>
+<span class="fc" id="L39">            case ConcreteModel m -&gt; m;</span>
+<span class="nc" id="L40">            default -&gt; throw new NotConcreteException();</span>
+        };
+    }
+
+    default void add(Constraint c) {
+<span class="fc" id="L45">        add(c, true);</span>
+<span class="fc" id="L46">    }</span>
+
+    default void add(BoolExpression c) {
+<span class="fc" id="L49">        add(c, true);</span>
+<span class="fc" id="L50">    }</span>
+
+    default void fixpoint() {
+<span class="fc" id="L53">        add(NoOpConstraint.noOp, true);</span>
+<span class="fc" id="L54">    }</span>
+
+    /**
+     * Shortcut for baseModel.getModel().add(c, enforceFixPoint);
+     * @param c constraint to add
+     */
+    default void add(Constraint c, boolean enforceFixPoint) {
+<span class="pc bpc" id="L61" title="1 of 3 branches missed.">        switch (getModel()) {</span>
+<span class="fc" id="L62">            case SymbolicModel sm -&gt; setModel(sm.add(c));</span>
+<span class="fc" id="L63">            case ConcreteModel cm -&gt; cm.add(c, enforceFixPoint);</span>
+<span class="nc" id="L64">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
+        }
+<span class="fc" id="L66">    }</span>
+
+    default void add(BoolExpression c, boolean enforceFixPoint) {
+<span class="fc" id="L69">        add(new ExpressionIsTrue(c), enforceFixPoint);</span>
+<span class="fc" id="L70">    }</span>
+
+<span class="nc" id="L72">    class NotConcreteException extends RuntimeException {};</span>
+
+    default &lt;R&gt; R runWithModel(ConcreteModel model, Supplier&lt;R&gt; fun) {
+<span class="fc" id="L75">        Model oldModel = getModel();</span>
+        try {
+<span class="fc" id="L77">            setModel(model);</span>
+<span class="fc" id="L78">            return fun.get();</span>
+        }
+        finally {
+<span class="fc" id="L81">            setModel(oldModel);</span>
+        }
+    }
+
+    default void runWithModel(ConcreteModel model, Runnable fun) {
+<span class="fc" id="L86">        Model oldModel = getModel();</span>
+        try {
+<span class="fc" id="L88">            setModel(model);</span>
+<span class="fc" id="L89">            fun.run();</span>
+        }
+        finally {
+<span class="fc" id="L92">            setModel(oldModel);</span>
+        }
+<span class="fc" id="L94">    }</span>
+
+    &lt;T extends Model&gt; T setModel(T m);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPIntervalVarImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPIntervalVarImpl.java</span></div><h1>CPIntervalVarImpl.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.state.State;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateStack;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.function.Consumer;
+
+import static org.maxicp.Constants.HORIZON;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+
+/**
+ * TODO
+ *
+ * @author Pierre Schaus
+ */
+public class CPIntervalVarImpl implements CPIntervalVar {
+
+    private CPSolver cp;
+    private StateStack&lt;CPConstraint&gt; onChange;
+
+
+    // start + length = end
+
+    StateInt startMin, startMax, endMin, endMax, lengthMin, lengthMax;
+
+    State&lt;Boolean&gt; isPresent, isAbsent;
+
+    CPBoolVar b; // status variable (true if present, false if absent)
+
+<span class="fc" id="L40">    public CPIntervalVarImpl(CPSolver cp) {</span>
+<span class="fc" id="L41">        this.cp = cp;</span>
+
+<span class="fc" id="L43">        startMin = cp.getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L44">        startMax = cp.getStateManager().makeStateInt(HORIZON);</span>
+<span class="fc" id="L45">        endMin = cp.getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L46">        endMax = cp.getStateManager().makeStateInt(HORIZON);</span>
+<span class="fc" id="L47">        lengthMin = cp.getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L48">        lengthMax = cp.getStateManager().makeStateInt(HORIZON);</span>
+<span class="fc" id="L49">        isPresent = cp.getStateManager().makeStateRef(Boolean.FALSE);</span>
+<span class="fc" id="L50">        isAbsent = cp.getStateManager().makeStateRef(Boolean.FALSE);</span>
+
+<span class="fc" id="L52">        onChange = new StateStack&lt;&gt;(cp.getStateManager());</span>
+
+<span class="fc" id="L54">        this.b = new CPBoolVar() {</span>
+            @Override
+            public boolean isTrue() {
+<span class="fc" id="L57">                return isPresent.value();</span>
+            }
+
+            @Override
+            public boolean isFalse() {
+<span class="fc" id="L62">                return isAbsent.value();</span>
+            }
+
+            @Override
+            public void fix(boolean b) {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                if (b) {</span>
+<span class="fc" id="L68">                    setPresent();</span>
+                } else {
+<span class="nc" id="L70">                    setAbsent();</span>
+                }
+<span class="fc" id="L72">            }</span>
+
+            @Override
+            public CPSolver getSolver() {
+<span class="fc" id="L76">                return cp;</span>
+            }
+
+            @Override
+            public void whenFixed(Runnable f) {
+<span class="nc" id="L81">                onChange.push(constraintClosure(f));</span>
+<span class="nc" id="L82">            }</span>
+
+            @Override
+            public void whenBoundChange(Runnable f) {
+<span class="nc" id="L86">                onChange.push(constraintClosure(f));</span>
+<span class="nc" id="L87">            }</span>
+
+            @Override
+            public void whenDomainChange(Runnable f) {
+<span class="fc" id="L91">                onChange.push(constraintClosure(f));</span>
+<span class="fc" id="L92">            }</span>
+
+            @Override
+            public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
+<span class="nc" id="L96">                CPConstraint c = new CPConstraintClosureWithDelta(cp,this,f);</span>
+<span class="nc" id="L97">                getSolver().post(c, false);</span>
+<span class="nc" id="L98">            }</span>
+
+            @Override
+            public void propagateOnDomainChange(CPConstraint c) {
+<span class="nc" id="L102">                onChange.push(c);</span>
+<span class="nc" id="L103">            }</span>
+
+            @Override
+            public void propagateOnFix(CPConstraint c) {
+<span class="fc" id="L107">                onChange.push(c);</span>
+<span class="fc" id="L108">            }</span>
+
+            @Override
+            public void propagateOnBoundChange(CPConstraint c) {
+<span class="nc" id="L112">                onChange.push(c);</span>
+<span class="nc" id="L113">            }</span>
+
+            @Override
+            public int min() {
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                if (isPresent.value()) {</span>
+<span class="fc" id="L118">                    return 1;</span>
+                } else {
+<span class="fc" id="L120">                    return 0;</span>
+                }
+            }
+
+            @Override
+            public int max() {
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                if (isAbsent.value()) {</span>
+<span class="fc" id="L127">                    return 0;</span>
+                } else {
+<span class="fc" id="L129">                    return 1;</span>
+                }
+            }
+
+            @Override
+            public boolean isFixed() {
+<span class="fc bfc" id="L135" title="All 4 branches covered.">                return isPresent.value() || isAbsent.value();</span>
+            }
+
+            @Override
+            public void remove(int v) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                if (v == 0) {</span>
+<span class="nc" id="L141">                    setPresent();</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">                } else if (v == 1) {</span>
+<span class="nc" id="L143">                    setAbsent();</span>
+                }
+<span class="nc" id="L145">            }</span>
+
+            @Override
+            public void fix(int v) {
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                if (v == 0) {</span>
+<span class="fc" id="L150">                    setAbsent();</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                } else if (v == 1) {</span>
+<span class="fc" id="L152">                    setPresent();</span>
+                } else {
+<span class="nc" id="L154">                    throw INCONSISTENCY;</span>
+                }
+<span class="fc" id="L156">            }</span>
+
+            @Override
+            public void removeBelow(int v) {
+<span class="fc bfc" id="L160" title="All 2 branches covered.">                if (v &gt;= 1) {</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">                    if (v == 1) {</span>
+<span class="fc" id="L162">                        setPresent();</span>
+                    } else {
+<span class="nc" id="L164">                        throw INCONSISTENCY;</span>
+                    }
+                }
+<span class="fc" id="L167">            }</span>
+
+            @Override
+            public void removeAbove(int v) {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                if (v &lt;= 0) {</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">                    if (v == 0) {</span>
+<span class="fc" id="L173">                        setAbsent();</span>
+                    } else {
+<span class="nc" id="L175">                        throw INCONSISTENCY;</span>
+                    }
+                }
+<span class="fc" id="L178">            }</span>
+
+            @Override
+            public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] dest) {
+<span class="nc" id="L182">                int size = size();</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">                if (oldSize == size) {</span>
+<span class="nc" id="L184">                    return 0; // no difference</span>
+                } else { // either the min or the max differ
+                    // the current domain must have shrink since the last call
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                    if (oldMin != min()) { // min has changed</span>
+<span class="nc" id="L188">                        dest[0] = 0;</span>
+                    } else { // max has changed
+<span class="nc" id="L190">                        dest[0] = 1;</span>
+                    }
+<span class="nc" id="L192">                    return 1;</span>
+                }
+            }
+
+            @Override
+            public DeltaCPIntVar delta(CPConstraint c) {
+<span class="nc" id="L198">                DeltaCPIntVar delta = new DeltaCPIntVarImpl(this);</span>
+<span class="nc" id="L199">                c.registerDelta(delta);</span>
+<span class="nc" id="L200">                return delta;</span>
+            }
+
+            @Override
+            public ModelProxy getModelProxy() {
+<span class="nc" id="L205">                return cp.getModelProxy();</span>
+            }
+
+            @Override
+            public String toString() {
+<span class="nc bnc" id="L210" title="All 2 branches missed.">                if (isTrue()) return &quot;true&quot;;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">                else if (isFalse()) return &quot;false&quot;;</span>
+<span class="nc" id="L212">                else return &quot;{false,true}&quot;;</span>
+            }
+        };
+<span class="fc" id="L215">    }</span>
+
+    @Override
+    public CPSolver getSolver() {
+<span class="fc" id="L219">        return cp;</span>
+    }
+
+    @Override
+    public void propagateOnChange(CPConstraint c) {
+<span class="fc" id="L224">        onChange.push(c);</span>
+<span class="fc" id="L225">    }</span>
+
+    protected void scheduleAll() {
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        for (int i = 0; i &lt; onChange.size(); i++) {</span>
+<span class="fc" id="L229">            cp.schedule(onChange.get(i));</span>
+        }
+<span class="fc" id="L231">    }</span>
+
+    private CPConstraint constraintClosure(Runnable f) {
+<span class="fc" id="L234">        CPConstraint c = new CPConstraintClosure(cp, f);</span>
+<span class="fc" id="L235">        getSolver().post(c, false);</span>
+<span class="fc" id="L236">        return c;</span>
+    }
+
+    @Override
+    public int startMin() {
+<span class="fc" id="L241">        return startMin.value();</span>
+    }
+
+    @Override
+    public int startMax() {
+<span class="fc" id="L246">        return startMax.value();</span>
+    }
+
+    @Override
+    public int endMin() {
+<span class="fc" id="L251">        return endMin.value();</span>
+    }
+
+    @Override
+    public int endMax() {
+<span class="fc" id="L256">        return endMax.value();</span>
+    }
+
+    @Override
+    public int lengthMin() {
+<span class="fc" id="L261">        return lengthMin.value();</span>
+    }
+
+    @Override
+    public int lengthMax() {
+<span class="fc" id="L266">        return lengthMax.value();</span>
+    }
+
+    @Override
+    public boolean isPresent() {
+<span class="fc" id="L271">        return isPresent.value();</span>
+    }
+
+    @Override
+    public boolean isAbsent() {
+<span class="fc" id="L276">        return isAbsent.value();</span>
+    }
+
+    @Override
+    public boolean isOptional() {
+<span class="fc bfc" id="L281" title="All 4 branches covered.">        return !isPresent() &amp;&amp; !isAbsent();</span>
+    }
+
+    @Override
+    public boolean isFixed() {
+<span class="fc bfc" id="L286" title="All 8 branches covered.">        return isAbsent() || (isPresent() &amp;&amp; (startMin() == startMax()) &amp;&amp; (lengthMin() == lengthMax()));</span>
+    }
+
+    @Override
+    public void setStartMin(int v) {
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (v &gt; startMax.value()) {</span>
+<span class="fc" id="L292">            setAbsent();</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        } else if (v &gt; startMin.value()) {</span>
+<span class="fc" id="L294">            lengthMax.setValue(Math.min(endMax.value() - v, lengthMax.value()));</span>
+<span class="fc" id="L295">            endMin.setValue(Math.max(v + lengthMin.value(), endMin.value()));</span>
+<span class="fc" id="L296">            startMin.setValue(v);</span>
+<span class="fc" id="L297">            scheduleAll();</span>
+        }
+<span class="fc" id="L299">    }</span>
+
+    @Override
+    public void setStartMax(int v) {
+<span class="fc bfc" id="L303" title="All 2 branches covered.">        if (v &lt; startMin.value()) {</span>
+<span class="fc" id="L304">            setAbsent();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">        } else if (v &lt; startMax.value()) {</span>
+<span class="fc" id="L306">            lengthMin.setValue(Math.max(endMin.value() - v, lengthMin.value()));</span>
+<span class="fc" id="L307">            endMax.setValue(Math.min(v + lengthMax.value(), endMax.value()));</span>
+<span class="fc" id="L308">            startMax.setValue(v);</span>
+<span class="fc" id="L309">            scheduleAll();</span>
+        }
+<span class="fc" id="L311">    }</span>
+
+    @Override
+    public void setStart(int v) {
+<span class="fc" id="L315">        setStartMax(v);</span>
+<span class="fc" id="L316">        setStartMin(v);</span>
+<span class="fc" id="L317">    }</span>
+
+    @Override
+    public void setEndMin(int v) {
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (v &gt; endMax.value()) {</span>
+<span class="fc" id="L322">            setAbsent();</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">        } else if (v &gt; endMin()) {</span>
+<span class="fc" id="L324">            lengthMin.setValue(Math.max(v - startMax.value(), lengthMin.value()));</span>
+<span class="fc" id="L325">            startMin.setValue(Math.max(v - lengthMax.value(), startMin.value()));</span>
+<span class="fc" id="L326">            endMin.setValue(v);</span>
+<span class="fc" id="L327">            scheduleAll();</span>
+        }
+<span class="fc" id="L329">    }</span>
+
+    @Override
+    public void setEndMax(int v) {
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        if (v &lt; endMin.value()) {</span>
+<span class="fc" id="L334">            setAbsent();</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">        } else if (v &lt; endMax.value()) {</span>
+<span class="fc" id="L336">            lengthMax.setValue(Math.min(v - startMin.value(), lengthMax.value()));</span>
+<span class="fc" id="L337">            startMax.setValue(Math.min(v - lengthMin.value(), startMax.value()));</span>
+<span class="fc" id="L338">            endMax.setValue(v);</span>
+<span class="fc" id="L339">            scheduleAll();</span>
+        }
+<span class="fc" id="L341">    }</span>
+
+    @Override
+    public void setEnd(int v) {
+<span class="fc" id="L345">        setEndMax(v);</span>
+<span class="fc" id="L346">        setEndMin(v);</span>
+<span class="fc" id="L347">    }</span>
+
+    @Override
+    public void setLengthMin(int v) {
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (v &gt; lengthMax.value()) {</span>
+<span class="fc" id="L352">            setAbsent();</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        } else if (v &gt; lengthMin.value()) {</span>
+<span class="fc" id="L354">            endMin.setValue(Math.max(startMin.value() + v, endMin.value()));</span>
+<span class="fc" id="L355">            startMax.setValue(Math.min(endMax.value() - v, startMax.value()));</span>
+<span class="fc" id="L356">            lengthMin.setValue(v);</span>
+<span class="fc" id="L357">            scheduleAll();</span>
+        }
+<span class="fc" id="L359">    }</span>
+
+    @Override
+    public void setLengthMax(int v) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (v &lt; lengthMin.value()) {</span>
+<span class="fc" id="L364">            setAbsent();</span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        } else if (v &lt; lengthMax.value()) {</span>
+<span class="fc" id="L366">            endMax.setValue(Math.min(startMax.value() + v, endMax.value()));</span>
+<span class="fc" id="L367">            startMin.setValue(Math.max(endMin.value() - v, startMin.value()));</span>
+<span class="fc" id="L368">            lengthMax.setValue(v);</span>
+<span class="fc" id="L369">            scheduleAll();</span>
+        }
+<span class="fc" id="L371">    }</span>
+
+    @Override
+    public void setLength(int v) {
+<span class="fc" id="L375">        setLengthMin(v);</span>
+<span class="fc" id="L376">        setLengthMax(v);</span>
+<span class="fc" id="L377">    }</span>
+
+    @Override
+    public void setPresent() {
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">        if (isAbsent.value()) {</span>
+<span class="nc" id="L382">            throw INCONSISTENCY;</span>
+        }
+<span class="fc bfc" id="L384" title="All 2 branches covered.">        if (!isPresent.value()) {</span>
+<span class="fc" id="L385">            isPresent.setValue(true);</span>
+<span class="fc" id="L386">            isAbsent.setValue(false);</span>
+<span class="fc" id="L387">            scheduleAll();</span>
+        }
+<span class="fc" id="L389">    }</span>
+
+    @Override
+    public void setAbsent() {
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        if (isPresent.value()) {</span>
+<span class="fc" id="L394">            throw INCONSISTENCY;</span>
+        }
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        if (!isAbsent.value()) {</span>
+<span class="fc" id="L397">            isPresent.setValue(false);</span>
+<span class="fc" id="L398">            isAbsent.setValue(true);</span>
+<span class="fc" id="L399">            scheduleAll();</span>
+        }
+<span class="fc" id="L401">    }</span>
+
+    public CPBoolVar status() {
+<span class="fc" id="L404">        return b;</span>
+    }
+
+    @Override
+    public int slack() {
+<span class="nc" id="L409">        return endMax.value() - startMin.value() - lengthMin.value();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L414">        return show();</span>
+        //return &quot;present ? &quot;+isPresent+&quot; absent ? &quot;+isAbsent+&quot; start ∈ [&quot;+startMin+&quot;,&quot;+startMax+&quot;],  length ∈ [&quot;+lengthMin+&quot;,&quot;+lengthMax+&quot;], end ∈ [&quot;+endMin+&quot;,&quot;+endMax+&quot;]&quot;;
+    }
+
+    @Override
+    public ModelProxy getModelProxy() {
+<span class="fc" id="L420">        return getSolver().getModelProxy();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

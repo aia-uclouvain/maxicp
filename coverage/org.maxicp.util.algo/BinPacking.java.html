@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BinPacking.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util.algo</a> &gt; <span class="el_source">BinPacking.java</span></div><h1>BinPacking.java</h1><pre class="source lang-java linenums">package org.maxicp.util.algo;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.IntStream;
+
+/**
+ * This class provides algorithms for the Bin Packing.
+ * @author pschaus
+ */
+<span class="nc" id="L11">public class BinPacking {</span>
+
+    /**
+     * Computes the bin index for each item using the First-Fit Decreasing heuristic.
+     * The number of bins used is {@code Arrays.stream(result).max().orElse(0) + 1}.
+     *
+     * @param weights an array of item weights
+     * @param capacity the capacity of each bin
+     * @return an array where {@code result[i]} represents the bin index of item {@code i}
+     * @throws IllegalArgumentException if any item weight is negative or exceeds the bin capacity
+     */
+    public static int[] firstFitDecreasing(int[] weights, int capacity) {
+        // Validate item weights
+<span class="pc bpc" id="L24" title="3 of 6 branches missed.">        if (Arrays.stream(weights).anyMatch(w -&gt; w &gt; capacity || w &lt; 0)) {</span>
+<span class="nc" id="L25">            throw new IllegalArgumentException(&quot;Item's weight should be less than capacity and non-negative&quot;);</span>
+        }
+
+        // Pair each weight with its original index and sort in decreasing order
+<span class="fc" id="L29">        Integer[] indices = IntStream.range(0, weights.length)</span>
+<span class="fc" id="L30">                .boxed()</span>
+<span class="fc" id="L31">                .sorted(Comparator.comparingInt(i -&gt; -weights[i])) // Sort by weight descending</span>
+<span class="fc" id="L32">                .toArray(Integer[]::new);</span>
+
+        // Initialize arrays for bin assignment and available capacity
+<span class="fc" id="L35">        int[] positions = new int[weights.length]; // Bin assignment for each item</span>
+<span class="fc" id="L36">        int[] slack = new int[weights.length]; // Remaining space in bins</span>
+<span class="fc" id="L37">        Arrays.fill(slack, capacity); // Initially, all bins have full capacity</span>
+
+        // Assign items to bins using first-fit decreasing
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i : indices) {</span>
+<span class="fc" id="L41">            int w = weights[i];</span>
+<span class="fc" id="L42">            int j = 0;</span>
+
+            // Find first bin that can accommodate the item
+<span class="pc bpc" id="L45" title="1 of 4 branches missed.">            while (j &lt; weights.length &amp;&amp; slack[j] &lt; w) {</span>
+<span class="fc" id="L46">                j++;</span>
+            }
+
+            // Place item in bin j
+<span class="fc" id="L50">            slack[j] -= w;</span>
+<span class="fc" id="L51">            positions[i] = j;</span>
+        }
+
+<span class="fc" id="L54">        return positions;</span>
+    }
+
+
+    /**
+     * Lower-Bound introduced in:
+     *
+     * &quot;Capacitated vehicle routing on trees.&quot;
+     * Labbe Martine, Gilbert Laporte, and Helene Mercure.
+     * Operations Research 39.4 (1991): 616-622.
+     *
+     * @param w an array of decreasing positive weights
+     * @param c the capacity
+     * @return the computed lower bound
+     */
+    public static int labbeLB(int[] w, int c) {
+<span class="fc" id="L70">        int n = w.length;</span>
+        // Compute the number of items &gt; c/2
+<span class="fc" id="L72">        int ind1 = 0;</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">        while (ind1 &lt; w.length &amp;&amp; w[ind1] &gt; c / 2) {</span>
+<span class="fc" id="L74">            ind1++;</span>
+        }
+<span class="fc" id="L76">        int L3 = ind1;</span>
+        // Place items with c/3 &lt; w(i) &lt;= c/2
+<span class="fc" id="L78">        int ind2 = ind1;</span>
+<span class="fc bfc" id="L79" title="All 4 branches covered.">        while (ind2 &lt; w.length &amp;&amp; w[ind2] &gt; c / 3) {</span>
+<span class="fc" id="L80">            ind2++;</span>
+        }
+<span class="fc" id="L82">        int ind3 = ind2 - 1;</span>
+<span class="fc" id="L83">        int ind4 = 0;</span>
+<span class="fc bfc" id="L84" title="All 4 branches covered.">        while (ind4 &lt; ind1 &amp;&amp; ind3 &gt;= ind1) {</span>
+            // Place item at index ind3 in the subsequence [ind4, ind1-1]
+            do {
+<span class="fc" id="L87">                ind4++;</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">            } while (ind4 &lt; ind1 &amp;&amp; c - w[ind4 - 1] &lt; w[ind3]);</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">            if (ind4 &lt;= ind1) {</span>
+<span class="fc" id="L90">                ind3--; // Could we place the item?</span>
+            }
+        }
+<span class="fc" id="L93">        int H = ind3 - (ind1 - 1);</span>
+<span class="fc" id="L94">        L3 += (H + 1) / 2;</span>
+        // Computation of p(v)
+<span class="fc" id="L96">        int a = 0;</span>
+<span class="fc" id="L97">        int b = n - 1;</span>
+<span class="fc" id="L98">        int v = 0;</span>
+<span class="fc" id="L99">        int sum_ab = 0;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (int i = a; i &lt; n; i++) {</span>
+<span class="fc" id="L101">            sum_ab += w[i];</span>
+        }
+<span class="fc" id="L103">        int p_v = 0;</span>
+        /*
+         * Invariant:
+         *
+         *   . &gt; c-v     |a          c-v &gt;= . &gt;= v           b|  v &gt; .
+         * +-------------|----------------|-------------------|----------0+
+         *                  . &gt; c/2      e|      c/2 &gt;= .
+         *
+         * sum_ab = sum_{i in [a..b]} w[i]
+         * v &lt;= c/3
+         * v = w[b]
+         * b &gt;= a
+         */
+<span class="fc" id="L116">        int e = w.length - 1;</span>
+<span class="fc bfc" id="L117" title="All 4 branches covered.">        while (e &gt;= 0 &amp;&amp; w[e] &lt;= c / 2) {</span>
+<span class="fc" id="L118">            e--;</span>
+        }
+<span class="fc bfc" id="L120" title="All 4 branches covered.">        while (b &gt;= a &amp;&amp; v &lt;= c / 3) {</span>
+<span class="fc" id="L121">            int tmp = (int) Math.ceil((double) sum_ab / c) - Math.max(0, e - a + 1) - (H + 1) / 2;</span>
+<span class="fc" id="L122">            p_v = Math.max(p_v, tmp);</span>
+            // Reduce b
+<span class="fc bfc" id="L124" title="All 4 branches covered.">            while (b &gt;= a &amp;&amp; w[b] == v) {</span>
+<span class="fc" id="L125">                sum_ab -= w[b];</span>
+<span class="fc" id="L126">                b--;</span>
+            }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (b &gt;= a) {</span>
+<span class="fc" id="L129">                v = w[b];</span>
+                // Increase a
+<span class="fc bfc" id="L131" title="All 4 branches covered.">                while (b &gt;= a &amp;&amp; w[a] &gt; c - v) {</span>
+<span class="fc" id="L132">                    sum_ab -= w[a];</span>
+<span class="fc" id="L133">                    a++;</span>
+                }
+            }
+<span class="fc" id="L136">        }</span>
+<span class="fc" id="L137">        L3 += p_v;</span>
+<span class="fc" id="L138">        return L3;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

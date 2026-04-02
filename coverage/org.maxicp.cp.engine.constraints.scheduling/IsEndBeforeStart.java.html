@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsEndBeforeStart.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">IsEndBeforeStart.java</span></div><h1>IsEndBeforeStart.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.*;
+
+/**
+ * Reified is end before start constraint
+ */
+public class IsEndBeforeStart extends AbstractCPConstraint {
+
+    CPIntervalVar a;
+    CPIntervalVar b;
+    CPBoolVar isBefore;
+    CPConstraint endABeforeStartB;
+    CPConstraint startBPlusOneBeforeEndA;
+
+    /**
+     * Creates a constraint that link a boolean variable representing
+     * whether an interval ends before the start of another one
+     *
+     * @param a        left hand side of the end before start operator
+     * @param b        right hand side of the end before start operator
+     * @param isBefore a boolean variable that is true if and only if
+     *                 the end of a comes before or at the same time as the start of b
+     * @see CPFactory#isEndBeforeStart(CPIntervalVar, CPIntervalVar)
+     */
+    public IsEndBeforeStart(CPIntervalVar a, CPIntervalVar b, CPBoolVar isBefore) {
+<span class="fc" id="L33">        super(a.getSolver());</span>
+<span class="fc" id="L34">        this.a = a;</span>
+<span class="fc" id="L35">        this.b = b;</span>
+<span class="fc" id="L36">        this.isBefore = isBefore;</span>
+<span class="fc" id="L37">        endABeforeStartB = new EndBeforeStart(a, b);</span>
+<span class="fc" id="L38">        startBPlusOneBeforeEndA = new StartBeforeEnd(CPFactory.delay(b, 1), a);</span>
+<span class="fc" id="L39">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L43">        propagate();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (isActive()) {</span>
+<span class="fc" id="L45">            a.propagateOnChange(this);</span>
+<span class="fc" id="L46">            b.propagateOnChange(this);</span>
+<span class="fc" id="L47">            isBefore.propagateOnFix(this);</span>
+        }
+<span class="fc" id="L49">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (isBefore.isTrue()) {  // end(a) &lt;= start(b)</span>
+<span class="fc" id="L54">            getSolver().post(endABeforeStartB, false);</span>
+<span class="fc" id="L55">            setActive(false);</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        } else if (isBefore.isFalse()) {</span>
+            // end(a) &gt; start(b)  &lt;-&gt;  start(b) &lt; end(a)  &lt;-&gt;  start(b+1) &lt; end(a)
+<span class="fc" id="L58">            getSolver().post(startBPlusOneBeforeEndA, false);</span>
+<span class="fc" id="L59">            setActive(false);</span>
+        } else {
+<span class="fc bfc" id="L61" title="All 4 branches covered.">            if (a.isPresent() &amp;&amp; b.isPresent()) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (a.endMax() &lt;= b.startMin()) { // is end(a) &lt;= start(b) ?</span>
+<span class="fc" id="L63">                    isBefore.fix(true);</span>
+<span class="fc" id="L64">                    setActive(false);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                } else if (b.startMax() &lt; a.endMin()) {  // is end(a) &gt; start(b) ?</span>
+<span class="fc" id="L66">                    isBefore.fix(false);</span>
+<span class="fc" id="L67">                    setActive(false);</span>
+                }
+            }
+<span class="fc bfc" id="L70" title="All 4 branches covered.">            if (a.isAbsent() || b.isAbsent()) {</span>
+<span class="fc" id="L71">                setActive(false);</span>
+            }
+        }
+<span class="fc" id="L74">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

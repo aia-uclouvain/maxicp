@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CstMul.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">CstMul.java</span></div><h1>CstMul.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+public record CstMul(IntExpression expr, int mul) implements SymbolicIntExpression, NonLeafExpressionNode {
+<span class="fc" id="L12">    public CstMul {</span>
+        // ensures mul is always a positive number
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        if (mul &lt; 0) {</span>
+<span class="nc" id="L15">            mul = -mul;</span>
+<span class="nc" id="L16">            expr = new UnaryMinus(expr);</span>
+        }
+<span class="fc" id="L18">    }</span>
+
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="fc" id="L22">        return List.of(expr);</span>
+    }
+
+    @Override
+    public CstMul mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L27">        return new CstMul((IntExpression) f.apply(expr), mul);</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (mul != 0)</span>
+<span class="nc" id="L33">            return expr().evaluate() * mul;</span>
+<span class="nc" id="L34">        return 0;</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (mul != 0)</span>
+<span class="nc" id="L40">            return expr().min() * mul;</span>
+<span class="nc" id="L41">        return 0;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (mul != 0)</span>
+<span class="nc" id="L47">            return expr().max() * mul;</span>
+<span class="nc" id="L48">        return 0;</span>
+    }
+
+    @Override
+    public boolean defaultContains(int val) {
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        if (mul == 0) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            return val == 0;</span>
+        }
+
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (val % mul != 0)</span>
+<span class="nc" id="L58">            return false;</span>
+<span class="nc" id="L59">        return expr.contains(val / mul);</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (mul == 0) {</span>
+<span class="nc" id="L65">            array[0] = 0;</span>
+<span class="nc" id="L66">            return 1;</span>
+        }
+
+<span class="nc" id="L69">        int v = expr.fillArray(array);</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (int i = 0; i &lt; v; i++)</span>
+<span class="nc" id="L71">            array[i] = array[i] * mul;</span>
+<span class="nc" id="L72">        return v;</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (mul == 0)</span>
+<span class="nc" id="L78">            return 1;</span>
+<span class="nc" id="L79">        return expr.size();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L84">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

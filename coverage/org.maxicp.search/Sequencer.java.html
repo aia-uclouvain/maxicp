@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Sequencer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">Sequencer.java</span></div><h1>Sequencer.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.search;
+
+
+import java.util.function.Supplier;
+
+import static org.maxicp.search.Searches.EMPTY;
+
+/**
+ * Sequential Search combinator that linearly
+ * considers a list of branching generator.
+ * One branching of this list is executed
+ * when all the previous ones are exhausted, that is
+ * they return an empty array.
+ */
+public class Sequencer implements Supplier&lt;Runnable[]&gt; {
+    private Supplier&lt;Runnable[]&gt;[] branching;
+
+    /**
+     * Creates a sequential search combinator.
+     *
+     * @param branching the sequence of branching
+     */
+<span class="fc" id="L28">    public Sequencer(Supplier&lt;Runnable[]&gt;... branching) {</span>
+<span class="fc" id="L29">        this.branching = branching;</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public Runnable[] get() {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        for (int i = 0; i &lt; branching.length; i++) {</span>
+<span class="fc" id="L35">            Runnable[] alts = branching[i].get();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            if (alts.length != 0)</span>
+<span class="fc" id="L37">                return alts;</span>
+        }
+<span class="fc" id="L39">        return EMPTY;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

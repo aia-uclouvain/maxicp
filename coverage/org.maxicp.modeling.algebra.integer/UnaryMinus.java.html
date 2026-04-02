@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UnaryMinus.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">UnaryMinus.java</span></div><h1>UnaryMinus.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+<span class="fc" id="L11">public record UnaryMinus(IntExpression expr) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="fc" id="L14">        return List.of(expr);</span>
+    }
+
+    @Override
+    public UnaryMinus mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L19">        return new UnaryMinus((IntExpression) f.apply(expr));</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc" id="L24">        return -expr.evaluate();</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc" id="L29">        return -expr.max();</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc" id="L34">        return -expr.min();</span>
+    }
+
+    @Override
+    public boolean defaultContains(int v) {
+<span class="nc" id="L39">        return expr.contains(-v);</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="nc" id="L44">        int v = expr.fillArray(array);</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for(int i = 0; i &lt; v; i++)</span>
+<span class="nc" id="L46">            array[i] = -array[i];</span>
+<span class="nc" id="L47">        return v;</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="nc" id="L52">        return expr.size();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L57">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

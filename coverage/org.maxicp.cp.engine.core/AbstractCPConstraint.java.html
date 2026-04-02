@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AbstractCPConstraint.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">AbstractCPConstraint.java</span></div><h1>AbstractCPConstraint.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+
+import org.maxicp.Constants;
+import org.maxicp.state.State;
+
+import java.util.ArrayList;
+
+
+/**
+ * Abstract class the most of the constraints
+ * should extend.
+ */
+public abstract class AbstractCPConstraint implements CPConstraint {
+
+    /**
+     * The solver in which the constraint is created
+     */
+    private final CPSolver cp;
+<span class="fc" id="L25">    private boolean scheduled = false;</span>
+    private final State&lt;Boolean&gt; active;
+
+    private ArrayList&lt;Delta&gt; deltas;
+
+<span class="fc" id="L30">    public AbstractCPConstraint(CPSolver cp) {</span>
+<span class="fc" id="L31">        this.cp = cp;</span>
+<span class="fc" id="L32">        active = cp.getStateManager().makeStateRef(true);</span>
+<span class="fc" id="L33">        deltas = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L34">    }</span>
+
+    public void post() {
+<span class="fc" id="L37">    }</span>
+
+    public CPSolver getSolver() {
+<span class="fc" id="L40">        return cp;</span>
+    }
+
+    public void propagate() {
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public void registerDelta(Delta delta) {
+<span class="fc" id="L48">        deltas.add(delta);</span>
+<span class="fc" id="L49">        delta.update();</span>
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public void updateDeltas() {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (Delta d: deltas) {</span>
+<span class="fc" id="L55">            d.update();</span>
+<span class="fc" id="L56">        }</span>
+<span class="fc" id="L57">    }</span>
+
+    public void setScheduled(boolean scheduled) {
+<span class="fc" id="L60">        this.scheduled = scheduled;</span>
+<span class="fc" id="L61">    }</span>
+
+    public boolean isScheduled() {
+<span class="fc" id="L64">        return scheduled;</span>
+    }
+
+    public void setActive(boolean active) {
+<span class="fc" id="L68">        this.active.setValue(active);</span>
+<span class="fc" id="L69">    }</span>
+
+    public boolean isActive() {
+<span class="fc" id="L72">        return active.value();</span>
+    }
+
+    @Override
+    public int priority() {
+<span class="fc" id="L77">        return Constants.PIORITY_FAST;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

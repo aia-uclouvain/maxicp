@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XCallbacksDecomp.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.xcsp3</a> &gt; <span class="el_source">XCallbacksDecomp.java</span></div><h1>XCallbacksDecomp.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.xcsp3;
+
+import org.maxicp.util.exception.NotYetImplementedException;
+import org.xcsp.common.Condition;
+import org.xcsp.common.Types;
+import org.xcsp.common.Types.TypeVar;
+import org.xcsp.common.domains.Domains;
+import org.xcsp.common.predicates.XNode;
+import org.xcsp.common.predicates.XNodeLeaf;
+import org.xcsp.common.predicates.XNodeParent;
+import org.xcsp.parser.callbacks.XCallbacks2;
+import org.xcsp.parser.entries.XConstraints;
+import org.xcsp.parser.entries.XConstraints.CChild;
+import org.xcsp.parser.entries.XVariables;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+/**
+ * An extension of the default XCallback parser that provides default decompositions for the most complex constraints.
+ *
+ * Taken from the source code of OscaR (the file having been written by the same author)
+ */
+public abstract class XCallbacksDecomp implements XCallbacks2 {
+<span class="nc" id="L27">    protected boolean CONVERT_SYMBOLIC = true;</span>
+    protected HashMap&lt;String, Integer&gt; symbolicValues;
+    protected ArrayList&lt;String&gt; symbolicValuesReversed;
+    protected HashMap&lt;String, XVariables.XVarInteger&gt; symbolicVariables;
+
+<span class="nc" id="L32">    protected String reservedArray = &quot;oscarReserved&quot;;</span>
+    protected int currentReservedArrayIdx;
+<span class="nc" id="L34">    public XCallbacksDecomp() {</span>
+<span class="nc" id="L35">        symbolicValues = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L36">        symbolicValuesReversed = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L37">        symbolicVariables = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L38">        currentReservedArrayIdx = 0;</span>
+<span class="nc" id="L39">    }</span>
+
+    /**
+     * Generate a variable id that is unique and will not be sent in the solution
+     */
+    protected String generateReservedArrayIdx() {
+<span class="nc" id="L45">        currentReservedArrayIdx++;</span>
+<span class="nc" id="L46">        return reservedArray + &quot;[&quot; + Integer.toString(currentReservedArrayIdx) + &quot;]&quot;;</span>
+    }
+
+    /**
+     * Builds a new symbolic variable.
+     *
+     * This particular version automatically maps to buildVarInteger if CONVERT_SYMBOLIC is true
+     */
+    @Override
+    public void buildVarSymbolic(XVariables.XVarSymbolic x, String[] values) {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if(CONVERT_SYMBOLIC) {</span>
+            // map all symbolic values to integer values
+<span class="nc bnc" id="L58" title="All 2 branches missed.">            for(String v: values) {</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">                if(!symbolicValues.containsKey(v)) {</span>
+<span class="nc" id="L60">                    symbolicValuesReversed.add(v);</span>
+<span class="nc" id="L61">                    symbolicValues.put(v, symbolicValues.size());</span>
+                }
+            }
+
+            // compute the effective domain
+<span class="nc" id="L66">            int[] domain = Arrays.stream(values).mapToInt(v -&gt; symbolicValues.get(v)).toArray();</span>
+
+            // create a std XVarInteger
+<span class="nc" id="L69">            XVariables.XVarInteger var = (XVariables.XVarInteger)XVariables.XVar.build(x.id, TypeVar.integer, new Domains.Dom(domain));</span>
+<span class="nc" id="L70">            buildVarInteger(var, domain);</span>
+
+            // store it for future reference
+<span class="nc" id="L73">            symbolicVariables.put(x.id, var);</span>
+<span class="nc" id="L74">        }</span>
+        else {
+<span class="nc" id="L76">            unimplementedCase(x.id);</span>
+        }
+<span class="nc" id="L78">    }</span>
+
+    /**
+     * All Different constraint on Symbolic variables.
+     *
+     * Maps to buildCtrAllDifferent with Integer variables if CONVERT_SYMBOLIC is true
+     */
+    @Override
+    public void buildCtrAllDifferent(String id, XVariables.XVarSymbolic[] lists) {
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if(CONVERT_SYMBOLIC)</span>
+<span class="nc" id="L88">            buildCtrAllDifferent(id, Arrays.stream(lists).map(x -&gt; symbolicVariables.get(x.id)).toArray(XVariables.XVarInteger[]::new));</span>
+        else
+<span class="nc" id="L90">            unimplementedCase(id);</span>
+<span class="nc" id="L91">    }</span>
+
+    /**
+     * Extension constraint for Symbolic Variables
+     *
+     * Maps to buildCtrExtension with Integer variables if CONVERT_SYMBOLIC is true
+     */
+    @Override
+    public void buildCtrExtension(String id, XVariables.XVarSymbolic x, String[] values, boolean positive, Set&lt;Types.TypeFlag&gt; flags) {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">        if(CONVERT_SYMBOLIC)</span>
+<span class="nc" id="L101">            buildCtrExtension(id, symbolicVariables.get(x.id), Arrays.stream(values).mapToInt(i -&gt; symbolicValues.get(i)).toArray(), positive, flags);</span>
+        else
+<span class="nc" id="L103">            unimplementedCase(id);</span>
+<span class="nc" id="L104">    }</span>
+
+    protected XNodeLeaf&lt;XVariables.XVarInteger&gt; convertSymbolicTreeLeaf(XNodeLeaf&lt;XVariables.XVarSymbolic&gt; leaf) {
+<span class="nc bnc" id="L107" title="All 4 branches missed.">        if(leaf.type == Types.TypeExpr.VAR &amp;&amp; leaf.value instanceof XVariables.XVarSymbolic)</span>
+<span class="nc" id="L108">            return new XNodeLeaf&lt;&gt;(Types.TypeExpr.VAR, symbolicVariables.get(((XVariables.XVarSymbolic)leaf.value).id));</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if(leaf.type == Types.TypeExpr.SYMBOL)</span>
+<span class="nc" id="L110">            return new XNodeLeaf&lt;&gt;(Types.TypeExpr.LONG, (long)symbolicValues.get((String)leaf.value));</span>
+<span class="nc" id="L111">        return new XNodeLeaf&lt;&gt;(leaf.getType(), leaf.value);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    protected XNodeParent&lt;XVariables.XVarInteger&gt; convertSymbolicTree(XNodeParent&lt;XVariables.XVarSymbolic&gt; syntaxTreeRoot) {
+
+<span class="nc" id="L117">        return new XNodeParent&lt;&gt;(syntaxTreeRoot.type, Arrays.stream(syntaxTreeRoot.sons).map(x -&gt; {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if(x instanceof XNodeParent)</span>
+<span class="nc" id="L119">                return convertSymbolicTree((XNodeParent&lt;XVariables.XVarSymbolic&gt;)x);</span>
+            else
+<span class="nc" id="L121">                return convertSymbolicTreeLeaf((XNodeLeaf&lt;XVariables.XVarSymbolic&gt;)x);</span>
+<span class="nc" id="L122">        }).toArray(XNode[]::new));</span>
+    }
+
+    /**
+     * Intension constraint for Symbolic Variables
+     *
+     * Maps to buildCtrIntension with Integer variables if CONVERT_SYMBOLIC is true
+     */
+    @Override
+    public void buildCtrIntension(String id, XVariables.XVarSymbolic[] scope, XNodeParent&lt;XVariables.XVarSymbolic&gt; syntaxTreeRoot) {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if(CONVERT_SYMBOLIC)</span>
+<span class="nc" id="L133">            buildCtrIntension(id, Arrays.stream(scope).map(x -&gt; symbolicVariables.get(x.id)).toArray(XVariables.XVarInteger[]::new), convertSymbolicTree(syntaxTreeRoot));</span>
+        else
+<span class="nc" id="L135">            unimplementedCase(id);</span>
+<span class="nc" id="L136">    }</span>
+
+    /**
+     * Extension constraint for Symbolic Variables
+     *
+     * Maps to buildCtrExtension with Integer variables if CONVERT_SYMBOLIC is true
+     */
+    @Override
+    public void buildCtrExtension(String id, XVariables.XVarSymbolic[] list, String[][] tuples, boolean positive, Set&lt;Types.TypeFlag&gt; flags) {
+<span class="nc" id="L145">        buildCtrExtension(id,</span>
+<span class="nc" id="L146">                Arrays.stream(list).map(x -&gt; symbolicVariables.get(x.id)).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L147">                Arrays.stream(tuples).map(x -&gt; Arrays.stream(x).mapToInt(y -&gt; symbolicValues.get(y)).toArray()).toArray(int[][]::new),</span>
+                positive, flags);
+<span class="nc" id="L149">    }</span>
+
+    /**
+     * All Diff Matrix.
+     * This particular version maps all the line/columns to buildCtrAllDifferent.
+     * @param id
+     * @param matrix
+     */
+    @Override
+    public void buildCtrAllDifferentMatrix(String id, XVariables.XVarInteger[][] matrix) {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for(XVariables.XVarInteger[] line: matrix)</span>
+<span class="nc" id="L160">            this.buildCtrAllDifferent(id, line);</span>
+
+<span class="nc" id="L162">        IntStream.range(0, matrix[0].length).forEach(i -&gt; buildCtrAllDifferent(id, Arrays.stream(matrix).map(l -&gt; l[i]).toArray(XVariables.XVarInteger[]::new)));</span>
+<span class="nc" id="L163">    }</span>
+
+    /**
+     * Compute possible ends for given job starts and lenghts
+     */
+    protected XVariables.XVarInteger[] buildEndsFromStartAndLength(XVariables.XVarInteger[] starts, XVariables.XVarInteger[] lengths) {
+<span class="nc" id="L169">        XVariables.XVarInteger[] output = new XVariables.XVarInteger[starts.length];</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        for(int i = 0; i &lt; starts.length; i++) {</span>
+<span class="nc" id="L171">            int min = (int)(((Domains.Dom)starts[i].dom).firstValue() + ((Domains.Dom)lengths[i].dom).firstValue());</span>
+<span class="nc" id="L172">            int max = (int)(((Domains.Dom)starts[i].dom).lastValue() + ((Domains.Dom)lengths[i].dom).lastValue());</span>
+<span class="nc" id="L173">            output[i] = (XVariables.XVarInteger)XVariables.XVar.build(generateReservedArrayIdx(), TypeVar.integer, new Domains.Dom(min, max));</span>
+<span class="nc" id="L174">            buildVarInteger(output[i], min, max);</span>
+        }
+<span class="nc" id="L176">        return output;</span>
+    }
+
+    /**
+     * Compute possible ends for given job starts and lenghts
+     */
+    protected XVariables.XVarInteger[] buildEndsFromStartAndLength(XVariables.XVarInteger[] starts, int[] lengths) {
+<span class="nc" id="L183">        XVariables.XVarInteger[] output = new XVariables.XVarInteger[starts.length];</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        for(int i = 0; i &lt; starts.length; i++) {</span>
+<span class="nc" id="L185">            int min = (int)(((Domains.Dom)starts[i].dom).firstValue())+lengths[i];</span>
+<span class="nc" id="L186">            int max = (int)(((Domains.Dom)starts[i].dom).lastValue())+lengths[i];</span>
+<span class="nc" id="L187">            output[i] = (XVariables.XVarInteger)XVariables.XVar.build(generateReservedArrayIdx(), TypeVar.integer, new Domains.Dom(min, max));</span>
+<span class="nc" id="L188">            buildVarInteger(output[i], min, max);</span>
+        }
+<span class="nc" id="L190">        return output;</span>
+    }
+
+    /**
+     * Cumulative constraint. Infer the parameters ends from origins and length
+     */
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, int[] heights, Condition condition) {
+<span class="nc" id="L198">        buildCtrCumulative(id, origins, lengths, buildEndsFromStartAndLength(origins, lengths), heights, condition);</span>
+<span class="nc" id="L199">    }</span>
+
+    /**
+     * Cumulative constraint. Infer the parameters ends from origins and length
+     */
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
+<span class="nc" id="L206">        buildCtrCumulative(id, origins, lengths, buildEndsFromStartAndLength(origins, lengths), heights, condition);</span>
+<span class="nc" id="L207">    }</span>
+
+    /**
+     * Cumulative constraint. Infer the parameters ends from origins and length
+     */
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, int[] heights, Condition condition) {
+<span class="nc" id="L214">        buildCtrCumulative(id, origins, lengths, buildEndsFromStartAndLength(origins, lengths), heights, condition);</span>
+<span class="nc" id="L215">    }</span>
+
+    /**
+     * Cumulative constraint. Infer the parameters ends from origins and length
+     */
+    @Override
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
+<span class="nc" id="L222">        buildCtrCumulative(id, origins, lengths, buildEndsFromStartAndLength(origins, lengths), heights, condition);</span>
+<span class="nc" id="L223">    }</span>
+
+    /**
+     * Lex-matrix constraint.
+     *
+     * Map to the std. Lex constraint, on the columns and on the rows
+     *
+     * @param id
+     * @param matrix
+     * @param operator
+     */
+    @Override
+    public void buildCtrLexMatrix(String id, XVariables.XVarInteger[][] matrix, Types.TypeOperatorRel operator) {
+<span class="nc" id="L236">        buildCtrLex(id, matrix, operator);</span>
+
+<span class="nc" id="L238">        XVariables.XVarInteger[][] mt = new XVariables.XVarInteger[matrix[0].length][matrix.length];</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        for (int r = 0; r &lt; matrix.length; r++)</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            for (int c = 0; c &lt; matrix[0].length; c++)</span>
+<span class="nc" id="L241">                mt[c][r] = matrix[r][c];</span>
+
+<span class="nc" id="L243">        buildCtrLex(id, mt, operator);</span>
+<span class="nc" id="L244">    }</span>
+
+    @Override
+    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, int[][] lengths, boolean zeroIgnored) {
+        //TODO semantics of zeroIgnored ???
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        if(origins[0].length == 2) //2D case</span>
+<span class="nc" id="L250">            buildCtrNoOverlap2D(id,</span>
+<span class="nc" id="L251">                    Arrays.stream(origins).map(e -&gt; e[0]).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L252">                    Arrays.stream(lengths).mapToInt(e -&gt; e[0]).toArray(),</span>
+<span class="nc" id="L253">                    Arrays.stream(origins).map(e -&gt; e[1]).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L254">                    Arrays.stream(lengths).mapToInt(e -&gt; e[1]).toArray());</span>
+        else
+<span class="nc" id="L256">            unimplementedCase();</span>
+<span class="nc" id="L257">    }</span>
+
+    @Override
+    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, XVariables.XVarInteger[][] lengths, boolean zeroIgnored) {
+<span class="nc bnc" id="L261" title="All 2 branches missed.">        if(origins[0].length == 2) //2D case</span>
+<span class="nc" id="L262">            buildCtrNoOverlap2D(id,</span>
+<span class="nc" id="L263">                    Arrays.stream(origins).map(e -&gt; e[0]).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L264">                    Arrays.stream(lengths).map(e -&gt; e[0]).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L265">                    Arrays.stream(origins).map(e -&gt; e[1]).toArray(XVariables.XVarInteger[]::new),</span>
+<span class="nc" id="L266">                    Arrays.stream(lengths).map(e -&gt; e[1]).toArray(XVariables.XVarInteger[]::new));</span>
+        else
+<span class="nc" id="L268">            unimplementedCase();</span>
+<span class="nc" id="L269">    }</span>
+
+    public void buildCtrNoOverlap2D(String id, XVariables.XVarInteger[] x, XVariables.XVarInteger[] dx, XVariables.XVarInteger[] y, XVariables.XVarInteger[] dy) {
+<span class="nc" id="L272">        unimplementedCase();</span>
+<span class="nc" id="L273">    }</span>
+
+    public void buildCtrNoOverlap2D(String id, XVariables.XVarInteger[] x, int[] dx, XVariables.XVarInteger[] y, int[] dy) {
+<span class="nc" id="L276">        unimplementedCase();</span>
+<span class="nc" id="L277">    }</span>
+
+    /**
+     * AllDifferentList constraint.
+     *
+     * For each pair of tuple (x,y), maps to
+     * Or(ne(x[0],y[0]), ne(x[1],y[1]), ne(x[2],y[2]), ...)
+     * @param id
+     * @param lists
+     */
+    @Override
+    public void buildCtrAllDifferentList(String id, XVariables.XVarInteger[][] lists) {
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        for(int i = 0; i &lt; lists.length; i++) {</span>
+<span class="nc" id="L290">            XVariables.XVarInteger[] tuple1 = lists[i];</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">            for(int j = i+1; j &lt; lists.length; j++) {</span>
+<span class="nc" id="L292">                XVariables.XVarInteger[] tuple2 = lists[j];</span>
+
+<span class="nc" id="L294">                XVariables.XVarInteger[] scope = new XVariables.XVarInteger[tuple1.length*2];</span>
+<span class="nc" id="L295">                System.arraycopy(tuple1, 0, scope, 0, tuple1.length);</span>
+<span class="nc" id="L296">                System.arraycopy(tuple2, 0, scope, tuple1.length, tuple1.length);</span>
+
+
+<span class="nc" id="L299">                XNodeParent&lt;XVariables.XVarInteger&gt;[] orVars = new XNodeParent[tuple1.length];</span>
+
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                for(int k = 0; k &lt; tuple1.length; k++) {</span>
+<span class="nc" id="L302">                    XNodeLeaf&lt;XVariables.XVar&gt; v1 = new XNodeLeaf&lt;&gt;(Types.TypeExpr.VAR, tuple1[k]);</span>
+<span class="nc" id="L303">                    XNodeLeaf&lt;XVariables.XVar&gt; v2 = new XNodeLeaf&lt;&gt;(Types.TypeExpr.VAR, tuple2[k]);</span>
+<span class="nc" id="L304">                    orVars[k] = new XNodeParent&lt;&gt;(Types.TypeExpr.NE, new XNode[]{v1, v2});</span>
+                }
+<span class="nc" id="L306">                XNodeParent&lt;XVariables.XVarInteger&gt; or = new XNodeParent&lt;&gt;(Types.TypeExpr.OR, orVars);</span>
+
+<span class="nc" id="L308">                CChild[] childs = new CChild[] { new CChild(Types.TypeChild.function,or)};</span>
+<span class="nc" id="L309">                implem().ctrLoaderInteger.load(new XConstraints.XCtr(Types.TypeCtr.intension,childs));</span>
+                // todo: should be a buildCtrClause instead of or
+            }
+        }
+<span class="nc" id="L313">    }</span>
+
+    /**
+     * Helper for buildCtrAllDifferentList.
+     *
+     * Build all possibles values that can be taken by a tuple of vars, and creates a new table linking all the instances to a given id (stores the relation tuple -&gt; id in instanceToId)
+     * For simplicity of implem, keys of instances are string, constructed while iterating.
+     */
+    /*protected void generateAllInstanceFromTuple(XVariables.XVarInteger[] tuple, int[] currentContent, int posInTuple, String accumulator,
+                                                HashMap&lt;String, Integer&gt; instanceToId, ArrayList&lt;int[]&gt; table) {
+        if(posInTuple == tuple.length) {
+            int id = instanceToId.size();
+            if(instanceToId.containsKey(accumulator))
+                id = instanceToId.get(accumulator);
+            else
+                instanceToId.put(accumulator, id);
+            //currentContent is of size tuple.length+1, so it's ok
+            currentContent[posInTuple] = id;
+            int[] copy = new int[currentContent.length];
+            System.arraycopy(currentContent, 0, copy, 0, currentContent.length);
+            table.add(copy);
+            return;
+        }
+        XVariables.XVarInteger v = tuple[posInTuple];
+        XDomains.XDomInteger domain = (XDomains.XDomInteger)v.dom;
+        int[] intDomain = XValues.IntegerEntity.toIntArray((XValues.IntegerEntity[])domain.values, Integer.MAX_VALUE);
+        for(int x: intDomain) {
+            currentContent[posInTuple] = x;
+            generateAllInstanceFromTuple(tuple, currentContent, posInTuple+1, accumulator+&quot;,&quot;+Integer.toString(x), instanceToId, table);
+        }
+    }*/
+
+    /**
+     * AllDifferentList constraint.
+     *
+     * Map to Extension constraint (each &quot;tuple instance&quot; points to an id) and AllDifferent (on ids)
+     *
+     * Too hungry in memory...
+     */
+    /*@Override
+    public void buildCtrAllDifferentList(String id, XVariables.XVarInteger[][] lists) {
+        HashMap&lt;String, Integer&gt; instanceToId = new HashMap&lt;&gt;();
+        ArrayList&lt;int[]&gt;[] tables = new ArrayList[lists.length];
+        for(int i = 0; i &lt; lists.length; i++) {
+            XVariables.XVarInteger[] tuple = lists[i];
+            tables[i] = new ArrayList&lt;&gt;();
+            int[] currentContent = new int[tuple.length+1];
+            generateAllInstanceFromTuple(tuple, currentContent, 0, &quot;&quot;, instanceToId, tables[i]);
+        }
+
+        // We now have all our tables, let's create the needed variables
+        XVariables.XVarInteger[] allDiffVars = new XVariables.XVarInteger[lists.length];
+        for(int i = 0; i &lt; lists.length; i++) {
+            allDiffVars[i] = (XVariables.XVarInteger) XVariables.XVar.build(generateReservedArrayIdx(), XVariables.TypeVar.integer, new XDomains.XDomInteger(0, instanceToId.size()));
+            buildVarInteger(allDiffVars[i], 0, instanceToId.size());
+        }
+
+        // Let's create the allDifferent
+        buildCtrAllDifferent(id, allDiffVars);
+
+        // Now we finalize the tables and post them
+        for(int i = 0; i &lt; lists.length; i++) {
+            XVariables.XVarInteger[] tuple = lists[i];
+
+            // Create a new tuple with the &quot;id&quot;
+            XVariables.XVarInteger[] completeTuple = new XVariables.XVarInteger[tuple.length+1];
+            System.arraycopy(tuple, 0, completeTuple, 0, tuple.length);
+            completeTuple[tuple.length] = allDiffVars[i];
+
+            // Generate the table
+            int[][] table = new int[tables[i].size()][tuple.length+1];
+            table = tables[i].toArray(table);
+
+            // Post the table
+            buildCtrExtension(id, completeTuple, table, true, new HashSet&lt;&gt;());
+        }
+    }*/
+
+    /**
+     * Generate an instantiation constraint that is the solution given in values.
+     *
+     * The main purpose of this function is to parse back XVarInteger to XVarSymbolic if it was previously converted
+     *
+     * @param allVariables list of variables in the solution, given by their id
+     * @param allValues values[i] is the value assigned to variables[i]
+     */
+    public String generateInstantiationWithSymbolic(String[] allVariables, int[] allValues) {
+        // Remove variables that have been generated
+<span class="nc" id="L401">        ArrayList&lt;String&gt; variables = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L402">        ArrayList&lt;Integer&gt; values = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L403" title="All 2 branches missed.">        for(int i = 0; i &lt; allVariables.length; i++) {</span>
+<span class="nc bnc" id="L404" title="All 2 branches missed.">            if(!allVariables[i].startsWith(reservedArray)) {</span>
+<span class="nc" id="L405">                variables.add(allVariables[i]);</span>
+<span class="nc" id="L406">                values.add(allValues[i]);</span>
+            }
+        }
+
+<span class="nc" id="L410">        StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L411">        builder.append(&quot;&lt;instantiation&gt;\n\t&lt;list&gt;\n\t\t&quot;);</span>
+<span class="nc" id="L412">        builder.append(String.join(&quot; &quot;, variables));</span>
+<span class="nc" id="L413">        builder.append(&quot;\n\t&lt;/list&gt;\n\t&lt;values&gt;\n\t\t&quot;);</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">        for(int i = 0; i &lt; values.size(); i++) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">            if(symbolicVariables.containsKey(variables.get(i)))</span>
+<span class="nc" id="L416">                builder.append(symbolicValuesReversed.get(values.get(i)));</span>
+            else
+<span class="nc" id="L418">                builder.append(values.get(i));</span>
+<span class="nc" id="L419">            builder.append(' ');</span>
+        }
+<span class="nc" id="L421">        builder.append(&quot;\n\t&lt;/values&gt;\n&lt;/instantiation&gt;&quot;);</span>
+<span class="nc" id="L422">        return builder.toString();</span>
+    }
+
+    @Override
+    public Object unimplementedCase(Object... objects) {
+<span class="nc" id="L427">        System.out.println(&quot;\n\n**********************&quot;);</span>
+<span class="nc" id="L428">        System.out.println(&quot;Missing Implementation&quot;);</span>
+<span class="nc" id="L429">        StackTraceElement[] t = Thread.currentThread().getStackTrace();</span>
+<span class="nc" id="L430">        System.out.println(&quot;  Method &quot; + t[2].getMethodName());</span>
+<span class="nc" id="L431">        System.out.println(&quot;  Class &quot; + t[2].getClassName());</span>
+<span class="nc" id="L432">        System.out.println(&quot;  Line &quot; + t[2].getLineNumber());</span>
+<span class="nc" id="L433">        System.out.println(&quot;**********************&quot;);</span>
+<span class="nc" id="L434">        System.out.println(&quot;Context:&quot; + (String) Stream.of(objects).filter(Objects::nonNull).map(Object::toString).collect(Collectors.joining(&quot;\n&quot;)));</span>
+<span class="nc" id="L435">        throw new NotYetImplementedException();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

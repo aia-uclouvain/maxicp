@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Searches.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">Searches.java</span></div><h1>Searches.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.search;
+
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.*;
+import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.modeling.algebra.bool.NotEq;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.symbolic.SymbolicModel;
+import org.maxicp.util.TriFunction;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.*;
+
+import static org.maxicp.modeling.Factory.*;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+
+/**
+ * Factory for search procedures.
+ *
+ * @see DFSearch
+ */
+public final class Searches {
+
+<span class="nc" id="L34">    private Searches() {</span>
+<span class="nc" id="L35">        throw new UnsupportedOperationException();</span>
+    }
+
+    /**
+     * Constant that should be returned
+     * to notify the solver that there are no branches
+     * to create any more and that the current state should
+     * be considered as a solution.
+     *
+     * @see DFSearch
+     */
+<span class="fc" id="L46">    public static final Runnable[] EMPTY = new Runnable[0];</span>
+<span class="fc" id="L47">    public static final SymbolicBranching[] EMPTY_SYMB = new SymbolicBranching[0];</span>
+
+    /**
+     * @param branches the ordered closures for the child branches
+     *                 ordered from left to right in the depth first search.
+     * @return an array with those branches
+     * @see DFSearch
+     */
+    public static Runnable[] branch(Runnable... branches) {
+<span class="fc" id="L56">        return branches;</span>
+    }
+
+    public static SymbolicModel[] branch(SymbolicModel... branches) {
+<span class="nc" id="L60">        return branches;</span>
+    }
+
+    /**
+     * Minimum selector.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * IntVar xs = selectMin(x,xi -&gt; xi.size() &gt; 1,xi -&gt; xi.size());
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param x   the array on which the minimum value is searched
+     * @param p   the predicate that filters the element eligible for selection
+     * @param f   the evaluation function that returns a comparable when applied on an element of x
+     * @param &lt;T&gt; the type of the elements in x, for instance {@link org.maxicp.modeling.IntVar}
+     * @param &lt;N&gt; the type on which the minimum is computed, for instance {@link Integer}
+     * @return the minimum element in x that satisfies the predicate p
+     * or null if no element satisfies the predicate.
+     */
+    public static &lt;T, N extends Comparable&lt;N&gt;&gt; T selectMin(T[] x, Predicate&lt;T&gt; p, Function&lt;T, N&gt; f) {
+<span class="fc" id="L81">        T sel = null;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (T xi : x) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (p.test(xi)) {</span>
+<span class="fc bfc" id="L84" title="All 4 branches covered.">                sel = sel == null || f.apply(xi).compareTo(f.apply(sel)) &lt; 0 ? xi : sel;</span>
+            }
+        }
+<span class="fc" id="L87">        return sel;</span>
+    }
+
+    /**
+     * Minimum selector.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     *     {@code
+     *     int i = selectMin(
+     *       IntStream.range(0, n).boxed().toList(),
+     *       qi -&gt; q[qi].size() &gt; 1,
+     *       qi -&gt; q[qi].size()
+     *     );
+     *     }
+     * &lt;/pre&gt;
+     *
+     * @param items the iterable on which the minimum value is searched
+     * @param p the predicate that filters the element eligible for selection
+     * @param f the evaluation function that returns a comparable when applied on an element of items
+     * @return the minimum element in items that satisfies the predicate p
+     * @param &lt;T&gt;
+     * @param &lt;N&gt;
+     *
+     */
+    public static &lt;T, N extends Comparable&lt;N&gt;&gt; T selectMin(
+            Iterable&lt;T&gt; items, Predicate&lt;T&gt; p, Function&lt;T, N&gt; f) {
+<span class="nc" id="L113">        T sel = null;</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        for (T xi : items) {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            if (p.test(xi)) {</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">                sel = sel == null || f.apply(xi).compareTo(f.apply(sel)) &lt; 0 ? xi : sel;</span>
+            }
+<span class="nc" id="L118">        }</span>
+<span class="nc" id="L119">        return sel;</span>
+    }
+
+    /**
+     * Minimum selector.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * IntVar xs = selectMin(x,n, xi -&gt; xi.size() &gt; 1,xi -&gt; xi.size());
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param x   the array on which the minimum value is searched
+     * @param n   the n first elements from x that must be considered
+     * @param p   the predicate that filters the element eligible for selection
+     * @param f   the evaluation function that returns a comparable when applied on an element of x
+     * @param &lt;T&gt; the type of the elements in x, for instance {@link org.maxicp.modeling.IntVar}
+     * @param &lt;N&gt; the type on which the minimum is computed, for instance {@link Integer}
+     * @return the minimum element in x that satisfies the predicate p
+     * or null if no element satisfies the predicate.
+     */
+    public static &lt;T, N extends Comparable&lt;N&gt;&gt; T selectMin(T[] x, int n, Predicate&lt;T&gt; p, Function&lt;T, N&gt; f) {
+<span class="nc" id="L141">        T sel = null;</span>
+<span class="nc" id="L142">        Iterable&lt;T&gt; it = Arrays.stream(x).limit(n)::iterator;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        for (T xi : it) {</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            if (p.test(xi)) {</span>
+<span class="nc bnc" id="L145" title="All 4 branches missed.">                sel = sel == null || f.apply(xi).compareTo(f.apply(sel)) &lt; 0 ? xi : sel;</span>
+            }
+<span class="nc" id="L147">        }</span>
+<span class="nc" id="L148">        return sel;</span>
+    }
+
+    /**
+     * Minimum selector.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * OptionalInt i = selectMin(values,n, i -&gt; x[i].isFixed() &gt; 1, i -&gt; x[i].size());
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param x the array on which the minimum value is searched
+     * @param n the n first elements from x that must be considered
+     * @param p the predicate that filters the element eligible for selection
+     * @param f the evaluation function that returns a comparable when applied on an element of x
+     * @return the minimum element in x that satisfies the predicate p
+     * or null if no element satisfies the predicate.
+     */
+    public static &lt;N extends Comparable&lt;N&gt;&gt; OptionalInt selectMin(int[] x, int n, Predicate&lt;Integer&gt; p, Function&lt;Integer, N&gt; f) {
+<span class="nc bnc" id="L168" title="All 2 branches missed.">        return Arrays.stream(x).limit(n).filter(p::test).reduce((i, j) -&gt; f.apply(i).compareTo(f.apply(j)) &lt; 0 ? i : j);</span>
+    }
+
+    /**
+     * Binary Branching with custom variable heuristic and natural value ordering.
+     *
+     * @param variableSelector returns the next variable to bind, null if all variables are fixed
+     * @return a static branching strategy, the minimum value of the variable domain is attempted on the left,
+     *          and removed on the right
+     */
+    public static Supplier&lt;Runnable[]&gt; heuristicBinary(Supplier&lt;IntExpression&gt; variableSelector) {
+<span class="fc" id="L179">        return () -&gt; {</span>
+<span class="fc" id="L180">            IntExpression xs = variableSelector.get();</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            if (xs == null)</span>
+<span class="fc" id="L182">                return EMPTY;</span>
+            else {
+<span class="fc" id="L184">                ModelProxy model = xs.getModelProxy();</span>
+<span class="fc" id="L185">                int v = xs.min();</span>
+<span class="fc" id="L186">                return branch(() -&gt; model.add(new Eq(xs, v)),</span>
+<span class="fc" id="L187">                        () -&gt; model.add(new NotEq(xs, v)));</span>
+            }
+        };
+    }
+
+    /**
+     * Binary Branching with custom variable and value heuristics.
+     *
+     * @param variableSelector the variable heuristic, returns the variable on which the branching is applied
+     *                         null if all variables are fixed
+     * @param valueSelector given the variable,
+     *                       returns the value assigned in the left branch,
+     *                       and removed fin the right branch
+     */
+    public static Supplier&lt;Runnable[]&gt; heuristicBinary(Supplier&lt;IntExpression&gt; variableSelector,
+                                                       Function&lt;IntExpression, Integer&gt; valueSelector) {
+
+<span class="nc" id="L204">        return () -&gt; {</span>
+<span class="nc" id="L205">            IntExpression xs = variableSelector.get();</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L207">                return EMPTY;</span>
+            else {
+<span class="nc" id="L209">                ModelProxy model = xs.getModelProxy();</span>
+<span class="nc" id="L210">                int v = valueSelector.apply(xs);</span>
+<span class="nc" id="L211">                return branch(() -&gt; model.add(new Eq(xs, v)),</span>
+<span class="nc" id="L212">                        () -&gt; model.add(new NotEq(xs, v)));</span>
+            }
+        };
+    }
+
+    /**
+     * N-ary Branching with custom variable heuristic and natural value ordering.
+     *
+     * @param variableSelector returns the variable on which the n-ary branching is applied
+     *                          null if all variables are fixed
+     * @return an n-ary branching strategy with the variable heuristic and natural
+     *          value ordering (increasing order).
+     */
+    public static Supplier&lt;Runnable[]&gt; heuristicNary(Supplier&lt;IntExpression&gt; variableSelector) {
+<span class="nc" id="L226">        return () -&gt; {</span>
+<span class="nc" id="L227">            IntExpression xs = variableSelector.get();</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L229">                return EMPTY;</span>
+            else {
+<span class="nc" id="L231">                ModelProxy model = xs.getModelProxy();</span>
+                // create one branch for each value in increasing order
+<span class="nc" id="L233">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">                for (int v = xs.min(); v &lt; xs.max(); v++) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">                    if (xs.contains(v)) {</span>
+<span class="nc" id="L236">                        int value = v;</span>
+<span class="nc" id="L237">                        branches.add(() -&gt; model.add(new Eq(xs, value)));</span>
+                    }
+                }
+<span class="nc" id="L240">                return branch(branches.toArray(new Runnable[0]));</span>
+            }
+        };
+    }
+
+    /**
+     * N-ary Branching with custom variable and value heuristics.
+     *
+     * @param variableSelector returns the variable on which the n-ary branching is applied
+     * @param valueHeuristic the branches for each value are ordered according to the value
+     *                       of this function (in increasing order).
+     *                       This function is called once for each value in the variable domain to
+     *                       sort them according to the heuristic before creating the branches in the sorted order.
+     * @return an n-ary branching strategy
+     */
+    public static Supplier&lt;Runnable[]&gt; heuristicNary(Supplier&lt;IntExpression&gt; variableSelector,
+                                                     Function&lt;Integer, Integer&gt; valueHeuristic) {
+<span class="nc" id="L257">        return () -&gt; {</span>
+<span class="nc" id="L258">            IntExpression xs = variableSelector.get();</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L260">                return EMPTY;</span>
+            else {
+<span class="nc" id="L262">                ModelProxy model = xs.getModelProxy();</span>
+                // create one branch for each value sorted by the valueHeuristic
+<span class="nc" id="L264">                int[] values = new int[xs.size()];</span>
+<span class="nc" id="L265">                xs.fillArray(values);</span>
+<span class="nc" id="L266">                Integer[] boxed = Arrays.stream(values)</span>
+<span class="nc" id="L267">                        .boxed()</span>
+<span class="nc" id="L268">                        .toArray(Integer[]::new);</span>
+<span class="nc" id="L269">                Arrays.sort(boxed, Comparator.comparingInt(valueHeuristic::apply));</span>
+<span class="nc" id="L270">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">                for (int v : boxed) {</span>
+<span class="nc" id="L272">                    int value = v;</span>
+<span class="nc" id="L273">                    branches.add(() -&gt; model.add(new Eq(xs, v)));</span>
+                }
+<span class="nc" id="L275">                return branch(branches.toArray(new Runnable[0]));</span>
+            }
+        };
+    }
+
+    /**
+     * N-ary Branching with static variable ordering and natural value ordering.
+     *
+     * @param xs the variable array to fix
+     * @return an n-ary branching strategy with static variable ordering and
+     *             natural value ordering (increasing order).
+     */
+    public static Supplier&lt;Runnable[]&gt; staticOrderNary(IntExpression... xs) {
+<span class="nc" id="L288">        return heuristicNary(staticOrderVariableSelector(xs));</span>
+    }
+
+
+    /**
+     * Binary Branching with static variable ordering and natural value ordering.
+     *
+     * @param xs the variable array to fix
+     * @return a binary static branching strategy, min value on the left, remove it on the right
+     */
+    public static Supplier&lt;Runnable[]&gt; staticOrderBinary(IntExpression... xs) {
+<span class="fc" id="L299">        return heuristicBinary(staticOrderVariableSelector(xs));</span>
+    }
+
+    /**
+     * Binary Branching with static variable ordering and custom value heuristic.
+     *
+     * @param valueSelector the value heuristic, given a variable, returns the value to which
+     *                      it must be assigned on the left branch, and removed on the right branch
+     * @param xs the variable array to fix,
+     * @return a binary static branching strategy on the variable,
+     *        but the value is selected by the heuristic on the left, removed on the right branches
+     */
+    public static Supplier&lt;Runnable[]&gt; staticOrderBinary(Function&lt;IntExpression, Integer&gt; valueSelector,
+                                                         IntExpression... xs) {
+<span class="nc" id="L313">        return heuristicBinary(staticOrderVariableSelector(xs), valueSelector);</span>
+    }
+
+
+    /**
+     * First-Fail Binary search strategy.
+     * Selects the first not fixed variable with smallest domain.
+     * Then it creates two branches. The left branch
+     * assigning the variable to its minimum value.
+     * The right branch removing this minimum value from the domain.
+     *
+     * @param x the variable on which the first fail strategy is applied.
+     * @return a first-fail branching strategy
+     */
+    public static Supplier&lt;Runnable[]&gt; firstFailBinary(IntExpression... x) {
+<span class="fc" id="L328">        return heuristicBinary(minDomVariableSelector(x));</span>
+    }
+
+    /**
+     * First-Fail N-Ary search strategy.
+     * It selects the first variable with a domain larger than one.
+     * Then it creates one branch for each value in increasing order.
+     *
+     * @param x the variable on which the first fail strategy is applied.
+     * @return a first-fail n-ary branching strategy
+     */
+    public static Supplier&lt;Runnable[]&gt; firstFailNary(IntExpression... x) {
+<span class="nc" id="L340">        return heuristicNary(minDomVariableSelector());</span>
+    }
+
+    /**
+     * Sequential Search combinator that linearly
+     * considers a list of branching generator.
+     * One branching of this list is executed
+     * when all the previous ones are exhausted (they return an empty array).
+     *
+     * @param choices the branching schemes considered sequentially in the sequential by
+     *                path in the search tree
+     * @return a branching scheme implementing the sequential search
+     * @see Sequencer
+     */
+    public static Supplier&lt;Runnable[]&gt; and(Supplier&lt;Runnable[]&gt;... choices) {
+<span class="fc" id="L355">        return new Sequencer(choices);</span>
+    }
+
+    /**
+     * Limited Discrepancy Search combinator
+     * that limits the number of right decisions
+     *
+     * @param branching      a branching scheme
+     * @param maxDiscrepancy a discrepancy limit (non negative number)
+     * @return a branching scheme that cuts off any path accumulating
+     * a discrepancy beyond the limit maxDiscrepancy
+     * @see LimitedDiscrepancyBranching
+     */
+    public static Supplier&lt;Runnable[]&gt; limitedDiscrepancy(Supplier&lt;Runnable[]&gt; branching, int maxDiscrepancy) {
+<span class="nc" id="L369">        return new LimitedDiscrepancyBranching(branching, maxDiscrepancy);</span>
+    }
+
+    /**
+     * It selects the first not fixed variable with the smallest domain.
+     *
+     * @param xs the variable array to fix
+     * @return a supplier that returns the first not fixed variable with the smallest domain,
+     *         null if all variables are fixed
+     */
+    public static Supplier&lt;IntExpression&gt; minDomVariableSelector(IntExpression... xs) {
+<span class="fc" id="L380">        return () -&gt; {</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">            return selectMin(xs, xi -&gt; !xi.isFixed(), IntExpression::size);</span>
+        };
+    }
+
+    public static Supplier&lt;IntExpression&gt; staticOrderVariableSelector(IntExpression... xs) {
+<span class="fc" id="L386">        return () -&gt; {</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">            for (IntExpression xi : xs) {</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">                if (!xi.isFixed()) {</span>
+<span class="fc" id="L389">                    return xi;</span>
+                }
+            }
+<span class="fc" id="L392">            return null;</span>
+        };
+    }
+
+    /**
+     * Last conflict heuristic
+     * Attempts to branch first on the last variable that caused an Inconsistency
+     * &lt;p&gt;
+     * Lecoutre, C., Saïs, L., Tabary, S.,  Vidal, V. (2009).
+     * Reasoning from last conflict (s) in constraint programming.
+     * Artificial Intelligence, 173(18), 1592-1614.
+     *
+     * @param variableSelector returns the next variable to bind
+     * @param valueSelector    given a variable, returns the value to which
+     *                         it must be assigned on the left branch (and excluded on the right)
+     */
+    public static Supplier&lt;Runnable[]&gt; lastConflict(Supplier&lt;IntExpression&gt; variableSelector, Function&lt;IntExpression, Integer&gt; valueSelector) {
+<span class="fc" id="L409">        AtomicReference&lt;IntExpression&gt; lastConflictVariable = new AtomicReference&lt;&gt;(null);</span>
+<span class="fc" id="L410">        return () -&gt; {</span>
+            IntExpression xs;
+<span class="fc bfc" id="L412" title="All 2 branches covered.">            if (lastConflictVariable.get() == null) {</span>
+<span class="fc" id="L413">                xs = variableSelector.get();</span>
+            } else {
+<span class="fc" id="L415">                xs = lastConflictVariable.get();</span>
+<span class="fc" id="L416">                lastConflictVariable.set(null);</span>
+            }
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L419">                return EMPTY;</span>
+            else {
+<span class="fc" id="L421">                int v = valueSelector.apply(xs);</span>
+<span class="fc" id="L422">                Runnable a = () -&gt; {</span>
+                    try {
+<span class="fc" id="L424">                        xs.getModelProxy().add(Factory.eq(xs, v));</span>
+<span class="fc" id="L425">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L426">                        lastConflictVariable.set(xs);</span>
+<span class="fc" id="L427">                        throw e;</span>
+<span class="fc" id="L428">                    }</span>
+<span class="fc" id="L429">                };</span>
+<span class="fc" id="L430">                Runnable b = () -&gt; {</span>
+                    try {
+<span class="fc" id="L432">                        xs.getModelProxy().add(Factory.neq(xs, v));</span>
+<span class="fc" id="L433">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L434">                        lastConflictVariable.set(xs);</span>
+<span class="fc" id="L435">                        throw e;</span>
+<span class="fc" id="L436">                    }</span>
+<span class="fc" id="L437">                };</span>
+<span class="fc" id="L438">                return branch(a, b);</span>
+            }
+        };
+    }
+
+    /**
+     * Conflict Ordering Search
+     * &lt;p&gt;
+     * Gay, S., Hartert, R., Lecoutre, C.,  Schaus, P. (2015).
+     * Conflict ordering search for scheduling problems.
+     * In International conference on principles and practice of constraint programming (pp. 140-148).
+     * Springer.
+     *
+     * @param variableSelector returns the next variable to bind (fall back heuristic)
+     * @param valueSelector    given a variable, returns the value to which
+     *                         it must be assigned on the left branch (and excluded on the right)
+     */
+    public static Supplier&lt;Runnable[]&gt; conflictOrderingSearch(Supplier&lt;IntExpression&gt; variableSelector, Function&lt;IntExpression, Integer&gt; valueSelector) {
+<span class="fc" id="L456">        HashMap&lt;IntExpression, Integer&gt; stamp = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L457">        return () -&gt; {</span>
+<span class="fc" id="L458">            int maxvalue = Integer.MIN_VALUE;</span>
+<span class="fc" id="L459">            IntExpression maxIntVar = null;</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">            for (Map.Entry&lt;IntExpression, Integer&gt; e : stamp.entrySet()) {</span>
+<span class="fc bfc" id="L461" title="All 4 branches covered.">                if (e.getValue() &gt; maxvalue &amp;&amp; !e.getKey().isFixed()) {</span>
+<span class="fc" id="L462">                    maxvalue = e.getValue();</span>
+<span class="fc" id="L463">                    maxIntVar = e.getKey();</span>
+                }
+<span class="fc" id="L465">            }</span>
+            IntExpression xs;
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (maxIntVar == null) {</span>
+<span class="fc" id="L468">                xs = variableSelector.get();</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">                if (xs != null) stamp.put(xs, 0);</span>
+            } else {
+<span class="fc" id="L471">                xs = maxIntVar;</span>
+<span class="fc" id="L472">                stamp.put(xs, stamp.get(xs) + 1);</span>
+            }
+<span class="pc bpc" id="L474" title="1 of 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L475">                return EMPTY;</span>
+            else {
+<span class="fc" id="L477">                int v = valueSelector.apply(xs);</span>
+<span class="fc" id="L478">                Runnable a = () -&gt; {</span>
+<span class="fc" id="L479">                    xs.getModelProxy().add(Factory.eq(xs, v));</span>
+<span class="fc" id="L480">                };</span>
+<span class="fc" id="L481">                Runnable b = () -&gt; {</span>
+<span class="fc" id="L482">                    xs.getModelProxy().add(Factory.neq(xs, v));</span>
+<span class="fc" id="L483">                };</span>
+<span class="fc" id="L484">                return branch(a, b);</span>
+            }
+        };
+    }
+
+    /**
+     * Conflict Ordering Search with default variable selector (first-fail min dom)
+     * and value selector (min value).
+     * &lt;p&gt;
+     * Gay, S., Hartert, R., Lecoutre, C.,  Schaus, P. (2015).
+     * Conflict ordering search for scheduling problems.
+     * In International conference on principles and practice of constraint programming (pp. 140-148).
+     * Springer.
+     *
+     */
+    public static Supplier&lt;Runnable[]&gt; conflictOrderingSearch(IntExpression... xs) {
+<span class="nc" id="L500">        return conflictOrderingSearch(</span>
+<span class="nc" id="L501">                minDomVariableSelector(xs),</span>
+<span class="nc" id="L502">                xi -&gt; xi.min()</span>
+        );
+    }
+
+
+    public static Supplier&lt;Runnable[]&gt; firstFailBinary(SeqVar... seqVars) {
+<span class="fc" id="L508">        int nNodes = Arrays.stream(seqVars).map(SeqVar::nNode).max(Integer::compareTo).get();</span>
+<span class="fc" id="L509">        int[] nodes = new int[nNodes];</span>
+<span class="fc" id="L510">        return () -&gt; {</span>
+<span class="pc bfc" id="L511" title="All 2 branches covered.">            SeqVar seqVar = selectMin(seqVars, s -&gt; !s.isFixed(), s -&gt; s.nNode(MEMBER));</span>
+<span class="fc bfc" id="L512" title="All 2 branches covered.">            if (seqVar == null)</span>
+<span class="fc" id="L513">                return EMPTY;</span>
+<span class="fc" id="L514">            int nInsertable = seqVar.fillNode(nodes, INSERTABLE);</span>
+<span class="fc" id="L515">            int branchingNode = nodes[0];</span>
+<span class="fc" id="L516">            int minInsert = seqVar.nInsert(branchingNode);</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">            for (int i = 1; i &lt; nInsertable; i++) {</span>
+<span class="fc" id="L518">                int node = nodes[i];</span>
+<span class="fc" id="L519">                int nInsert = seqVar.nInsert(node);</span>
+<span class="pc bpc" id="L520" title="5 of 8 branches missed.">                if (nInsert &lt; minInsert &amp;&amp; (nInsert &gt; 0 || (nInsert == 0 &amp;&amp; !seqVar.isNode(node, REQUIRED)))) {</span>
+<span class="fc" id="L521">                    minInsert = nInsert;</span>
+<span class="fc" id="L522">                    branchingNode = node;</span>
+                }
+            }
+<span class="fc" id="L525">            int branchingNodeFinal = branchingNode;</span>
+<span class="fc" id="L526">            boolean isRequired = seqVar.isNode(branchingNodeFinal, REQUIRED);</span>
+<span class="fc" id="L527">            int nPred = seqVar.fillInsert(branchingNodeFinal, nodes);</span>
+<span class="fc bfc" id="L528" title="All 2 branches covered.">            Runnable[] branching = new Runnable[nPred + (isRequired ? 0 : 1)];</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred; i++) {</span>
+<span class="fc" id="L530">                int pred = nodes[i];</span>
+<span class="fc" id="L531">                branching[i] = () -&gt; seqVar.getModelProxy().add(insert(seqVar, pred, branchingNodeFinal));</span>
+            }
+<span class="fc bfc" id="L533" title="All 2 branches covered.">            if (!isRequired) {</span>
+<span class="fc" id="L534">                branching[nPred] = () -&gt; seqVar.getModelProxy().add(exclude(seqVar, branchingNodeFinal));</span>
+            }
+<span class="fc" id="L536">            return branching;</span>
+        };
+    }
+
+    /**
+     * Generic node selector for sequence variables.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * OptionalInt node = nodeSelector(routes, nodes, (seqvar, node) -&gt; seqvar.nInsert(node));
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param seqVars  sequences variables in the problem
+     * @param nodes    nodes over which the sequence variables are related
+     * @param nodeCost heuristic cost used to select the node, summed over all sequences
+     * @return node with the minimum cost, summed over all sequence variables
+     */
+    public static OptionalInt nodeSelector(SeqVar[] seqVars, int[] nodes, BiFunction&lt;SeqVar, Integer, Integer&gt; nodeCost) {
+<span class="nc" id="L555">        return nodeSelector(seqVars, nodes, nodeCost, Integer::sum);</span>
+    }
+
+    /**
+     * Generic node selector for sequence variables.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * OptionalInt node = nodeSelector(routes, nodes, (seqvar, node) -&gt; seqvar.nInsert(node), (c1, c2) -&gt; c1 + c2);
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param seqVars      sequences variables in the problem
+     * @param nodes        nodes over which the sequence variables are related
+     * @param nodeCost     heuristic cost used to select the node, summed over all sequences
+     * @param nodeCostAggr aggregator to combine the heuristic cost of two sequence variables
+     * @return node with the minimum cost, summed over all sequence variables
+     */
+    public static OptionalInt nodeSelector(SeqVar[] seqVars, int[] nodes, BiFunction&lt;SeqVar, Integer, Integer&gt; nodeCost, BiFunction&lt;Integer, Integer, Integer&gt; nodeCostAggr) {
+<span class="nc" id="L574">        OptionalInt bestNode = OptionalInt.empty();</span>
+<span class="nc" id="L575">        int bestCost = 0;</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">        for (int node : nodes) {</span>
+<span class="nc" id="L577">            int cost = 0;</span>
+<span class="nc" id="L578">            boolean skip = true; // consider only nodes that are insertable: the remaining ones are already decided</span>
+<span class="nc bnc" id="L579" title="All 2 branches missed.">            for (SeqVar seqVar : seqVars) {</span>
+<span class="nc bnc" id="L580" title="All 2 branches missed.">                if (seqVar.isNode(node, INSERTABLE)) {</span>
+<span class="nc" id="L581">                    skip = false;</span>
+<span class="nc" id="L582">                    cost = nodeCostAggr.apply(cost, nodeCost.apply(seqVar, node));</span>
+                }
+            }
+<span class="nc bnc" id="L585" title="All 2 branches missed.">            if (!skip) {</span>
+<span class="nc bnc" id="L586" title="All 4 branches missed.">                if (cost &lt; bestCost || bestNode.isEmpty()) {</span>
+<span class="nc" id="L587">                    bestCost = cost;</span>
+<span class="nc" id="L588">                    bestNode = OptionalInt.of(node);</span>
+                }
+            }
+        }
+<span class="nc" id="L592">        return bestNode;</span>
+    }
+
+    /**
+     * Generates all branches inserting a node, sorted by a given detour cost.
+     * &lt;p&gt;Example of usage.
+     * &lt;pre&gt;
+     * {@code
+     * int[][] d = ... // distance matrix between nodes
+     * Function&lt;Integer, Runnable[]&gt; branchGenerator = branchesInsertingNode(seqvar, (pred, node, succ) -&gt; d[pred][node] + d[node][succ] - d[pred][succ]).get();
+     * Runnable[] branches = branchGenerator.apply(node); // all branches inserting the given node
+     * }
+     * &lt;/pre&gt;
+     *
+     * @param seqVars    sequence over which the node may be inserted
+     * @param detourCost detour cost for inserting a node between a predecessor and a successor; lower values are tried first.
+     *                   Arguments are {@code (pred, node succ)},
+     *                   where {@code pred} is the node after which the insertion happen, {@code node} is the node to insert and {@code succ} the current node after pred
+     * @return
+     */
+    public static Supplier&lt;Function&lt;Integer, Runnable[]&gt;&gt; branchesInsertingNode(SeqVar[] seqVars, TriFunction&lt;Integer, Integer, Integer, Integer&gt; detourCost) {
+        // upper bound on the number of branches generated
+<span class="nc" id="L614">        int nBranchesUpperBound = Arrays.stream(seqVars).mapToInt(SeqVar::nNode).sum();</span>
+<span class="nc" id="L615">        int[] insertions = new int[nBranchesUpperBound];</span>
+<span class="nc" id="L616">        Runnable[] branches = new Runnable[nBranchesUpperBound];</span>
+<span class="nc" id="L617">        Integer[] heuristicVal = new Integer[nBranchesUpperBound];</span>
+<span class="nc" id="L618">        Integer[] branchingRange = new Integer[nBranchesUpperBound];</span>
+<span class="nc" id="L619">        return () -&gt; (node) -&gt; {</span>
+<span class="nc" id="L620">            int branch = 0;</span>
+<span class="nc bnc" id="L621" title="All 2 branches missed.">            for (SeqVar route : seqVars) {</span>
+<span class="nc" id="L622">                int nInsert = route.fillInsert(node, insertions);</span>
+<span class="nc bnc" id="L623" title="All 2 branches missed.">                for (int j = 0; j &lt; nInsert; j++) {</span>
+<span class="nc" id="L624">                    int pred = insertions[j]; // predecessor for the node</span>
+<span class="nc" id="L625">                    int succ = route.memberAfter(pred);</span>
+<span class="nc" id="L626">                    branchingRange[branch] = branch;</span>
+<span class="nc" id="L627">                    heuristicVal[branch] = detourCost.apply(pred, node, succ);</span>
+<span class="nc" id="L628">                    branches[branch++] = () -&gt; route.getModelProxy().add(insert(route, pred, node));</span>
+                }
+            }
+<span class="nc" id="L631">            int nBranches = branch;</span>
+<span class="nc" id="L632">            Runnable[] branchesSorted = new Runnable[nBranches];</span>
+<span class="nc" id="L633">            Arrays.sort(branchingRange, 0, nBranches, Comparator.comparing(j -&gt; heuristicVal[j]));</span>
+<span class="nc bnc" id="L634" title="All 2 branches missed.">            for (branch = 0; branch &lt; nBranches; branch++)</span>
+<span class="nc" id="L635">                branchesSorted[branch] = branches[branchingRange[branch]];</span>
+<span class="nc" id="L636">            return branchesSorted;</span>
+        };
+    }
+
+    public static Supplier&lt;Function&lt;Integer, Runnable[]&gt;&gt; branchesInsertingNode(SeqVar[] seqVars, int[][] distMatrix) {
+<span class="nc" id="L641">        return branchesInsertingNode(seqVars, (pred, node, succ) -&gt; distMatrix[pred][node] + distMatrix[node][succ] - distMatrix[pred][succ]);</span>
+    }
+
+    /**
+     * Bound-Impact value selector. Gives a value selector yielding the value leading to
+     * the smallest decrease on the objective
+     * &lt;p&gt;
+     * This value selection strategy was introduced in:
+     * Fages, J. G., Prud’Homme, C. Making the first solution good!
+     * In 2017 IEEE 29th International Conference on Tools with Artificial Intelligence (ICTAI). IEEE.
+     *
+     * @param objective objective whose impact must be measured
+     * @return value decreasing the less the objective lower bound. Null if no value is valid for the variable
+     */
+    public static Function&lt;IntExpression, Integer&gt; boundImpactValueSelector(IntExpression objective) {
+        // black magic for java, so that the domain can be updated by the function supplied
+<span class="nc" id="L657">        final int[][] domain = {new int[100]};</span>
+<span class="nc" id="L658">        return (IntExpression x) -&gt; {</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">            if (x.isFixed())</span>
+<span class="nc" id="L660">                return null;</span>
+<span class="nc" id="L661">            int size = x.size();</span>
+<span class="nc bnc" id="L662" title="All 2 branches missed.">            if (size &gt; domain[0].length)</span>
+<span class="nc" id="L663">                domain[0] = new int[Math.max(domain.length * 2, size)]; // increase the size</span>
+<span class="nc" id="L664">            size = x.fillArray(domain[0]);</span>
+<span class="nc" id="L665">            Integer bestValue = null;</span>
+<span class="nc" id="L666">            int bestBound = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">            for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L668">                int value = domain[0][i];</span>
+<span class="nc" id="L669">                x.getModelProxy().getConcreteModel().getStateManager().saveState();</span>
+                try {
+<span class="nc" id="L671">                    x.getModelProxy().add(Factory.eq(x, value));</span>
+<span class="nc" id="L672">                    int bound = objective.min();</span>
+<span class="nc bnc" id="L673" title="All 8 branches missed.">                    if (bestValue == null || bound &lt; bestBound || (bound == bestBound &amp;&amp; value &lt; bestValue)) {</span>
+<span class="nc" id="L674">                        bestValue = value;</span>
+<span class="nc" id="L675">                        bestBound = bound;</span>
+                    }
+<span class="nc" id="L677">                } catch (InconsistencyException ignored) {</span>
+<span class="nc" id="L678">                }</span>
+<span class="nc" id="L679">                x.getModelProxy().getConcreteModel().getStateManager().restoreState();</span>
+            }
+<span class="nc bnc" id="L681" title="All 2 branches missed.">            if (bestValue == null) {</span>
+                // all values of x appear to be inconsistent
+<span class="nc" id="L683">                throw InconsistencyException.INCONSISTENCY;</span>
+            }
+<span class="nc" id="L685">            return bestValue;</span>
+        };
+    }
+
+    //TODO: adapt all the scheduling searches to modelling interface
+
+
+    /**
+     * The SetTimes branching search is a branching scheme for scheduling problems
+     * with &quot;regular&quot; constraints between the tasks (e.g., precedence constraints).
+     * The branching scheme is based on the following principle:
+     * - Select the earliest start time among the non postponed tasks
+     * - Branch on the start time of the task
+     * (Le Pape, C., Couronne, P., Vergamini, D., and Gosselin, V. (1995). Time-versus-capacity compromises in project scheduling)
+     *
+     * @param intervals  tasks that must be decided
+     * @param tieBreaker how to select the best task to branch on when several have the same earliest start time
+     * @return set time branching
+     */
+    public static Supplier&lt;Runnable[]&gt; setTimes(IntervalVar[] intervals, IntFunction tieBreaker) {
+<span class="nc" id="L705">        return new SetTimesModeling(intervals, tieBreaker);</span>
+    }
+
+    public static Supplier&lt;Runnable[]&gt; setTimes(IntervalVar[] intervals) {
+<span class="fc" id="L709">        return new SetTimesModeling(intervals);</span>
+    }
+
+    public static Supplier&lt;Runnable[]&gt; fds(CPIntervalVar[] intervals) {
+<span class="fc" id="L713">        return new FDS(intervals);</span>
+    }
+
+    public static Supplier&lt;Runnable[]&gt; fds(IntervalVar[] intervals) {
+<span class="fc" id="L717">        return new FDSModeling(intervals);</span>
+    }
+
+    public static Runnable[] branchOnStartMin(IntervalVar var) {
+<span class="fc" id="L721">        int min = var.startMin();</span>
+<span class="fc" id="L722">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L723">            var.getModelProxy().add(start(var, min));</span>
+<span class="fc" id="L724">        };</span>
+<span class="fc" id="L725">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L726">            var.getModelProxy().add(startAfter(var, min + 1));</span>
+<span class="fc" id="L727">        };</span>
+<span class="fc" id="L728">        return new Runnable[]{left, right};</span>
+    }
+
+    public static Runnable[] branchOnStatus(CPIntervalVar var) {
+<span class="pc bpc" id="L732" title="2 of 4 branches missed.">        if (var.isPresent() || var.isAbsent()) return EMPTY;</span>
+<span class="fc" id="L733">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L734">            var.setPresent();</span>
+<span class="fc" id="L735">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L736">        };</span>
+<span class="fc" id="L737">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L738">            var.setAbsent();</span>
+<span class="fc" id="L739">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L740">        };</span>
+<span class="fc" id="L741">        return new Runnable[]{left, right};</span>
+    }
+
+
+    public static Supplier&lt;Runnable[]&gt; branchOnPresentStarts(IntervalVar... vars) {
+<span class="fc" id="L746">        return () -&gt; {</span>
+<span class="fc" id="L747">            IntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
+<span class="pc bpc" id="L749" title="1 of 4 branches missed.">                if (!var.isFixed() &amp;&amp; var.isPresent()) {</span>
+<span class="fc" id="L750">                    notFixed = var;</span>
+<span class="fc" id="L751">                    break;</span>
+                }
+            }
+<span class="fc bfc" id="L754" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L755">                return EMPTY;</span>
+            } else {
+<span class="fc" id="L757">                return branchOnStartMin(notFixed);</span>
+            }
+        };
+    }
+
+    public static Supplier&lt;Runnable[]&gt; branchOnStatus(CPIntervalVar... vars) {
+<span class="fc" id="L763">        return () -&gt; {</span>
+<span class="fc" id="L764">            CPIntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">            for (CPIntervalVar var : vars) {</span>
+<span class="fc bfc" id="L766" title="All 4 branches covered.">                if (!var.isAbsent() &amp;&amp; !var.isPresent()) {</span>
+<span class="fc" id="L767">                    notFixed = var;</span>
+<span class="fc" id="L768">                    break;</span>
+                }
+            }
+<span class="fc bfc" id="L771" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L772">                return EMPTY;</span>
+            } else {
+<span class="fc" id="L774">                return branchOnStatus(notFixed);</span>
+            }
+        };
+    }
+
+    public static Supplier&lt;Runnable[]&gt; branchOnStatusThenStarts(CPIntervalVar... vars) {
+<span class="nc" id="L780">        return () -&gt; {</span>
+<span class="nc" id="L781">            CPIntervalVar notFixed = null;</span>
+<span class="nc bnc" id="L782" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="nc bnc" id="L783" title="All 2 branches missed.">                if (!vars[i].isFixed()) {</span>
+<span class="nc" id="L784">                    notFixed = vars[i];</span>
+<span class="nc" id="L785">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L788" title="All 2 branches missed.">            if (notFixed == null) {</span>
+<span class="nc" id="L789">                return EMPTY;</span>
+            } else {
+<span class="nc bnc" id="L791" title="All 2 branches missed.">                if (notFixed.isPresent()) return branchOnStartMin(notFixed);</span>
+<span class="nc" id="L792">                else return branchOnStatus(notFixed);</span>
+            }
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

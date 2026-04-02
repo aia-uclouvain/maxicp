@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DFSTreeRecorder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">DFSTreeRecorder.java</span></div><h1>DFSTreeRecorder.java</h1><pre class="source lang-java linenums">package org.maxicp.search;
+
+import org.maxicp.util.algo.Tree;
+
+/**
+ * A DFSListener that records the search tree in a Tree structure.
+ * It can be used to visualize the search process by exoprting the tree to TikZ format.
+ */
+<span class="nc" id="L9">public class DFSTreeRecorder implements DFSListener {</span>
+
+<span class="nc" id="L11">    public final int root = -1;</span>
+
+<span class="nc" id="L13">    Tree tree = new Tree(root);</span>
+
+    @Override
+    public void branch(int nodeId, int parentId) {
+<span class="nc" id="L17">        tree.createNode(nodeId, parentId, Tree.NodeType.INNER);</span>
+<span class="nc" id="L18">    }</span>
+
+    @Override
+    public void solution(int nodeId, int parentId) {
+<span class="nc" id="L22">        tree.createNode(nodeId, parentId, Tree.NodeType.SOLUTION);</span>
+<span class="nc" id="L23">    }</span>
+
+    @Override
+    public void fail(int nodeId, int parentId) {
+<span class="nc" id="L27">        tree.createNode(nodeId, parentId, Tree.NodeType.FAIL);</span>
+<span class="nc" id="L28">    }</span>
+
+    public void solution(int id, int pId, String edgeLabel) {
+<span class="nc" id="L31">        tree.createNode(id, pId, Tree.NodeType.SOLUTION, &quot;&quot;, edgeLabel);</span>
+<span class="nc" id="L32">    };</span>
+    public void fail(int id, int pId, String edgeLabel) {
+<span class="nc" id="L34">        tree.createNode(id, pId, Tree.NodeType.FAIL, &quot;&quot;, edgeLabel);</span>
+<span class="nc" id="L35">    };</span>
+
+    public void branch(int id, int pId, String edgeLabel) {
+<span class="nc" id="L38">        tree.createNode(id, pId, Tree.NodeType.INNER, &quot;&quot;, edgeLabel);</span>
+<span class="nc" id="L39">    };</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L43">        return &quot;SearchTree{&quot; +</span>
+                &quot;tree=&quot; + tree +
+                '}';
+    }
+
+
+    public void toTikz() {
+<span class="nc" id="L50">       toTikz(1.0, 1.0, 2.0, 4.0);</span>
+<span class="nc" id="L51">    }</span>
+
+    public void toTikz(double xScale, double yStep, double labelOffsetPt, double nodeDiameter) {
+<span class="nc" id="L54">        Tree.PositionedNode root = tree.root().design();</span>
+<span class="nc" id="L55">        String tikz = root.toTikz(xScale, yStep, labelOffsetPt, nodeDiameter);</span>
+<span class="nc" id="L56">        System.out.println(tikz);</span>
+<span class="nc" id="L57">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

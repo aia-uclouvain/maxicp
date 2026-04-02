@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Or.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Or.java</span></div><h1>Or.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.state.StateInt;
+
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+/**
+ * Logical or constraint {@code  x1 or x2 or ... xn}
+ */
+<span class="fc" id="L17">public class Or extends AbstractCPConstraint { // x1 or x2 or ... xn</span>
+
+    private final CPBoolVar[] x;
+    private final int n;
+    private StateInt wL; // watched literal left
+    private StateInt wR; // watched literal right
+
+
+    /**
+     * Creates a logical or constraint: at least one variable is true:
+     * {@code  x1 or x2 or ... xn}
+     *
+     * @param x the variables in the scope of the constraint
+     */
+    public Or(CPBoolVar[] x) {
+<span class="fc" id="L32">        super(x[0].getSolver());</span>
+<span class="fc" id="L33">        this.x = x;</span>
+<span class="fc" id="L34">        this.n = x.length;</span>
+<span class="fc" id="L35">        wL = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L36">        wR = getSolver().getStateManager().makeStateInt(n - 1);</span>
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L41">        propagate();</span>
+<span class="fc" id="L42">    }</span>
+
+
+    @Override
+    public void propagate() {
+        // update watched literals
+<span class="fc" id="L48">        int i = wL.value();</span>
+<span class="fc bfc" id="L49" title="All 4 branches covered.">        while (i &lt; n &amp;&amp; x[i].isFixed()) {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">            if (x[i].isTrue()) {</span>
+<span class="fc" id="L51">                setActive(false);</span>
+<span class="fc" id="L52">                return;</span>
+            }
+<span class="fc" id="L54">            i += 1;</span>
+        }
+<span class="fc" id="L56">        wL.setValue(i);</span>
+<span class="fc" id="L57">        i = wR.value();</span>
+<span class="pc bpc" id="L58" title="1 of 6 branches missed.">        while (i &gt;= 0 &amp;&amp; x[i].isFixed() &amp;&amp; i &gt;= wL.value()) {</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">            if (x[i].isTrue()) {</span>
+<span class="nc" id="L60">                setActive(false);</span>
+<span class="nc" id="L61">                return;</span>
+            }
+<span class="fc" id="L63">            i -= 1;</span>
+        }
+<span class="fc" id="L65">        wR.setValue(i);</span>
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (wL.value() &gt; wR.value()) {</span>
+<span class="fc" id="L68">            throw INCONSISTENCY;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        } else if (wL.value() == wR.value()) { // only one unassigned var</span>
+<span class="fc" id="L70">            x[wL.value()].fix(true);</span>
+<span class="fc" id="L71">            setActive(false);</span>
+        } else {
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            assert (wL.value() != wR.value());</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            assert (!x[wL.value()].isFixed());</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            assert (!x[wR.value()].isFixed());</span>
+<span class="fc" id="L76">            x[wL.value()].propagateOnFix(this);</span>
+<span class="fc" id="L77">            x[wR.value()].propagateOnFix(this);</span>
+        }
+<span class="fc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SequenceRank.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">SequenceRank.java</span></div><h1>SequenceRank.java</h1><pre class="source lang-java linenums">package org.maxicp.search;
+
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.datastructures.StateSparseSet;
+
+import java.util.function.Supplier;
+
+import static org.maxicp.cp.CPFactory.insert;
+import static org.maxicp.cp.CPFactory.notBetween;
+import static org.maxicp.search.Searches.*;
+
+public class SequenceRank {
+
+    private final StateInt currentRanker;
+    private final Ranker[] rankers;
+    private final StateSparseSet unRanked;
+    private final int[] buffer;
+
+    public static Supplier&lt;Runnable[]&gt; sequenceRank(CPIntervalVar[][] intervals, CPSeqVar[] seqVars) {
+<span class="nc" id="L24">        SequenceRank sequenceRank = new SequenceRank(intervals, seqVars);</span>
+<span class="nc" id="L25">        return sequenceRank::alternatives;</span>
+    }
+
+<span class="nc" id="L28">    public SequenceRank(CPIntervalVar[][] intervals, CPSeqVar[] seqVars) {</span>
+<span class="nc" id="L29">        CPSolver cp = seqVars[0].getSolver();</span>
+<span class="nc" id="L30">        int n = seqVars.length;</span>
+<span class="nc" id="L31">        unRanked = new StateSparseSet(cp.getStateManager(), n, 0);</span>
+<span class="nc" id="L32">        this.currentRanker = cp.getStateManager().makeStateInt(-1);</span>
+<span class="nc" id="L33">        this.rankers = new Ranker[n];</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L35">            rankers[i] = new Ranker(intervals[i], seqVars[i]);</span>
+        }
+<span class="nc" id="L37">        buffer = new int[n];</span>
+<span class="nc" id="L38">    }</span>
+
+<span class="nc" id="L40">    record Priority(int priority1, int priority2, int value) {</span>
+
+        public Priority best(Priority other) {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">            if (other == null)</span>
+<span class="nc" id="L44">                return this;</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">            if (this.priority1 &lt; other.priority1) {</span>
+<span class="nc" id="L46">                return this;</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            } else if (this.priority1 &gt; other.priority1) {</span>
+<span class="nc" id="L48">                return other;</span>
+            }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (this.priority2 &lt; other.priority2) {</span>
+<span class="nc" id="L51">                return this;</span>
+            } else {
+<span class="nc" id="L53">                return other;</span>
+            }
+        }
+    }
+
+    public Runnable[] alternatives() {
+<span class="nc" id="L59">        int current = currentRanker.value();</span>
+<span class="nc bnc" id="L60" title="All 4 branches missed.">        if (current == -1 || rankers[current].isRanked()) {</span>
+            // finds the sequence with the fewest insertable nodes remaining
+            // ties are broken by taking the sequence with the smallest slack on the remaining nodes
+<span class="nc" id="L63">            int nUnranked = unRanked.fillArray(buffer);</span>
+<span class="nc" id="L64">            Priority best = null;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">            for (int i = 0 ; i &lt; nUnranked ; i++) {</span>
+<span class="nc" id="L66">                int id = buffer[i];</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">                if (rankers[id].isRanked()) {</span>
+<span class="nc" id="L68">                    unRanked.remove(id);</span>
+                } else {
+<span class="nc" id="L70">                    int nInsert = rankers[id].sequence.nNode(SeqStatus.INSERTABLE);</span>
+<span class="nc" id="L71">                    int slack = rankers[id].slack();</span>
+<span class="nc" id="L72">                    Priority candidate = new Priority(nInsert, slack, id);</span>
+<span class="nc" id="L73">                    best = candidate.best(best);</span>
+                }
+            }
+<span class="nc bnc" id="L76" title="All 2 branches missed.">            if (best == null) {</span>
+                // all sequences are fixed
+<span class="nc" id="L78">                return EMPTY;</span>
+            }
+<span class="nc" id="L80">            current = best.value;</span>
+<span class="nc" id="L81">            currentRanker.setValue(current);</span>
+        }
+<span class="nc" id="L83">        return rankers[current].alternatives();</span>
+    }
+
+<span class="nc" id="L86">    static class Ranker {</span>
+
+        private CPSolver cp;
+        private CPSeqVar sequence;
+        private CPIntervalVar[] intervals;
+        private int[] buffer;
+
+<span class="nc" id="L93">        Ranker(CPIntervalVar[] intervals, CPSeqVar seqVar) {</span>
+<span class="nc" id="L94">            cp = seqVar.getSolver();</span>
+<span class="nc" id="L95">            this.intervals = intervals;</span>
+<span class="nc" id="L96">            this.sequence = seqVar;</span>
+<span class="nc" id="L97">            buffer = new int[seqVar.nNode()];</span>
+<span class="nc" id="L98">        }</span>
+
+        public int slack() {
+<span class="nc" id="L101">            int minEst = Integer.MAX_VALUE;</span>
+<span class="nc" id="L102">            int maxLct = Integer.MIN_VALUE;</span>
+<span class="nc" id="L103">            int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);</span>
+<span class="nc" id="L104">            int duration = 0;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            for (int i = 0 ; i &lt; nUnranked ; i++) {</span>
+<span class="nc" id="L106">                int node = buffer[i];</span>
+<span class="nc" id="L107">                CPIntervalVar interval = intervals[node];</span>
+<span class="nc" id="L108">                duration += interval.lengthMin();</span>
+<span class="nc" id="L109">                minEst = Integer.min(minEst, interval.startMin());</span>
+<span class="nc" id="L110">                maxLct = Integer.max(maxLct, interval.endMax());</span>
+            }
+<span class="nc" id="L112">            return maxLct - minEst - duration;</span>
+        }
+
+        public int slack(int pred, int node, int succ) {
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            int tSucc = (succ &gt;= intervals.length ? intervals[pred].endMax() : intervals[succ].endMax());</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            int tPred = (pred &gt;= intervals.length ? 0 : intervals[pred].startMin());</span>
+<span class="nc" id="L118">            int slackBefore = intervals[node].endMax() - tPred;</span>
+<span class="nc" id="L119">            int slackAfter = tSucc - intervals[node].startMin();</span>
+<span class="nc" id="L120">            return (slackAfter + slackBefore);</span>
+        }
+
+        public int startMax(int node) {
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            return node &gt;= intervals.length ? 0 : intervals[node].startMax();</span>
+        }
+
+        public int startMin(int node) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            return node &gt;= intervals.length ? 0 : intervals[node].startMin();</span>
+        }
+
+        public int endMax(int node) {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            return node &gt;= intervals.length ? 0 : intervals[node].endMax();</span>
+        }
+
+        public int endMin(int node) {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">            return node &gt;= intervals.length ? 0 : intervals[node].endMin();</span>
+        }
+
+        public boolean isRanked() {
+<span class="nc" id="L140">            return sequence.isFixed();</span>
+        }
+
+        public Runnable[] alternatives() {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            assert (!isRanked());</span>
+            // select the node to branch on
+<span class="nc" id="L146">            int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);</span>
+<span class="nc" id="L147">            Priority best = null;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            for (int i = 0 ; i &lt; nUnranked ; i++) {</span>
+                // pick the node with the fewest insertions. Break ties by startMin value
+<span class="nc" id="L150">                int node = buffer[i];</span>
+<span class="nc" id="L151">                int nInsert = sequence.nInsert(node);</span>
+<span class="nc" id="L152">                int startMin = intervals[node].startMin();</span>
+<span class="nc" id="L153">                Priority candidate = new Priority(nInsert, startMin, node);</span>
+<span class="nc" id="L154">                best = candidate.best(best);</span>
+            }
+<span class="nc" id="L156">            int node = best.value;</span>
+            // select the best insertion for the node
+<span class="nc" id="L158">            int nInsert = sequence.fillInsert(node, buffer);</span>
+<span class="nc" id="L159">            best = null;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">            for (int i = 0; i &lt; nInsert ; i++) {</span>
+                // pick the predecessor leading to the largest slack.
+                // Break ties by selecting the predecessor with the largest number of successors remaining
+<span class="nc" id="L163">                int pred = buffer[i];</span>
+<span class="nc" id="L164">                int succ = sequence.memberAfter(pred);</span>
+<span class="nc" id="L165">                int slack = - slack(pred, node, succ);</span>
+<span class="nc" id="L166">                int nSucc = - sequence.nSucc(pred);</span>
+<span class="nc" id="L167">                Priority candidate = new Priority(slack, nSucc, pred);</span>
+<span class="nc" id="L168">                best = candidate.best(best);</span>
+            }
+<span class="nc" id="L170">            int pred = best.value;</span>
+<span class="nc" id="L171">            int succ = sequence.memberAfter(pred);</span>
+<span class="nc" id="L172">            return branch(() -&gt; cp.post(insert(sequence, pred, node)), () -&gt; cp.post(notBetween(sequence, pred, node, succ)));</span>
+        }
+
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

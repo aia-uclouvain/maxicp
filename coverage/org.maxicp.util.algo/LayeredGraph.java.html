@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LayeredGraph.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util.algo</a> &gt; <span class="el_source">LayeredGraph.java</span></div><h1>LayeredGraph.java</h1><pre class="source lang-java linenums">package org.maxicp.util.algo;
+
+import java.util.*;
+
+public final class LayeredGraph&lt;State&gt; {
+
+    /* ---------- Node storage ---------- */
+
+    // For each node, store incoming and outgoing edges
+<span class="fc" id="L10">    private final ArrayList&lt;EdgeList&gt; succ = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L11">    private final ArrayList&lt;EdgeList&gt; pred = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L13">    private final ArrayList&lt;State&gt; states = new ArrayList&lt;&gt;();</span>
+
+    /* ---------- Layers ---------- */
+
+    // layerStart[i] = index of first node in layer i
+    // layerStart[i+1] = index after last node
+    private final int[] layerStart;
+
+    /* ---------- Uniqueness ---------- */
+
+    // Map state → node index (per layer or global)
+<span class="fc" id="L24">    private final HashMap&lt;State, Integer&gt; stateToNode = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L26">    public LayeredGraph(int nLayers) {</span>
+<span class="fc" id="L27">        this.layerStart = new int[nLayers + 1];</span>
+<span class="fc" id="L28">    }</span>
+
+    public State getState(int node) {
+<span class="fc" id="L31">        return states.get(node);</span>
+    }
+
+    // node creation
+    public int getOrCreateNode(State s) {
+<span class="fc" id="L36">        Integer idx = stateToNode.get(s);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (idx != null) return idx;</span>
+<span class="fc" id="L38">        int id = states.size();</span>
+<span class="fc" id="L39">        states.add(s);</span>
+<span class="fc" id="L40">        succ.add(new EdgeList());</span>
+<span class="fc" id="L41">        pred.add(new EdgeList());</span>
+<span class="fc" id="L42">        stateToNode.put(s, id);</span>
+<span class="fc" id="L43">        return id;</span>
+    }
+
+    // edge creation
+    public void addEdge(int from, int to, int label) {
+<span class="fc" id="L48">        succ.get(from).add(to, label);</span>
+<span class="fc" id="L49">        pred.get(to).add(from, label);</span>
+<span class="fc" id="L50">    }</span>
+
+    public EdgeList successors(int node) {
+<span class="nc" id="L53">        return succ.get(node);</span>
+    }
+
+    public EdgeList predecessors(int node) {
+<span class="fc" id="L57">        return pred.get(node);</span>
+    }
+
+    // layer management
+    public void startLayer(int layer) {
+<span class="fc" id="L62">        layerStart[layer] = states.size();</span>
+<span class="fc" id="L63">    }</span>
+
+    public void endLayer(int layer) {
+<span class="fc" id="L66">        layerStart[layer + 1] = states.size();</span>
+<span class="fc" id="L67">    }</span>
+
+    public int layerSize(int layer) {
+<span class="fc" id="L70">        return layerStart[layer + 1] - layerStart[layer];</span>
+    }
+
+    public Iterable&lt;Integer&gt; nodesInLayer(int layer) {
+<span class="fc" id="L74">        int begin = layerStart[layer];</span>
+<span class="fc" id="L75">        int end   = layerStart[layer + 1];</span>
+<span class="fc" id="L76">        return () -&gt; new Iterator&lt;&gt;() {</span>
+<span class="fc" id="L77">            int cur = begin;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            public boolean hasNext() { return cur &lt; end; }</span>
+<span class="fc" id="L79">            public Integer next() { return cur++; }</span>
+        };
+    }
+
+<span class="nc" id="L83">    public int layerBegin(int l) { return layerStart[l]; }</span>
+<span class="nc" id="L84">    public int layerEnd(int l) { return layerStart[l + 1]; }</span>
+
+<span class="fc" id="L86">    public static final class EdgeList {</span>
+<span class="fc" id="L87">        private int[] node = new int[4];</span>
+<span class="fc" id="L88">        private int[] label = new int[4];</span>
+<span class="fc" id="L89">        private int size = 0;</span>
+
+        void add(int target, int label) {
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (size == node.length) {</span>
+<span class="fc" id="L93">                node = Arrays.copyOf(node, size * 2);</span>
+<span class="fc" id="L94">                this.label = Arrays.copyOf(this.label, size * 2);</span>
+            }
+<span class="fc" id="L96">            node[size] = target;</span>
+<span class="fc" id="L97">            this.label[size] = label;</span>
+<span class="fc" id="L98">            size++;</span>
+<span class="fc" id="L99">        }</span>
+
+<span class="fc" id="L101">        public int size() { return size; }</span>
+<span class="fc" id="L102">        public int node(int i) { return node[i]; }   // node</span>
+<span class="fc" id="L103">        public int label(int i) { return label[i]; }  // label</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

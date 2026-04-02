@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Precedence.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">Precedence.java</span></div><h1>Precedence.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.cp.engine.constraints.Equal;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
+public class Precedence extends AbstractCPConstraint {
+
+    private final CPSeqVar seqVar;
+    private final int[] order; // ordering that must appear
+    private final boolean appearTogether; // set to true if the nodes must all appear together
+
+    private int[] nodes;
+    private int nCommon;
+    private int nMember;
+<span class="fc" id="L28">    private List&lt;Integer&gt; nodesToFilter = new ArrayList&lt;&gt;();</span>
+
+    // TODO make a specialized constraint for precedence between 2 nodes, which might be slightly less heavy than this one
+
+    /**
+     * Ensures that a list of nodes appears in a given relative order within the sequence, if they appear
+     * Example of a solution:
+     * order = [1, 3, 5, 9]
+     * seqVar = 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 -&gt; 8
+     * Note that nodes can be put in between and some nodes in `order` may be excluded
+     * Example of a non solution (since 1 cannot appear before 5):
+     * order = [1, 3, 5, 9]
+     * seqVar = 5 -&gt; 2 -&gt; 4 -&gt; 1 -&gt; 8
+     *
+     * @param seqVar sequence variable
+     * @param order  nodes that must respect the given ordering if they are included in the sequence
+     */
+    public Precedence(CPSeqVar seqVar, int... order) {
+<span class="fc" id="L46">        this(seqVar, false, order);</span>
+<span class="fc" id="L47">    }</span>
+
+    /**
+     * Ensures that a list of nodes appears in a given relative order within the sequence, if they appear.
+     * Example of a solution:
+     * order = [1, 3, 5, 9].
+     * seqVar = 1 -&gt; 2 -&gt; 3 -&gt; 4 -&gt; 5 -&gt; 8.
+     * Note that nodes can be put in between and some nodes in `order` may be excluded, provided that {@code appearTogether} is set to false.
+     * Example of a non solution (since 1 cannot appear before 5):
+     * order = [1, 3, 5, 9].
+     * seqVar = 5 -&gt; 2 -&gt; 4 -&gt; 1 -&gt; 8.
+     *
+     * @param seqVar         sequence variable
+     * @param appearTogether if set to true, all nodes in order must appear together.
+     *                       Requiring one means requiring all of them, and excluding one means excluding all of them
+     * @param order          nodes that must respect the given ordering if they are included in the sequence
+     */
+    public Precedence(CPSeqVar seqVar, boolean appearTogether, int... order) {
+<span class="fc" id="L65">        super(seqVar.getSolver());</span>
+<span class="fc" id="L66">        this.seqVar = seqVar;</span>
+<span class="fc" id="L67">        this.order = order;</span>
+<span class="fc" id="L68">        this.nodes = new int[seqVar.nNode()];</span>
+<span class="fc" id="L69">        this.appearTogether = appearTogether;</span>
+<span class="fc" id="L70">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (appearTogether) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int i = 0; i &lt; order.length - 1; i++) {</span>
+<span class="fc" id="L76">                getSolver().post(new Equal((CPIntVar) seqVar.isNodeRequired(order[i]), (CPIntVar) seqVar.isNodeRequired(order[i + 1])));</span>
+            }
+        }
+<span class="fc" id="L79">        seqVar.propagateOnInsert(this);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int node : order)</span>
+<span class="fc" id="L81">            seqVar.getNodeVar(node).propagateOnInsertRemoved(this);</span>
+<span class="fc" id="L82">        propagate();</span>
+<span class="fc" id="L83">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L87">        boolean oneNodeInserted = false;</span>
+<span class="fc" id="L88">        int nNodesNotExcluded = 0; // only nodes useful for the filtering</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int node : order) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            nNodesNotExcluded += seqVar.isNode(node, NOT_EXCLUDED) ? 1 : 0;</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">            oneNodeInserted = oneNodeInserted || seqVar.isNode(node, MEMBER);</span>
+        }
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (nNodesNotExcluded &lt;= 1) {</span>
+            // trying to do a precedence with 0 or 1 node, the constraint can be deactivated
+<span class="fc" id="L95">            setActive(false);</span>
+        } else {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (oneNodeInserted) {</span>
+<span class="fc" id="L98">                nMember = seqVar.fillNode(nodes, MEMBER_ORDERED);</span>
+<span class="fc" id="L99">                checkOrder();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (!isActive()) // the check might set the constraint as inactive</span>
+<span class="fc" id="L101">                    return;</span>
+<span class="fc" id="L102">                filterBasedOnOrderInserted();</span>
+            }
+<span class="fc" id="L104">            filterBasedOnOrderInsertable();</span>
+        }
+<span class="fc" id="L106">    }</span>
+
+    private void checkOrder() {
+<span class="fc" id="L109">        int idx = 0;</span>
+<span class="fc" id="L110">        nCommon = 0;</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (int node : order) {</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (seqVar.isNode(node, MEMBER)) {</span>
+<span class="fc" id="L113">                nCommon += 1;</span>
+                // find the location of the node 'visit'
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">                for (; idx &lt; nMember &amp;&amp; nodes[idx] != node; ++idx) {</span>
+
+                }
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                if (idx == nMember) {</span>
+                    // all member nodes have been evaluated without encountering the node 'visit'
+                    // this means that the order is not respected here
+<span class="nc" id="L121">                    throw INCONSISTENCY;</span>
+                }
+<span class="fc bfc" id="L123" title="All 2 branches covered.">                if (nCommon == order.length) {</span>
+<span class="fc" id="L124">                    setActive(false);</span>
+<span class="fc" id="L125">                    return;</span>
+                }
+            }
+        }
+<span class="fc" id="L129">    }</span>
+
+    private void filterBasedOnOrderInserted() {
+<span class="fc" id="L132">        nodesToFilter.clear();</span>
+<span class="fc" id="L133">        int pred = seqVar.start();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (int i = 0; i &lt;= order.length; i++) {</span>
+            // end is always added to be sure to go into the else if instruction below at the last iteration
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            int node = i &lt; order.length ? order[i] : seqVar.end();</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (seqVar.isNode(node, INSERTABLE)) {</span>
+<span class="fc" id="L138">                nodesToFilter.add(node); // node that is not in common, and whose insertions will be filtered</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            } else if (seqVar.isNode(node, MEMBER)) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">                for (int nodeToFilter : nodesToFilter) {</span>
+                    // nodeToFilter must be placed between pred and node
+<span class="fc" id="L142">                    seqVar.notBetween(seqVar.start(), nodeToFilter, pred);</span>
+<span class="fc" id="L143">                    seqVar.notBetween(node, nodeToFilter, seqVar.end());</span>
+<span class="fc" id="L144">                }</span>
+<span class="fc" id="L145">                pred = node;</span>
+<span class="fc" id="L146">                nodesToFilter.clear();</span>
+            }
+        }
+<span class="fc" id="L149">    }</span>
+
+    private void filterBasedOnOrderInsertable() {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; order.length; i++) {</span>
+<span class="fc" id="L153">            int node = order[i];</span>
+<span class="fc bfc" id="L154" title="All 6 branches covered.">            if (seqVar.isNode(node, INSERTABLE_REQUIRED) || (appearTogether &amp;&amp; seqVar.isNode(node, INSERTABLE))) {</span>
+                // forward filtering: filter positions for subsequent nodes in order:
+                // they can only come after the first insertion of this node
+<span class="fc bfc" id="L157" title="All 2 branches covered.">                if (i &lt; order.length - 1) {</span>
+<span class="fc" id="L158">                    int current = seqVar.start();</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">                    while (!seqVar.hasInsert(current, node))</span>
+<span class="fc" id="L160">                        current = seqVar.memberAfter(current);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                    for (int j = i + 1; j &lt; order.length; j++) {</span>
+<span class="fc" id="L162">                        int subSequentNode = order[j];</span>
+<span class="fc" id="L163">                        seqVar.notBetween(seqVar.start(), subSequentNode, current);</span>
+                    }
+                }
+                // backward filtering: filter positions for precedent nodes:
+                // they can only come before the last insertion of this node
+<span class="fc bfc" id="L168" title="All 2 branches covered.">                if (i &gt; 0) {</span>
+<span class="fc" id="L169">                    int current = seqVar.end();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">                    while (!seqVar.hasEdge(node, current))</span>
+<span class="fc" id="L171">                        current = seqVar.memberBefore(current);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                    for (int j = i - 1; j &gt;= 0; j--) {</span>
+<span class="fc" id="L173">                        int precedentNode = order[j];</span>
+<span class="fc" id="L174">                        seqVar.notBetween(current, precedentNode, seqVar.end());</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L179">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

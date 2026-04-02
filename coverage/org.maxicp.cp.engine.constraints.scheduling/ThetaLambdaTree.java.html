@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ThetaLambdaTree.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">ThetaLambdaTree.java</span></div><h1>ThetaLambdaTree.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.scheduling;
+
+
+/**
+ * Data Structure described in
+ * Global Constraints in Scheduling, 2008 Petr Vilim, PhD thesis
+ * See &lt;a href=&quot;http://vilim.eu/petr/disertace.pdf&quot;&gt;The thesis.&lt;/a&gt;
+ */
+public class ThetaLambdaTree {
+
+    protected static final int UNDEF = -1;
+
+    private static class Node {
+
+        int thetaSump;
+        int thetaEct;
+        int thetaLambdaSump;
+        int thetaLambdaEct;
+<span class="fc" id="L19">        int responsibleThetaLambdaSump = UNDEF;</span>
+<span class="fc" id="L20">        int responsibleThetaLambdaEct = UNDEF;</span>
+
+<span class="fc" id="L22">        Node() {</span>
+<span class="fc" id="L23">            reset();</span>
+<span class="fc" id="L24">        }</span>
+
+        void reset() {
+<span class="fc" id="L27">            thetaEct = Integer.MIN_VALUE;</span>
+<span class="fc" id="L28">            thetaSump = 0;</span>
+<span class="fc" id="L29">            thetaLambdaEct = Integer.MIN_VALUE;</span>
+<span class="fc" id="L30">            responsibleThetaLambdaEct = UNDEF;</span>
+<span class="fc" id="L31">            thetaLambdaSump = 0;</span>
+<span class="fc" id="L32">            responsibleThetaLambdaSump = UNDEF;</span>
+<span class="fc" id="L33">        }</span>
+    }
+
+    // the root node is at position 1 so that the parent is at i/2, the left at 2*i and the right at 2*i+1
+    private Node[] nodes;
+    private int isize; // number of internal nodes
+
+    /**
+     * Creates a theta-tree able to store
+     * the specified number of activities, each identified
+     * as a number between 0 and size-1.
+     * The activities inserted in a theta tree are assumed
+     * to be of increasing earliest start time.
+     * That is activity identified as i must possibly start earlier than
+     * activity i+1.
+     *
+     * @param size the number of activities that can possibly be inserted in the tree
+     */
+<span class="fc" id="L51">    public ThetaLambdaTree(int size) {</span>
+<span class="fc" id="L52">        int h = 1; // height of the tree</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        while ((1 &lt;&lt; h) &lt; size) { // while the number of leaf nodes is less than size, increase height</span>
+<span class="fc" id="L54">            h++;</span>
+        }
+<span class="fc" id="L56">        isize = (1 &lt;&lt; h) ; // number of internal nodes is 2^h</span>
+<span class="fc" id="L57">        nodes = new ThetaLambdaTree.Node[1 &lt;&lt; (h+1)]; // total number of nodes is 2^(h+1)</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 1; i &lt; nodes.length; i++) {</span>
+<span class="fc" id="L59">            nodes[i] = new ThetaLambdaTree.Node();</span>
+        }
+<span class="fc" id="L61">    }</span>
+
+    /**
+     * Remove all the activities from this theta-tree
+     */
+    public void reset() {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int i = 1; i &lt; nodes.length; i++) {</span>
+<span class="fc" id="L68">            nodes[i].reset();</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    /**
+     * Insert an activity in the theta set
+     *
+     * @param activityIndex assumed to start at 0 from left to right up to size-1
+     * @param est earliest completion time
+     * @param dur duration
+     */
+    public void insertTheta(int activityIndex, int est, int dur) {
+        //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
+<span class="fc" id="L81">        int currPos = isize + activityIndex;</span>
+<span class="fc" id="L82">        Node node = nodes[currPos];</span>
+<span class="fc" id="L83">        node.thetaEct = est + dur;</span>
+<span class="fc" id="L84">        node.thetaSump = dur;</span>
+<span class="fc" id="L85">        node.thetaLambdaEct = est + dur;</span>
+<span class="fc" id="L86">        node.thetaLambdaSump = dur;</span>
+<span class="fc" id="L87">        node.responsibleThetaLambdaEct = UNDEF;</span>
+<span class="fc" id="L88">        node.responsibleThetaLambdaSump = UNDEF;</span>
+<span class="fc" id="L89">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="fc" id="L90">    }</span>
+
+
+    /**
+     * Insert an activity in the lambda set
+     *
+     * @param activityIndex assumed to start at 0 from left to right up to size-1
+     * @param ect earliest completion time
+     * @param dur duration
+     */
+    public void insertLambda(int activityIndex, int ect, int dur) {
+        //the last size nodes are the leaf nodes so the first one is isize (the number of internal nodes)
+<span class="nc" id="L102">        int currPos = isize + activityIndex;</span>
+<span class="nc" id="L103">        Node node = nodes[currPos];</span>
+<span class="nc" id="L104">        node.thetaEct = ect;</span>
+<span class="nc" id="L105">        node.thetaSump = dur;</span>
+<span class="nc" id="L106">        node.thetaLambdaEct = ect;</span>
+<span class="nc" id="L107">        node.thetaLambdaSump = dur;</span>
+<span class="nc" id="L108">        node.responsibleThetaLambdaEct = activityIndex;</span>
+<span class="nc" id="L109">        node.responsibleThetaLambdaSump = activityIndex;</span>
+<span class="nc" id="L110">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="nc" id="L111">    }</span>
+
+    /**
+     * Move an activity from the theta set to the lambda set.
+     * Of course this activity must be present in the theta set (not verified).
+     * @param activityIndex assumed to start at 0 up to size-1
+     */
+    public void moveFromThetaToLambda(int activityIndex) {
+<span class="fc" id="L119">        int currPos = isize + activityIndex;</span>
+<span class="fc" id="L120">        Node node = nodes[currPos];</span>
+<span class="fc" id="L121">        node.responsibleThetaLambdaSump = activityIndex;</span>
+<span class="fc" id="L122">        node.responsibleThetaLambdaEct = activityIndex;</span>
+<span class="fc" id="L123">        node.thetaEct = Integer.MIN_VALUE;</span>
+<span class="fc" id="L124">        node.thetaSump = 0;</span>
+<span class="fc" id="L125">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="fc" id="L126">    }</span>
+
+    /**
+     * Remove activity from the theta set or lambda set
+     *
+     * @param activityIndex assumed to start at 0 up to size-1
+     */
+    public void remove(int activityIndex) {
+<span class="fc" id="L134">        int currPos = isize + activityIndex;</span>
+<span class="fc" id="L135">        Node node = nodes[currPos];</span>
+<span class="fc" id="L136">        node.reset();</span>
+<span class="fc" id="L137">        reCompute(currPos &gt;&gt; 1); // re-compute from the parent node</span>
+<span class="fc" id="L138">    }</span>
+
+    public int getThetaEct() {
+<span class="fc" id="L141">        return nodes[1].thetaEct;</span>
+    }
+
+    public int getThetaLambdaEct() {
+<span class="fc" id="L145">        return nodes[1].thetaLambdaEct;</span>
+    }
+
+
+    public int getResponsibleForThetaLambdaEct() {
+<span class="fc" id="L150">        return nodes[1].responsibleThetaLambdaEct;</span>
+    }
+
+
+    private int getResponsibleForThetaLambdaSump() {
+<span class="nc" id="L155">        return nodes[1].responsibleThetaLambdaSump;</span>
+    }
+
+    private void reCompute(int pos) {
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        while (pos &gt;= 1) {</span>
+<span class="fc" id="L160">            Node node = nodes[pos];</span>
+<span class="fc" id="L161">            Node left = nodes[pos &lt;&lt; 1]; // left child</span>
+<span class="fc" id="L162">            Node right = nodes[(pos &lt;&lt; 1) + 1]; // right child</span>
+
+            // ----- theta tree update -----
+<span class="fc" id="L165">            nodes[pos].thetaSump = left.thetaSump + right.thetaSump;</span>
+<span class="fc" id="L166">            nodes[pos].thetaEct = Math.max(right.thetaEct, left.thetaEct + right.thetaSump);</span>
+
+            // ----- theta-lambda update -----
+
+            // sump update
+<span class="fc" id="L171">            node.thetaSump = left.thetaSump + right.thetaSump;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">            if (left.thetaLambdaSump + right.thetaSump &gt; left.thetaSump + right.thetaLambdaSump) {</span>
+<span class="fc" id="L173">                nodes[pos].thetaLambdaSump = left.thetaLambdaSump + right.thetaSump;</span>
+<span class="fc" id="L174">                nodes[pos].responsibleThetaLambdaSump = left.responsibleThetaLambdaSump;</span>
+            } else {
+<span class="fc" id="L176">                nodes[pos].thetaLambdaSump = left.thetaSump + right.thetaLambdaSump;</span>
+<span class="fc" id="L177">                nodes[pos].responsibleThetaLambdaSump = right.responsibleThetaLambdaSump;</span>
+            }
+
+            // ect update
+            // case 1
+<span class="fc" id="L182">            node.thetaLambdaEct = right.thetaLambdaEct;</span>
+<span class="fc" id="L183">            node.responsibleThetaLambdaEct = right.responsibleThetaLambdaEct;</span>
+            // case 2
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            if (left.thetaEct + right.thetaLambdaSump &gt; node.thetaLambdaEct) {</span>
+<span class="fc" id="L186">                node.thetaLambdaEct = left.thetaEct + right.thetaLambdaSump;</span>
+<span class="fc" id="L187">                node.responsibleThetaLambdaEct =  right.responsibleThetaLambdaSump;</span>
+            }
+            // case 3
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (left.thetaLambdaEct + right.thetaSump &gt; node.thetaLambdaEct) {</span>
+<span class="fc" id="L191">                node.thetaLambdaEct = left.thetaLambdaEct + right.thetaSump;</span>
+<span class="fc" id="L192">                node.responsibleThetaLambdaEct = left.responsibleThetaLambdaEct;</span>
+            }
+
+<span class="fc" id="L195">            pos = pos &gt;&gt; 1; // parent</span>
+<span class="fc" id="L196">        }</span>
+<span class="fc" id="L197">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

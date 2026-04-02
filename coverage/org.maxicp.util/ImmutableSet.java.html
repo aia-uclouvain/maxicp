@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImmutableSet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util</a> &gt; <span class="el_source">ImmutableSet.java</span></div><h1>ImmutableSet.java</h1><pre class="source lang-java linenums">package org.maxicp.util;
+
+import java.util.Arrays;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
+
+public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
+    private final Set&lt;E&gt; delegate;
+
+<span class="nc" id="L11">    public ImmutableSet(Collection&lt;E&gt; delegate) {</span>
+<span class="nc bnc" id="L12" title="All 2 branches missed.">        this.delegate = switch (delegate) {</span>
+<span class="nc" id="L13">            case ImmutableSet&lt;E&gt; immutableSet -&gt; immutableSet.delegate;</span>
+<span class="nc" id="L14">            case Collection&lt;E&gt; d -&gt; Set.copyOf(d);</span>
+        };
+<span class="nc" id="L16">    }</span>
+
+    public static ImmutableSet&lt;Integer&gt; of(int... ints) {
+<span class="nc" id="L19">        return new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(Ints.asSet(ints)));</span>
+    }
+
+    /**
+     * Private constructor that trusts that the delegate given will not be used elsewhere
+     * @param tmb
+     */
+<span class="nc" id="L26">    private ImmutableSet(TrustMeBro&lt;E&gt; tmb) {</span>
+<span class="nc" id="L27">        this.delegate = tmb.delegate;</span>
+<span class="nc" id="L28">    }</span>
+<span class="nc" id="L29">    private record TrustMeBro&lt;E&gt;(Set&lt;E&gt; delegate) {}</span>
+
+<span class="nc" id="L31">    public ImmutableSet(E[] elems) {</span>
+<span class="nc" id="L32">        this.delegate = Set.of(elems);</span>
+<span class="nc" id="L33">    }</span>
+
+    public static &lt;X&gt; ImmutableSet&lt;X&gt; of(X... x) {
+<span class="nc" id="L36">        return new ImmutableSet&lt;&gt;(x);</span>
+    }
+
+    public static &lt;X&gt; ImmutableSet&lt;X&gt; of(Collection&lt;X&gt; x) {
+<span class="nc" id="L40">        return new ImmutableSet&lt;&gt;(x);</span>
+    }
+
+    @Override
+    public int size() {
+<span class="nc" id="L45">        return delegate.size();</span>
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="nc" id="L50">        return delegate.isEmpty();</span>
+    }
+
+    @Override
+    public boolean contains(Object o) {
+<span class="nc" id="L55">        return delegate.contains(o);</span>
+    }
+
+    @Override
+    public Iterator&lt;E&gt; iterator() {
+<span class="nc" id="L60">        return delegate.iterator();</span>
+    }
+
+    @Override
+    public Object[] toArray() {
+<span class="nc" id="L65">        return delegate.toArray();</span>
+    }
+
+    @Override
+    public &lt;T&gt; T[] toArray(T[] a) {
+<span class="nc" id="L70">        return delegate.toArray(a);</span>
+    }
+
+    @Override
+    public boolean add(E e) {
+<span class="nc" id="L75">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean remove(Object o) {
+<span class="nc" id="L80">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean containsAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L85">        return delegate.containsAll(c);</span>
+    }
+
+    @Override
+    public boolean addAll(Collection&lt;? extends E&gt; c) {
+<span class="nc" id="L90">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean retainAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L95">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public boolean removeAll(Collection&lt;?&gt; c) {
+<span class="nc" id="L100">        throw new UnsupportedOperationException();</span>
+    }
+
+    @Override
+    public void clear() {
+<span class="nc" id="L105">        throw new UnsupportedOperationException();</span>
+    }
+
+    public static &lt;E&gt; Collector&lt;E,?,ImmutableSet&lt;E&gt;&gt; toImmutableSet() {
+<span class="nc" id="L109">        return Collector.of(</span>
+            (Supplier&lt;Set&lt;E&gt;&gt;) HashSet::new,
+            Set::add,
+<span class="nc" id="L112">            (left, right) -&gt; { left.addAll(right); return left; },</span>
+            ImmutableSet::new,
+            Collector.Characteristics.UNORDERED
+        );
+    }
+
+    public static class Builder&lt;E&gt; {
+        private Set&lt;E&gt; delegate;
+<span class="nc" id="L120">        public Builder() {</span>
+<span class="nc" id="L121">            delegate = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L122">        }</span>
+
+        public ImmutableSet&lt;E&gt; build() {
+<span class="nc" id="L125">            ImmutableSet&lt;E&gt; out = new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(delegate));</span>
+<span class="nc" id="L126">            delegate = null;</span>
+<span class="nc" id="L127">            return out;</span>
+        }
+
+        public Builder&lt;E&gt; add(E e) {
+<span class="nc" id="L131">            delegate.add(e);</span>
+<span class="nc" id="L132">            return this;</span>
+        }
+
+        public Builder&lt;E&gt; add(E... es) {
+<span class="nc" id="L136">            delegate.addAll(Arrays.asList(es));</span>
+<span class="nc" id="L137">            return this;</span>
+        }
+
+        public Builder&lt;E&gt; addAll(Collection&lt;? extends E&gt; c) {
+<span class="nc" id="L141">            delegate.addAll(c);</span>
+<span class="nc" id="L142">            return this;</span>
+        }
+    }
+
+    public static &lt;E&gt; Builder&lt;E&gt; builder() {
+<span class="nc" id="L147">        return new Builder&lt;E&gt;();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

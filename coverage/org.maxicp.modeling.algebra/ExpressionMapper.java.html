@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExpressionMapper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra</a> &gt; <span class="el_source">ExpressionMapper.java</span></div><h1>ExpressionMapper.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra;
+
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.algebra.sequence.SeqExpression;
+
+import java.util.function.Function;
+
+<span class="nc" id="L8">public class ExpressionMapper {</span>
+    public static Function&lt;Expression, Expression&gt; recursiveIntExprMapper(Function&lt;IntExpression, IntExpression&gt; f) {
+<span class="nc" id="L10">        Function&lt;Expression, Expression&gt; f2 = (x) -&gt; {</span>
+<span class="nc bnc" id="L11" title="All 2 branches missed.">            switch (x) {</span>
+<span class="nc" id="L12">                case IntExpression ie -&gt; { return f.apply(ie); }</span>
+<span class="nc" id="L13">                default -&gt; { return x; }</span>
+            }
+        };
+<span class="nc" id="L16">        return (x) -&gt; recurHelper(x, f2);</span>
+    }
+
+    public static Function&lt;Expression, Expression&gt; recursiveSequenceExprMapper(Function&lt;SeqExpression, SeqExpression&gt; f) {
+<span class="nc" id="L20">        Function&lt;Expression, Expression&gt; f2 = (x) -&gt; {</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">            switch (x) {</span>
+<span class="nc" id="L22">                case SeqExpression ie -&gt; { return f.apply(ie); }</span>
+<span class="nc" id="L23">                default -&gt; { return x; }</span>
+            }
+        };
+<span class="nc" id="L26">        return (x) -&gt; recurHelper(x, f2);</span>
+    }
+
+    public static Function&lt;Expression, Expression&gt; recursiveExpressionMapper(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L30">        return (x) -&gt; recurHelper(x, f);</span>
+    }
+
+    private static Expression recurHelper(Expression expr, Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L34">        return f.apply(expr).mapSubexpressions((x) -&gt; recurHelper(x, f));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

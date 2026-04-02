@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Sorted.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Sorted.java</span></div><h1>Sorted.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+import java.util.Arrays;
+
+
+/**
+ *
+ * Sorted constraint, x is sorted in y according to permutation o
+ * @author pschaus
+ */
+public class Sorted extends AbstractCPConstraint {
+
+    // Filtering described in
+    // - Zhou, J. (1997). A permutation-based approach for solving the job-shop problem. Constraints, 2(2), 185-213.
+    // - Mehlhorn, K., &amp; Thiel, S. (2000) Faster algorithms for bound-consistency of the sortedness and the alldifferent constraint. CP
+
+    int n;
+    CPIntVar[] x;
+    CPIntVar [] y;
+    CPIntVar [] o;
+
+    int [] min;
+    int [] max;
+
+    /**
+     * x is sorted in y according to permutation o
+     * y[0] &lt;= y[1] &lt;= ... &lt;= y[n-1]
+     * x[i] = y[o[i]] for all i
+     *
+     * @param x a set of n variables
+     * @param o a permutation of 0..n-1, so that x[i] = y[o[i]]
+     * @param y a set of n variables, y[i] is the ith smallest value of x
+     */
+    public Sorted(CPIntVar[] x, CPIntVar[] o, CPIntVar[] y) {
+<span class="fc" id="L44">        super(x[0].getSolver());</span>
+<span class="fc" id="L45">        this. n = x.length;</span>
+        // check all size are n and throw  illigal argument
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (o.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (y.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
+<span class="fc" id="L49">        this.x = x;</span>
+<span class="fc" id="L50">        this.o = o;</span>
+<span class="fc" id="L51">        this.y = y;</span>
+<span class="fc" id="L52">        this.min = new int[n];</span>
+<span class="fc" id="L53">        this.max = new int[n];</span>
+<span class="fc" id="L54">    }</span>
+
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L60">            o[i].removeAbove(n-1);</span>
+<span class="fc" id="L61">            o[i].removeBelow(0);</span>
+        }
+
+<span class="fc" id="L64">        getSolver().post(new AllDifferentDC(o));</span>
+
+
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L68">            getSolver().post(new Element1DVar(y, o[i], x[i]));</span>
+        }
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc" id="L71">            getSolver().post(new LessOrEqual(y[i], y[i+1]));</span>
+        }
+
+        // redundant constraints
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L76">            int i_ = i;</span>
+            // number of x_k's &lt;= y_i is at least i-1
+<span class="fc" id="L78">            CPIntVar [] b1 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isLe(x[k],y[i_]));</span>
+<span class="fc" id="L79">            getSolver().post(CPFactory.ge(CPFactory.sum(b1),i-1));</span>
+            // number of x_k's &gt;= y_i is at least n-i
+<span class="fc" id="L81">            CPIntVar [] b2 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isGe(x[k],y[i_]));</span>
+<span class="fc" id="L82">            getSolver().post(CPFactory.ge(CPFactory.sum(b2),n-i));</span>
+        }
+
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L86">            x[i].propagateOnBoundChange(this);</span>
+<span class="fc" id="L87">            y[i].propagateOnBoundChange(this);</span>
+<span class="fc" id="L88">            o[i].propagateOnBoundChange(this);</span>
+        }
+<span class="fc" id="L90">        propagate();</span>
+<span class="fc" id="L91">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L96">            min[i] = x[i].min();</span>
+<span class="fc" id="L97">            max[i] = x[i].max();</span>
+        }
+<span class="fc" id="L99">        Arrays.sort(min);</span>
+<span class="fc" id="L100">        Arrays.sort(max);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L102">            y[i].removeBelow(min[i]);</span>
+<span class="fc" id="L103">            y[i].removeAbove(max[i]);</span>
+        }
+
+
+<span class="fc" id="L107">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

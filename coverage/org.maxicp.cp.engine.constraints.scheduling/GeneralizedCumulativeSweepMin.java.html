@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeneralizedCumulativeSweepMin.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">GeneralizedCumulativeSweepMin.java</span></div><h1>GeneralizedCumulativeSweepMin.java</h1><pre class="source lang-java linenums">package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.Constants;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.modeling.algebra.integer.Constant;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+<span class="nc" id="L12">public class GeneralizedCumulativeSweepMin extends AbstractCPConstraint {</span>
+    private final Activity[] activities;
+    private final int minCapacity;
+
+    //Propagation structures:
+    private final int nMax;
+
+    private final Event[] eventPointSeries;
+    private int nbEvents; // current size of events
+    private int delta; // current position of the sweep line
+    private int consSumHeight; // sum of the height of the tasks that overlap the sweep line
+    private int nbCurrentTasks; // number of tasks that overlap the sweep line
+    private int nbTasksToPrune; // number of tasks in stackPrune
+
+
+    private final int[] stackPrune; // Tasks that could intersect the sweep line
+    private final int[] consContrib; // contribution of all the tasks that are added to consSumHeight
+
+    private final EventList[] eventList; // contains all the possible events of each task (used for speed-up)
+
+    public GeneralizedCumulativeSweepMin(List&lt;Activity&gt; activities, int minCapacity) {
+<span class="nc" id="L33">        this(activities.toArray(new Activity[0]), minCapacity);</span>
+<span class="nc" id="L34">    }</span>
+
+    public GeneralizedCumulativeSweepMin(Activity[] activities, int minCapacity) {
+<span class="nc" id="L37">        super(activities[0].interval().getSolver());</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (minCapacity &lt; 0) throw new IllegalArgumentException(&quot;The minimum capacity provided is &lt; 0&quot;);</span>
+<span class="nc" id="L39">        this.activities = activities.clone();</span>
+<span class="nc" id="L40">        this.minCapacity = minCapacity;</span>
+
+<span class="nc" id="L42">        nMax = this.activities.length;</span>
+
+<span class="nc" id="L44">        this.nbEvents = 0;</span>
+<span class="nc" id="L45">        this.delta = 0;</span>
+<span class="nc" id="L46">        this.consSumHeight = 0;</span>
+<span class="nc" id="L47">        this.nbCurrentTasks = 0;</span>
+<span class="nc" id="L48">        this.nbTasksToPrune = 0;</span>
+<span class="nc" id="L49">        this.stackPrune = new int[nMax];</span>
+<span class="nc" id="L50">        this.consContrib = new int[nMax];</span>
+<span class="nc" id="L51">        this.eventPointSeries = new Event[5 * nMax];</span>
+<span class="nc" id="L52">        this.eventList = new EventList[nMax];</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        for (int i = 0; i &lt; nMax; i++) {</span>
+<span class="nc" id="L54">            eventList[i] = new EventList(i);</span>
+        }
+<span class="nc" id="L56">    }</span>
+
+    private void generateCheck(int t) {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (activities[t].height().max() &lt; minCapacity) {</span>
+<span class="nc" id="L60">            eventPointSeries[nbEvents] = eventList[t].sCheck();</span>
+<span class="nc" id="L61">            nbEvents ++;</span>
+<span class="nc" id="L62">            eventPointSeries[nbEvents] = eventList[t].eCheck();</span>
+<span class="nc" id="L63">            nbEvents ++;</span>
+        }
+<span class="nc" id="L65">    }</span>
+
+    private boolean generateProfileBad(int t) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        if (activities[t].height().max() &lt; 0) {</span>
+<span class="nc" id="L69">            eventPointSeries[nbEvents] = eventList[t].sBadProfile(activities[t].height().max());</span>
+<span class="nc" id="L70">            nbEvents ++;</span>
+<span class="nc" id="L71">            eventPointSeries[nbEvents] = eventList[t].eBadProfile(activities[t].height().max());</span>
+<span class="nc" id="L72">            nbEvents ++;</span>
+<span class="nc" id="L73">            return true;</span>
+        }
+<span class="nc" id="L75">        return false;</span>
+    }
+
+    private boolean generateProfileGood(int t) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (activities[t].height().max() &gt; 0) {</span>
+<span class="nc" id="L80">            eventPointSeries[nbEvents] = eventList[t].sGoodProfile(activities[t].height().max());</span>
+<span class="nc" id="L81">            nbEvents ++;</span>
+<span class="nc" id="L82">            eventPointSeries[nbEvents] = eventList[t].eGoodProfile(activities[t].height().max());</span>
+<span class="nc" id="L83">            nbEvents ++;</span>
+<span class="nc" id="L84">            return true;</span>
+        }
+<span class="nc" id="L86">        return false;</span>
+    }
+
+
+    private boolean consistencyCheck() {
+<span class="nc bnc" id="L91" title="All 4 branches missed.">        return (nbCurrentTasks &gt; 0 &amp;&amp; consSumHeight &lt; minCapacity);</span>
+    }
+    private boolean mandatoryCheck(int t) {
+<span class="nc bnc" id="L94" title="All 4 branches missed.">        return (nbCurrentTasks != 0 &amp;&amp; (consSumHeight - consContrib[t]) &lt; minCapacity);</span>
+    }
+    private boolean forbidenCheck(int t) {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        return (consSumHeight - consContrib[t] + activities[t].height().max() &lt; minCapacity);</span>
+    }
+
+    @Override
+    public void post() {
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc" id="L103">            act.interval().propagateOnChange(this);</span>
+<span class="nc" id="L104">            act.height().propagateOnBoundChange(this);</span>
+        }
+<span class="nc" id="L106">        propagate();</span>
+<span class="nc" id="L107">    }</span>
+
+    @Override
+    public int priority() {
+<span class="nc" id="L111">        return Constants.PIORITY_MEDIUM;</span>
+    }
+
+    @Override
+    public void propagate() {
+        // Generates events
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (!generateEventPointSeries())</span>
+<span class="nc" id="L118">            return;</span>
+        // Performs a sweep on the events
+<span class="nc" id="L120">        sweepAlgorithm();</span>
+<span class="nc" id="L121">    }</span>
+
+    private boolean generateEventPointSeries() {
+        // True if a profile event has been generated
+<span class="nc" id="L125">        boolean profileEvent = false;</span>
+        // Reset eventPointSeries
+<span class="nc" id="L127">        nbEvents = 0;</span>
+<span class="nc" id="L128">        int i = 0;</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        while (i &lt; nMax) {</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">            if (activities[i].interval().startMax() &lt; activities[i].interval().endMin() &amp;&amp; activities[i].interval().isPresent()) {</span>
+                // check
+<span class="nc" id="L132">                generateCheck(i);</span>
+                // Profile (Bad : on compulsory part)
+<span class="nc" id="L134">                profileEvent |= generateProfileBad(i);</span>
+            }
+            // Profile (Good : on entire domain)
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (!activities[i].interval().isAbsent()) {</span>
+<span class="nc" id="L138">                profileEvent |= generateProfileGood(i);</span>
+            }
+<span class="nc bnc" id="L140" title="All 6 branches missed.">            if (!activities[i].interval().isAbsent() &amp;&amp; (!activities[i].interval().isFixed() || !activities[i].height().isFixed())) {</span>
+<span class="nc" id="L141">                eventPointSeries[nbEvents] = eventList[i].sPruning();</span>
+<span class="nc" id="L142">                nbEvents++;</span>
+            }
+
+<span class="nc" id="L145">            i ++;</span>
+        }
+<span class="nc" id="L147">        return profileEvent;</span>
+    }
+
+
+
+
+
+    private void resetSweepLine() {
+<span class="nc" id="L155">        delta = 0;</span>
+<span class="nc" id="L156">        consSumHeight = 0;</span>
+<span class="nc" id="L157">        nbCurrentTasks = 0;</span>
+<span class="nc" id="L158">        nbTasksToPrune = 0;</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        for (int i = 0; i &lt; nMax; i++) {</span>
+<span class="nc" id="L160">            consContrib[i] = 0;</span>
+        }
+<span class="nc" id="L162">    }</span>
+    private void sweepAlgorithm() {
+<span class="nc" id="L164">        resetSweepLine();</span>
+        // Sort events by increasing date
+<span class="nc" id="L166">        Arrays.sort(eventPointSeries, 0, nbEvents, Comparator.comparing(Event::date));</span>
+        // First position of the sweep line
+<span class="nc" id="L168">        delta = eventPointSeries[0].date();</span>
+<span class="nc" id="L169">        int i = 0;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        while (i &lt; nbEvents) {</span>
+<span class="nc" id="L171">            Event event = eventPointSeries[i];</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            if (event.eType() != EventType.PRUNING) {</span>
+                // If we have considered all the events at the previous position
+                // of the sweep line
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                if (delta != event.date()) {</span>
+                    // Consistency check
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                    if (consistencyCheck())</span>
+<span class="nc" id="L178">                        throw new InconsistencyException();</span>
+                    // Pruning (this could reduce the size of stackPrune)
+<span class="nc" id="L180">                    prune(delta, event.date() - 1);</span>
+                    // Moves the sweep line
+<span class="nc" id="L182">                    delta = event.date();</span>
+                }
+<span class="nc bnc" id="L184" title="All 2 branches missed.">                if (event.eType() == EventType.PROFILE) {</span>
+                    // Adjusts height consumption
+<span class="nc" id="L186">                    consSumHeight += event.cons();</span>
+<span class="nc" id="L187">                    consContrib[event.task()] += event.cons();</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                } else if (event.eType() == EventType.CHECK) {</span>
+                    // Number of overlapping tasks
+<span class="nc" id="L190">                    nbCurrentTasks += event.cons();</span>
+                }
+            } else  {
+<span class="nc" id="L193">                stackPrune[nbTasksToPrune] = event.task();</span>
+<span class="nc" id="L194">                nbTasksToPrune += 1;</span>
+            }
+<span class="nc" id="L196">            i++;</span>
+<span class="nc" id="L197">        }</span>
+        // Checks consistency
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (consistencyCheck())</span>
+<span class="nc" id="L200">            throw new InconsistencyException();</span>
+
+        // Final pruning
+<span class="nc" id="L203">        prune(delta, delta);</span>
+<span class="nc" id="L204">    }</span>
+
+
+    private void prune(int low, int up) {
+        // Used to adjust stackPrune
+<span class="nc" id="L209">        int nbRemainingTasksToPrune = 0;</span>
+<span class="nc" id="L210">        int i = 0;</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        while (i &lt; nbTasksToPrune) {</span>
+<span class="nc" id="L212">            int t = stackPrune[i];</span>
+            // Pruning on tasks that must be discarded to respect consistency
+<span class="nc" id="L214">            pruneForbiden(t, low, up);</span>
+            // Pruning on tasks that are mandatory to respect consistency
+<span class="nc" id="L216">            pruneMandatory(t, low, up);</span>
+            // Adjusts the height's consumption of the tasks
+<span class="nc" id="L218">            pruneConsumption(t, low, up);</span>
+            // If the task is still in conflict, we keep it
+<span class="nc bnc" id="L220" title="All 2 branches missed.">            if (!(activities[t].interval().endMax() &lt;= up + 1)) {</span>
+<span class="nc" id="L221">                stackPrune[nbRemainingTasksToPrune] = t;</span>
+<span class="nc" id="L222">                nbRemainingTasksToPrune += 1;</span>
+            }
+<span class="nc" id="L224">            i ++;</span>
+<span class="nc" id="L225">        }</span>
+        // Adjusting stackPrune
+<span class="nc" id="L227">        nbTasksToPrune = nbRemainingTasksToPrune;</span>
+<span class="nc" id="L228">    }</span>
+
+
+    private void pruneMandatory(int t, int low, int up) {
+        // Checks if the task is mandatory to respect consistency
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (!mandatoryCheck(t))</span>
+<span class="nc" id="L234">            return;</span>
+        // Adjust the status of the activity
+<span class="nc" id="L236">        activities[t].interval().setPresent();</span>
+        // Adjust the EST of the activity
+<span class="nc" id="L238">        activities[t].interval().setStartMin(up - activities[t].interval().lengthMax() + 1);</span>
+
+        // Adjust the LST of the activity
+<span class="nc" id="L241">        activities[t].interval().setStartMax(low);</span>
+
+        // Adjust the LCT of the activity
+<span class="nc" id="L244">        activities[t].interval().setEndMax(low + activities[t].interval().lengthMax());</span>
+
+        // Adjust the ECT of the activity
+<span class="nc" id="L247">        activities[t].interval().setEndMin(up + 1);</span>
+
+        // Adjust the minimal duration of the activity
+<span class="nc" id="L250">        activities[t].interval().setLengthMin(Math.min(up - activities[t].interval().startMax() + 1, activities[t].interval().endMin() - low));</span>
+
+<span class="nc" id="L252">    }</span>
+
+
+
+
+    private void pruneForbiden(int t, int low, int up) {
+        // Checks if the task must be discarded to respect consistency
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (forbidenCheck(t)) {</span>
+<span class="nc bnc" id="L260" title="All 6 branches missed.">            if (activities[t].interval().endMin() &lt;= low || activities[t].interval().startMax() &gt; up || activities[t].interval().lengthMin() &lt;= 0) {</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">                if (activities[t].interval().lengthMin() &gt; 0) {</span>
+<span class="nc" id="L262">                    pruneIntervalStart(low - activities[t].interval().lengthMin() + 1, up, activities[t]);</span>
+<span class="nc" id="L263">                    pruneIntervalEnd(low + 1, up + activities[t].interval().lengthMin(), activities[t]);</span>
+                }
+<span class="nc" id="L265">                int maxD = Math.max(Math.max(low - activities[t].interval().startMin(), activities[t].interval().endMax() - up - 1), 0);</span>
+<span class="nc" id="L266">                activities[t].interval().setLengthMax(maxD);</span>
+            }
+        }
+<span class="nc" id="L269">    }</span>
+
+
+    private void pruneConsumption(int t, int low, int up) {
+<span class="nc bnc" id="L273" title="All 8 branches missed.">        if (activities[t].isPresent() &amp;&amp; activities[t].interval().endMin() &gt; low &amp;&amp; activities[t].interval().startMax() &lt;= up &amp;&amp; activities[t].interval().lengthMin() &gt; 0) {</span>
+<span class="nc" id="L274">            activities[t].height().removeBelow(minCapacity - (consSumHeight - consContrib[t]));</span>
+        }
+<span class="nc" id="L276">    }</span>
+
+    private void pruneIntervalStart(int low, int up, Activity v) {
+<span class="nc bnc" id="L279" title="All 2 branches missed.">        assert(low &lt;= up);</span>
+<span class="nc bnc" id="L280" title="All 4 branches missed.">        if (low &lt;= v.interval().startMin() &amp;&amp; up &lt;= v.interval().startMax()) {</span>
+<span class="nc" id="L281">            v.interval().setStartMin(up + 1);</span>
+<span class="nc bnc" id="L282" title="All 4 branches missed.">        } else if (up &gt;= v.interval().startMax() &amp;&amp; low &gt;= v.interval().startMin()) {</span>
+<span class="nc" id="L283">            v.interval().setStartMax(low - 1);</span>
+        }
+<span class="nc" id="L285">    }</span>
+
+    private void pruneIntervalEnd(int low, int up, Activity v) {
+<span class="nc bnc" id="L288" title="All 2 branches missed.">        assert(low &lt;= up);</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">        if (low &lt;= v.interval().endMin() &amp;&amp; up &lt;= v.interval().endMax()) {</span>
+<span class="nc" id="L290">            v.interval().setEndMin(up + 1);</span>
+<span class="nc bnc" id="L291" title="All 4 branches missed.">        } else if (up &gt;= v.interval().endMax() &amp;&amp; low &gt;= v.interval().endMin()) {</span>
+<span class="nc" id="L292">            v.interval().setEndMax(low - 1);</span>
+        }
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (v.interval().endMax() == Constants.HORIZON) {</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            if (low &gt;= v.interval().endMin()) {</span>
+<span class="nc" id="L296">                v.interval().setEndMax(low - 1);</span>
+            }
+        }
+<span class="nc" id="L299">    }</span>
+
+
+<span class="nc" id="L302">    public enum EventType {</span>
+<span class="nc" id="L303">        CHECK, PROFILE, PRUNING;</span>
+    }
+
+    public static class Event {
+        EventType e;
+        int t;
+        int d;
+        int conso;
+        int cap;
+<span class="nc" id="L312">        public Event(EventType e, int t, int d, int conso) {</span>
+<span class="nc" id="L313">            this.e = e;</span>
+<span class="nc" id="L314">            this.t = t;</span>
+<span class="nc" id="L315">            this.d = d;</span>
+<span class="nc" id="L316">            this.conso = conso;</span>
+<span class="nc" id="L317">        }</span>
+<span class="nc" id="L318">        private int date(){ return d;}</span>
+<span class="nc" id="L319">        private EventType eType() { return e;}</span>
+<span class="nc" id="L320">        private int cons() { return conso;}</span>
+<span class="nc" id="L321">        private int task() {return t; }</span>
+        public String toString() {
+<span class="nc" id="L323">            return &quot;type &quot; + e + &quot; date &quot;+ d + &quot; task &quot; + t + &quot; cons &quot; + conso;</span>
+        }
+    }
+    public class EventList {
+        private int t;
+        private Event sCheckEvent;
+        private Event eCheckEvent;
+        private Event sBadProfileEvent;
+        private Event eBadProfileEvent;
+        private Event sGoodProfileEvent;
+        private Event eGoodProfileEvent;
+        private Event pruningEvent;
+
+<span class="nc" id="L336">        public EventList(int t) {</span>
+<span class="nc" id="L337">            this.t = t;</span>
+<span class="nc" id="L338">            this.sCheckEvent = new Event(EventType.CHECK, t, 0, 1);</span>
+<span class="nc" id="L339">            this.eCheckEvent = new Event(EventType.CHECK, t, 0, -1);</span>
+<span class="nc" id="L340">            this.sBadProfileEvent = new Event(EventType.PROFILE, t, 0, 0);</span>
+<span class="nc" id="L341">            this.eBadProfileEvent = new Event(EventType.PROFILE, t, 0, 0);</span>
+<span class="nc" id="L342">            this.sGoodProfileEvent = new Event(EventType.PROFILE, t, 0, 0);</span>
+<span class="nc" id="L343">            this.eGoodProfileEvent = new Event(EventType.PROFILE, t, 0, 0);</span>
+<span class="nc" id="L344">            this.pruningEvent = new Event(EventType.PRUNING, t, 0, 0);</span>
+<span class="nc" id="L345">        }</span>
+
+        private Event sCheck() {
+<span class="nc" id="L348">            sCheckEvent.d = activities[sCheckEvent.t].interval().startMax();</span>
+<span class="nc" id="L349">            return sCheckEvent;</span>
+        }
+        private Event eCheck() {
+<span class="nc" id="L352">            eCheckEvent.d = activities[eCheckEvent.t].interval().endMin();</span>
+<span class="nc" id="L353">            return eCheckEvent;</span>
+        }
+
+        private Event sBadProfile(int cons_) {
+<span class="nc" id="L357">            sBadProfileEvent.d = activities[sBadProfileEvent.t].interval().startMax();</span>
+<span class="nc" id="L358">            sBadProfileEvent.conso = cons_;</span>
+<span class="nc" id="L359">            return sBadProfileEvent;</span>
+        }
+        private Event eBadProfile(int cons_) {
+<span class="nc" id="L362">            eBadProfileEvent.d = activities[eBadProfileEvent.t].interval().endMin();</span>
+<span class="nc" id="L363">            eBadProfileEvent.conso = -cons_;</span>
+<span class="nc" id="L364">            return eBadProfileEvent;</span>
+        }
+
+        private Event sGoodProfile(int cons_) {
+<span class="nc" id="L368">            sGoodProfileEvent.d = activities[sGoodProfileEvent.t].interval().startMin();</span>
+<span class="nc" id="L369">            sGoodProfileEvent.conso = cons_;</span>
+<span class="nc" id="L370">            return sGoodProfileEvent;</span>
+        }
+
+        private Event eGoodProfile(int cons_) {
+<span class="nc" id="L374">            eGoodProfileEvent.d = activities[eGoodProfileEvent.t].interval().endMax();</span>
+<span class="nc" id="L375">            eGoodProfileEvent.conso = -cons_;</span>
+<span class="nc" id="L376">            return eGoodProfileEvent;</span>
+        }
+        private Event sPruning() {
+<span class="nc" id="L379">            pruningEvent.d = activities[pruningEvent.t].interval().startMin();</span>
+<span class="nc" id="L380">            return pruningEvent;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

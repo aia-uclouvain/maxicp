@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BinPacking.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">BinPacking.java</span></div><h1>BinPacking.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+
+import java.util.Arrays;
+
+/**
+ * The {@code BinPacking} constraint ensures that a set of items with given weights
+ * are packed into bins such that each bin's total weight respects a given capacity constraint.
+ *
+ * &lt;p&gt;This constraint is commonly used in Constraint Programming (CP) models
+ * to solve bin-packing problems, where a set of weighted items must be assigned
+ * to bins while respecting load capacities.&lt;/p&gt;
+ * @author pschaus
+ */
+public class BinPacking extends AbstractCPConstraint {
+
+    final CPIntVar [] x;
+    final int [] w;
+    final CPIntVar [] load;
+
+    /**
+     * Constructs a {@code BinPacking} constraint that ensures a set of weighted items
+     * are assigned to bins such that the total weight in each bin matches its specified load.
+     *
+     * &lt;p&gt;Each item has a predefined weight and must be placed in exactly one bin. The
+     * constraint enforces that the sum of item weights assigned to each bin equals the
+     * corresponding load variable.&lt;/p&gt;
+     *
+     * @param x an array of {@link CPIntVar} variables where {@code x[i]} represents
+     *          the bin index assigned to item {@code i}.
+     * @param w an array of integers representing the weights of the items. The weight
+     *          of item {@code i} is {@code w[i]}.
+     * @param load an array of {@link CPIntVar} variables where {@code load[b]} represents
+     *             the total weight of bin {@code b}, which must match the sum of weights
+     *             of items assigned to that bin.
+     */
+    public BinPacking(CPIntVar [] x, final int [] w, CPIntVar [] load) {
+<span class="fc" id="L46">        super(x[0].getSolver());</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (x.length != w.length) {</span>
+<span class="nc" id="L48">            throw new IllegalArgumentException(&quot;x and load must have the same length&quot;);</span>
+        }
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            if (w[i] &lt; 0) {</span>
+<span class="nc" id="L52">                throw new IllegalArgumentException(&quot;weights must be positive&quot;);</span>
+            }
+        }
+<span class="fc" id="L55">        this.x = x;</span>
+<span class="fc" id="L56">        this.w = w;</span>
+<span class="fc" id="L57">        this.load = load;</span>
+<span class="fc" id="L58">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L63">            x[i].removeAbove(load.length - 1);</span>
+<span class="fc" id="L64">            x[i].removeBelow(0);</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int j = 0; j &lt; load.length; j++) {</span>
+<span class="fc" id="L67">            load[j].removeAbove(Arrays.stream(w).sum());</span>
+<span class="fc" id="L68">            load[j].removeBelow(0);</span>
+        }
+        // bin packing constraint
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int j = 0; j &lt; load.length; j++) {</span>
+<span class="fc" id="L72">            CPBoolVar [] b = new CPBoolVar[x.length];</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L74">                b[i] = CPFactory.isEq(x[i], j);</span>
+            }
+<span class="fc" id="L76">            getSolver().post(new BinaryKnapsack(b, w, load[j]));</span>
+        }
+<span class="fc" id="L78">        getSolver().post(new Sum(load,Arrays.stream(w).sum()));</span>
+<span class="fc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

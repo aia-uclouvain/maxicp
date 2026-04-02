@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Circuit.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">Circuit.java</span></div><h1>Circuit.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.GraphUtil;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.ArrayList;
+import java.util.Stack;
+import java.util.stream.IntStream;
+
+/**
+ * Hamiltonian Circuit Constraint with a successor model
+ */
+<span class="fc" id="L21">public class Circuit extends AbstractCPConstraint {</span>
+
+    int n;
+<span class="fc" id="L24">    public boolean deactivateSCC = false;</span>
+    private final CPIntVar[] x;
+
+    // private final int[] values; // to iterate on domains of x vars
+    private final StateInt[] dest;
+    private final StateInt[] orig;
+    private final StateInt nFixed;
+    private int [][] domArray;
+
+    // SCC variables
+    int[] discoveryTime;     // Discovery times of visited vertices
+    int[] low;               // Lowest points of reachable vertices
+    boolean[] isInStack; // Boolean array to keep track of stack members
+    Stack&lt;Integer&gt; stack; // Stack to store visited vertices
+
+
+    /**
+     * Creates a Hamiltonian Circuit Constraint
+     * with a successor model.
+     *
+     * @param x the variables representing the successor array that is
+     *          {@code x[i]} is the city visited after city i
+     */
+    public Circuit(CPIntVar[] x) {
+<span class="fc" id="L48">        super(x[0].getSolver());</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        assert (x.length &gt; 0);</span>
+<span class="fc" id="L50">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L51">        this.x = x;</span>
+<span class="fc" id="L52">        this.n = x.length;</span>
+
+<span class="fc" id="L54">        dest = new StateInt[x.length];</span>
+<span class="fc" id="L55">        orig = new StateInt[x.length];</span>
+<span class="fc" id="L56">        domArray = new int[x.length][];</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L58">            dest[i] = getSolver().getStateManager().makeStateInt(i);</span>
+<span class="fc" id="L59">            orig[i] = getSolver().getStateManager().makeStateInt(i);</span>
+<span class="fc" id="L60">            domArray[i] = new int[x[i].size()];</span>
+        }
+<span class="fc" id="L62">        stack = new Stack&lt;&gt;();</span>
+<span class="fc" id="L63">        discoveryTime = new int[x.length];</span>
+<span class="fc" id="L64">        low = new int[x.length];</span>
+<span class="fc" id="L65">        isInStack = new boolean[x.length];</span>
+<span class="fc" id="L66">    }</span>
+
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (CPIntVar var: x) {</span>
+<span class="fc" id="L72">            var.removeBelow(0);</span>
+<span class="fc" id="L73">            var.removeAbove(x.length - 1);</span>
+        }
+<span class="fc" id="L75">        getSolver().post(new AllDifferentDC(x));</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (x.length == 1) {</span>
+<span class="nc" id="L77">            x[0].fix(0);</span>
+<span class="nc" id="L78">            return;</span>
+        }
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L81">            x[i].remove(i);</span>
+        }
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L84">            x[i].propagateOnDomainChange(this);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (!x[i].isFixed()) {</span>
+<span class="fc" id="L86">                int idx = i;</span>
+<span class="fc" id="L87">                x[idx].whenFixed(() -&gt; fixed(idx));</span>
+<span class="fc" id="L88">            } else {</span>
+<span class="fc" id="L89">                fixed(i);</span>
+            }
+        }
+<span class="fc" id="L92">        propagate();</span>
+<span class="fc" id="L93">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (!deactivateSCC) {</span>
+<span class="fc" id="L98">            int nSCC = findSCCCount();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (nSCC &gt; 1) {</span>
+<span class="fc" id="L100">                throw InconsistencyException.INCONSISTENCY;</span>
+            }
+        }
+<span class="fc" id="L103">    }</span>
+
+    public void fixed(int idx) {
+<span class="fc" id="L106">        int val = x[idx].min();</span>
+<span class="fc" id="L107">        int orig_i = orig[idx].value();</span>
+<span class="fc" id="L108">        int dest_j = dest[val].value();</span>
+        // orig[i] *-&gt; i -&gt; j *-&gt; dest[j]
+<span class="fc" id="L110">        dest[orig_i].setValue(dest_j);</span>
+<span class="fc" id="L111">        orig[dest_j].setValue(orig_i);</span>
+<span class="fc" id="L112">        nFixed.increment();</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (nFixed.value() &lt; x.length - 1) {</span>
+            // avoid inner loops
+<span class="fc" id="L115">            x[dest_j].remove(orig_i); // avoid inner loops</span>
+        }
+<span class="fc" id="L117">    }</span>
+
+    // Returns the number of SCCs
+    public int findSCCCount() {
+
+<span class="fc" id="L122">        stack.clear();</span>
+        // Initialize discovery and low values
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L125">            discoveryTime[i] = -1;</span>
+<span class="fc" id="L126">            low[i] = -1;</span>
+<span class="fc" id="L127">            isInStack[i] = false;</span>
+        }
+
+        // Counter for the number of SCCs
+<span class="fc" id="L131">        int sccCount = 0;</span>
+<span class="fc" id="L132">        int time = 0; // Local time variable for each SCC calculation</span>
+
+        // Call the recursive helper function for each vertex
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (discoveryTime[i] == -1) {</span>
+<span class="fc" id="L137">                sccCount += nSCC(i, discoveryTime, low, isInStack, stack, time);</span>
+            }
+        }
+<span class="fc" id="L140">        return sccCount;</span>
+    }
+
+    // Recursive function to find strongly connected components
+    private int nSCC(int u, int[] discoveryTime, int[] low, boolean[] isInStack, Stack&lt;Integer&gt; stack, int time) {
+        // Initialize discovery time and low value for u
+<span class="fc" id="L146">        discoveryTime[u] = low[u] = ++time;</span>
+<span class="fc" id="L147">        stack.push(u);</span>
+<span class="fc" id="L148">        isInStack[u] = true;</span>
+
+        // Go through all vertices v adjacent to u
+<span class="fc" id="L151">        int nVal = x[u].fillArray(domArray[u]);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; nVal; i++) {</span>
+<span class="fc" id="L153">            int v = domArray[u][i];</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (discoveryTime[v] == -1) { // If v is not visited</span>
+<span class="fc" id="L155">                time = nSCC(v, discoveryTime, low, isInStack, stack, time);</span>
+<span class="fc" id="L156">                low[u] = Math.min(low[u], low[v]);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            } else if (isInStack[v]) { // If v is in stack, it is part of the current SCC</span>
+<span class="fc" id="L158">                low[u] = Math.min(low[u], discoveryTime[v]);</span>
+            }
+        }
+
+        // If u is a root node, pop all vertices in the current SCC
+<span class="fc" id="L163">        int sccRootCount = 0;</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (low[u] == discoveryTime[u]) {</span>
+<span class="fc" id="L165">            sccRootCount++;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            while (stack.peek() != u) {</span>
+<span class="fc" id="L167">                int w = stack.pop();</span>
+<span class="fc" id="L168">                isInStack[w] = false;</span>
+<span class="fc" id="L169">            }</span>
+<span class="fc" id="L170">            stack.pop();</span>
+<span class="fc" id="L171">            isInStack[u] = false;</span>
+        }
+<span class="fc" id="L173">        return sccRootCount;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

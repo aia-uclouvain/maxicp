@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDSModeling.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">FDSModeling.java</span></div><h1>FDSModeling.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ */
+
+package org.maxicp.search;
+
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.state.StateManager;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.*;
+import java.util.function.Supplier;
+
+import static org.maxicp.modeling.Factory.*;
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
+
+/**
+ * Failure-Directed Search (FDS) for scheduling problems with modeling-layer interval variables.
+ * &lt;p&gt;
+ * This is the modeling-layer adaptation of {@link FDS}, working with {@link IntervalVar}
+ * and {@link ModelProxy} instead of {@code CPIntervalVar} and {@code CPSolver}.
+ * &lt;p&gt;
+ * This search algorithm is designed for a broad class of scheduling problems.
+ * Instead of guiding the search towards possible solutions, FDS drives the search
+ * into conflicts in order to prove that the current branch is infeasible.
+ * Choices that fail the most are preferred (first-fail principle applied also to branch ordering).
+ * &lt;p&gt;
+ * The algorithm works with binary choices:
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Presence choice:&lt;/b&gt; whether an optional interval variable is present or absent.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Start time choice:&lt;/b&gt; whether startOf(v) &amp;le; t or startOf(v) &amp;gt; t (domain splitting).&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Length choice:&lt;/b&gt; whether length(v) &amp;le; l or length(v) &amp;gt; l (domain splitting).&lt;/li&gt;
+ * &lt;/ul&gt;
+ * &lt;p&gt;
+ * Reference: Vilím, P., Laborie, P., Shaw, P. (2015).
+ * Failure-directed Search for Constraint-based Scheduling.
+ * CPAIOR 2015.
+ *
+ * @author pschaus
+ */
+public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
+
+    // ------- Choice types -------
+
+    /** Type of a binary choice. */
+<span class="fc" id="L49">    private enum ChoiceType {</span>
+<span class="fc" id="L50">        PRESENCE, START, LENGTH</span>
+    }
+
+    /**
+     * A binary choice that needs to be decided.
+     * Each choice has a positive and negative branch with separate ratings.
+     * &lt;ul&gt;
+     *   &lt;li&gt;PRESENCE: positive = present, negative = absent&lt;/li&gt;
+     *   &lt;li&gt;START: positive = startOf(v) &amp;le; splitValue, negative = startOf(v) &amp;gt; splitValue&lt;/li&gt;
+     *   &lt;li&gt;LENGTH: positive = length(v) &amp;le; splitValue, negative = length(v) &amp;gt; splitValue&lt;/li&gt;
+     * &lt;/ul&gt;
+     */
+    private static final class Choice {
+        final ChoiceType type;
+        final int varIndex;
+        final int splitValue; // only used for START and LENGTH choices
+
+<span class="fc" id="L67">        double ratingPos = 1.0; // rating for positive branch</span>
+<span class="fc" id="L68">        double ratingNeg = 1.0; // rating for negative branch</span>
+
+<span class="fc" id="L70">        Choice(ChoiceType type, int varIndex, int splitValue) {</span>
+<span class="fc" id="L71">            this.type = type;</span>
+<span class="fc" id="L72">            this.varIndex = varIndex;</span>
+<span class="fc" id="L73">            this.splitValue = splitValue;</span>
+<span class="fc" id="L74">        }</span>
+
+        /** Rating of the choice = sum of both branch ratings (lower is better). */
+        double rating() {
+<span class="fc" id="L78">            return ratingPos + ratingNeg;</span>
+        }
+
+        /**
+         * Check if this choice is resolved (already decided by propagation).
+         */
+        boolean isResolved(IntervalVar var) {
+<span class="pc bpc" id="L85" title="2 of 3 branches missed.">            return switch (type) {</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">                case PRESENCE -&gt; var.isPresent() || var.isAbsent();</span>
+                case START -&gt; {
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">                    if (var.isPresent()) {</span>
+<span class="fc bfc" id="L90" title="All 4 branches covered.">                        yield var.startMax() &lt;= splitValue || var.startMin() &gt; splitValue;</span>
+                    }
+<span class="nc" id="L92">                    yield false;</span>
+                }
+                case LENGTH -&gt; {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">                    if (var.isPresent()) {</span>
+<span class="nc bnc" id="L97" title="All 4 branches missed.">                        yield var.lengthMax() &lt;= splitValue || var.lengthMin() &gt; splitValue;</span>
+                    }
+<span class="nc" id="L99">                    yield false;</span>
+                }
+            };
+        }
+
+        /**
+         * Check if this choice is waiting (cannot be applied yet).
+         * Start and length choices wait until the variable is present.
+         */
+        boolean isWaiting(IntervalVar var) {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            return switch (type) {</span>
+<span class="nc" id="L110">                case PRESENCE -&gt; false;</span>
+<span class="fc" id="L111">                case START, LENGTH -&gt; var.isOptional();</span>
+            };
+        }
+
+        /**
+         * Apply the positive branch.
+         */
+        void applyPositive(IntervalVar var, ModelProxy model) {
+<span class="pc bpc" id="L119" title="3 of 4 branches missed.">            switch (type) {</span>
+<span class="nc" id="L120">                case PRESENCE -&gt; model.add(present(var));</span>
+<span class="fc" id="L121">                case START -&gt; model.add(startBefore(var, splitValue));   // start &lt;= splitValue</span>
+<span class="nc" id="L122">                case LENGTH -&gt; model.add(le(length(var), splitValue));   // length &lt;= splitValue</span>
+            }
+<span class="fc" id="L124">        }</span>
+
+        /**
+         * Apply the negative branch.
+         */
+        void applyNegative(IntervalVar var, ModelProxy model) {
+<span class="pc bpc" id="L130" title="3 of 4 branches missed.">            switch (type) {</span>
+<span class="nc" id="L131">                case PRESENCE -&gt; model.add(not(present(var)));</span>
+<span class="fc" id="L132">                case START -&gt; model.add(startAfter(var, splitValue + 1));    // start &gt; splitValue</span>
+<span class="nc" id="L133">                case LENGTH -&gt; model.add(lt(splitValue, length(var)));   // splitValue &lt; length, i.e. length &gt; splitValue</span>
+            }
+<span class="fc" id="L135">        }</span>
+
+        @Override
+        public String toString() {
+<span class="nc bnc" id="L139" title="All 3 branches missed.">            return switch (type) {</span>
+<span class="nc" id="L140">                case PRESENCE -&gt; &quot;Presence(var=&quot; + varIndex + &quot;)&quot;;</span>
+<span class="nc" id="L141">                case START -&gt; &quot;Start(var=&quot; + varIndex + &quot;,t=&quot; + splitValue + &quot;)&quot;;</span>
+<span class="nc" id="L142">                case LENGTH -&gt; &quot;Length(var=&quot; + varIndex + &quot;,l=&quot; + splitValue + &quot;)&quot;;</span>
+            };
+        }
+    }
+
+    // ------- FDS fields -------
+
+    private final IntervalVar[] intervals;
+    private final ModelProxy model;
+
+    /** Decay factor for rating updates (typical values: 0.9 to 0.99). */
+    private final double alpha;
+
+    /** Average rating per depth level, used for normalization. */
+    private final Map&lt;Integer, double[]&gt; avgRatingByDepth; // [0]=avg, [1]=count
+
+    /** All choices generated for this search. */
+    private final List&lt;Choice&gt; allChoices;
+
+    /** State manager for depth tracking. */
+    private final StateManager sm;
+    private final int baseLevel;
+
+    /**
+     * Creates a Failure-Directed Search for the given interval variables.
+     *
+     * @param intervals the interval variables to decide
+     */
+    public FDSModeling(IntervalVar... intervals) {
+<span class="fc" id="L171">        this(0.95, intervals);</span>
+<span class="fc" id="L172">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for the given interval variables.
+     *
+     * @param alpha     decay factor for rating updates (typical: 0.9 to 0.99)
+     * @param intervals the interval variables to decide
+     */
+<span class="fc" id="L180">    public FDSModeling(double alpha, IntervalVar... intervals) {</span>
+<span class="fc" id="L181">        this.intervals = intervals;</span>
+<span class="fc" id="L182">        this.model = intervals[0].getModelProxy();</span>
+<span class="fc" id="L183">        this.sm = model.getConcreteModel().getStateManager();</span>
+<span class="fc" id="L184">        this.alpha = alpha;</span>
+<span class="fc" id="L185">        this.baseLevel = sm.getLevel();</span>
+<span class="fc" id="L186">        this.avgRatingByDepth = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L187">        this.allChoices = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L189">        generateInitialChoices();</span>
+<span class="fc" id="L190">    }</span>
+
+    /**
+     * Generate the initial set of choices.
+     * &lt;p&gt;
+     * Following Section 6.1 of the paper, the initial set only needs to ensure
+     * that if all choices are decided, every interval variable either is absent
+     * or has a mandatory part (i.e., lct - est &amp;lt; 2 * duration).
+     * &lt;p&gt;
+     * For each interval variable, we generate:
+     * &lt;ul&gt;
+     *   &lt;li&gt;A presence choice if it is optional.&lt;/li&gt;
+     *   &lt;li&gt;Start time choices by binary splitting the current start domain.&lt;/li&gt;
+     *   &lt;li&gt;Length choices by binary splitting the current length domain (if not fixed).&lt;/li&gt;
+     * &lt;/ul&gt;
+     * We limit the number of choices to O(log(domainSize)) per variable.
+     */
+    private void generateInitialChoices() {
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L209">            IntervalVar var = intervals[i];</span>
+
+            // Presence choice for optional variables
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">            if (var.isOptional()) {</span>
+<span class="nc" id="L213">                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
+            }
+
+            // Start time choices via binary splitting
+<span class="fc" id="L217">            addBinarySplitChoices(ChoiceType.START, i, var.startMin(), var.startMax());</span>
+
+            // Length choices via binary splitting (if not fixed)
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
+<span class="nc" id="L221">                addBinarySplitChoices(ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());</span>
+            }
+        }
+<span class="fc" id="L224">    }</span>
+
+    /**
+     * Maximum number of initial choices per variable per type.
+     * Limits to O(log(domainSize)) levels of the binary splitting tree.
+     * Additional choices are generated lazily via {@link #generateAdditionalChoices()}.
+     */
+    private static final int MAX_INITIAL_CHOICES_PER_VAR = 30;
+
+    /**
+     * Add binary split choices for the range [lo, hi] using BFS-order traversal.
+     * Only the first few levels of the binary splitting tree are generated
+     * (up to {@link #MAX_INITIAL_CHOICES_PER_VAR} choices), ensuring O(log(domainSize))
+     * choices per variable. More choices are generated on demand when needed.
+     */
+    private void addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (lo &gt;= hi) return;</span>
+<span class="fc" id="L241">        int count = 0;</span>
+<span class="fc" id="L242">        Deque&lt;int[]&gt; queue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L243">        queue.add(new int[]{lo, hi});</span>
+<span class="pc bpc" id="L244" title="1 of 4 branches missed.">        while (!queue.isEmpty() &amp;&amp; count &lt; MAX_INITIAL_CHOICES_PER_VAR) {</span>
+<span class="fc" id="L245">            int[] range = queue.poll();</span>
+<span class="fc" id="L246">            int l = range[0], h = range[1];</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            if (l &gt;= h) continue;</span>
+<span class="fc" id="L248">            int mid = l + (h - l) / 2;</span>
+<span class="fc" id="L249">            allChoices.add(new Choice(type, varIndex, mid));</span>
+<span class="fc" id="L250">            count++;</span>
+<span class="fc" id="L251">            queue.add(new int[]{l, mid});</span>
+<span class="fc" id="L252">            queue.add(new int[]{mid + 1, h});</span>
+<span class="fc" id="L253">        }</span>
+<span class="fc" id="L254">    }</span>
+
+    /**
+     * Get current depth relative to the base level when FDS was created.
+     */
+    private int currentDepth() {
+<span class="fc" id="L260">        return Math.max(0, sm.getLevel() - baseLevel);</span>
+    }
+
+    /**
+     * Get the average rating structure for a given depth.
+     * Returns a double[2] where [0] = running average, [1] = count.
+     */
+    private double[] getAvgRating(int depth) {
+<span class="fc" id="L268">        return avgRatingByDepth.computeIfAbsent(depth, k -&gt; new double[]{1.0, 0.0});</span>
+    }
+
+    /**
+     * Compute the search space size estimate R for the given intervals.
+     * R = product(domainSize_after / domainSize_before) over all variables.
+     * Returns a value between 0 and 1.
+     */
+    private double computeSearchSpaceReduction(long[] domainSizesBefore) {
+<span class="fc" id="L277">        double ratio = 1.0;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L279">            long before = domainSizesBefore[i];</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            if (before &gt; 0) {</span>
+<span class="fc" id="L281">                long after = domainSize(intervals[i]);</span>
+<span class="fc" id="L282">                ratio *= (double) after / (double) before;</span>
+            }
+        }
+<span class="fc" id="L285">        return Math.min(ratio, 1.0);</span>
+    }
+
+    /**
+     * Estimate domain size for an interval variable.
+     */
+    private long domainSize(IntervalVar var) {
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">        if (var.isAbsent()) return 1;</span>
+<span class="fc" id="L293">        long startRange = Math.max(1, (long) var.startMax() - var.startMin() + 1);</span>
+<span class="fc" id="L294">        long lengthRange = Math.max(1, (long) var.lengthMax() - var.lengthMin() + 1);</span>
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">        if (var.isOptional()) startRange++; // +1 for the absent possibility</span>
+<span class="fc" id="L296">        return startRange * lengthRange;</span>
+    }
+
+    /**
+     * Snapshot domain sizes for all interval variables (before a branch).
+     */
+    private long[] snapshotDomainSizes() {
+<span class="fc" id="L303">        long[] sizes = new long[intervals.length];</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L305">            sizes[i] = domainSize(intervals[i]);</span>
+        }
+<span class="fc" id="L307">        return sizes;</span>
+    }
+
+    /**
+     * Update the rating of a branch after exploring it.
+     * Implements formulas (2) and (3) from the paper:
+     * &lt;pre&gt;
+     *   localRating = 0              if the branch fails immediately
+     *                 1 + R          otherwise
+     *   rating_+/- = alpha * rating_+/- + (1 - alpha) * localRating / avgRating[d]
+     * &lt;/pre&gt;
+     *
+     * @param choice     the choice whose branch was explored
+     * @param isPositive true if the positive branch was explored
+     * @param failed     true if the branch failed immediately
+     * @param R          the search space reduction ratio (used if branch did not fail)
+     */
+    private void updateRating(Choice choice, boolean isPositive, boolean failed, double R) {
+<span class="fc bfc" id="L325" title="All 2 branches covered.">        double localRating = failed ? 0.0 : 1.0 + R;</span>
+
+<span class="fc" id="L327">        int d = currentDepth();</span>
+<span class="fc" id="L328">        double[] avg = getAvgRating(d);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">        double avgVal = avg[0] &gt; 0 ? avg[0] : 1.0;</span>
+<span class="fc" id="L330">        double normalizedRating = localRating / avgVal;</span>
+
+        // Update the branch rating with exponential decay
+<span class="fc bfc" id="L333" title="All 2 branches covered.">        if (isPositive) {</span>
+<span class="fc" id="L334">            choice.ratingPos = alpha * choice.ratingPos + (1.0 - alpha) * normalizedRating;</span>
+        } else {
+<span class="fc" id="L336">            choice.ratingNeg = alpha * choice.ratingNeg + (1.0 - alpha) * normalizedRating;</span>
+        }
+
+        // Update average rating for this depth (incremental mean)
+<span class="fc" id="L340">        avg[1] += 1.0;</span>
+<span class="fc" id="L341">        avg[0] += (localRating - avg[0]) / avg[1];</span>
+<span class="fc" id="L342">    }</span>
+
+    /**
+     * Check if all interval variables are fixed.
+     */
+    private boolean allFixed() {
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        for (IntervalVar var : intervals) {</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">            if (!var.isFixed()) return false;</span>
+        }
+<span class="fc" id="L351">        return true;</span>
+    }
+
+    /**
+     * The FDS branching strategy, implementing the {@code Supplier&lt;Runnable[]&gt;} interface.
+     * &lt;p&gt;
+     * This method implements the core FDS algorithm from Algorithm 1 in the paper.
+     * At each branching point:
+     * &lt;ol&gt;
+     *   &lt;li&gt;Select the applicable choice with the best (lowest) rating.&lt;/li&gt;
+     *   &lt;li&gt;Skip waiting and resolved choices.&lt;/li&gt;
+     *   &lt;li&gt;Return two branches: the better-rated branch first (heading into conflict).&lt;/li&gt;
+     * &lt;/ol&gt;
+     * If all initial choices are resolved but variables remain unfixed,
+     * additional choices are generated dynamically.
+     *
+     * @return array of branching closures, or EMPTY if all tasks are fixed
+     */
+    @Override
+    public Runnable[] get() {
+<span class="fc bfc" id="L371" title="All 2 branches covered.">        if (allFixed()) {</span>
+<span class="fc" id="L372">            return EMPTY;</span>
+        }
+
+        // Pick: find the best applicable choice (lowest rating)
+<span class="fc" id="L376">        Choice bestChoice = null;</span>
+<span class="fc" id="L377">        double bestRating = Double.MAX_VALUE;</span>
+
+<span class="fc bfc" id="L379" title="All 2 branches covered.">        for (Choice c : allChoices) {</span>
+<span class="fc" id="L380">            IntervalVar var = intervals[c.varIndex];</span>
+<span class="pc bpc" id="L381" title="1 of 4 branches missed.">            if (c.isWaiting(var) || c.isResolved(var)) {</span>
+<span class="fc" id="L382">                continue;</span>
+            }
+<span class="fc" id="L384">            double r = c.rating();</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">            if (r &lt; bestRating) {</span>
+<span class="fc" id="L386">                bestRating = r;</span>
+<span class="fc" id="L387">                bestChoice = c;</span>
+            }
+<span class="fc" id="L389">        }</span>
+
+<span class="fc bfc" id="L391" title="All 2 branches covered.">        if (bestChoice == null) {</span>
+            // No applicable choice found — generate more if needed
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">            if (!allFixed()) {</span>
+<span class="fc" id="L394">                int before = allChoices.size();</span>
+<span class="fc" id="L395">                generateAdditionalChoices();</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">                if (allChoices.size() &gt; before) {</span>
+<span class="fc" id="L397">                    return get(); // retry with newly generated choices</span>
+                }
+            }
+<span class="nc" id="L400">            return EMPTY;</span>
+        }
+
+<span class="fc" id="L403">        final Choice chosen = bestChoice;</span>
+<span class="fc" id="L404">        final IntervalVar var = intervals[chosen.varIndex];</span>
+
+        // Determine which branch to explore first (better rating = lower value → heads into conflict)
+<span class="fc bfc" id="L407" title="All 2 branches covered.">        boolean positiveFirst = chosen.ratingPos &lt;= chosen.ratingNeg;</span>
+
+<span class="fc bfc" id="L409" title="All 2 branches covered.">        if (positiveFirst) {</span>
+<span class="fc" id="L410">            return branch(</span>
+<span class="fc" id="L411">                    makeBranch(chosen, var, true),</span>
+<span class="fc" id="L412">                    makeBranch(chosen, var, false)</span>
+            );
+        } else {
+<span class="fc" id="L415">            return branch(</span>
+<span class="fc" id="L416">                    makeBranch(chosen, var, false),</span>
+<span class="fc" id="L417">                    makeBranch(chosen, var, true)</span>
+            );
+        }
+    }
+
+    /**
+     * Create a branching closure for one side of a choice.
+     * The closure applies the branch, updates the rating, and re-throws any failure.
+     *
+     * @param choice     the choice to branch on
+     * @param var        the interval variable for this choice
+     * @param isPositive true for positive branch, false for negative
+     * @return a Runnable that applies the branch
+     */
+    private Runnable makeBranch(Choice choice, IntervalVar var, boolean isPositive) {
+<span class="fc" id="L432">        return () -&gt; {</span>
+<span class="fc" id="L433">            long[] domBefore = snapshotDomainSizes();</span>
+            try {
+<span class="fc bfc" id="L435" title="All 2 branches covered.">                if (isPositive) {</span>
+<span class="fc" id="L436">                    choice.applyPositive(var, model);</span>
+                } else {
+<span class="fc" id="L438">                    choice.applyNegative(var, model);</span>
+                }
+<span class="fc" id="L440">            } catch (InconsistencyException e) {</span>
+<span class="fc" id="L441">                updateRating(choice, isPositive, true, 0);</span>
+<span class="fc" id="L442">                throw e;</span>
+<span class="fc" id="L443">            }</span>
+<span class="fc" id="L444">            long[] domAfter = snapshotDomainSizes();</span>
+<span class="fc" id="L445">            double R = computeSearchSpaceReduction(domBefore);</span>
+<span class="fc" id="L446">            updateRating(choice, isPositive, false, R);</span>
+<span class="fc" id="L447">        };</span>
+    }
+
+    /**
+     * Generate additional choices for variables that are not yet fixed.
+     * This is called when all initial choices are resolved but some variables remain unfixed
+     * (as described in Section 6.1 of the paper).
+     */
+    private void generateAdditionalChoices() {
+<span class="fc bfc" id="L456" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L457">            IntervalVar var = intervals[i];</span>
+<span class="pc bpc" id="L458" title="1 of 4 branches missed.">            if (var.isFixed() || var.isAbsent()) continue;</span>
+
+            // Presence choice for still-optional variables
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">            if (var.isOptional()) {</span>
+<span class="nc" id="L462">                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
+<span class="nc" id="L463">                continue; // presence must be decided first</span>
+            }
+
+            // Start time choices for the remaining start domain
+<span class="pc bpc" id="L467" title="1 of 2 branches missed.">            if (var.startMin() &lt; var.startMax()) {</span>
+<span class="fc" id="L468">                int mid = var.startMin() + (var.startMax() - var.startMin()) / 2;</span>
+<span class="fc" id="L469">                allChoices.add(new Choice(ChoiceType.START, i, mid));</span>
+            }
+
+            // Length choices for the remaining length domain
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
+<span class="nc" id="L474">                int mid = var.lengthMin() + (var.lengthMax() - var.lengthMin()) / 2;</span>
+<span class="nc" id="L475">                allChoices.add(new Choice(ChoiceType.LENGTH, i, mid));</span>
+            }
+        }
+<span class="fc" id="L478">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

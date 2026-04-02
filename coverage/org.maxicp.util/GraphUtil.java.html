@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GraphUtil.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util</a> &gt; <span class="el_source">GraphUtil.java</span></div><h1>GraphUtil.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.util;
+
+import java.util.Arrays;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+
+/**
+ * Algorithms and Graph interface
+ */
+<span class="nc" id="L16">public class GraphUtil {</span>
+
+    /**
+     * Directed graph API
+     */
+    public interface Graph {
+        /**
+         * Returns the number of nodes in this graph.
+         * @return the number of nodes in this graph.
+         *         Nodes are identified from 0 to {@link #n()}-1.
+         */
+        int n();
+
+        /**
+         * Returns the incoming node indexes in the specified node
+         * @param id the identifier of the specified node
+         * @return the identifiers of the nodes pointing to the specified node
+         */
+        Iterable&lt;Integer&gt; in(int id);
+
+        /**
+         * Returns the outgoing node indexes from the specified node
+         * @param id the identifier of the specified node
+         * @return the identifiers of the nodes originating from the specified node
+         */
+        Iterable&lt;Integer&gt; out(int id);
+    }
+
+    /**
+     * Transpose the graph i.e. every edge is reversed.
+     *
+     * @param graph a Graph
+     * @return a new graph such that every edge is reversed
+     */
+    public static Graph transpose(Graph graph) {
+<span class="fc" id="L51">        return new Graph() {</span>
+            @Override
+            public int n() {
+<span class="nc" id="L54">                return graph.n();</span>
+            }
+
+            @Override
+            public Iterable&lt;Integer&gt; in(int idx) {
+<span class="nc" id="L59">                return graph.out(idx);</span>
+            }
+
+            @Override
+            public Iterable&lt;Integer&gt; out(int idx) {
+<span class="fc" id="L64">                return graph.in(idx);</span>
+            }
+        };
+    }
+
+
+    /**
+     * Computes the strongly connected components of the graph
+     * @param graph the input graph on which to compute the strongly
+     *              connected components
+     * @return for each node id, an id of the strongly connected
+     *          components it belongs to
+     */
+    public static int[] stronglyConnectedComponents(Graph graph) {
+        //Compute the suffix order
+<span class="fc" id="L79">        Stack&lt;Integer&gt; firstOrder = new Stack&lt;&gt;();</span>
+<span class="fc" id="L80">        int[] visited = new int[graph.n()];</span>
+<span class="fc" id="L81">        Arrays.fill(visited, 0);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; graph.n(); i++) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">            if (visited[i] == 0) {</span>
+<span class="fc" id="L84">                dfsNode(graph, (suffix, b) -&gt; {</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">                    if (suffix) firstOrder.push(b);</span>
+<span class="fc" id="L86">                }, visited, i);</span>
+            }
+        }
+
+        //Reverse the order, and do the dfs of the transposed graph
+<span class="fc" id="L91">        Arrays.fill(visited, 0);</span>
+<span class="fc" id="L92">        int[] scc = new int[graph.n()];</span>
+<span class="fc" id="L93">        AtomicInteger cpt = new AtomicInteger(0);</span>
+<span class="fc" id="L94">        Graph tranposed = GraphUtil.transpose(graph);</span>
+
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        while (!firstOrder.empty()) {</span>
+<span class="fc" id="L97">            int next = firstOrder.pop();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            if (visited[next] == 0) {</span>
+<span class="fc" id="L99">                cpt.incrementAndGet();</span>
+<span class="fc" id="L100">                dfsNode(tranposed, (suffix, x) -&gt; {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">                    if (!suffix) scc[x] = cpt.get();</span>
+<span class="fc" id="L102">                }, visited, next);</span>
+            }
+<span class="fc" id="L104">        }</span>
+<span class="fc" id="L105">        return scc;</span>
+    }
+
+    private static void dfsNode(Graph graph, BiConsumer&lt;Boolean, Integer&gt; action, int[] visited, int start) {
+<span class="fc" id="L109">        Stack&lt;Integer&gt; todo = new Stack&lt;&gt;();</span>
+<span class="fc" id="L110">        todo.add(start);</span>
+
+        // seen = 1
+        // visited = 2
+        // closed = 3
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        while (!todo.isEmpty()) {</span>
+<span class="fc" id="L116">            int cur = todo.peek();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (visited[cur] == 0) {</span>
+<span class="fc" id="L118">                visited[cur] = 1; //seen</span>
+<span class="fc" id="L119">                action.accept(false, cur);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                for (int next : graph.out(cur)) {</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">                    if (visited[next] == 0) {</span>
+<span class="fc" id="L122">                        todo.add(next);</span>
+                    }
+<span class="fc" id="L124">                }</span>
+<span class="fc" id="L125">                visited[cur] = 2; //visited</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">            } else if (visited[cur] == 2) {</span>
+<span class="fc" id="L127">                action.accept(true, cur);</span>
+<span class="fc" id="L128">                visited[cur] = 3; //closed</span>
+<span class="fc" id="L129">                todo.pop();</span>
+            }
+            else
+<span class="fc" id="L132">                todo.pop();</span>
+<span class="fc" id="L133">        }</span>
+<span class="fc" id="L134">    }</span>
+
+    /**
+     * Checks if a path exists between start and end
+     * @param graph
+     * @param start a node id from the graph
+     * @param end a node id from the graph
+     * @return true if a directed path from start to end exists, false otherwise
+     */
+    public static boolean pathExists(Graph graph, int start, int end) {
+<span class="fc" id="L144">        int[] visited = new int[graph.n()];</span>
+<span class="fc" id="L145">        Arrays.fill(visited, 0);</span>
+<span class="fc" id="L146">        dfsNode(graph,(v,n) -&gt; {},visited,start);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        return visited[end] != 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

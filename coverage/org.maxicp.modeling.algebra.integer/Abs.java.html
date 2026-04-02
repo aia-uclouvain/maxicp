@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Abs.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.algebra.integer</a> &gt; <span class="el_source">Abs.java</span></div><h1>Abs.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.algebra.integer;
+
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.NonLeafExpressionNode;
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+
+<span class="nc" id="L12">public record Abs(IntExpression expr) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+    @Override
+    public Collection&lt;Expression&gt; computeSubexpressions() {
+<span class="nc" id="L15">        return List.of(expr);</span>
+    }
+
+    @Override
+    public Abs mapSubexpressions(Function&lt;Expression, Expression&gt; f) {
+<span class="nc" id="L20">        return new Abs((IntExpression) f.apply(expr));</span>
+    }
+
+    @Override
+    public int defaultEvaluate() throws VariableNotFixedException {
+<span class="nc" id="L25">        return Math.abs(expr.evaluate());</span>
+    }
+
+    @Override
+    public int defaultMin() {
+<span class="nc" id="L30">        int m = expr.min();</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (m &gt;= 0)</span>
+<span class="nc" id="L32">            return m;</span>
+<span class="nc" id="L33">        m = expr.max();</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">        if (m &lt;= 0)</span>
+<span class="nc" id="L35">            return -m;</span>
+<span class="nc" id="L36">        return 0;</span>
+    }
+
+    @Override
+    public int defaultMax() {
+<span class="nc" id="L41">        return Math.max(Math.abs(expr.min()), Math.abs(expr.max()));</span>
+    }
+
+    @Override
+    public boolean defaultContains(int v) {
+<span class="nc bnc" id="L46" title="All 4 branches missed.">        return expr.contains(-v) || expr.contains(v);</span>
+    }
+
+    @Override
+    public int defaultFillArray(int[] array) {
+<span class="nc" id="L51">        int v = expr.fillArray(array);</span>
+<span class="nc" id="L52">        Arrays.sort(array, 0, v);</span>
+<span class="nc" id="L53">        int lastNeg = -1;</span>
+<span class="nc" id="L54">        int pos = 0;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        for(int i = 0; i &lt; v; i++) {</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            if(array[i] &lt; 0) {</span>
+<span class="nc" id="L57">                array[pos] = -array[i];</span>
+<span class="nc" id="L58">                lastNeg = pos;</span>
+<span class="nc" id="L59">                pos += 1;</span>
+            }
+            else {
+                //array[i] is positive, check for duplicates
+<span class="nc bnc" id="L63" title="All 4 branches missed.">                while (lastNeg != -1 &amp;&amp; array[lastNeg] &lt; array[i])</span>
+<span class="nc" id="L64">                    lastNeg--;</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">                if(lastNeg != -1 &amp;&amp; array[lastNeg] == array[i])</span>
+<span class="nc" id="L66">                    continue;</span>
+<span class="nc" id="L67">                array[pos] = array[i];</span>
+<span class="nc" id="L68">                pos += 1;</span>
+            }
+        }
+<span class="nc" id="L71">        return pos;</span>
+    }
+
+    @Override
+    public int defaultSize() {
+<span class="nc" id="L76">        return expr.size();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L81">        return show();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

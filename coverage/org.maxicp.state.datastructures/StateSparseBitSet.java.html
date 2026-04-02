@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StateSparseBitSet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.datastructures</a> &gt; <span class="el_source">StateSparseBitSet.java</span></div><h1>StateSparseBitSet.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+
+package org.maxicp.state.datastructures;
+
+
+import org.maxicp.state.State;
+import org.maxicp.state.StateInt;
+import org.maxicp.state.StateManager;
+
+import java.util.Arrays;
+
+
+/**
+ * Class to represent a bit-set that can be saved and restored through
+ * the {@link StateManager#saveState()} / {@link StateManager#restoreState()}
+ */
+public class StateSparseBitSet {
+
+    /* Variables used to store value of the bitset */
+    private int nWords;
+    private State&lt;Long&gt;[] words;
+
+    /* Variables used to make set sparse */
+    private int[] nonZeroIdx;
+    private StateInt nNonZero;
+
+    private Long mask;
+
+    /**
+     * Bitset of the same capacity as the outer {@link StateSparseBitSet}.
+     * It is not synchronized with  {@link StateManager}.
+     * It is rather intended to be used as parameter to the
+     * {@link #intersect(BitSet)} method to modify the outer {@link StateSparseBitSet}.
+     */
+<span class="fc" id="L39">    public class SupportBitSet extends BitSet {</span>
+
+        public SupportBitSet() {
+<span class="fc" id="L42">            super(nWords);</span>
+<span class="fc" id="L43">        }</span>
+
+        public SupportBitSet(BitSet anotherBitSet) {
+<span class="fc" id="L46">            this(anotherBitSet, false);</span>
+<span class="fc" id="L47">        }</span>
+
+        public SupportBitSet(BitSet anotherBitSet, boolean shared) {
+<span class="fc" id="L50">            super(anotherBitSet, shared);</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            assert anotherBitSet.nbWords == nWords : &quot;BitSet size is incomptible with State Sparse BitSet size&quot;;</span>
+<span class="fc" id="L52">        }</span>
+
+    }
+
+    /**
+     * Temporary bitset used to hold temporary value.
+     * Optimized to compute elements only on active words.
+     */
+    public class CollectionBitSet extends BitSet {
+
+<span class="fc" id="L62">        public CollectionBitSet() { super(nWords); }</span>
+
+        @Override
+        public void clear() {
+<span class="fc bfc" id="L66" title="All 2 branches covered.">            for (int i = nNonZero.value() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L67">                this.words[nonZeroIdx[i]] = 0L;</span>
+            }
+<span class="fc" id="L69">        }</span>
+
+        @Override
+        public void union(BitSet other) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            for (int i = nNonZero.value() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L74">                int idx = nonZeroIdx[i];</span>
+<span class="fc" id="L75">                this.words[idx] |= other.words[idx];</span>
+            }
+
+<span class="fc" id="L78">        }</span>
+
+        @Override
+        public void intersect(BitSet other) {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            for (int i = nNonZero.value() - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L83">                int idx = nonZeroIdx[i];</span>
+<span class="nc" id="L84">                this.words[idx] &amp;= other.words[idx];</span>
+            }
+<span class="nc" id="L86">        }</span>
+    }
+
+    /**
+     * Creates a StateSparseSet with n bits, initially all set (value 1 for all)
+     *
+     * @param sm the state manager
+     * @param n  the number of bits
+     */
+<span class="fc" id="L95">    public StateSparseBitSet(StateManager sm, int n) {</span>
+<span class="fc" id="L96">        nWords = (n + 63) &gt;&gt;&gt; 6; // divided by 64</span>
+<span class="fc" id="L97">        words = new State[nWords];</span>
+<span class="fc" id="L98">        mask = ~0L &gt;&gt;&gt; (64 - (n % 64));</span>
+<span class="fc" id="L99">        Arrays.setAll(words, i -&gt;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                i == nWords - 1 ?</span>
+<span class="fc" id="L101">                        sm.makeStateLong(mask) :</span>
+<span class="fc" id="L102">                        sm.makeStateLong(0xFFFFFFFFFFFFFFFFL)</span>
+        );
+<span class="fc" id="L104">        nonZeroIdx = new int[nWords];</span>
+<span class="fc" id="L105">        Arrays.setAll(nonZeroIdx, i -&gt; i);</span>
+<span class="fc" id="L106">        nNonZero = sm.makeStateInt(nWords);</span>
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * Test is the reversibleSparseBitSet is empty
+     *
+     * @return true is empty, false otherwise
+     */
+    public boolean isEmpty() {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        return nNonZero.value() == 0;</span>
+    }
+
+    /**
+     * Remove the content of the BitSet from this sparseBitSet
+     *
+     * @param bs the BitSet to remove
+     */
+    public void remove(BitSet bs) {
+<span class="nc" id="L124">        int size = nNonZero.value();</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (int i = size - 1; i &gt;= 0; i--) {</span>
+<span class="nc" id="L126">            int idx = nonZeroIdx[i];</span>
+<span class="nc" id="L127">            long remove = words[idx].value() &amp; ~bs.words[idx];</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">            if (remove == 0L) {</span>
+                // deactivation of word
+<span class="nc" id="L130">                size -= 1;</span>
+<span class="nc" id="L131">                nonZeroIdx[i] = nonZeroIdx[size];</span>
+<span class="nc" id="L132">                nonZeroIdx[size] = idx;</span>
+            } else {
+<span class="nc" id="L134">                words[idx].setValue(remove);</span>
+            }
+        }
+<span class="nc" id="L137">        nNonZero.setValue(size);</span>
+<span class="nc" id="L138">    } //TODO check for mask at the end?</span>
+
+    /**
+     * Intersect this sparseBitSet with bs
+     *
+     * @param bs the BitSet to intersect with
+     */
+    public void intersect(BitSet bs) {
+<span class="fc" id="L146">        int size = nNonZero.value();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (int i = size - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L148">            int idx = nonZeroIdx[i];</span>
+<span class="fc" id="L149">            long intersect = words[idx].value() &amp; bs.words[idx];</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (intersect == 0L) {</span>
+                // deactivation of word
+<span class="fc" id="L152">                size -= 1;</span>
+<span class="fc" id="L153">                nonZeroIdx[i] = nonZeroIdx[size];</span>
+<span class="fc" id="L154">                nonZeroIdx[size] = idx;</span>
+            } else {
+<span class="fc" id="L156">                words[idx].setValue(intersect);</span>
+            }
+        }
+<span class="fc" id="L159">        nNonZero.setValue(size);</span>
+<span class="fc" id="L160">    }</span>
+    /**
+     * Test the emptiness of the intersection with a given BitSet
+     *
+     * @param bs the BitSet to test the intersection with
+     * @return true if empty, false otherwise
+     */
+    public boolean hasEmptyIntersection(BitSet bs) {
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = nNonZero.value() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L169">            int idx = nonZeroIdx[i];</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if ((words[idx].value() &amp; bs.words[idx]) != 0L) {</span>
+<span class="fc" id="L171">                return false;</span>
+            }
+        }
+<span class="fc" id="L174">        return true;</span>
+    }
+
+    public int countIntersection(BitSet bs) {
+<span class="fc" id="L178">        int count = 0;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (int i = nNonZero.value() - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L180">            int idx = nonZeroIdx[i];</span>
+<span class="fc" id="L181">            count += java.lang.Long.bitCount(words[idx].value() &amp; bs.words[idx]);</span>
+        }
+<span class="fc" id="L183">        return count;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L188">        String res = &quot;&quot;;</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        for (int i = 0; i &lt; nNonZero.value(); i++) {</span>
+<span class="nc" id="L190">            res += &quot; w&quot; + nonZeroIdx[i] + &quot;=&quot; + Long.toBinaryString(words[nonZeroIdx[i]].value());</span>
+        }
+<span class="nc" id="L192">        return res;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

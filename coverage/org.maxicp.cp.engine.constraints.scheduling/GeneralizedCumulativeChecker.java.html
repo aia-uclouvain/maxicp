@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GeneralizedCumulativeChecker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">GeneralizedCumulativeChecker.java</span></div><h1>GeneralizedCumulativeChecker.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+
+/**
+ * Checker for the generalized cumulative constraint.
+ * It makes sure that we do not remove solutions, only used for testing purposes
+ */
+public class GeneralizedCumulativeChecker extends AbstractCPConstraint {
+    private final Activity[] activities;
+    protected final int maxCapacity;
+    protected final int minCapacity;
+
+    //Used by propagation:
+    protected int[] profile;
+    protected boolean[] covered;
+    int offset; // offset to start indices at zero from the time
+
+    public GeneralizedCumulativeChecker(Activity[] activities, int minCapacity, int maxCapacity) {
+<span class="nc" id="L29">        super(activities[0].interval().getSolver());</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">        if (maxCapacity &lt; 0) throw new IllegalArgumentException(&quot;The maximum capacity provided is &lt; 0&quot;);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (minCapacity &gt; maxCapacity)</span>
+<span class="nc" id="L32">            throw new IllegalArgumentException(&quot;The minimum capacity provided is &gt; max capacity&quot;);</span>
+
+<span class="nc" id="L34">        this.activities = activities;</span>
+<span class="nc" id="L35">        this.maxCapacity = maxCapacity;</span>
+<span class="nc" id="L36">        this.minCapacity = minCapacity;</span>
+
+<span class="nc" id="L38">        int minTime = Integer.MAX_VALUE;</span>
+<span class="nc" id="L39">        int maxTime = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc" id="L41">            minTime = Math.min(minTime, act.interval().startMin());</span>
+<span class="nc" id="L42">            maxTime = Math.max(maxTime, act.interval().endMax());</span>
+        }
+<span class="nc" id="L44">        offset = minTime;</span>
+<span class="nc" id="L45">        profile = new int[maxTime - minTime + 1];</span>
+<span class="nc" id="L46">        covered = new boolean[maxTime - minTime + 1];</span>
+<span class="nc" id="L47">    }</span>
+
+    public GeneralizedCumulativeChecker(Activity[] activities, int maxCapacity) {
+<span class="nc" id="L50">        this(activities, Integer.MIN_VALUE, maxCapacity);</span>
+<span class="nc" id="L51">    }</span>
+
+    @Override
+    public void post() {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc" id="L56">            act.interval().propagateOnChange(this);</span>
+<span class="nc" id="L57">            act.height().propagateOnBoundChange(this);</span>
+        }
+<span class="nc" id="L59">        propagate();</span>
+<span class="nc" id="L60">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc bnc" id="L65" title="All 6 branches missed.">            if (!act.interval().isFixed() || (act.interval().isPresent() &amp;&amp; !act.height().isFixed())) {</span>
+<span class="nc" id="L66">                return; // everything is fixed</span>
+            }
+        }
+
+<span class="nc" id="L70">        Arrays.fill(profile, 0);</span>
+<span class="nc" id="L71">        Arrays.fill(covered, false);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (act.interval().isPresent()) {</span>
+<span class="nc" id="L74">                int start = act.interval().startMin() - offset;</span>
+<span class="nc" id="L75">                int end = act.interval().endMax() - offset;</span>
+<span class="nc" id="L76">                int height = act.height().min();</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                for (int i = start; i &lt; end; i++) {</span>
+<span class="nc" id="L78">                    profile[i] += height;</span>
+<span class="nc" id="L79">                    covered[i] = true;</span>
+                }
+            }
+        }
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (int t = 0; t &lt; covered.length; t++) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (covered[t]) {</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">                if (profile[t] &gt; maxCapacity || profile[t] &lt; minCapacity) {</span>
+<span class="nc" id="L87">                    throw new InconsistencyException();</span>
+                }
+            }
+        }
+<span class="nc" id="L91">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

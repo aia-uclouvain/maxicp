@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TrailMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.trail</a> &gt; <span class="el_source">TrailMap.java</span></div><h1>TrailMap.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.trail;
+
+
+import org.maxicp.state.StateEntry;
+import org.maxicp.state.StateManager;
+import org.maxicp.state.StateMap;
+import org.maxicp.util.exception.NotImplementedException;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Implementation of {@link StateMap} with trail strategy
+ * @see Trailer
+ * @see StateManager#makeStateMap()
+ * @param &lt;K&gt; the type of the keys
+ * @param &lt;V&gt; the type of the values
+ */
+public class TrailMap&lt;K, V&gt; implements StateMap&lt;K, V&gt; {
+
+    private Trailer trail;
+<span class="fc" id="L29">    private Map&lt;K, V&gt; map = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L31">    protected TrailMap(Trailer trail) {</span>
+<span class="fc" id="L32">        this.trail = trail;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Override
+    public V put(K k, V v) {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (!map.containsKey(k)) {</span>
+<span class="fc" id="L38">            trail.pushState(new StateEntry() {</span>
+                @Override
+                public void restore() {
+<span class="fc" id="L41">                    map.remove(k);</span>
+<span class="fc" id="L42">                }</span>
+            });
+<span class="fc" id="L44">            map.put(k, v);</span>
+<span class="fc" id="L45">            return null;</span>
+        } else {
+<span class="fc" id="L47">            final V vOld = map.get(k);</span>
+<span class="fc" id="L48">            trail.pushState(new StateEntry() {</span>
+                @Override
+                public void restore() {
+<span class="fc" id="L51">                    map.put(k, vOld);</span>
+<span class="fc" id="L52">                }</span>
+            });
+<span class="fc" id="L54">            map.put(k, v);</span>
+<span class="fc" id="L55">            return vOld;</span>
+        }
+    }
+
+    @Override
+    public V remove(Object k) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (!map.containsKey(k)) {</span>
+<span class="nc" id="L62">            return null;</span>
+        } else {
+<span class="nc" id="L64">            final V v = map.remove(k);</span>
+<span class="nc" id="L65">            trail.pushState(new StateEntry() {</span>
+                @Override
+                public void restore() {
+<span class="nc" id="L68">                    map.put((K) k, v);</span>
+<span class="nc" id="L69">                }</span>
+            });
+<span class="nc" id="L71">            return v;</span>
+        }
+    }
+
+    @Override
+    public void putAll(Map&lt;? extends K, ? extends V&gt; m) {
+<span class="nc" id="L77">        throw new NotImplementedException(&quot;TrailMap does not support putAll&quot;);</span>
+    }
+
+    @Override
+    public void clear() {
+<span class="nc" id="L82">        throw new NotImplementedException(&quot;TrailMap does not support clear&quot;);</span>
+    }
+
+    @Override
+    public Set&lt;K&gt; keySet() {
+<span class="nc" id="L87">        return map.keySet();</span>
+    }
+
+    @Override
+    public Collection&lt;V&gt; values() {
+<span class="nc" id="L92">        return map.values();</span>
+    }
+
+    @Override
+    public Set&lt;Entry&lt;K, V&gt;&gt; entrySet() {
+<span class="nc" id="L97">        return map.entrySet();</span>
+    }
+
+    @Override
+    public V get(Object k) {
+<span class="fc" id="L102">        return map.get(k);</span>
+    }
+
+    @Override
+    public int size() {
+<span class="nc" id="L107">        return map.size();</span>
+    }
+
+    @Override
+    public boolean isEmpty() {
+<span class="nc" id="L112">        return map.isEmpty();</span>
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+<span class="fc" id="L117">        return map.containsKey(key);</span>
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+<span class="nc" id="L122">        return map.containsValue(value);</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

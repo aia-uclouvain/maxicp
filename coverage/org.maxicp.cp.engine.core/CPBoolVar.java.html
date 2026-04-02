@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPBoolVar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPBoolVar.java</span></div><h1>CPBoolVar.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.modeling.concrete.ConcreteBoolVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+/**
+ * Boolean variable, that can be used as a 0-1 IntVar.
+ * &lt;p&gt;0 corresponds to false, and 1 corresponds to true
+ */
+<span class="pc bpc" id="L16" title="1 of 2 branches missed.">public interface CPBoolVar extends CPIntVar, ConcreteBoolVar {</span>
+
+    /**
+     * Tests if the variable is fixed to true
+     * @return true if the variable is fixed to true (value 1)
+     */
+    boolean isTrue();
+
+    /**
+     * Tests if the variable is fixed to false
+     * @return true if the variable is fixed to false (value 0)
+     */
+    boolean isFalse();
+
+    /**
+     * Fixes the variable
+     * @param b the value to assign to this boolean variable
+     * @exception InconsistencyException
+     *            is thrown if the value is not in the domain
+     */
+    void fix(boolean b);
+
+    @Override
+    default int min() {
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if(isFixed()) {</span>
+            try {
+<span class="nc" id="L42">                return evaluate();</span>
+<span class="nc" id="L43">            } catch (VariableNotFixedException ex) {</span>
+<span class="nc" id="L44">                throw new RuntimeException();</span>
+            }
+        }
+<span class="nc" id="L47">        return 0;</span>
+    }
+
+    @Override
+    default int max() {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if(isFixed()) {</span>
+            try {
+<span class="nc" id="L54">                return evaluate();</span>
+<span class="nc" id="L55">            } catch (VariableNotFixedException ex) {</span>
+<span class="nc" id="L56">                throw new RuntimeException();</span>
+            }
+        }
+<span class="nc" id="L59">        return 1;</span>
+    }
+
+    @Override
+    default int fillArray(int[] array) {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if(isFixed()) {</span>
+            try {
+<span class="fc" id="L66">                array[0] = evaluate();</span>
+<span class="fc" id="L67">                return 1;</span>
+            }
+<span class="nc" id="L69">            catch (VariableNotFixedException ex) {</span>
+                //never happens
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                assert(false);</span>
+            }
+        }
+<span class="fc" id="L74">        array[0] = 0;</span>
+<span class="fc" id="L75">        array[1] = 1;</span>
+<span class="fc" id="L76">        return 2;</span>
+    }
+
+    @Override
+<span class="fc bfc" id="L80" title="All 2 branches covered.">    default int size() { return isFixed() ? 1 : 2; }</span>
+
+    @Override
+    default boolean contains(int v) {
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        return min() &lt;= v &amp;&amp; v &lt;= max();</span>
+    }
+
+    default boolean evaluateBool() throws VariableNotFixedException {
+<span class="nc bnc" id="L88" title="All 6 branches missed.">        if(min() != 0 || max() == 0) return min() != 0;</span>
+<span class="nc" id="L89">        throw new VariableNotFixedException();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Trail.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.state.trail</a> &gt; <span class="el_source">Trail.java</span></div><h1>Trail.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.state.trail;
+
+
+import org.maxicp.state.State;
+import org.maxicp.state.StateEntry;
+import org.maxicp.state.StateManager;
+
+/**
+ * Implementation of {@link State} with trail strategy
+ * @see Trailer
+ * @see StateManager#makeStateRef(Object)
+ * @param &lt;T&gt; the type of the value wrapped in this state
+ */
+public class Trail&lt;T&gt; implements State&lt;T&gt; {
+
+    class TrailStateEntry implements StateEntry {
+        private final T v;
+
+<span class="fc" id="L24">        TrailStateEntry(T v) {</span>
+<span class="fc" id="L25">            this.v = v;</span>
+<span class="fc" id="L26">        }</span>
+
+        @Override
+        public void restore() {
+<span class="fc" id="L30">            Trail.this.v = v;</span>
+<span class="fc" id="L31">        }</span>
+    }
+
+    private Trailer trail;
+    private T v;
+<span class="fc" id="L36">    private long lastMagic = -1L;</span>
+
+<span class="fc" id="L38">    protected Trail(Trailer trail, T initial) {</span>
+<span class="fc" id="L39">        this.trail = trail;</span>
+<span class="fc" id="L40">        v = initial;</span>
+<span class="fc" id="L41">        lastMagic = trail.getMagic() - 1;</span>
+<span class="fc" id="L42">    }</span>
+
+    private void trail() {
+<span class="fc" id="L45">        long trailMagic = trail.getMagic();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (lastMagic != trailMagic) {</span>
+<span class="fc" id="L47">            lastMagic = trailMagic;</span>
+<span class="fc" id="L48">            trail.pushState(new TrailStateEntry(v));</span>
+        }
+<span class="fc" id="L50">    }</span>
+
+    @Override
+    public T setValue(T v) {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (v != this.v) {</span>
+<span class="fc" id="L55">            trail();</span>
+<span class="fc" id="L56">            this.v = v;</span>
+        }
+<span class="fc" id="L58">        return this.v;</span>
+    }
+
+    @Override
+    public T value() {
+<span class="fc" id="L63">        return this.v;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L68">        return &quot;&quot; + v;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

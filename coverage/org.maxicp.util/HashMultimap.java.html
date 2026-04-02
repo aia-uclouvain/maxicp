@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HashMultimap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.util</a> &gt; <span class="el_source">HashMultimap.java</span></div><h1>HashMultimap.java</h1><pre class="source lang-java linenums">package org.maxicp.util;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+public class HashMultimap&lt;K,V&gt; {
+    private final LinkedHashMap&lt;K, LinkedHashSet&lt;V&gt;&gt; map;
+<span class="fc" id="L10">    private final Set&lt;V&gt; emptySet = Collections.unmodifiableSet(new LinkedHashSet&lt;&gt;());</span>
+
+<span class="fc" id="L12">    public HashMultimap() {</span>
+<span class="fc" id="L13">        map = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L14">    }</span>
+
+    public Set&lt;V&gt; get(K key) {
+<span class="fc bfc" id="L17" title="All 2 branches covered.">        if(map.containsKey(key))</span>
+<span class="fc" id="L18">            return Collections.unmodifiableSet(map.get(key));</span>
+<span class="fc" id="L19">        return emptySet;</span>
+    }
+
+    public void put(K key, V value) {
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if(!map.containsKey(key))</span>
+<span class="fc" id="L24">            map.put(key, new LinkedHashSet&lt;&gt;());</span>
+<span class="fc" id="L25">        map.get(key).add(value);</span>
+<span class="fc" id="L26">    }</span>
+
+    public void remove(K key, V value) {
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if(map.containsKey(key))</span>
+<span class="fc" id="L30">            map.get(key).remove(value);</span>
+<span class="fc" id="L31">    }</span>
+
+    public void removeAll(K key) {
+<span class="fc" id="L34">        map.remove(key);</span>
+<span class="fc" id="L35">    }</span>
+
+    public boolean isEmpty() {
+<span class="fc" id="L38">        return map.isEmpty();</span>
+    }
+
+    public Set&lt;K&gt; keySet() {
+<span class="fc" id="L42">        return map.keySet();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

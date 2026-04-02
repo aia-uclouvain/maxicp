@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SymbolicSeqVar.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.symbolic</a> &gt; <span class="el_source">SymbolicSeqVar.java</span></div><h1>SymbolicSeqVar.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.symbolic;
+
+import org.maxicp.modeling.SeqVar;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
+
+public interface SymbolicSeqVar extends SeqVar, SymbolicVar {
+
+    int defaultStart();
+
+    int defaultEnd();
+
+    int defaultNNode();
+
+    int defaultFillNode(int[] dest, SeqStatus status);
+
+    int defaultNNode(SeqStatus status);
+
+    boolean defaultIsNode(int node, SeqStatus status);
+
+    int defaultMemberAfter(int node);
+
+    int defaultMemberBefore(int node);
+
+    int defaultFillPred(int node, int[] dest, SeqStatus status);
+
+    int defaultNPred(int node);
+
+    int defaultFillSucc(int node, int[] dest, SeqStatus status);
+
+    int defaultNSucc(int node);
+
+    int defaultFillInsert(int node, int[] dest);
+
+    int defaultNInsert(int node);
+
+    boolean defaultHasEdge(int from, int to);
+
+    boolean defaultHasInsert(int prev, int node);
+
+    default int defaultFillPred(int node, int[] dest) {
+<span class="nc" id="L41">        return defaultFillPred(node, dest, SeqStatus.NOT_EXCLUDED);</span>
+    }
+
+    default int defaultFillSucc(int node, int[] dest) {
+<span class="nc" id="L45">        return defaultFillSucc(node, dest, SeqStatus.NOT_EXCLUDED);</span>
+    }
+
+    default int start() {
+<span class="nc" id="L49">        return defaultStart();</span>
+    }
+
+    default int end() {
+<span class="nc" id="L53">        return defaultEnd();</span>
+    }
+
+    default int nNode() {
+<span class="nc" id="L57">        return defaultNNode();</span>
+    }
+
+    default int fillNode(int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L62">            return getModelProxy().getConcreteModel().getConcreteVar(this).fillNode(dest, status);</span>
+<span class="nc" id="L63">        return defaultFillNode(dest, status);</span>
+    }
+
+    default int nNode(SeqStatus status) {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L68">            return getModelProxy().getConcreteModel().getConcreteVar(this).nNode(status);</span>
+<span class="nc" id="L69">        return defaultNNode(status);</span>
+    }
+
+    default boolean isNode(int node, SeqStatus status) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L74">            return getModelProxy().getConcreteModel().getConcreteVar(this).isNode(node, status);</span>
+<span class="nc" id="L75">        return defaultIsNode(node, status);</span>
+    }
+
+    default int memberAfter(int node) {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L80">            return getModelProxy().getConcreteModel().getConcreteVar(this).memberAfter(node);</span>
+<span class="nc" id="L81">        return defaultMemberAfter(node);</span>
+    }
+
+    default int memberBefore(int node) {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L86">            return getModelProxy().getConcreteModel().getConcreteVar(this).memberBefore(node);</span>
+<span class="nc" id="L87">        return defaultMemberBefore(node);</span>
+    }
+
+    default int fillPred(int node, int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L92">            return getModelProxy().getConcreteModel().getConcreteVar(this).fillPred(node, dest, status);</span>
+<span class="nc" id="L93">        return defaultFillPred(node, dest, status);</span>
+    }
+
+    default int nPred(int node) {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L98">            return getModelProxy().getConcreteModel().getConcreteVar(this).nPred(node);</span>
+<span class="nc" id="L99">        return defaultNPred(node);</span>
+    }
+
+    default int fillSucc(int node, int[] dest, SeqStatus status) {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L104">            return getModelProxy().getConcreteModel().getConcreteVar(this).fillSucc(node, dest, status);</span>
+<span class="nc" id="L105">        return defaultFillSucc(node, dest, status);</span>
+    }
+
+    default int nSucc(int node) {
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L110">            return getModelProxy().getConcreteModel().getConcreteVar(this).nSucc(node);</span>
+<span class="nc" id="L111">        return defaultNSucc(node);</span>
+    }
+
+    default int fillInsert(int node, int[] dest) {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L116">            return getModelProxy().getConcreteModel().getConcreteVar(this).fillInsert(node, dest);</span>
+<span class="nc" id="L117">        return defaultFillInsert(node, dest);</span>
+    }
+
+    default int nInsert(int node) {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L122">            return getModelProxy().getConcreteModel().getConcreteVar(this).nInsert(node);</span>
+<span class="nc" id="L123">        return defaultNInsert(node);</span>
+    }
+
+    default boolean hasEdge(int from, int to) {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L128">            return getModelProxy().getConcreteModel().getConcreteVar(this).hasEdge(from, to);</span>
+<span class="nc" id="L129">        return defaultHasEdge(from, to);</span>
+    }
+
+    default boolean hasInsert(int prev, int node) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="nc" id="L134">            return getModelProxy().getConcreteModel().getConcreteVar(this).hasInsert(prev, node);</span>
+<span class="nc" id="L135">        return defaultHasInsert(prev, node);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
