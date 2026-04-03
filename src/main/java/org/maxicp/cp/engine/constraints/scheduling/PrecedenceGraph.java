@@ -213,6 +213,10 @@ public class PrecedenceGraph extends AbstractCPConstraint {
         return getTail(var);
     }
 
+    public void setTail(int val, CPIntervalVar var) {
+        tail[indexOf(var)].setValue(val);
+    }
+
     /**
      * Adds a precedence edge {@code i → j} (activity i must end before activity j starts,
      * respecting the setup time).
