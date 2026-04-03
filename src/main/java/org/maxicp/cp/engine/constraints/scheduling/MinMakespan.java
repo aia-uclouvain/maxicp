@@ -85,9 +85,7 @@ public class MinMakespan extends AbstractCPConstraint {
                 pq.offer(cur); // preempted, reinsert
             }
         }
-        if (bound> makespan.min()){
-            System.out.println(bound + ": " + makespan);
-        }
+
         makespan.removeBelow(bound);
 
     }
