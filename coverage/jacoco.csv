@@ -48,8 +48,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IsStartBeforeEnd,1
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartBeforeStart,3,59,4,8,1,15,4,5,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,ThetaTree.Node,0,12,0,0,0,6,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,Activity,45,146,8,14,10,31,12,28,6,23
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeSweepMin.EventList,195,0,0,0,28,0,8,0,8,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPSumCumulFunction,121,35,16,2,18,5,11,3,3,2
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeSweepMin.EventList,195,0,0,0,28,0,8,0,8,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IntervalVarLength,0,47,0,0,0,13,0,3,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartAtStart,0,90,3,9,0,18,3,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapBCLeftToRight.State,0,9,0,0,0,1,0,1,0,1
@@ -103,7 +103,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,157,357,11,37,20,60,11,21,4,4
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -140,8 +140,8 @@ org.maxicp:maxicp,org.maxicp.modeling.algebra.scheduling,StepAtEndCumulFunction,
 org.maxicp:maxicp,org.maxicp.modeling.algebra.scheduling,SumCumulFunction,119,6,16,0,18,3,11,1,3,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.scheduling,PlusCumulFunction,109,0,16,0,20,0,12,0,4,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.scheduling,PulseCumulFunction,42,48,7,3,3,14,7,3,2,3
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Exclude,13,20,0,0,8,7,7,2,7,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Cumulative.Profile,2,155,4,10,1,34,4,11,0,8
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Exclude,13,20,0,0,8,7,7,2,7,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Precedence,2,430,2,60,1,75,2,36,0,7
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Require,13,20,0,0,8,7,7,2,7,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,SubSequence,0,297,1,29,0,57,1,19,0,5
@@ -344,7 +344,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints,IsEqual,0,80,0,10,0,23,0,8,0,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,MaximumMatching,0,383,1,45,0,67,1,28,0,6
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,LessOrEqual,0,45,0,2,0,13,0,4,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Or,16,189,5,19,2,32,5,11,0,4
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints,SoftCardinalityDC.FlowType,15,0,0,0,1,0,1,0,1,0
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints,SoftCardinalityDC.FlowType,0,15,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,IsEqualVar,108,0,14,0,26,0,10,0,3,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,NegTableCT,0,684,1,57,0,116,1,34,0,6
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Profile.Entry,25,0,4,0,5,0,4,0,2,0
@@ -382,7 +382,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints,AllDifferentFWC,0,13,0,0,0,2,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Element1DVar,0,189,0,16,0,49,0,13,0,5
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,CostAllDifferentDC,0,44,0,4,0,9,0,4,0,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,CardinalityMinFWC,10,288,3,35,1,46,3,21,0,5
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints,SoftCardinalityDC,2855,0,392,0,465,0,223,0,27,0
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints,SoftCardinalityDC,314,2541,79,313,50,415,55,168,4,23
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,MinCostMaxFlow,1,387,1,27,1,68,1,20,0,7
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,CardinalityMaxFWC,8,230,2,22,0,38,2,13,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,MulVar,54,435,7,23,5,56,7,14,0,6
@@ -410,8 +410,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,CPBoolVar,51,41,15,7,14,9,12,6,3,4
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPNodeVarViewFlip,67,148,0,12,22,32,14,17,14,11
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarViewOffset,26,195,1,7,6,44,4,23,3,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node,19,435,0,24,5,61,4,50,4,32
-org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarViewFlip,66,268,0,16,24,57,14,36,14,28
+org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSetVarImpl,12,217,2,18,2,48,4,28,2,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,19,70,3,3,4,21,5,8,2,8
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MaxiCP,6,160,0,12,2,44,1,20,1,14

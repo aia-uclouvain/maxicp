@@ -21,11 +21,11 @@ import org.maxicp.cp.engine.core.CPIntVar;
  * Schaus, P., Van Hentenryck, P., &amp; Zanarini, A.
  * Revisiting the soft global cardinality constraint. In CPAIOR 2010
  */
-<span class="nc" id="L24">public class SoftCardinalityDC extends AbstractCPConstraint{</span>
+<span class="fc" id="L24">public class SoftCardinalityDC extends AbstractCPConstraint{</span>
 
-<span class="nc" id="L26">    enum FlowType { UF, OF };</span>
+<span class="fc" id="L26">    enum FlowType { UF, OF };</span>
 
-<span class="nc" id="L28">    private final int NONE = -Integer.MIN_VALUE;</span>
+<span class="fc" id="L28">    private final int NONE = -Integer.MIN_VALUE;</span>
 
     private boolean posted;
 
@@ -96,16 +96,16 @@ import org.maxicp.cp.engine.core.CPIntVar;
      * @param viol = sum(i) viol(i)
      */
     public SoftCardinalityDC(CPIntVar[] x, int minval, int[] low, int[] up, CPIntVar viol) {
-<span class="nc" id="L99">        super(x[0].getSolver());</span>
-<span class="nc" id="L100">        this.x = x;</span>
-<span class="nc" id="L101">        this.minval = minval;</span>
-<span class="nc" id="L102">        this.maxval = minval+low.length-1;</span>
-<span class="nc" id="L103">        nbVals = maxval-minval+1;</span>
-<span class="nc" id="L104">        this.low = low;</span>
-<span class="nc" id="L105">        this.up = up;</span>
-<span class="nc" id="L106">        this.viol = viol;</span>
-<span class="nc" id="L107">        check();</span>
-<span class="nc" id="L108">    }</span>
+<span class="fc" id="L99">        super(x[0].getSolver());</span>
+<span class="fc" id="L100">        this.x = x;</span>
+<span class="fc" id="L101">        this.minval = minval;</span>
+<span class="fc" id="L102">        this.maxval = minval+low.length-1;</span>
+<span class="fc" id="L103">        nbVals = maxval-minval+1;</span>
+<span class="fc" id="L104">        this.low = low;</span>
+<span class="fc" id="L105">        this.up = up;</span>
+<span class="fc" id="L106">        this.viol = viol;</span>
+<span class="fc" id="L107">        check();</span>
+<span class="fc" id="L108">    }</span>
 
     /**
      * Constraint the values i to appear between low[i] and up[i] times in x but accept some violations to this rule.
@@ -122,122 +122,122 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
 
     private void check() throws RuntimeException{
-<span class="nc bnc" id="L125" title="All 2 branches missed.">        if(nbVals != low.length){</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if(nbVals != low.length){</span>
 <span class="nc" id="L126">            throw new RuntimeException(&quot;vals and low must be of the same size&quot;);</span>
         }
-<span class="nc bnc" id="L128" title="All 2 branches missed.">        if(nbVals != up.length){</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">        if(nbVals != up.length){</span>
 <span class="nc" id="L129">            throw new RuntimeException(&quot;vals and up must be of the same size&quot;);</span>
         }
-<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (int i = 0; i &lt; nbVals; i++) {</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">            if(low[i]&lt;0){</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (int i = 0; i &lt; nbVals; i++) {</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">            if(low[i]&lt;0){</span>
 <span class="nc" id="L133">                throw new RuntimeException(&quot;low vals must be &gt;= 0&quot;);</span>
             }
-<span class="nc bnc" id="L135" title="All 2 branches missed.">            if(up[i]&lt;0){</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            if(up[i]&lt;0){</span>
 <span class="nc" id="L136">                throw new RuntimeException(&quot;up vals must be &gt;= 0&quot;);</span>
             }
-<span class="nc bnc" id="L138" title="All 2 branches missed.">            if(low[i]&gt;up[i]){</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">            if(low[i]&gt;up[i]){</span>
 <span class="nc" id="L139">                throw new RuntimeException(&quot;low[i] must be &lt;= up[i]&quot;);</span>
             }
         }
-<span class="nc" id="L142">    }</span>
+<span class="fc" id="L142">    }</span>
 
 
     @Override
     public void post() {
-<span class="nc" id="L147">        posted = true;</span>
+<span class="fc" id="L147">        posted = true;</span>
 
-<span class="nc" id="L149">        findValueRange();</span>
-<span class="nc" id="L150">        allocateFlow();</span>
-<span class="nc" id="L151">        findInitialFlow();</span>
+<span class="fc" id="L149">        findValueRange();</span>
+<span class="fc" id="L150">        allocateFlow();</span>
+<span class="fc" id="L151">        findInitialFlow();</span>
 
-<span class="nc" id="L153">        int valViol = getValueViolation();</span>
-<span class="nc" id="L154">        viol.removeBelow(valViol);</span>
+<span class="fc" id="L153">        int valViol = getValueViolation();</span>
+<span class="fc" id="L154">        viol.removeBelow(valViol);</span>
 
-<span class="nc" id="L156">        allocateSCC();</span>
+<span class="fc" id="L156">        allocateSCC();</span>
 
-<span class="nc" id="L158">        propagate();</span>
+<span class="fc" id="L158">        propagate();</span>
 
-<span class="nc bnc" id="L160" title="All 2 branches missed.">        for(int k = 0 ; k &lt; x.length; k++){</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">            if (!x[k].isFixed())</span>
-<span class="nc" id="L162">                x[k].propagateOnDomainChange(this);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for(int k = 0 ; k &lt; x.length; k++){</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            if (!x[k].isFixed())</span>
+<span class="fc" id="L162">                x[k].propagateOnDomainChange(this);</span>
         }
-<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (!viol.isFixed()) viol.propagateOnBoundChange(this);</span>
-<span class="nc" id="L165">    }</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (!viol.isFixed()) viol.propagateOnBoundChange(this);</span>
+<span class="fc" id="L165">    }</span>
 
     @Override
     public void propagate() {
-<span class="nc bnc" id="L169" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length ; k++) {</span>
-<span class="nc bnc" id="L170" title="All 2 branches missed.">            if (varMatch_uf[k] != NONE) {</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">                if (!x[k].contains(varMatch_uf[k])) {</span>
-<span class="nc" id="L172">                    unassign(k,FlowType.UF);</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length ; k++) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (varMatch_uf[k] != NONE) {</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">                if (!x[k].contains(varMatch_uf[k])) {</span>
+<span class="fc" id="L172">                    unassign(k,FlowType.UF);</span>
                 }
             }
-<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (varMatch_of[k] != NONE) {</span>
-<span class="nc bnc" id="L176" title="All 2 branches missed.">                if (!x[k].contains(varMatch_of[k])) {</span>
-<span class="nc" id="L177">                    unassign(k,FlowType.OF);</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            if (varMatch_of[k] != NONE) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                if (!x[k].contains(varMatch_of[k])) {</span>
+<span class="fc" id="L177">                    unassign(k,FlowType.OF);</span>
                 }
             }
         }
 
-<span class="nc" id="L182">        int valViol = getValueViolation();</span>
+<span class="fc" id="L182">        int valViol = getValueViolation();</span>
 
         //prune lower bound of violation
-<span class="nc" id="L185">        viol.removeBelow(valViol);</span>
+<span class="fc" id="L185">        viol.removeBelow(valViol);</span>
 
         //prune variable domains (the constraint is consistent at this point)
-<span class="nc" id="L188">        prune(valViol);</span>
+<span class="fc" id="L188">        prune(valViol);</span>
 
         //prune upper bound of violation if all variables are bound
-<span class="nc" id="L191">        boolean allBound = true;</span>
-<span class="nc bnc" id="L192" title="All 2 branches missed.">        for (int i = 0 ; i &lt; x.length; i++) {</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (!x[i].isFixed()){</span>
-<span class="nc" id="L194">                allBound = false;</span>
-<span class="nc" id="L195">                break;</span>
+<span class="fc" id="L191">        boolean allBound = true;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0 ; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (!x[i].isFixed()){</span>
+<span class="fc" id="L194">                allBound = false;</span>
+<span class="fc" id="L195">                break;</span>
             }
         }
-<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (allBound)</span>
-<span class="nc" id="L199">            viol.removeAbove(valViol);</span>
-<span class="nc" id="L200">    }</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        if (allBound)</span>
+<span class="fc" id="L199">            viol.removeAbove(valViol);</span>
+<span class="fc" id="L200">    }</span>
 
 
     private void findValueRange() {
 
-<span class="nc" id="L205">        int prev_minval = minval;</span>
+<span class="fc" id="L205">        int prev_minval = minval;</span>
 
-<span class="nc bnc" id="L207" title="All 2 branches missed.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="nc" id="L208">            minval = Math.min(minval,x[i].min());</span>
-<span class="nc" id="L209">            maxval = Math.max(maxval,x[i].max());</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L208">            minval = Math.min(minval,x[i].min());</span>
+<span class="fc" id="L209">            maxval = Math.max(maxval,x[i].max());</span>
         }
-<span class="nc" id="L211">        int d = prev_minval-minval;</span>
+<span class="fc" id="L211">        int d = prev_minval-minval;</span>
 
-<span class="nc" id="L213">        nbVals = maxval - minval + 1;</span>
+<span class="fc" id="L213">        nbVals = maxval - minval + 1;</span>
 
         // low
-<span class="nc" id="L216">        int [] low_ = new int[nbVals];</span>
+<span class="fc" id="L216">        int [] low_ = new int[nbVals];</span>
 
         // up
-<span class="nc" id="L219">        int [] up_ = new int[nbVals];</span>
-<span class="nc bnc" id="L220" title="All 2 branches missed.">        for(int k = 0; k &lt; nbVals; k++){</span>
-<span class="nc" id="L221">            up_[k] = x.length;</span>
+<span class="fc" id="L219">        int [] up_ = new int[nbVals];</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for(int k = 0; k &lt; nbVals; k++){</span>
+<span class="fc" id="L221">            up_[k] = x.length;</span>
         }
 
-<span class="nc" id="L224">        sumLow = 0;</span>
+<span class="fc" id="L224">        sumLow = 0;</span>
 
-<span class="nc bnc" id="L226" title="All 2 branches missed.">        for (int i = 0 ; i &lt; low.length; i++) {</span>
-<span class="nc bnc" id="L227" title="All 2 branches missed.">            if (low[i] &gt; 0){</span>
-<span class="nc" id="L228">                low_[i+d] = low[i] ;</span>
-<span class="nc" id="L229">                sumLow += low[i];</span>
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        for (int i = 0 ; i &lt; low.length; i++) {</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">            if (low[i] &gt; 0){</span>
+<span class="fc" id="L228">                low_[i+d] = low[i] ;</span>
+<span class="fc" id="L229">                sumLow += low[i];</span>
             }
         }
 
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0 ; i &lt; up.length; i++) {</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">            if (up[i] &lt; x.length){</span>
-<span class="nc" id="L235">                up_[i+d] = up[i] ;</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (int i = 0 ; i &lt; up.length; i++) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">            if (up[i] &lt; x.length){</span>
+<span class="fc" id="L235">                up_[i+d] = up[i] ;</span>
             }
         }
-<span class="nc" id="L238">        low = low_;</span>
-<span class="nc" id="L239">        up = up_;</span>
-<span class="nc" id="L240">    }</span>
+<span class="fc" id="L238">        low = low_;</span>
+<span class="fc" id="L239">        up = up_;</span>
+<span class="fc" id="L240">    }</span>
 
     public boolean hasValInBestAssignment(int i) {
 <span class="nc bnc" id="L243" title="All 6 branches missed.">        if(!posted || i &lt; 0 || i &gt;= x.length) return false;</span>
@@ -289,49 +289,49 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
     private void allocateFlow() {
         // flow
-<span class="nc" id="L292">        flow_uf = new int[nbVals];</span>
-<span class="nc" id="L293">        flow_of = new int[nbVals];</span>
+<span class="fc" id="L292">        flow_uf = new int[nbVals];</span>
+<span class="fc" id="L293">        flow_of = new int[nbVals];</span>
 
         // first variable matched
-<span class="nc" id="L296">        valMatch_uf = new int [nbVals];</span>
-<span class="nc" id="L297">        valMatch_of = new int [nbVals];</span>
-<span class="nc bnc" id="L298" title="All 2 branches missed.">        for(int k = 0; k &lt; nbVals; k++){</span>
-<span class="nc" id="L299">            valMatch_uf[k] = NONE;  // unmatched</span>
-<span class="nc" id="L300">            valMatch_of[k] = NONE;  // unmatched</span>
+<span class="fc" id="L296">        valMatch_uf = new int [nbVals];</span>
+<span class="fc" id="L297">        valMatch_of = new int [nbVals];</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        for(int k = 0; k &lt; nbVals; k++){</span>
+<span class="fc" id="L299">            valMatch_uf[k] = NONE;  // unmatched</span>
+<span class="fc" id="L300">            valMatch_of[k] = NONE;  // unmatched</span>
         }
 
         // next variable matched
-<span class="nc" id="L304">        next_uf = new int[x.length];</span>
-<span class="nc" id="L305">        next_of = new int[x.length];</span>
-<span class="nc bnc" id="L306" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++){</span>
-<span class="nc" id="L307">            next_uf[k] = NONE;  // no next</span>
-<span class="nc" id="L308">            next_of[k] = NONE;  // no next</span>
+<span class="fc" id="L304">        next_uf = new int[x.length];</span>
+<span class="fc" id="L305">        next_of = new int[x.length];</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++){</span>
+<span class="fc" id="L307">            next_uf[k] = NONE;  // no next</span>
+<span class="fc" id="L308">            next_of[k] = NONE;  // no next</span>
         }
 
         // previous variable matched
-<span class="nc" id="L312">        prev_uf = new int[x.length];</span>
-<span class="nc" id="L313">        prev_of = new int[x.length];</span>
-<span class="nc bnc" id="L314" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++){</span>
-<span class="nc" id="L315">            prev_uf[k] = NONE;  // no prev</span>
-<span class="nc" id="L316">            prev_of[k] = NONE;  // no prev</span>
+<span class="fc" id="L312">        prev_uf = new int[x.length];</span>
+<span class="fc" id="L313">        prev_of = new int[x.length];</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++){</span>
+<span class="fc" id="L315">            prev_uf[k] = NONE;  // no prev</span>
+<span class="fc" id="L316">            prev_of[k] = NONE;  // no prev</span>
         }
 
         // variable assignment
-<span class="nc" id="L320">        varMatch_uf = new int [x.length];</span>
-<span class="nc" id="L321">        varMatch_of = new int [x.length];</span>
-<span class="nc bnc" id="L322" title="All 2 branches missed.">        for(int k = 0 ; k &lt; x.length; k++){</span>
-<span class="nc" id="L323">            varMatch_uf[k] = NONE; // unmatched</span>
-<span class="nc" id="L324">            varMatch_of[k] = NONE; // unmatched</span>
+<span class="fc" id="L320">        varMatch_uf = new int [x.length];</span>
+<span class="fc" id="L321">        varMatch_of = new int [x.length];</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">        for(int k = 0 ; k &lt; x.length; k++){</span>
+<span class="fc" id="L323">            varMatch_uf[k] = NONE; // unmatched</span>
+<span class="fc" id="L324">            varMatch_of[k] = NONE; // unmatched</span>
         }
 
         // flag
-<span class="nc" id="L328">        varSeen = new int[x.length];</span>
+<span class="fc" id="L328">        varSeen = new int[x.length];</span>
 
         // flag
-<span class="nc" id="L331">        valSeen = new int[nbVals];</span>
+<span class="fc" id="L331">        valSeen = new int[nbVals];</span>
 
-<span class="nc" id="L333">        magic = 0;</span>
-<span class="nc" id="L334">    }</span>
+<span class="fc" id="L333">        magic = 0;</span>
+<span class="fc" id="L334">    }</span>
 
     //assigns value v to variable k and update structures: sizeFlow, flow, varMatch, prev, next, valMatch
     private void assign(int k,int v, FlowType ft){
@@ -341,34 +341,34 @@ import org.maxicp.cp.engine.core.CPIntVar;
         int [] prev;     //previous variable matched
         int [] valMatch; //first variable matched to the value
 
-<span class="nc bnc" id="L344" title="All 2 branches missed.">        if(ft == FlowType.UF){</span>
-<span class="nc" id="L345">            flow = flow_uf;</span>
-<span class="nc" id="L346">            varMatch = varMatch_uf;</span>
-<span class="nc" id="L347">            next = next_uf;</span>
-<span class="nc" id="L348">            prev = prev_uf;</span>
-<span class="nc" id="L349">            valMatch = valMatch_uf;</span>
-<span class="nc" id="L350">            sizeFlow_uf++;</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">        if(ft == FlowType.UF){</span>
+<span class="fc" id="L345">            flow = flow_uf;</span>
+<span class="fc" id="L346">            varMatch = varMatch_uf;</span>
+<span class="fc" id="L347">            next = next_uf;</span>
+<span class="fc" id="L348">            prev = prev_uf;</span>
+<span class="fc" id="L349">            valMatch = valMatch_uf;</span>
+<span class="fc" id="L350">            sizeFlow_uf++;</span>
         }else{ //OF
-<span class="nc" id="L352">            flow = flow_of;</span>
-<span class="nc" id="L353">            varMatch = varMatch_of;</span>
-<span class="nc" id="L354">            next = next_of;</span>
-<span class="nc" id="L355">            prev = prev_of;</span>
-<span class="nc" id="L356">            valMatch = valMatch_of;</span>
-<span class="nc" id="L357">            sizeFlow_of++;</span>
+<span class="fc" id="L352">            flow = flow_of;</span>
+<span class="fc" id="L353">            varMatch = varMatch_of;</span>
+<span class="fc" id="L354">            next = next_of;</span>
+<span class="fc" id="L355">            prev = prev_of;</span>
+<span class="fc" id="L356">            valMatch = valMatch_of;</span>
+<span class="fc" id="L357">            sizeFlow_of++;</span>
         }
 
-<span class="nc" id="L360">        unassign(k,ft);</span>
+<span class="fc" id="L360">        unassign(k,ft);</span>
 
         // k is now first on the list of v
-<span class="nc" id="L363">        varMatch[k] = v;</span>
-<span class="nc" id="L364">        flow[v-minval]++;</span>
-<span class="nc" id="L365">        int nk = valMatch[v-minval];</span>
-<span class="nc" id="L366">        next[k] = nk;</span>
-<span class="nc" id="L367">        prev[k] = NONE;</span>
-<span class="nc bnc" id="L368" title="All 2 branches missed.">        if (nk != NONE)</span>
-<span class="nc" id="L369">            prev[nk] = k;</span>
-<span class="nc" id="L370">        valMatch[v-minval] = k;</span>
-<span class="nc" id="L371">    }</span>
+<span class="fc" id="L363">        varMatch[k] = v;</span>
+<span class="fc" id="L364">        flow[v-minval]++;</span>
+<span class="fc" id="L365">        int nk = valMatch[v-minval];</span>
+<span class="fc" id="L366">        next[k] = nk;</span>
+<span class="fc" id="L367">        prev[k] = NONE;</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">        if (nk != NONE)</span>
+<span class="fc" id="L369">            prev[nk] = k;</span>
+<span class="fc" id="L370">        valMatch[v-minval] = k;</span>
+<span class="fc" id="L371">    }</span>
 
     //unassings variable k and updates appropriately the structures: sizeFlow, flow, varMatch, prev, next, valMatch
     private void unassign(int k, FlowType ft){
@@ -378,82 +378,82 @@ import org.maxicp.cp.engine.core.CPIntVar;
         int [] prev;     //previous variable matched
         int [] valMatch; //first variable matched to the value
 
-<span class="nc bnc" id="L381" title="All 2 branches missed.">        if(ft == FlowType.UF){</span>
-<span class="nc" id="L382">            flow = flow_uf;</span>
-<span class="nc" id="L383">            varMatch = varMatch_uf;</span>
-<span class="nc" id="L384">            next = next_uf;</span>
-<span class="nc" id="L385">            prev = prev_uf;</span>
-<span class="nc" id="L386">            valMatch = valMatch_uf;</span>
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if(ft == FlowType.UF){</span>
+<span class="fc" id="L382">            flow = flow_uf;</span>
+<span class="fc" id="L383">            varMatch = varMatch_uf;</span>
+<span class="fc" id="L384">            next = next_uf;</span>
+<span class="fc" id="L385">            prev = prev_uf;</span>
+<span class="fc" id="L386">            valMatch = valMatch_uf;</span>
         }else{ // OF
-<span class="nc" id="L388">            flow = flow_of;</span>
-<span class="nc" id="L389">            varMatch = varMatch_of;</span>
-<span class="nc" id="L390">            next = next_of;</span>
-<span class="nc" id="L391">            prev = prev_of;</span>
-<span class="nc" id="L392">            valMatch = valMatch_of;</span>
+<span class="fc" id="L388">            flow = flow_of;</span>
+<span class="fc" id="L389">            varMatch = varMatch_of;</span>
+<span class="fc" id="L390">            next = next_of;</span>
+<span class="fc" id="L391">            prev = prev_of;</span>
+<span class="fc" id="L392">            valMatch = valMatch_of;</span>
         }
 
-<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (varMatch[k] != NONE) { // this guy is assigned; must be removed</span>
-<span class="nc bnc" id="L396" title="All 2 branches missed.">            if(ft == FlowType.UF) sizeFlow_uf--;</span>
-<span class="nc" id="L397">            else sizeFlow_of--;</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (varMatch[k] != NONE) { // this guy is assigned; must be removed</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">            if(ft == FlowType.UF) sizeFlow_uf--;</span>
+<span class="fc" id="L397">            else sizeFlow_of--;</span>
 
-<span class="nc" id="L399">            int w = varMatch[k];</span>
-<span class="nc" id="L400">            flow[w-minval]--;</span>
-<span class="nc bnc" id="L401" title="All 2 branches missed.">            if (valMatch[w-minval] == k) { // first in the list</span>
-<span class="nc" id="L402">                int nk = next[k];</span>
-<span class="nc" id="L403">                valMatch[w-minval] = nk;</span>
-<span class="nc bnc" id="L404" title="All 2 branches missed.">                if (nk != NONE)</span>
-<span class="nc" id="L405">                    prev[nk] = NONE; // nk is now first</span>
-<span class="nc" id="L406">            }</span>
+<span class="fc" id="L399">            int w = varMatch[k];</span>
+<span class="fc" id="L400">            flow[w-minval]--;</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">            if (valMatch[w-minval] == k) { // first in the list</span>
+<span class="fc" id="L402">                int nk = next[k];</span>
+<span class="fc" id="L403">                valMatch[w-minval] = nk;</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">                if (nk != NONE)</span>
+<span class="fc" id="L405">                    prev[nk] = NONE; // nk is now first</span>
+<span class="fc" id="L406">            }</span>
             else { // not first
-<span class="nc" id="L408">                int pk = prev[k];</span>
-<span class="nc" id="L409">                int nk = next[k];</span>
-<span class="nc" id="L410">                next[pk] = nk;</span>
-<span class="nc bnc" id="L411" title="All 2 branches missed.">                if (nk != NONE)</span>
-<span class="nc" id="L412">                    prev[nk] = pk;</span>
+<span class="fc" id="L408">                int pk = prev[k];</span>
+<span class="fc" id="L409">                int nk = next[k];</span>
+<span class="fc" id="L410">                next[pk] = nk;</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">                if (nk != NONE)</span>
+<span class="fc" id="L412">                    prev[nk] = pk;</span>
             }
-<span class="nc" id="L414">            varMatch[k] = NONE;</span>
+<span class="fc" id="L414">            varMatch[k] = NONE;</span>
         }
-<span class="nc" id="L416">    }</span>
+<span class="fc" id="L416">    }</span>
 
     //finds a initial flow for both the underflow and overflow
     private void findInitialFlow() {
-<span class="nc" id="L420">        sizeFlow_uf = 0;</span>
-<span class="nc" id="L421">        sizeFlow_of = 0;</span>
-<span class="nc bnc" id="L422" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc" id="L423">            int mx = x[k].min();</span>
-<span class="nc" id="L424">            int Mx = x[k].max();</span>
-<span class="nc bnc" id="L425" title="All 2 branches missed.">            for(int i = mx; i &lt;= Mx; i++){</span>
-<span class="nc bnc" id="L426" title="All 2 branches missed.">                if (flow_uf[i-minval] &lt; low[i-minval])</span>
-<span class="nc bnc" id="L427" title="All 2 branches missed.">                    if (x[k].contains(i)) {</span>
-<span class="nc" id="L428">                        assign(k,i,FlowType.UF);</span>
-<span class="nc" id="L429">                        break;</span>
+<span class="fc" id="L420">        sizeFlow_uf = 0;</span>
+<span class="fc" id="L421">        sizeFlow_of = 0;</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L423">            int mx = x[k].min();</span>
+<span class="fc" id="L424">            int Mx = x[k].max();</span>
+<span class="fc bfc" id="L425" title="All 2 branches covered.">            for(int i = mx; i &lt;= Mx; i++){</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">                if (flow_uf[i-minval] &lt; low[i-minval])</span>
+<span class="fc bfc" id="L427" title="All 2 branches covered.">                    if (x[k].contains(i)) {</span>
+<span class="fc" id="L428">                        assign(k,i,FlowType.UF);</span>
+<span class="fc" id="L429">                        break;</span>
                     }
             }
-<span class="nc bnc" id="L432" title="All 2 branches missed.">            for(int i = mx; i &lt;= Mx; i++){</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">                if (flow_of[i-minval] &lt; up[i-minval])</span>
-<span class="nc bnc" id="L434" title="All 2 branches missed.">                    if (x[k].contains(i)) {</span>
-<span class="nc" id="L435">                        assign(k,i,FlowType.OF);</span>
-<span class="nc" id="L436">                        break;</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">            for(int i = mx; i &lt;= Mx; i++){</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                if (flow_of[i-minval] &lt; up[i-minval])</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">                    if (x[k].contains(i)) {</span>
+<span class="fc" id="L435">                        assign(k,i,FlowType.OF);</span>
+<span class="fc" id="L436">                        break;</span>
                     }
             }
         }
-<span class="nc" id="L440">    }</span>
+<span class="fc" id="L440">    }</span>
 
     private int getValueViolation(){
-<span class="nc" id="L443">        int buf = findBestUnderFlow();</span>
-<span class="nc" id="L444">        int bof = findBestOverFlow();</span>
-<span class="nc" id="L445">        return buf+bof;</span>
+<span class="fc" id="L443">        int buf = findBestUnderFlow();</span>
+<span class="fc" id="L444">        int bof = findBestOverFlow();</span>
+<span class="fc" id="L445">        return buf+bof;</span>
     }
 
     //computes and returns the best under flow
     private int findBestUnderFlow(){
-<span class="nc bnc" id="L450" title="All 4 branches missed.">        for(int k = 0; k &lt; x.length &amp;&amp; sizeFlow_uf &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L451" title="All 2 branches missed.">            if (varMatch_uf[k] == NONE) {</span>
-<span class="nc" id="L452">                magic++;</span>
-<span class="nc" id="L453">                findAugmentingPath(k,FlowType.UF);</span>
+<span class="fc bfc" id="L450" title="All 4 branches covered.">        for(int k = 0; k &lt; x.length &amp;&amp; sizeFlow_uf &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">            if (varMatch_uf[k] == NONE) {</span>
+<span class="fc" id="L452">                magic++;</span>
+<span class="fc" id="L453">                findAugmentingPath(k,FlowType.UF);</span>
             }
         }
-<span class="nc" id="L456">        return sumLow - sizeFlow_uf;</span>
+<span class="fc" id="L456">        return sumLow - sizeFlow_uf;</span>
     }
 
     //computes and returns the best over flow
@@ -461,48 +461,48 @@ import org.maxicp.cp.engine.core.CPIntVar;
         //in order to have the best overflow AND underflow, I start from the
         //best under flow to compute the best overflow (very important for the methods hasValInBestAssignment/getValInBestAssignment)
 
-<span class="nc bnc" id="L464" title="All 2 branches missed.">        for(int i = minval; i &lt;= maxval; i++){</span>
-<span class="nc" id="L465">            flow_of[i-minval] = flow_uf[i-minval];</span>
-<span class="nc" id="L466">            valMatch_of[i-minval] = valMatch_uf[i-minval];</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">        for(int i = minval; i &lt;= maxval; i++){</span>
+<span class="fc" id="L465">            flow_of[i-minval] = flow_uf[i-minval];</span>
+<span class="fc" id="L466">            valMatch_of[i-minval] = valMatch_uf[i-minval];</span>
         }
-<span class="nc bnc" id="L468" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length ; k++) {</span>
-<span class="nc" id="L469">            varMatch_of[k] = varMatch_uf[k];</span>
-<span class="nc" id="L470">            next_of[k] = next_uf[k];</span>
-<span class="nc" id="L471">            prev_of[k] = prev_uf[k];</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length ; k++) {</span>
+<span class="fc" id="L469">            varMatch_of[k] = varMatch_uf[k];</span>
+<span class="fc" id="L470">            next_of[k] = next_uf[k];</span>
+<span class="fc" id="L471">            prev_of[k] = prev_uf[k];</span>
         }
-<span class="nc" id="L473">        sizeFlow_of = sizeFlow_uf;</span>
+<span class="fc" id="L473">        sizeFlow_of = sizeFlow_uf;</span>
 
-<span class="nc bnc" id="L475" title="All 4 branches missed.">        for(int k = 0; k &lt; x.length &amp;&amp; sizeFlow_of &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L476" title="All 2 branches missed.">            if (varMatch_of[k] == NONE) {</span>
-<span class="nc" id="L477">                magic++;</span>
-<span class="nc" id="L478">                findAugmentingPath(k,FlowType.OF);</span>
+<span class="fc bfc" id="L475" title="All 4 branches covered.">        for(int k = 0; k &lt; x.length &amp;&amp; sizeFlow_of &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L476" title="All 2 branches covered.">            if (varMatch_of[k] == NONE) {</span>
+<span class="fc" id="L477">                magic++;</span>
+<span class="fc" id="L478">                findAugmentingPath(k,FlowType.OF);</span>
             }
         }
-<span class="nc" id="L481">        return x.length - sizeFlow_of;</span>
+<span class="fc" id="L481">        return x.length - sizeFlow_of;</span>
     }
 
     //finds augmenting path from variable i which is currently not matched (true if found a path, false otherwise)
     private boolean findAugmentingPath(int k, FlowType ft){
         int []  varMatch; //for each variable, the value it is matched to
-<span class="nc bnc" id="L487" title="All 2 branches missed.">        if(ft == FlowType.UF) 	varMatch = varMatch_uf;</span>
-<span class="nc" id="L488">        else 					varMatch = varMatch_of;</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">        if(ft == FlowType.UF) 	varMatch = varMatch_uf;</span>
+<span class="fc" id="L488">        else 					varMatch = varMatch_of;</span>
 
-<span class="nc bnc" id="L490" title="All 2 branches missed.">        if (varSeen[k] != magic) {</span>
-<span class="nc" id="L491">            varSeen[k] = magic;</span>
-<span class="nc" id="L492">            int mx = x[k].min();</span>
-<span class="nc" id="L493">            int Mx = x[k].max();</span>
-<span class="nc bnc" id="L494" title="All 2 branches missed.">            for(int v = mx; v &lt;= Mx; v++) {</span>
-<span class="nc bnc" id="L495" title="All 2 branches missed.">                if (varMatch[k] != v) {</span>
-<span class="nc bnc" id="L496" title="All 2 branches missed.">                    if (x[k].contains(v)) {</span>
-<span class="nc bnc" id="L497" title="All 2 branches missed.">                        if (findAugmentingPathValue(v,ft)) {</span>
-<span class="nc" id="L498">                            assign(k,v,ft);</span>
-<span class="nc" id="L499">                            return true;</span>
+<span class="pc bpc" id="L490" title="1 of 2 branches missed.">        if (varSeen[k] != magic) {</span>
+<span class="fc" id="L491">            varSeen[k] = magic;</span>
+<span class="fc" id="L492">            int mx = x[k].min();</span>
+<span class="fc" id="L493">            int Mx = x[k].max();</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">            for(int v = mx; v &lt;= Mx; v++) {</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">                if (varMatch[k] != v) {</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">                    if (x[k].contains(v)) {</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">                        if (findAugmentingPathValue(v,ft)) {</span>
+<span class="fc" id="L498">                            assign(k,v,ft);</span>
+<span class="fc" id="L499">                            return true;</span>
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L505">        return false;</span>
+<span class="fc" id="L505">        return false;</span>
     }
 
     private boolean findAugmentingPathValue(int v, FlowType ft){
@@ -512,132 +512,132 @@ import org.maxicp.cp.engine.core.CPIntVar;
         int [] valMatch; //first variable matched to the value
         int [] capa;     //capacity (low for ft==UF, up for ft==OF)
 
-<span class="nc bnc" id="L515" title="All 2 branches missed.">        if(ft == FlowType.UF){</span>
-<span class="nc" id="L516">            flow = flow_uf;</span>
-<span class="nc" id="L517">            next = next_uf;</span>
-<span class="nc" id="L518">            valMatch = valMatch_uf;</span>
-<span class="nc" id="L519">            capa = low;</span>
+<span class="fc bfc" id="L515" title="All 2 branches covered.">        if(ft == FlowType.UF){</span>
+<span class="fc" id="L516">            flow = flow_uf;</span>
+<span class="fc" id="L517">            next = next_uf;</span>
+<span class="fc" id="L518">            valMatch = valMatch_uf;</span>
+<span class="fc" id="L519">            capa = low;</span>
         }else{ //OF
-<span class="nc" id="L521">            flow = flow_of;</span>
-<span class="nc" id="L522">            next = next_of;</span>
-<span class="nc" id="L523">            valMatch = valMatch_of;</span>
-<span class="nc" id="L524">            capa = up;</span>
+<span class="fc" id="L521">            flow = flow_of;</span>
+<span class="fc" id="L522">            next = next_of;</span>
+<span class="fc" id="L523">            valMatch = valMatch_of;</span>
+<span class="fc" id="L524">            capa = up;</span>
         }
 
-<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (valSeen[v-minval] != magic) {</span>
-<span class="nc" id="L528">            valSeen[v-minval] = magic;</span>
-<span class="nc bnc" id="L529" title="All 2 branches missed.">            if (flow[v-minval] &lt; capa[v-minval])</span>
-<span class="nc" id="L530">                return true;</span>
-<span class="nc bnc" id="L531" title="All 2 branches missed.">            else if (flow[v-minval] &gt; 0) {</span>
-<span class="nc" id="L532">                int i = valMatch[v-minval];</span>
-<span class="nc bnc" id="L533" title="All 2 branches missed.">                while (i != NONE) {</span>
-<span class="nc bnc" id="L534" title="All 2 branches missed.">                    if (findAugmentingPath(i,ft))</span>
-<span class="nc" id="L535">                        return true;</span>
-<span class="nc" id="L536">                    i = next[i];</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">        if (valSeen[v-minval] != magic) {</span>
+<span class="fc" id="L528">            valSeen[v-minval] = magic;</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">            if (flow[v-minval] &lt; capa[v-minval])</span>
+<span class="fc" id="L530">                return true;</span>
+<span class="fc bfc" id="L531" title="All 2 branches covered.">            else if (flow[v-minval] &gt; 0) {</span>
+<span class="fc" id="L532">                int i = valMatch[v-minval];</span>
+<span class="fc bfc" id="L533" title="All 2 branches covered.">                while (i != NONE) {</span>
+<span class="fc bfc" id="L534" title="All 2 branches covered.">                    if (findAugmentingPath(i,ft))</span>
+<span class="fc" id="L535">                        return true;</span>
+<span class="fc" id="L536">                    i = next[i];</span>
                 }
             }
         }
-<span class="nc" id="L540">        return false;</span>
+<span class="fc" id="L540">        return false;</span>
     }
 
     private void computeIsVarAlwaysMatched(FlowType ft){
         boolean [] isVarAlwaysMatched;
         int [] varMatch;
 
-<span class="nc bnc" id="L547" title="All 2 branches missed.">        if(ft == FlowType.UF){</span>
-<span class="nc" id="L548">            isVarAlwaysMatched = isVarAlwaysMatched_uf;</span>
-<span class="nc" id="L549">            varMatch = varMatch_uf;</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">        if(ft == FlowType.UF){</span>
+<span class="fc" id="L548">            isVarAlwaysMatched = isVarAlwaysMatched_uf;</span>
+<span class="fc" id="L549">            varMatch = varMatch_uf;</span>
         }else{
-<span class="nc" id="L551">            isVarAlwaysMatched = isVarAlwaysMatched_of;</span>
-<span class="nc" id="L552">            varMatch = varMatch_of;</span>
+<span class="fc" id="L551">            isVarAlwaysMatched = isVarAlwaysMatched_of;</span>
+<span class="fc" id="L552">            varMatch = varMatch_of;</span>
         }
 
 
-<span class="nc" id="L556">        int [] nbVarInComponent = new int[component+1];</span>
-<span class="nc bnc" id="L557" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++){</span>
-<span class="nc bnc" id="L558" title="All 2 branches missed.">            if(varMatch[k] == NONE ){</span>
-<span class="nc" id="L559">                nbVarInComponent[varComponent[k]]++;</span>
+<span class="fc" id="L556">        int [] nbVarInComponent = new int[component+1];</span>
+<span class="fc bfc" id="L557" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++){</span>
+<span class="fc bfc" id="L558" title="All 2 branches covered.">            if(varMatch[k] == NONE ){</span>
+<span class="fc" id="L559">                nbVarInComponent[varComponent[k]]++;</span>
             }
         }
-<span class="nc bnc" id="L562" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++){</span>
-<span class="nc" id="L563">            isVarAlwaysMatched[k] = false;</span>
-<span class="nc bnc" id="L564" title="All 4 branches missed.">            if(varMatch[k] != NONE &amp;&amp; nbVarInComponent[varComponent[k]] == 0){</span>
-<span class="nc" id="L565">                isVarAlwaysMatched[k] = true;</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++){</span>
+<span class="fc" id="L563">            isVarAlwaysMatched[k] = false;</span>
+<span class="fc bfc" id="L564" title="All 4 branches covered.">            if(varMatch[k] != NONE &amp;&amp; nbVarInComponent[varComponent[k]] == 0){</span>
+<span class="fc" id="L565">                isVarAlwaysMatched[k] = true;</span>
             }
         }
-<span class="nc" id="L568">    }</span>
+<span class="fc" id="L568">    }</span>
 
     private void allocateSCC(){
-<span class="nc" id="L571">        varComponent = new int[x.length];</span>
-<span class="nc" id="L572">        varDfs = new int[x.length];</span>
-<span class="nc" id="L573">        varHigh = new int [x.length];</span>
+<span class="fc" id="L571">        varComponent = new int[x.length];</span>
+<span class="fc" id="L572">        varDfs = new int[x.length];</span>
+<span class="fc" id="L573">        varHigh = new int [x.length];</span>
 
-<span class="nc" id="L575">        valComponent = new int [nbVals];</span>
-<span class="nc" id="L576">        valDfs = new int[nbVals];</span>
-<span class="nc" id="L577">        valHigh = new int[nbVals];</span>
+<span class="fc" id="L575">        valComponent = new int [nbVals];</span>
+<span class="fc" id="L576">        valDfs = new int[nbVals];</span>
+<span class="fc" id="L577">        valHigh = new int[nbVals];</span>
 
-<span class="nc" id="L579">        stack        = new int [x.length+nbVals+1];</span>
-<span class="nc" id="L580">        type         = new int [x.length+nbVals+1];</span>
+<span class="fc" id="L579">        stack        = new int [x.length+nbVals+1];</span>
+<span class="fc" id="L580">        type         = new int [x.length+nbVals+1];</span>
 
-<span class="nc" id="L582">        isVarAlwaysMatched_uf  = new boolean[x.length];</span>
-<span class="nc" id="L583">        isVarAlwaysMatched_of  = new boolean[x.length];</span>
+<span class="fc" id="L582">        isVarAlwaysMatched_uf  = new boolean[x.length];</span>
+<span class="fc" id="L583">        isVarAlwaysMatched_of  = new boolean[x.length];</span>
 
-<span class="nc" id="L585">    }</span>
+<span class="fc" id="L585">    }</span>
 
     private void initSCC(){
-<span class="nc bnc" id="L588" title="All 2 branches missed.">        for(int k = 0 ; k &lt; x.length; k++) {</span>
-<span class="nc" id="L589">            varComponent[k] = 0;</span>
-<span class="nc" id="L590">            varDfs[k] = 0;</span>
-<span class="nc" id="L591">            varHigh[k] = 0;</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">        for(int k = 0 ; k &lt; x.length; k++) {</span>
+<span class="fc" id="L589">            varComponent[k] = 0;</span>
+<span class="fc" id="L590">            varDfs[k] = 0;</span>
+<span class="fc" id="L591">            varHigh[k] = 0;</span>
         }
-<span class="nc bnc" id="L593" title="All 2 branches missed.">        for(int k = 0 ; k &lt; nbVals; k++) {</span>
-<span class="nc" id="L594">            valComponent[k] = 0;</span>
-<span class="nc" id="L595">            valDfs[k] = 0;</span>
-<span class="nc" id="L596">            valHigh[k] = 0;</span>
+<span class="fc bfc" id="L593" title="All 2 branches covered.">        for(int k = 0 ; k &lt; nbVals; k++) {</span>
+<span class="fc" id="L594">            valComponent[k] = 0;</span>
+<span class="fc" id="L595">            valDfs[k] = 0;</span>
+<span class="fc" id="L596">            valHigh[k] = 0;</span>
         }
 
-<span class="nc" id="L599">        sinkComponent = 0;</span>
-<span class="nc" id="L600">        sinkDfs = 0;</span>
-<span class="nc" id="L601">        sinkHigh = 0;</span>
+<span class="fc" id="L599">        sinkComponent = 0;</span>
+<span class="fc" id="L600">        sinkDfs = 0;</span>
+<span class="fc" id="L601">        sinkHigh = 0;</span>
 
-<span class="nc" id="L603">        top = 0;</span>
-<span class="nc" id="L604">        dfs = x.length + nbVals + 1;</span>
-<span class="nc" id="L605">        component = 0;</span>
-<span class="nc" id="L606">    }</span>
+<span class="fc" id="L603">        top = 0;</span>
+<span class="fc" id="L604">        dfs = x.length + nbVals + 1;</span>
+<span class="fc" id="L605">        component = 0;</span>
+<span class="fc" id="L606">    }</span>
 
     private void findSCC(FlowType ft){
-<span class="nc" id="L609">        initSCC();</span>
-<span class="nc bnc" id="L610" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L611" title="All 2 branches missed.">            if (varDfs[k] == 0)</span>
-<span class="nc" id="L612">                findSCCvar(k,ft);</span>
+<span class="fc" id="L609">        initSCC();</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L611" title="All 2 branches covered.">            if (varDfs[k] == 0)</span>
+<span class="fc" id="L612">                findSCCvar(k,ft);</span>
         }
-<span class="nc" id="L614">    }</span>
+<span class="fc" id="L614">    }</span>
 
     private void findSCCvar(int k, FlowType ft){
-<span class="nc bnc" id="L617" title="All 2 branches missed.">        int [] varMatch = (ft == FlowType.UF) ? varMatch_uf : varMatch_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L617" title="All 2 branches covered.">        int [] varMatch = (ft == FlowType.UF) ? varMatch_uf : varMatch_of; //first variable matched to the value</span>
 
-<span class="nc" id="L619">        varDfs[k] = dfs--;</span>
-<span class="nc" id="L620">        varHigh[k] = varDfs[k];</span>
-<span class="nc" id="L621">        stack[top] = k;</span>
-<span class="nc" id="L622">        type[top] = 0;</span>
-<span class="nc" id="L623">        top++;</span>
-<span class="nc bnc" id="L624" title="All 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
+<span class="fc" id="L619">        varDfs[k] = dfs--;</span>
+<span class="fc" id="L620">        varHigh[k] = varDfs[k];</span>
+<span class="fc" id="L621">        stack[top] = k;</span>
+<span class="fc" id="L622">        type[top] = 0;</span>
+<span class="fc" id="L623">        top++;</span>
+<span class="pc bpc" id="L624" title="1 of 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
 
 
-<span class="nc" id="L627">        int mx = x[k].min();</span>
-<span class="nc" id="L628">        int Mx = x[k].max();</span>
-<span class="nc bnc" id="L629" title="All 2 branches missed.">        for(int w = mx; w &lt;= Mx; w++) {</span>
+<span class="fc" id="L627">        int mx = x[k].min();</span>
+<span class="fc" id="L628">        int Mx = x[k].max();</span>
+<span class="fc bfc" id="L629" title="All 2 branches covered.">        for(int w = mx; w &lt;= Mx; w++) {</span>
             //go to every values of the domain of x that is not matched by x
-<span class="nc bnc" id="L631" title="All 2 branches missed.">            if (varMatch[k] != w) {</span>
-<span class="nc bnc" id="L632" title="All 2 branches missed.">                if (x[k].contains(w)) {</span>
-<span class="nc bnc" id="L633" title="All 2 branches missed.">                    if (valDfs[w-minval] == 0) {</span>
-<span class="nc" id="L634">                        findSCCval(w,ft);</span>
-<span class="nc bnc" id="L635" title="All 2 branches missed.">                        if (valHigh[w-minval] &gt; varHigh[k])</span>
-<span class="nc" id="L636">                            varHigh[k] = valHigh[w-minval];</span>
+<span class="fc bfc" id="L631" title="All 2 branches covered.">            if (varMatch[k] != w) {</span>
+<span class="fc bfc" id="L632" title="All 2 branches covered.">                if (x[k].contains(w)) {</span>
+<span class="fc bfc" id="L633" title="All 2 branches covered.">                    if (valDfs[w-minval] == 0) {</span>
+<span class="fc" id="L634">                        findSCCval(w,ft);</span>
+<span class="fc bfc" id="L635" title="All 2 branches covered.">                        if (valHigh[w-minval] &gt; varHigh[k])</span>
+<span class="fc" id="L636">                            varHigh[k] = valHigh[w-minval];</span>
                     }
-<span class="nc bnc" id="L638" title="All 4 branches missed.">                    else if ( (valDfs[w-minval] &gt; varDfs[k]) &amp;&amp; (valComponent[w-minval] == 0)) {</span>
-<span class="nc bnc" id="L639" title="All 2 branches missed.">                        if (valDfs[w-minval] &gt; varHigh[k])</span>
-<span class="nc" id="L640">                            varHigh[k] = valDfs[w-minval];</span>
+<span class="fc bfc" id="L638" title="All 4 branches covered.">                    else if ( (valDfs[w-minval] &gt; varDfs[k]) &amp;&amp; (valComponent[w-minval] == 0)) {</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">                        if (valDfs[w-minval] &gt; varHigh[k])</span>
+<span class="fc" id="L640">                            varHigh[k] = valDfs[w-minval];</span>
                     }
                 }
             }
@@ -645,129 +645,129 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
         //if x is matched go also to every other variables that are not matched (path from x-&gt;source-&gt;x')
 
-<span class="nc bnc" id="L648" title="All 2 branches missed.">        if(varMatch[k] != NONE){</span>
-<span class="nc bnc" id="L649" title="All 2 branches missed.">            for(int i = 0; i &lt; x.length; i++) {</span>
-<span class="nc bnc" id="L650" title="All 2 branches missed.">                if(varMatch[i] == NONE){</span>
-<span class="nc bnc" id="L651" title="All 2 branches missed.">                    if (varDfs[i] == 0) {</span>
-<span class="nc" id="L652">                        findSCCvar(i,ft);</span>
-<span class="nc bnc" id="L653" title="All 2 branches missed.">                        if (varHigh[i] &gt; varHigh[k])</span>
-<span class="nc" id="L654">                            varHigh[k] = varHigh[i];</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">        if(varMatch[k] != NONE){</span>
+<span class="fc bfc" id="L649" title="All 2 branches covered.">            for(int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L650" title="All 2 branches covered.">                if(varMatch[i] == NONE){</span>
+<span class="fc bfc" id="L651" title="All 2 branches covered.">                    if (varDfs[i] == 0) {</span>
+<span class="fc" id="L652">                        findSCCvar(i,ft);</span>
+<span class="fc bfc" id="L653" title="All 2 branches covered.">                        if (varHigh[i] &gt; varHigh[k])</span>
+<span class="fc" id="L654">                            varHigh[k] = varHigh[i];</span>
                     }
-<span class="nc bnc" id="L656" title="All 4 branches missed.">                    else if ( (varDfs[i] &gt; varDfs[k]) &amp;&amp; (varComponent[i] == 0)) {</span>
-<span class="nc bnc" id="L657" title="All 2 branches missed.">                        if (varDfs[i] &gt; varHigh[k])</span>
-<span class="nc" id="L658">                            varHigh[k] = varDfs[i];</span>
+<span class="fc bfc" id="L656" title="All 4 branches covered.">                    else if ( (varDfs[i] &gt; varDfs[k]) &amp;&amp; (varComponent[i] == 0)) {</span>
+<span class="fc bfc" id="L657" title="All 2 branches covered.">                        if (varDfs[i] &gt; varHigh[k])</span>
+<span class="fc" id="L658">                            varHigh[k] = varDfs[i];</span>
                     }
                 }
             }
         }
 
-<span class="nc bnc" id="L664" title="All 2 branches missed.">        if (varHigh[k] == varDfs[k]) {</span>
-<span class="nc" id="L665">            component++;</span>
+<span class="fc bfc" id="L664" title="All 2 branches covered.">        if (varHigh[k] == varDfs[k]) {</span>
+<span class="fc" id="L665">            component++;</span>
             do {
-<span class="nc bnc" id="L667" title="All 2 branches missed.">                assert(top &gt; 0);</span>
-<span class="nc" id="L668">                int i = stack[--top];</span>
-<span class="nc" id="L669">                int t = type[top];</span>
-<span class="nc bnc" id="L670" title="All 2 branches missed.">                if (t == 0)</span>
-<span class="nc" id="L671">                    varComponent[i] = component;</span>
-<span class="nc bnc" id="L672" title="All 2 branches missed.">                else if (t == 1)</span>
-<span class="nc" id="L673">                    valComponent[i-minval] = component;</span>
+<span class="pc bpc" id="L667" title="1 of 2 branches missed.">                assert(top &gt; 0);</span>
+<span class="fc" id="L668">                int i = stack[--top];</span>
+<span class="fc" id="L669">                int t = type[top];</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">                if (t == 0)</span>
+<span class="fc" id="L671">                    varComponent[i] = component;</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">                else if (t == 1)</span>
+<span class="fc" id="L673">                    valComponent[i-minval] = component;</span>
                 else
-<span class="nc" id="L675">                    sinkComponent = component;</span>
-<span class="nc bnc" id="L676" title="All 4 branches missed.">                if (t == 0 &amp;&amp; i == k)</span>
-<span class="nc" id="L677">                    break;</span>
-<span class="nc" id="L678">            } while (true);</span>
+<span class="fc" id="L675">                    sinkComponent = component;</span>
+<span class="fc bfc" id="L676" title="All 4 branches covered.">                if (t == 0 &amp;&amp; i == k)</span>
+<span class="fc" id="L677">                    break;</span>
+<span class="fc" id="L678">            } while (true);</span>
         }
 
 
-<span class="nc" id="L682">    }</span>
+<span class="fc" id="L682">    }</span>
 
     private void findSCCval(int v, FlowType ft){
-<span class="nc bnc" id="L685" title="All 2 branches missed.">        int []  valMatch = (ft == FlowType.UF) ? valMatch_uf : valMatch_of; //first variable matched to the value</span>
-<span class="nc bnc" id="L686" title="All 2 branches missed.">        int []  capa     = (ft == FlowType.UF) ? low : up; //first variable matched to the value</span>
-<span class="nc bnc" id="L687" title="All 2 branches missed.">        int []  next     = (ft == FlowType.UF) ? next_uf : next_of; //first variable matched to the value</span>
-<span class="nc bnc" id="L688" title="All 2 branches missed.">        int []  flow     = (ft == FlowType.UF) ? flow_uf : flow_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">        int []  valMatch = (ft == FlowType.UF) ? valMatch_uf : valMatch_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">        int []  capa     = (ft == FlowType.UF) ? low : up; //first variable matched to the value</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        int []  next     = (ft == FlowType.UF) ? next_uf : next_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L688" title="All 2 branches covered.">        int []  flow     = (ft == FlowType.UF) ? flow_uf : flow_of; //first variable matched to the value</span>
 
-<span class="nc" id="L690">        valDfs[v-minval] = dfs--;</span>
-<span class="nc" id="L691">        valHigh[v-minval] = valDfs[v-minval];</span>
-<span class="nc" id="L692">        stack[top] = v;</span>
-<span class="nc" id="L693">        type[top] = 1;</span>
-<span class="nc" id="L694">        top++;</span>
-<span class="nc bnc" id="L695" title="All 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
+<span class="fc" id="L690">        valDfs[v-minval] = dfs--;</span>
+<span class="fc" id="L691">        valHigh[v-minval] = valDfs[v-minval];</span>
+<span class="fc" id="L692">        stack[top] = v;</span>
+<span class="fc" id="L693">        type[top] = 1;</span>
+<span class="fc" id="L694">        top++;</span>
+<span class="pc bpc" id="L695" title="1 of 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
 
         // first go to the variables assigned to this value
-<span class="nc" id="L698">        int k = valMatch[v-minval];</span>
-<span class="nc bnc" id="L699" title="All 2 branches missed.">        while (k != NONE) {</span>
-<span class="nc bnc" id="L700" title="All 2 branches missed.">            if (varDfs[k] == 0) {</span>
-<span class="nc" id="L701">                findSCCvar(k,ft);</span>
-<span class="nc bnc" id="L702" title="All 2 branches missed.">                if (varHigh[k] &gt; valHigh[v-minval])</span>
-<span class="nc" id="L703">                    valHigh[v-minval] = varHigh[k];</span>
+<span class="fc" id="L698">        int k = valMatch[v-minval];</span>
+<span class="fc bfc" id="L699" title="All 2 branches covered.">        while (k != NONE) {</span>
+<span class="fc bfc" id="L700" title="All 2 branches covered.">            if (varDfs[k] == 0) {</span>
+<span class="fc" id="L701">                findSCCvar(k,ft);</span>
+<span class="fc bfc" id="L702" title="All 2 branches covered.">                if (varHigh[k] &gt; valHigh[v-minval])</span>
+<span class="fc" id="L703">                    valHigh[v-minval] = varHigh[k];</span>
             }
-<span class="nc bnc" id="L705" title="All 4 branches missed.">            else if ( (varDfs[k] &gt; valDfs[v-minval]) &amp;&amp; (varComponent[k] == 0)) {</span>
-<span class="nc bnc" id="L706" title="All 2 branches missed.">                if (varDfs[k] &gt; valHigh[v-minval])</span>
-<span class="nc" id="L707">                    valHigh[v-minval] = varDfs[k];</span>
+<span class="pc bpc" id="L705" title="1 of 4 branches missed.">            else if ( (varDfs[k] &gt; valDfs[v-minval]) &amp;&amp; (varComponent[k] == 0)) {</span>
+<span class="pc bpc" id="L706" title="1 of 2 branches missed.">                if (varDfs[k] &gt; valHigh[v-minval])</span>
+<span class="fc" id="L707">                    valHigh[v-minval] = varDfs[k];</span>
             }
-<span class="nc" id="L709">            k = next[k];</span>
+<span class="fc" id="L709">            k = next[k];</span>
         }
 
         // next try to see if you can go to the sink
 
-<span class="nc bnc" id="L714" title="All 2 branches missed.">        if (flow[v-minval] &lt; capa[v-minval]) {</span>
+<span class="fc bfc" id="L714" title="All 2 branches covered.">        if (flow[v-minval] &lt; capa[v-minval]) {</span>
             // go to the sink
-<span class="nc bnc" id="L716" title="All 2 branches missed.">            if (sinkDfs == 0) {</span>
-<span class="nc" id="L717">                findSCCsink(ft);</span>
-<span class="nc bnc" id="L718" title="All 2 branches missed.">                if (sinkHigh &gt; valHigh[v-minval])</span>
-<span class="nc" id="L719">                    valHigh[v-minval] = sinkHigh;</span>
+<span class="fc bfc" id="L716" title="All 2 branches covered.">            if (sinkDfs == 0) {</span>
+<span class="fc" id="L717">                findSCCsink(ft);</span>
+<span class="fc bfc" id="L718" title="All 2 branches covered.">                if (sinkHigh &gt; valHigh[v-minval])</span>
+<span class="fc" id="L719">                    valHigh[v-minval] = sinkHigh;</span>
             }
-<span class="nc bnc" id="L721" title="All 4 branches missed.">            else if ( (sinkDfs &gt; valDfs[v-minval]) &amp;&amp; (sinkComponent == 0)) {</span>
-<span class="nc bnc" id="L722" title="All 2 branches missed.">                if (sinkDfs &gt; valHigh[v-minval])</span>
-<span class="nc" id="L723">                    valHigh[v-minval] = sinkDfs;</span>
+<span class="pc bpc" id="L721" title="1 of 4 branches missed.">            else if ( (sinkDfs &gt; valDfs[v-minval]) &amp;&amp; (sinkComponent == 0)) {</span>
+<span class="fc bfc" id="L722" title="All 2 branches covered.">                if (sinkDfs &gt; valHigh[v-minval])</span>
+<span class="fc" id="L723">                    valHigh[v-minval] = sinkDfs;</span>
             }
         }
 
-<span class="nc bnc" id="L727" title="All 2 branches missed.">        if (valHigh[v-minval] == valDfs[v-minval]) {</span>
-<span class="nc" id="L728">            component++;</span>
+<span class="fc bfc" id="L727" title="All 2 branches covered.">        if (valHigh[v-minval] == valDfs[v-minval]) {</span>
+<span class="fc" id="L728">            component++;</span>
             do {
-<span class="nc bnc" id="L730" title="All 2 branches missed.">                assert(top &gt; 0);</span>
-<span class="nc" id="L731">                int i = stack[--top];</span>
-<span class="nc" id="L732">                int t = type[top];</span>
-<span class="nc bnc" id="L733" title="All 2 branches missed.">                if (t == 0)</span>
-<span class="nc" id="L734">                    varComponent[i] = component;</span>
-<span class="nc bnc" id="L735" title="All 2 branches missed.">                else if (t == 1)</span>
-<span class="nc" id="L736">                    valComponent[i-minval] = component;</span>
+<span class="pc bpc" id="L730" title="1 of 2 branches missed.">                assert(top &gt; 0);</span>
+<span class="fc" id="L731">                int i = stack[--top];</span>
+<span class="fc" id="L732">                int t = type[top];</span>
+<span class="fc bfc" id="L733" title="All 2 branches covered.">                if (t == 0)</span>
+<span class="fc" id="L734">                    varComponent[i] = component;</span>
+<span class="pc bpc" id="L735" title="1 of 2 branches missed.">                else if (t == 1)</span>
+<span class="fc" id="L736">                    valComponent[i-minval] = component;</span>
                 else
 <span class="nc" id="L738">                    sinkComponent = component;</span>
-<span class="nc bnc" id="L739" title="All 4 branches missed.">                if (t == 1 &amp;&amp; i == v)</span>
-<span class="nc" id="L740">                    break;</span>
-<span class="nc" id="L741">            } while (true);</span>
+<span class="fc bfc" id="L739" title="All 4 branches covered.">                if (t == 1 &amp;&amp; i == v)</span>
+<span class="fc" id="L740">                    break;</span>
+<span class="fc" id="L741">            } while (true);</span>
         }
 
-<span class="nc" id="L744">    }</span>
+<span class="fc" id="L744">    }</span>
 
     private void findSCCsink(FlowType ft){
-<span class="nc bnc" id="L747" title="All 2 branches missed.">        int []  varMatch = (ft == FlowType.UF) ? varMatch_uf : varMatch_of; //first variable matched to the value</span>
-<span class="nc bnc" id="L748" title="All 2 branches missed.">        int []  flow     = (ft == FlowType.UF) ? flow_uf : flow_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L747" title="All 2 branches covered.">        int []  varMatch = (ft == FlowType.UF) ? varMatch_uf : varMatch_of; //first variable matched to the value</span>
+<span class="fc bfc" id="L748" title="All 2 branches covered.">        int []  flow     = (ft == FlowType.UF) ? flow_uf : flow_of; //first variable matched to the value</span>
 
-<span class="nc" id="L750">        sinkDfs  = dfs--;</span>
-<span class="nc" id="L751">        sinkHigh = sinkDfs;</span>
-<span class="nc" id="L752">        stack[top] = NONE;</span>
-<span class="nc" id="L753">        type[top] = 2;</span>
-<span class="nc" id="L754">        top++;</span>
-<span class="nc bnc" id="L755" title="All 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
+<span class="fc" id="L750">        sinkDfs  = dfs--;</span>
+<span class="fc" id="L751">        sinkHigh = sinkDfs;</span>
+<span class="fc" id="L752">        stack[top] = NONE;</span>
+<span class="fc" id="L753">        type[top] = 2;</span>
+<span class="fc" id="L754">        top++;</span>
+<span class="pc bpc" id="L755" title="1 of 2 branches missed.">        assert(top &lt;= x.length + nbVals + 1);</span>
 
         //from the sink, I can go to the values if the flow in the value is larger than the demand in these value
 
-<span class="nc bnc" id="L759" title="All 2 branches missed.">        for(int i = 0; i &lt; x.length; i++) {</span>
-<span class="nc" id="L760">            int w = varMatch[i];</span>
-<span class="nc bnc" id="L761" title="All 2 branches missed.">            if(varMatch[i] != NONE){</span>
-<span class="nc bnc" id="L762" title="All 2 branches missed.">                if (flow[w-minval] &gt; 0) { //there is no minimum capacity</span>
-<span class="nc bnc" id="L763" title="All 2 branches missed.">                    if (valDfs[w-minval] == 0) {</span>
-<span class="nc" id="L764">                        findSCCval(w,ft);</span>
-<span class="nc bnc" id="L765" title="All 2 branches missed.">                        if (valHigh[w-minval] &gt; sinkHigh)</span>
-<span class="nc" id="L766">                            sinkHigh = valHigh[w-minval];</span>
+<span class="fc bfc" id="L759" title="All 2 branches covered.">        for(int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L760">            int w = varMatch[i];</span>
+<span class="fc bfc" id="L761" title="All 2 branches covered.">            if(varMatch[i] != NONE){</span>
+<span class="pc bpc" id="L762" title="1 of 2 branches missed.">                if (flow[w-minval] &gt; 0) { //there is no minimum capacity</span>
+<span class="fc bfc" id="L763" title="All 2 branches covered.">                    if (valDfs[w-minval] == 0) {</span>
+<span class="fc" id="L764">                        findSCCval(w,ft);</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">                        if (valHigh[w-minval] &gt; sinkHigh)</span>
+<span class="fc" id="L766">                            sinkHigh = valHigh[w-minval];</span>
                     }
-<span class="nc bnc" id="L768" title="All 4 branches missed.">                    else if ( (valDfs[w-minval] &gt; sinkDfs) &amp;&amp; (valComponent[w-minval] == 0)) {</span>
-<span class="nc bnc" id="L769" title="All 2 branches missed.">                        if (valDfs[w-minval] &gt; sinkHigh)</span>
-<span class="nc" id="L770">                            sinkHigh = valDfs[w-minval];</span>
+<span class="fc bfc" id="L768" title="All 4 branches covered.">                    else if ( (valDfs[w-minval] &gt; sinkDfs) &amp;&amp; (valComponent[w-minval] == 0)) {</span>
+<span class="fc bfc" id="L769" title="All 2 branches covered.">                        if (valDfs[w-minval] &gt; sinkHigh)</span>
+<span class="fc" id="L770">                            sinkHigh = valDfs[w-minval];</span>
                     }
                 }
             }
@@ -775,21 +775,21 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
         //from the sink we can also go the variables that are not matched
 
-<span class="nc bnc" id="L778" title="All 2 branches missed.">        for(int i = 0; i &lt; x.length; i++) {</span>
-<span class="nc bnc" id="L779" title="All 2 branches missed.">            if(varMatch[i] == NONE){</span>
-<span class="nc bnc" id="L780" title="All 2 branches missed.">                if (varDfs[i] == 0) {</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">        for(int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">            if(varMatch[i] == NONE){</span>
+<span class="pc bpc" id="L780" title="1 of 2 branches missed.">                if (varDfs[i] == 0) {</span>
 <span class="nc" id="L781">                    findSCCvar(i,ft);</span>
 <span class="nc bnc" id="L782" title="All 2 branches missed.">                    if (varHigh[i] &gt; sinkHigh)</span>
 <span class="nc" id="L783">                        sinkHigh = varHigh[i];</span>
                 }
-<span class="nc bnc" id="L785" title="All 4 branches missed.">                else if ( (varDfs[i] &gt; sinkDfs) &amp;&amp; (varComponent[i] == 0)) {</span>
+<span class="pc bpc" id="L785" title="2 of 4 branches missed.">                else if ( (varDfs[i] &gt; sinkDfs) &amp;&amp; (varComponent[i] == 0)) {</span>
 <span class="nc bnc" id="L786" title="All 2 branches missed.">                    if (varDfs[i] &gt; sinkHigh)</span>
 <span class="nc" id="L787">                        sinkHigh = varDfs[i];</span>
                 }
             }
         }
 
-<span class="nc bnc" id="L792" title="All 2 branches missed.">        if (sinkHigh == sinkDfs) {</span>
+<span class="pc bpc" id="L792" title="1 of 2 branches missed.">        if (sinkHigh == sinkDfs) {</span>
 <span class="nc" id="L793">            component++;</span>
             do {
 <span class="nc bnc" id="L795" title="All 2 branches missed.">                assert(top &gt; 0);</span>
@@ -806,58 +806,58 @@ import org.maxicp.cp.engine.core.CPIntVar;
 <span class="nc" id="L806">            } while (true);</span>
         }
 
-<span class="nc" id="L809">    }</span>
+<span class="fc" id="L809">    }</span>
 
     private void prune(int valViol){
-<span class="nc bnc" id="L812" title="All 2 branches missed.">        if(valViol &lt; viol.max()-1){</span>
-<span class="nc" id="L813">            return; //the constraint is GAC</span>
+<span class="fc bfc" id="L812" title="All 2 branches covered.">        if(valViol &lt; viol.max()-1){</span>
+<span class="fc" id="L813">            return; //the constraint is GAC</span>
         }
 
         //we compute the SCC in Gu and Go and also if a variable is matched in every maximum matching in Gu and Go
 
         //source of inefficiency to create the table (memory)?
-<span class="nc" id="L819">        int  [] varComponent_uf = new int[x.length];</span>
-<span class="nc" id="L820">        int  [] valComponent_uf = new int[nbVals];</span>
+<span class="fc" id="L819">        int  [] varComponent_uf = new int[x.length];</span>
+<span class="fc" id="L820">        int  [] valComponent_uf = new int[nbVals];</span>
 
-<span class="nc" id="L822">        findSCC(FlowType.UF);</span>
-<span class="nc" id="L823">        computeIsVarAlwaysMatched(FlowType.UF);</span>
-<span class="nc bnc" id="L824" title="All 2 branches missed.">        for(int v = 0; v&lt;nbVals; v++) {</span>
-<span class="nc" id="L825">            valComponent_uf[v] = valComponent[v];</span>
+<span class="fc" id="L822">        findSCC(FlowType.UF);</span>
+<span class="fc" id="L823">        computeIsVarAlwaysMatched(FlowType.UF);</span>
+<span class="fc bfc" id="L824" title="All 2 branches covered.">        for(int v = 0; v&lt;nbVals; v++) {</span>
+<span class="fc" id="L825">            valComponent_uf[v] = valComponent[v];</span>
         }
-<span class="nc bnc" id="L827" title="All 2 branches missed.">        for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc" id="L828">            varComponent_uf[k] = varComponent[k];</span>
+<span class="fc bfc" id="L827" title="All 2 branches covered.">        for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc" id="L828">            varComponent_uf[k] = varComponent[k];</span>
         }
 
-<span class="nc" id="L831">        findSCC(FlowType.OF);</span>
-<span class="nc" id="L832">        computeIsVarAlwaysMatched(FlowType.OF);</span>
+<span class="fc" id="L831">        findSCC(FlowType.OF);</span>
+<span class="fc" id="L832">        computeIsVarAlwaysMatched(FlowType.OF);</span>
 
-<span class="nc bnc" id="L834" title="All 2 branches missed.">        if(valViol == viol.max()-1) {</span>
-<span class="nc bnc" id="L835" title="All 2 branches missed.">            for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L836" title="All 2 branches missed.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
-<span class="nc" id="L837">                int mx = x[k].min();</span>
-<span class="nc" id="L838">                int Mx = x[k].max();</span>
-<span class="nc bnc" id="L839" title="All 2 branches missed.">                for(int w = mx; w &lt;= Mx; w++) {</span>
-<span class="nc bnc" id="L840" title="All 2 branches missed.">                    if(x[k].contains(w)){</span>
-<span class="nc bnc" id="L841" title="All 4 branches missed.">                        if (varMatch_uf[k] != w &amp;&amp; varMatch_of[k] != w) {</span>
-<span class="nc bnc" id="L842" title="All 12 branches missed.">                            if ((varComponent_uf[k] != valComponent_uf[w-minval] &amp;&amp; (low[w-minval]&gt;0 || isVarAlwaysMatched_uf[k])) &amp;&amp; (varComponent[k] != valComponent[w-minval] &amp;&amp; (up[w-minval]&gt;0 || isVarAlwaysMatched_of[k])) ) {</span>
-<span class="nc" id="L843">                                x[k].remove(w);</span>
+<span class="fc bfc" id="L834" title="All 2 branches covered.">        if(valViol == viol.max()-1) {</span>
+<span class="fc bfc" id="L835" title="All 2 branches covered.">            for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L836" title="All 2 branches covered.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
+<span class="fc" id="L837">                int mx = x[k].min();</span>
+<span class="fc" id="L838">                int Mx = x[k].max();</span>
+<span class="fc bfc" id="L839" title="All 2 branches covered.">                for(int w = mx; w &lt;= Mx; w++) {</span>
+<span class="fc bfc" id="L840" title="All 2 branches covered.">                    if(x[k].contains(w)){</span>
+<span class="fc bfc" id="L841" title="All 4 branches covered.">                        if (varMatch_uf[k] != w &amp;&amp; varMatch_of[k] != w) {</span>
+<span class="pc bpc" id="L842" title="3 of 12 branches missed.">                            if ((varComponent_uf[k] != valComponent_uf[w-minval] &amp;&amp; (low[w-minval]&gt;0 || isVarAlwaysMatched_uf[k])) &amp;&amp; (varComponent[k] != valComponent[w-minval] &amp;&amp; (up[w-minval]&gt;0 || isVarAlwaysMatched_of[k])) ) {</span>
+<span class="fc" id="L843">                                x[k].remove(w);</span>
                             }
                         }
                     }
                 }
             }
         }
-<span class="nc bnc" id="L850" title="All 2 branches missed.">        else if(valViol == viol.max()){</span>
+<span class="pc bpc" id="L850" title="1 of 2 branches missed.">        else if(valViol == viol.max()){</span>
             //under-flow filtering
-<span class="nc bnc" id="L852" title="All 2 branches missed.">            for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L853" title="All 2 branches missed.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
-<span class="nc" id="L854">                int mx = x[k].min();</span>
-<span class="nc" id="L855">                int Mx = x[k].max();</span>
-<span class="nc bnc" id="L856" title="All 2 branches missed.">                for(int w = mx; w &lt;= Mx; w++) {</span>
-<span class="nc bnc" id="L857" title="All 2 branches missed.">                    if(x[k].contains(w)){</span>
-<span class="nc bnc" id="L858" title="All 4 branches missed.">                        if (varMatch_uf[k] != w &amp;&amp; varMatch_of[k] != w) {</span>
-<span class="nc bnc" id="L859" title="All 6 branches missed.">                            if (varComponent_uf[k] != valComponent_uf[w-minval] &amp;&amp; (low[w-minval]&gt;0 || isVarAlwaysMatched_uf[k])) {</span>
-<span class="nc" id="L860">                                x[k].remove(w);</span>
+<span class="fc bfc" id="L852" title="All 2 branches covered.">            for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
+<span class="fc" id="L854">                int mx = x[k].min();</span>
+<span class="fc" id="L855">                int Mx = x[k].max();</span>
+<span class="fc bfc" id="L856" title="All 2 branches covered.">                for(int w = mx; w &lt;= Mx; w++) {</span>
+<span class="fc bfc" id="L857" title="All 2 branches covered.">                    if(x[k].contains(w)){</span>
+<span class="fc bfc" id="L858" title="All 4 branches covered.">                        if (varMatch_uf[k] != w &amp;&amp; varMatch_of[k] != w) {</span>
+<span class="fc bfc" id="L859" title="All 6 branches covered.">                            if (varComponent_uf[k] != valComponent_uf[w-minval] &amp;&amp; (low[w-minval]&gt;0 || isVarAlwaysMatched_uf[k])) {</span>
+<span class="fc" id="L860">                                x[k].remove(w);</span>
                             }
                         }
                     }
@@ -865,22 +865,22 @@ import org.maxicp.cp.engine.core.CPIntVar;
             }
             //over-flow filtering
             //under-flow filtering
-<span class="nc bnc" id="L868" title="All 2 branches missed.">            for(int k = 0; k &lt; x.length; k++) {</span>
-<span class="nc bnc" id="L869" title="All 2 branches missed.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
-<span class="nc" id="L870">                int mx = x[k].min();</span>
-<span class="nc" id="L871">                int Mx = x[k].max();</span>
-<span class="nc bnc" id="L872" title="All 2 branches missed.">                for(int w = mx; w &lt;= Mx; w++) {</span>
-<span class="nc bnc" id="L873" title="All 2 branches missed.">                    if(x[k].contains(w)){</span>
-<span class="nc bnc" id="L874" title="All 2 branches missed.">                        if (varMatch_of[k] != w) {</span>
-<span class="nc bnc" id="L875" title="All 6 branches missed.">                            if (varComponent[k] != valComponent[w-minval] &amp;&amp; (up[w-minval]&gt;0 || isVarAlwaysMatched_of[k])) {</span>
-<span class="nc" id="L876">                                x[k].remove(w);</span>
+<span class="fc bfc" id="L868" title="All 2 branches covered.">            for(int k = 0; k &lt; x.length; k++) {</span>
+<span class="fc bfc" id="L869" title="All 2 branches covered.">                if( varMatch_of[k] == NONE) continue;//all values of this variable are consistent</span>
+<span class="fc" id="L870">                int mx = x[k].min();</span>
+<span class="fc" id="L871">                int Mx = x[k].max();</span>
+<span class="fc bfc" id="L872" title="All 2 branches covered.">                for(int w = mx; w &lt;= Mx; w++) {</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">                    if(x[k].contains(w)){</span>
+<span class="fc bfc" id="L874" title="All 2 branches covered.">                        if (varMatch_of[k] != w) {</span>
+<span class="pc bpc" id="L875" title="3 of 6 branches missed.">                            if (varComponent[k] != valComponent[w-minval] &amp;&amp; (up[w-minval]&gt;0 || isVarAlwaysMatched_of[k])) {</span>
+<span class="fc" id="L876">                                x[k].remove(w);</span>
                             }
                         }
                     }
                 }
             }
         }
-<span class="nc" id="L883">    }</span>
+<span class="fc" id="L883">    }</span>
 
 }
 
