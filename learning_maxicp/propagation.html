@@ -414,7 +414,7 @@ restored on backtrack, keeping the counts consistent with the current search sta
 <td><p>Node <code class="docutils literal notranslate"><span class="pre">i</span></code> must appear before node <code class="docutils literal notranslate"><span class="pre">j</span></code> whenever both are present in the sequence.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Distance.java">Distance</a></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">totalDist</span> <span class="pre">=</span> <span class="pre">Σ</span> <span class="pre">dist[pred(v)][v]</span></code> over all consecutive pairs in the sequence <span id="id8">[<a class="reference internal" href="../references.html#id16" title="Margaux Schmied, Augustin Delecluse, Jean-Charles Régin, and Pierre Schaus. The distance constraint on sequence variables. In Proceedings of the 30th International Conference on Principles and Practice of Constraint Programming (CP 2024). 2024. URL: https://drops.dagstuhl.de/entities/format/details/LIPIcs.CP.2024.26, doi:10.4230/LIPIcs.CP.2024.26.">14</a>]</span>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">totalDist</span> <span class="pre">=</span> <span class="pre">Σ</span> <span class="pre">dist[pred(v)][v]</span></code> over all consecutive pairs in the sequence <span id="id8">[<a class="reference internal" href="../references.html#id16" title="Margaux Schmied, Augustin Delecluse, Jean-Charles Régin, and Pierre Schaus. The distance constraint on sequence variables. In Not yet Published, available upon request. 2026.">14</a>]</span>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/TransitionTimes.java">TransitionTimes</a></p></td>
 <td><p>For each consecutive pair <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> in the sequence: <code class="docutils literal notranslate"><span class="pre">time[u]</span> <span class="pre">+</span> <span class="pre">dist[u][v]</span> <span class="pre">≤</span> <span class="pre">time[v]</span></code>.</p></td>
@@ -510,6 +510,14 @@ restored on backtrack, keeping the counts consistent with the current search sta
         &#169; Copyright 2025, MaxiCP.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
     </div>
+
+
+<div class="forkme-ribbon-wrap">
+  <a href="https://github.com/aia-uclouvain/maxicp"
+     target="_blank" rel="noopener noreferrer"
+     aria-label="Fork me on GitHub">Fork me on GitHub</a>
+</div>
+
 <div class="footer">
     <script type="text/javascript">
   (function() {

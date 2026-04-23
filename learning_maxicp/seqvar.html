@@ -118,7 +118,7 @@ Its domain is represented as a tuple <code class="docutils literal notranslate">
 <p>Source:
 <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/engine/constraints">org.maxicp.cp.engine.constraints (seqvar)</a></p>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">distance(SeqVar,</span> <span class="pre">int[][]</span> <span class="pre">dist,</span> <span class="pre">IntExpression</span> <span class="pre">totalDist)</span></code></dt><dd><p>Links the total route distance to a variable using a distance matrix <span id="id3">[<a class="reference internal" href="../references.html#id16" title="Margaux Schmied, Augustin Delecluse, Jean-Charles Régin, and Pierre Schaus. The distance constraint on sequence variables. In Proceedings of the 30th International Conference on Principles and Practice of Constraint Programming (CP 2024). 2024. URL: https://drops.dagstuhl.de/entities/format/details/LIPIcs.CP.2024.26, doi:10.4230/LIPIcs.CP.2024.26.">14</a>]</span>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">distance(SeqVar,</span> <span class="pre">int[][]</span> <span class="pre">dist,</span> <span class="pre">IntExpression</span> <span class="pre">totalDist)</span></code></dt><dd><p>Links the total route distance to a variable using a distance matrix <span id="id3">[<a class="reference internal" href="../references.html#id16" title="Margaux Schmied, Augustin Delecluse, Jean-Charles Régin, and Pierre Schaus. The distance constraint on sequence variables. In Not yet Published, available upon request. 2026.">14</a>]</span>.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">transitionTimes(SeqVar,</span> <span class="pre">IntExpression[]</span> <span class="pre">time,</span> <span class="pre">int[][]</span> <span class="pre">dist)</span></code></dt><dd><p>Enforces temporal consistency: for each consecutive pair <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> in the sequence,
 <code class="docutils literal notranslate"><span class="pre">time[u]</span> <span class="pre">+</span> <span class="pre">dist[u][v]</span> <span class="pre">≤</span> <span class="pre">time[v]</span></code>.</p>
@@ -321,6 +321,14 @@ leaving relaxed nodes free for re-insertion.</p>
         &#169; Copyright 2025, MaxiCP.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
     </div>
+
+
+<div class="forkme-ribbon-wrap">
+  <a href="https://github.com/aia-uclouvain/maxicp"
+     target="_blank" rel="noopener noreferrer"
+     aria-label="Fork me on GitHub">Fork me on GitHub</a>
+</div>
+
 <div class="footer">
     <script type="text/javascript">
   (function() {
