@@ -31,7 +31,7 @@ public class RCPSP {
 
     public static void main(String[] args) {
         // Reading the data
-            InputReader reader = new InputReader("data/RCPSP/j90_1_1.rcp");
+            InputReader reader = new InputReader("data/RCPSP/j90_1_2.rcp");
 
         int nActivities = reader.getInt();
         int nResources = reader.getInt();

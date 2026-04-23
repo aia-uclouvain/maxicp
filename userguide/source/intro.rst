@@ -6,95 +6,32 @@
 Preface
 *******
 
-This document is made for anyone who is looking for documentation on MaxiCP
+This document is the user guide for MaxiCP. It covers installation, core concepts, and
+a tour of all major features through annotated code examples. Readers looking for an
+introduction to constraint programming in general are referred to the
+`MiniCP paper <https://doi.org/10.1007/s12532-020-00190-7>`_ and related literature.
 
 
-What is MaxiCP
-==============
+What is MaxiCP?
+===============
 
 **MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
 for solving scheduling and vehicle routing problems.
-It is an extended version of the [MiniCP](https://www.minicp.org), a lightweight,
+It is an extended version of `MiniCP <https://www.minicp.org>`_, a lightweight,
 open-source CP solver mostly used for teaching constraint programming.
 
 The key features of MaxiCP are:
 
 - **Improved performances** (support for delta-based propagation, more efficient data structures, etc.).
 - **Symbolic modeling layer** also enabling search declaration.
-- **Support for Embarrasingly Parallel Search**.
-- **More global constraints** (e.g., bin-packing, gcc, etc.).
-- **Sequence variables with optional visits** for modeling complex vehicle routing and insertion based search heuristics, including LNS.
-- **Conditional task interval variables** including support for modeling with cumulative function expressions for scheduling problem.
+- **Support for Embarrassingly Parallel Search**.
+- **More global constraints** (e.g., bin-packing, gcc, soft-gcc, etc.).
+- **Sequence variables with optional visits** for modeling complex vehicle routing and insertion-based search heuristics, including LNS.
+- **Conditional task interval variables** including support for modeling with cumulative function expressions for scheduling problems.
 
+MaxiCP is simultaneously well-suited for education, research, and practical deployment.
 
-MaxiCP is aimed to be used in real-life project and research in Constraint Programming.
-
-
-Javadoc
-=======
-
-The `Javadoc API <https://aia-uclouvain.github.io/maxicp/javadoc/>`_.
-
-.. _install:
-
-Install MaxiCP
-==============
-
-MaxiCP source code is available from github_.
-
-**Using an IDE**
-
-We recommend using IntelliJ_.
-
-From IntelliJ_ you can import the project:
-
-.. code-block:: none
-
-    Open > (select pom.xml in the minicp directory and open as new project)
-
-
-
-**From the command line**
-
-Using maven_ command line you can do:
-
-
-.. code-block:: none
-
-    $mvn compile # compile all the project
-    $mvn test    # run all the test suite
-
-Some other useful commands:
-
-.. code-block:: none
-
-    $mvn jacoco:report          # creates a cover report in target/site/jacoco/index.html
-    $mvn javadoc:javadoc        # creates javadoc in target/site/apidocs/index.html
-
-
-.. _github: https://github.com/aia-uclouvain/maxicp
-.. _IntelliJ: https://www.jetbrains.com/idea/
-.. _maven: https://maven.apache.org
-
-
-Getting Help with MaxiCP
-========================
-
-Contact the authors by email, enter a bug report on github.
-
-Who Uses MaxiCP?
-=================
-
-If you use it for teaching or for research, please let us know and we will add you in this list.
-
-* UCLouvain, `AIA <https://aia.info.ucl.ac.be/people/>`_ Researchers in the Group of Pierre Schaus and Hélène Verhaeghe.
-
-
-Citing MaxiCP and Contributors
-==============================
-
-If you use MaxiCP in your research,
-you may want to cite the library to acknowledge the contributions of the main developers.
+If you use MaxiCP in your research, please cite:
 
 .. code-block:: latex
 
@@ -105,7 +42,74 @@ you may want to cite the library to acknowledge the contributions of the main de
           url          = {https://github.com/aia-uclouvain/maxicp},
         }
 
+Other contributors to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Alice Burlats.
 
-Other Contributors to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Alice Burlats.
+
+Javadoc
+=======
+
+- `Javadoc of the main branch <http://www.maxicp.org/javadoc/org.maxicp/module-summary.html>`_
+- `Javadoc of stable releases <https://javadoc.io/doc/org.maxicp/maxicp/latest/org.maxicp/module-summary.html>`_
+
+.. _install:
+
+Install MaxiCP
+==============
+
+MaxiCP source code is available on `GitHub <https://github.com/aia-uclouvain/maxicp>`_.
+
+Using MaxiCP as a Maven Dependency
+------------------------------------
+
+Stable releases are published on `Maven Central <https://central.sonatype.com/artifact/org.maxicp/maxicp>`_.
+Add the following to your ``pom.xml``:
+
+.. code-block:: xml
+
+    <dependency>
+        <groupId>org.maxicp</groupId>
+        <artifactId>maxicp</artifactId>
+        <version>0.0.2</version>
+    </dependency>
+
+If you need the latest development version from the ``main`` branch, use
+`JitPack <https://jitpack.io/#aia-uclouvain/maxicp>`_.
+
+Cloning and Building from Source
+----------------------------------
+
+.. code-block:: bash
+
+    git clone https://github.com/aia-uclouvain/maxicp.git
+    cd maxicp
+    mvn compile   # compile the project
+    mvn test      # run the full test suite
+
+Useful Maven commands:
+
+.. code-block:: bash
+
+    mvn jacoco:report       # coverage report → target/site/jacoco/index.html
+    mvn javadoc:javadoc     # javadoc        → target/site/apidocs/index.html
+
+Recommended IDE: IntelliJ IDEA
+---------------------------------
+
+1. **Clone the repository** (see above).
+2. Launch **IntelliJ IDEA**, choose *File → Open*, navigate to the ``maxicp`` folder,
+   and open ``pom.xml`` as a new project.
+3. To run all tests: right-click on ``src/test/java`` → *Run 'All Tests'*.
 
 
+Getting Help
+============
+
+- File a bug report or feature request on the `GitHub issue tracker <https://github.com/aia-uclouvain/maxicp/issues>`_.
+- Contact the authors by email.
+
+Who Uses MaxiCP?
+=================
+
+If you use MaxiCP for teaching or research, please let us know and we will add you to this list.
+
+* UCLouvain, `AIA <https://aia.info.ucl.ac.be/people/>`_ — Researchers in the group of Pierre Schaus and Hélène Verhaeghe.
