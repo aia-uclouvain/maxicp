@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>MaxiCP: A CP Solver for Scheduling and Vehicle Routing &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>MaxiCP: A Not So Mini Constraint Programming Solver &#8212; MaxiCP User-Guide 1.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="_static/custom.css" />
@@ -50,7 +50,7 @@
           <a href="intro.html" title="Preface"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">MaxiCP: A CP Solver for Scheduling and Vehicle Routing</a></li> 
+        <li class="nav-item nav-item-this"><a href="">MaxiCP: A Not So Mini Constraint Programming Solver</a></li> 
       </ul>
     </div>  
 
@@ -59,27 +59,107 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="maxicp-a-cp-solver-for-scheduling-and-vehicle-routing">
-<h1>MaxiCP: A CP Solver for Scheduling and Vehicle Routing<a class="headerlink" href="#maxicp-a-cp-solver-for-scheduling-and-vehicle-routing" title="Permalink to this heading">¶</a></h1>
+  <section id="maxicp-a-not-so-mini-constraint-programming-solver">
+<h1>MaxiCP: A Not So Mini Constraint Programming Solver<a class="headerlink" href="#maxicp-a-not-so-mini-constraint-programming-solver" title="Permalink to this heading">¶</a></h1>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Preface</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#what-is-maxicp">What is MaxiCP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#what-is-maxicp">What is MaxiCP?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro.html#javadoc">Javadoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#tech-report">Tech Report</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro.html#install-maxicp">Install MaxiCP</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#getting-help-with-maxicp">Getting Help with MaxiCP</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#getting-help">Getting Help</a></li>
 <li class="toctree-l2"><a class="reference internal" href="intro.html#who-uses-maxicp">Who Uses MaxiCP?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="intro.html#citing-maxicp-and-contributors">Citing MaxiCP and Contributors</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="maxicp.html">Documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/nqueens.html">N-Queens: The Hello World of Constraint Programming</a></li>
-<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/allmodels.html">List of models</a></li>
-<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/architecture.html">Core architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#the-cp-paradigm-in-one-sentence">The CP Paradigm in One Sentence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#two-apis-at-a-glance">Two APIs at a Glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#the-n-queens-problem">The N-Queens Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#step-by-step-raw-api">Step-by-Step: Raw API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#step-by-step-modeling-symbolic-api">Step-by-Step: Modeling (Symbolic) API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#side-by-side-comparison">Side-by-Side Comparison</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#using-the-built-in-first-fail-heuristic">Using the Built-In First-Fail Heuristic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#stopping-early-and-limiting-the-search">Stopping Early and Limiting the Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#optimisation">Optimisation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/getting_started.html#what-comes-next">What Comes Next</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/architecture.html">Core architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/architecture.html#same-architecture-as-minicp">Same architecture as MiniCP</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/state_management.html">State Management</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/state_management.html#the-statemanager-interface">The <code class="docutils literal notranslate"><span class="pre">StateManager</span></code> Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/state_management.html#usage-example">Usage Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/state_management.html#reversible-data-structures">Reversible Data Structures</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/propagation.html">Propagation Engine</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#priority-based-scheduling">Priority-Based Scheduling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#event-driven-constraint-activation">Event-Driven Constraint Activation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#posting-constraints">Posting Constraints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#implementing-a-custom-constraint">Implementing a Custom Constraint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#delta-based-incremental-propagation">Delta-Based Incremental Propagation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/propagation.html#global-constraints">Global Constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/search_strategies.html">Search</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#depth-first-search-with-closures">Depth-First Search with Closures</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#built-in-heuristics-variable-and-value-selectors">Built-In Heuristics: Variable and Value Selectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#advanced-value-selection">Advanced Value Selection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#conflict-aware-heuristics">Conflict-Aware Heuristics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#scheduling-and-sequencing-heuristics">Scheduling and Sequencing Heuristics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#combinators">Combinators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#branch-and-bound-optimization">Branch-and-Bound Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#large-neighborhood-search-lns">Large Neighborhood Search (LNS)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/scheduling.html">Scheduling with Conditional Intervals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#conditional-time-interval-variables">Conditional Time-Interval Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#creating-interval-variables">Creating Interval Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#job-shop-scheduling">Job-Shop Scheduling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#cumulative-function-expressions">Cumulative Function Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#rcpsp-resource-constrained-project-scheduling">RCPSP (Resource-Constrained Project Scheduling)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/scheduling.html#producer-consumer-scheduling">Producer-Consumer Scheduling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/seqvar.html">Sequence Variables for Routing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#domain-of-a-sequence-variable">Domain of a Sequence Variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#domain-operations">Domain Operations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#querying-the-domain">Querying the Domain</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#global-constraints-for-sequence-variables">Global Constraints for Sequence Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#modeling-the-tsptw-with-a-sequence-variable">Modeling the TSPTW with a Sequence Variable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#custom-insertion-based-search">Custom Insertion-Based Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#multi-vehicle-routing-cvrptw">Multi-Vehicle Routing (CVRPTW)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/seqvar.html#lns-with-sequence-variables">LNS with Sequence Variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html">Symbolic Modeling (MaxiCP-Modelling)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#models-as-functional-linked-lists">Models as Functional Linked Lists</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#the-modeldispatcher">The <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#concretization">Concretization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#model-transformations">Model Transformations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#embarrassingly-parallel-search-eps">Embarrassingly Parallel Search (EPS)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#portfolio-parallel-search">Portfolio Parallel Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#mixing-both-layers">Mixing Both Layers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/allmodels.html">List of Example Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/allmodels.html#raw-api-examples">Raw API examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/allmodels.html#modeling-api-examples">Modeling API examples</a></li>
 </ul>
 </li>
 </ul>
 </div>
+<section id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
 </section>
 
 
@@ -92,6 +172,16 @@
             <p class="logo"><a href="#">
               <img class="logo" src="_static/maxicp.png" alt="Logo"/>
             </a></p>
+  <div>
+    <h3><a href="#">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">MaxiCP: A Not So Mini Constraint Programming Solver</a><ul>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Next topic</h4>
     <p class="topless"><a href="intro.html"
@@ -128,7 +218,7 @@
           <a href="intro.html" title="Preface"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">MaxiCP: A CP Solver for Scheduling and Vehicle Routing</a></li> 
+        <li class="nav-item nav-item-this"><a href="">MaxiCP: A Not So Mini Constraint Programming Solver</a></li> 
       </ul>
     </div>
 

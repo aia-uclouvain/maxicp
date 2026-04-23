@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>List of models &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>List of Example Models &#8212; MaxiCP User-Guide 1.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -22,8 +22,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Core architecture" href="architecture.html" />
-    <link rel="prev" title="N-Queens: The Hello World of Constraint Programming" href="nqueens.html" />
+    <link rel="prev" title="Symbolic Modeling (MaxiCP-Modelling)" href="symbolic_modeling.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <!--[if lt IE 9]>
@@ -48,14 +47,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="architecture.html" title="Core architecture"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="nqueens.html" title="N-Queens: The Hello World of Constraint Programming"
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../maxicp.html" accesskey="U">Documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">List of models</a></li> 
+        <li class="nav-item nav-item-this"><a href="">List of Example Models</a></li> 
       </ul>
     </div>  
 
@@ -64,26 +59,90 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="list-of-models">
-<h1>List of models<a class="headerlink" href="#list-of-models" title="Permalink to this heading">¶</a></h1>
-<p>The project contains two sets of example models located in different packages:</p>
-<ul class="simple">
-<li><p><strong>Raw Implementation Examples</strong>:</p>
-<ul>
-<li><p>Located in the package <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/raw">org.maxicp.cp.examples.raw</a></p></li>
-<li><p>These examples demonstrate how to use MaxiCP’s <strong>raw implementation objects</strong> directly, giving you full control over the CP solver internals.</p></li>
-</ul>
-</li>
-<li><p><strong>Modeling API Examples</strong>:</p>
-<ul>
-<li><p>Located in the package <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/modeling">org.maxicp.cp.examples.modeling</a></p></li>
-<li><p>These examples use the <strong>high-level modeling API</strong>, which is then instantiated into raw API objects. This abstraction allows for a simpler and more expressive way to define constraint problems, while still using the underlying raw API for solving.</p></li>
-</ul>
-</li>
-</ul>
-<p>We recommend using the modeling API for most use cases,
-as it is more user-friendly and gives you access to the full range of MaxiCP’s features,
-including parallelization.</p>
+  <section id="list-of-example-models">
+<span id="allmodels"></span><h1>List of Example Models<a class="headerlink" href="#list-of-example-models" title="Permalink to this heading">¶</a></h1>
+<p>The project ships two parallel sets of example models.</p>
+<section id="raw-api-examples">
+<h2>Raw API examples<a class="headerlink" href="#raw-api-examples" title="Permalink to this heading">¶</a></h2>
+<p>Package:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/raw">org.maxicp.cp.examples.raw</a></p>
+<p>These examples use MaxiCP’s <strong>raw implementation objects</strong> directly, giving full control
+over the CP solver internals. They are the closest to what you write when implementing
+custom constraints or search heuristics.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Example</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/nqueens/NQueens.java">NQueens (raw)</a></p></td>
+<td><p>N-Queens with first-fail binary search.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/qap/QAP.java">QAP (raw)</a></p></td>
+<td><p>Quadratic Assignment Problem with LNS.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java">JobShop (raw)</a></p></td>
+<td><p>Job-Shop scheduling with <code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> and <code class="docutils literal notranslate"><span class="pre">Rank</span></code> search.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java">RCPSP (raw)</a></p></td>
+<td><p>Resource-Constrained Project Scheduling with cumulative functions and FDS.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java">ProducerConsumer (raw)</a></p></td>
+<td><p>Producer-consumer scheduling with <code class="docutils literal notranslate"><span class="pre">alwaysIn</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/tsptw/TSPTW.java">TSPTW (raw)</a></p></td>
+<td><p>Traveling Salesman with Time Windows using a sequence variable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java">CVRPTW (raw)</a></p></td>
+<td><p>Capacitated Vehicle Routing with Time Windows.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/darp/DARP.java">DARP (raw)</a></p></td>
+<td><p>Dial-A-Ride Problem with ride-time constraints.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="modeling-api-examples">
+<h2>Modeling API examples<a class="headerlink" href="#modeling-api-examples" title="Permalink to this heading">¶</a></h2>
+<p>Package:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/examples/modeling">org.maxicp.cp.examples.modeling</a></p>
+<p>These examples use the <strong>high-level symbolic modeling API</strong>, which is then instantiated
+into raw CP objects. They are more concise and give access to the full range of MaxiCP
+features including embarrassingly parallel search.</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Example</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/nqueens/NQueens.java">NQueens (modeling)</a></p></td>
+<td><p>N-Queens using the <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code> with parallel EPS variant.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/jobshop/JobShop.java">JobShop (modeling)</a></p></td>
+<td><p>Job-Shop with the modeling API.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/rcpsp/RCPSP.java">RCPSP (modeling)</a></p></td>
+<td><p>RCPSP with the modeling API and FDS.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/cvrptw/CVRPTW.java">CVRPTW (modeling)</a></p></td>
+<td><p>CVRPTW using the modeling API with insertion-based LNS.</p></td>
+</tr>
+</tbody>
+</table>
+<p>We recommend using the <strong>modeling API</strong> for most use cases:
+it is more user-friendly, supports model transformations, and enables parallelization
+out of the box.</p>
+</section>
 </section>
 
 
@@ -97,14 +156,20 @@ including parallelization.</p>
               <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
             </a></p>
   <div>
-    <h4>Previous topic</h4>
-    <p class="topless"><a href="nqueens.html"
-                          title="previous chapter">N-Queens: The Hello World of Constraint Programming</a></p>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">List of Example Models</a><ul>
+<li><a class="reference internal" href="#raw-api-examples">Raw API examples</a></li>
+<li><a class="reference internal" href="#modeling-api-examples">Modeling API examples</a></li>
+</ul>
+</li>
+</ul>
+
   </div>
   <div>
-    <h4>Next topic</h4>
-    <p class="topless"><a href="architecture.html"
-                          title="next chapter">Core architecture</a></p>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="symbolic_modeling.html"
+                          title="previous chapter">Symbolic Modeling (MaxiCP-Modelling)</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -134,14 +199,10 @@ including parallelization.</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="architecture.html" title="Core architecture"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="nqueens.html" title="N-Queens: The Hello World of Constraint Programming"
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../maxicp.html" >Documentation</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">List of models</a></li> 
+        <li class="nav-item nav-item-this"><a href="">List of Example Models</a></li> 
       </ul>
     </div>
 

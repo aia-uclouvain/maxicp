@@ -1,0 +1,345 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Symbolic Modeling (MaxiCP-Modelling) &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="List of Example Models" href="allmodels.html" />
+    <link rel="prev" title="Sequence Variables for Routing" href="seqvar.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="allmodels.html" title="List of Example Models"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="seqvar.html" title="Sequence Variables for Routing"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Symbolic Modeling (MaxiCP-Modelling)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="symbolic-modeling-maxicp-modelling">
+<span id="symbolic-modeling"></span><h1>Symbolic Modeling (MaxiCP-Modelling)<a class="headerlink" href="#symbolic-modeling-maxicp-modelling" title="Permalink to this heading">¶</a></h1>
+<p>Having covered the raw layer — state management, propagation, search, scheduling,
+and sequence variables — we now turn to the <strong>symbolic modeling layer</strong>.</p>
+<p>MaxiCP provides a higher-level API that separates <em>model definition</em> from <em>resolution</em>.
+Models are treated as first-class, immutable data structures, enabling model
+transformations, LNS neighborhoods, and embarrassingly parallel search.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/modeling">org.maxicp.modeling</a></p>
+<section id="models-as-functional-linked-lists">
+<h2>Models as Functional Linked Lists<a class="headerlink" href="#models-as-functional-linked-lists" title="Permalink to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">SymbolicModel</span></code> is an immutable record:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">record</span> <span class="nc">SymbolicModel</span><span class="p">(</span>
+<span class="w">    </span><span class="n">Constraint</span><span class="w">   </span><span class="n">constraint</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SymbolicModel</span><span class="w"> </span><span class="n">parent</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ModelProxy</span><span class="w">   </span><span class="n">modelProxy</span>
+<span class="p">)</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">Model</span><span class="p">,</span><span class="w"> </span><span class="n">Iterable</span><span class="o">&lt;</span><span class="n">Constraint</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="n">SymbolicModel</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">Constraint</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SymbolicModel</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">modelProxy</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Adding a constraint is an <em>O(1)</em> operation that returns a <strong>new</strong> model node,
+leaving the original unchanged.
+The full constraint list is recovered by traversing the chain to the root.
+This design enables <em>model trees</em> where each branch is a different sub-problem,
+reformulation, or LNS neighborhood.</p>
+</section>
+<section id="the-modeldispatcher">
+<h2>The <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code><a class="headerlink" href="#the-modeldispatcher" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code> is the primary user-facing class.
+It maintains a reference to the current symbolic model and acts as both a
+variable factory and a model proxy.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">ModelDispatcher</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Factory</span><span class="p">.</span><span class="na">makeModelDispatcher</span><span class="p">();</span>
+
+<span class="n">IntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">q</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
+<span class="n">IntExpression</span><span class="o">[]</span><span class="w"> </span><span class="n">qL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">plus</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
+<span class="n">IntExpression</span><span class="o">[]</span><span class="w"> </span><span class="n">qR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">minus</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
+
+<span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">q</span><span class="p">));</span>
+<span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qL</span><span class="p">));</span>
+<span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qR</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>Variables are symbolic objects; they do not belong to any concrete solver until
+concretization, so the same variables can be shared across multiple solver instances.</p>
+</section>
+<section id="concretization">
+<h2>Concretization<a class="headerlink" href="#concretization" title="Permalink to this heading">¶</a></h2>
+<p>To solve a model it must be <em>concretized</em> into a solver engine:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="p">.</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="n">firstFailBinary</span><span class="p">(</span><span class="n">q</span><span class="p">));</span>
+<span class="w">    </span><span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">runCP</span></code> internally:</p>
+<ol class="arabic simple">
+<li><p>Creates a fresh <code class="docutils literal notranslate"><span class="pre">MaxiCP</span></code> instance with a <code class="docutils literal notranslate"><span class="pre">Trailer</span></code>.</p></li>
+<li><p>Iterates over the symbolic constraint list and instantiates each one in the CP engine.</p></li>
+<li><p>Runs the initial fixed-point propagation.</p></li>
+</ol>
+<p>Alternatively, <code class="docutils literal notranslate"><span class="pre">model.cpInstantiate()</span></code> returns a <code class="docutils literal notranslate"><span class="pre">ConcreteCPModel</span></code>
+that can be used directly:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">ConcreteCPModel</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">cpInstantiate</span><span class="p">();</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="n">branching</span><span class="p">);</span>
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dfs</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="model-transformations">
+<h2>Model Transformations<a class="headerlink" href="#model-transformations" title="Permalink to this heading">¶</a></h2>
+<p><strong>LNS neighborhoods.</strong> A neighborhood is a model extension:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">Model</span><span class="w"> </span><span class="n">relaxed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">base</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">IntVar</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">variables</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rand</span><span class="p">.</span><span class="na">nextDouble</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.1</span><span class="p">)</span>
+<span class="w">        </span><span class="n">relaxed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">relaxed</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">solution</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">x</span><span class="p">)));</span>
+<span class="p">}</span>
+<span class="n">relaxed</span><span class="p">.</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* solve the neighborhood */</span><span class="w"> </span><span class="p">});</span>
+</pre></div>
+</div>
+<p>The base model is never modified. Each neighborhood is a separate branch of the model tree.</p>
+<p>This complements the raw-level <code class="docutils literal notranslate"><span class="pre">optimizeSubjectTo</span></code> technique:
+the raw approach saves/restores solver state; the symbolic approach creates
+entirely independent model branches that can be solved concurrently.</p>
+</section>
+<section id="embarrassingly-parallel-search-eps">
+<h2>Embarrassingly Parallel Search (EPS)<a class="headerlink" href="#embarrassingly-parallel-search-eps" title="Permalink to this heading">¶</a></h2>
+<p>EPS decomposes the original problem into independent sub-problems by exploring the
+search tree to a fixed depth <em>d</em>. Each leaf defines a sub-problem (the base model plus
+the branching decisions along the path), which is solved concurrently by a thread pool.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">ExecutorService</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newFixedThreadPool</span><span class="p">(</span><span class="mi">8</span><span class="p">);</span>
+
+<span class="n">Function</span><span class="o">&lt;</span><span class="n">Model</span><span class="p">,</span><span class="w"> </span><span class="n">SearchStatistics</span><span class="o">&gt;</span><span class="w"> </span><span class="n">epsSolve</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">model</span><span class="p">.</span><span class="na">runAsConcrete</span><span class="p">(</span><span class="n">CPModelInstantiator</span><span class="p">.</span><span class="na">withTrailing</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">cp</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="n">branching</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+<span class="w">    </span><span class="p">});</span>
+
+<span class="n">LinkedList</span><span class="o">&lt;</span><span class="n">Future</span><span class="o">&lt;</span><span class="n">SearchStatistics</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LinkedList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="n">model</span><span class="p">.</span><span class="na">runCP</span><span class="p">((</span><span class="n">cp</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">LimitedDepthBranching</span><span class="p">(</span><span class="n">branching</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">));</span>
+<span class="w">    </span><span class="n">search</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Model</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">symbolicCopy</span><span class="p">();</span><span class="w"> </span><span class="c1">// capture the sub-problem</span>
+<span class="w">        </span><span class="n">results</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">epsSolve</span><span class="p">.</span><span class="na">apply</span><span class="p">(</span><span class="n">m</span><span class="p">)));</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span><span class="w"> </span><span class="c1">// decomposition phase</span>
+<span class="p">});</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">results</span><span class="p">)</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">numberOfSolutions</span><span class="p">();</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Total solutions: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">total</span><span class="p">);</span>
+<span class="n">executor</span><span class="p">.</span><span class="na">shutdown</span><span class="p">();</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">symbolicCopy()</span></code> returns a lightweight, immutable snapshot of the current model.
+Because each sub-problem is concretized independently there is no shared mutable state
+and therefore no synchronization overhead.</p>
+</section>
+<section id="portfolio-parallel-search">
+<h2>Portfolio Parallel Search<a class="headerlink" href="#portfolio-parallel-search" title="Permalink to this heading">¶</a></h2>
+<p>Since symbolic models are immutable, the same model can be solved concurrently by
+<em>N</em> threads, each using a different heuristic or random seed:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">nThreads</span><span class="p">).</span><span class="na">parallel</span><span class="p">().</span><span class="na">forEach</span><span class="p">(</span><span class="n">t</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">model</span><span class="p">.</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span>
+<span class="w">            </span><span class="n">randomizedFirstFail</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Random</span><span class="p">(</span><span class="n">t</span><span class="p">)));</span>
+<span class="w">        </span><span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">minimize</span><span class="p">(</span><span class="n">cost</span><span class="p">));</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+</section>
+<section id="mixing-both-layers">
+<h2>Mixing Both Layers<a class="headerlink" href="#mixing-both-layers" title="Permalink to this heading">¶</a></h2>
+<p>Inside the <code class="docutils literal notranslate"><span class="pre">runCP</span></code> callback the user can access both the concrete model and the
+symbolic variables.
+The concrete model exposes the underlying <code class="docutils literal notranslate"><span class="pre">CPVar</span></code> objects, which is useful for
+custom search heuristics that need direct access to domain internals:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="p">.</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Access the underlying CPIntVar for symbolic variable q[0]</span>
+<span class="w">    </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">cpQ0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">q</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cpQ0</span><span class="p">.</span><span class="na">isFixed</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">EMPTY</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cpQ0</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">branch</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">cpQ0</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)),</span>
+<span class="w">                      </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">neq</span><span class="p">(</span><span class="n">cpQ0</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)));</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="n">dfs</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Symbolic Modeling (MaxiCP-Modelling)</a><ul>
+<li><a class="reference internal" href="#models-as-functional-linked-lists">Models as Functional Linked Lists</a></li>
+<li><a class="reference internal" href="#the-modeldispatcher">The <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code></a></li>
+<li><a class="reference internal" href="#concretization">Concretization</a></li>
+<li><a class="reference internal" href="#model-transformations">Model Transformations</a></li>
+<li><a class="reference internal" href="#embarrassingly-parallel-search-eps">Embarrassingly Parallel Search (EPS)</a></li>
+<li><a class="reference internal" href="#portfolio-parallel-search">Portfolio Parallel Search</a></li>
+<li><a class="reference internal" href="#mixing-both-layers">Mixing Both Layers</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="seqvar.html"
+                          title="previous chapter">Sequence Variables for Routing</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="allmodels.html"
+                          title="next chapter">List of Example Models</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/symbolic_modeling.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="allmodels.html" title="List of Example Models"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="seqvar.html" title="Sequence Variables for Routing"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Symbolic Modeling (MaxiCP-Modelling)</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>

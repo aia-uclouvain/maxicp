@@ -1,0 +1,367 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Search &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Scheduling with Conditional Intervals" href="scheduling.html" />
+    <link rel="prev" title="Propagation Engine" href="propagation.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="scheduling.html" title="Scheduling with Conditional Intervals"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="propagation.html" title="Propagation Engine"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Search</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="search">
+<span id="maxicp-search"></span><h1>Search<a class="headerlink" href="#search" title="Permalink to this heading">¶</a></h1>
+<p>MaxiCP provides a flexible, compositional search framework.
+The core engine is depth-first search (<code class="docutils literal notranslate"><span class="pre">DFSearch</span></code>) with branch-and-bound for optimization.</p>
+<p>Source of the search package:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/search/">org.maxicp.search</a></p>
+<section id="depth-first-search-with-closures">
+<h2>Depth-First Search with Closures<a class="headerlink" href="#depth-first-search-with-closures" title="Permalink to this heading">¶</a></h2>
+<p>Following the design of MiniCP, the search in MaxiCP is defined by a <em>branching function</em>:
+a <code class="docutils literal notranslate"><span class="pre">Supplier</span></code> of an array of <code class="docutils literal notranslate"><span class="pre">Runnable</span></code> closures, one per child branch.
+An empty array signals a solution.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">qs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectMin</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="w">      </span><span class="c1">// first-fail: pick the variable</span>
+<span class="w">        </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">        </span><span class="c1">//   that is not yet fixed</span>
+<span class="w">        </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">());</span><span class="w">           </span><span class="c1">//   with the smallest domain</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">qs</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">EMPTY</span><span class="p">;</span><span class="w">   </span><span class="c1">// all fixed -&gt; solution found</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qs</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">branch</span><span class="p">(</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)),</span><span class="w">   </span><span class="c1">// left branch: assign v</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">neq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">))</span><span class="w">   </span><span class="c1">// right branch: remove v</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">branch</span></code> method returns a <code class="docutils literal notranslate"><span class="pre">Runnable[]</span></code>.
+Each closure calls <code class="docutils literal notranslate"><span class="pre">cp.post()</span></code> which registers the constraint <em>and</em> immediately runs
+a full fixed-point computation, propagating all consequences of the decision.
+An <code class="docutils literal notranslate"><span class="pre">InconsistencyException</span></code> causes the search to backtrack.</p>
+</section>
+<section id="built-in-heuristics-variable-and-value-selectors">
+<h2>Built-In Heuristics: Variable and Value Selectors<a class="headerlink" href="#built-in-heuristics-variable-and-value-selectors" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Searches</span></code> offers a compositional alternative to writing branching closures by hand,
+separating two orthogonal concerns:</p>
+<ol class="arabic simple">
+<li><p>A <strong>variable selector</strong> (<code class="docutils literal notranslate"><span class="pre">Supplier&lt;IntExpression&gt;</span></code>) — returns the next unfixed variable, or <code class="docutils literal notranslate"><span class="pre">null</span></code> when all are fixed.</p></li>
+<li><p>A <strong>value selector</strong> (<code class="docutils literal notranslate"><span class="pre">Function&lt;IntExpression,</span> <span class="pre">Integer&gt;</span></code>) — given the variable, returns the value to try first.</p></li>
+</ol>
+<p><strong>Binary branching</strong> — <code class="docutils literal notranslate"><span class="pre">heuristicBinary(varSel)</span></code> or <code class="docutils literal notranslate"><span class="pre">heuristicBinary(varSel,</span> <span class="pre">valSel)</span></code></p>
+<p>Left branch assigns <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">v</span></code>; right branch removes it (<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">≠</span> <span class="pre">v</span></code>).</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// (a) most concise — built-in first-fail</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">firstFailBinary</span><span class="p">(</span><span class="n">q</span><span class="p">));</span>
+
+<span class="c1">// (b) explicit variable selector, default value (min)</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">heuristicBinary</span><span class="p">(</span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+
+<span class="c1">// (c) explicit variable AND value selectors</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span>
+<span class="w">    </span><span class="n">heuristicBinary</span><span class="p">(</span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">),</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">min</span><span class="p">()));</span>
+</pre></div>
+</div>
+<p><strong>N-ary branching</strong> — <code class="docutils literal notranslate"><span class="pre">heuristicNary(varSel)</span></code> creates one child branch per domain value.
+An overload accepts a scoring function <code class="docutils literal notranslate"><span class="pre">h:</span> <span class="pre">int</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code> and sorts values by increasing <code class="docutils literal notranslate"><span class="pre">h(v)</span></code>.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// values tried in increasing order</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">heuristicNary</span><span class="p">(</span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+
+<span class="c1">// values closer to n/2 tried first</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s5</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span>
+<span class="w">    </span><span class="n">heuristicNary</span><span class="p">(</span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">),</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">abs</span><span class="p">(</span><span class="n">v</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">)));</span>
+</pre></div>
+</div>
+<p><strong>Built-in variable selectors</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">minDomVariableSelector(x)</span></code> — first-fail (smallest domain).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">staticOrderVariableSelector(x)</span></code> — first unfixed variable in array order.</p></li>
+</ul>
+<p>Custom variable selectors are trivial to write:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">IntExpression</span><span class="o">&gt;</span><span class="w"> </span><span class="n">maxDom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">selectMin</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">qi</span><span class="p">.</span><span class="na">isFixed</span><span class="p">(),</span><span class="w"> </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">-</span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s6</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">heuristicBinary</span><span class="p">(</span><span class="n">maxDom</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-value-selection">
+<h2>Advanced Value Selection<a class="headerlink" href="#advanced-value-selection" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">boundImpactValueSelector(objective)</span></code> — for each candidate value, temporarily assigns it,
+measures the resulting objective bound, then backtracks. Returns the value that tightens
+the bound the least — biasing the search towards high-quality subtrees.</p></li>
+</ul>
+</section>
+<section id="conflict-aware-heuristics">
+<h2>Conflict-Aware Heuristics<a class="headerlink" href="#conflict-aware-heuristics" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">lastConflict</span></code> — after a failure, the variable that caused it is retried <em>before</em>
+consulting the fallback variable selector.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">conflictOrderingSearch</span></code> — maintains a conflict counter per variable; the most conflicted
+variable is selected first.</p></li>
+</ul>
+</section>
+<section id="scheduling-and-sequencing-heuristics">
+<h2>Scheduling and Sequencing Heuristics<a class="headerlink" href="#scheduling-and-sequencing-heuristics" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fds(tasks)</span></code> — <strong>Failure-Directed Search</strong> for interval variables. Very effective for
+proving optimality; supports optional tasks. Branches on status, start time, and duration.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">setTimes(tasks)</span></code> — branches on the start time of the task with the smallest slack.
+Assumes all tasks are mandatory.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rank(tasks)</span></code> — imposes a total order on tasks (assumes mandatory tasks).</p></li>
+</ul>
+<p>For sequence variables: <code class="docutils literal notranslate"><span class="pre">firstFailBinary(seqVars)</span></code> selects the insertable node with
+fewest insertion points; <code class="docutils literal notranslate"><span class="pre">branchesInsertingNode</span></code> sorts branches by a user-supplied
+detour cost.</p>
+</section>
+<section id="combinators">
+<h2>Combinators<a class="headerlink" href="#combinators" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">and(b1,</span> <span class="pre">b2,</span> <span class="pre">...)</span></code> — composes strategies sequentially; each strategy is activated only
+when all preceding ones return <code class="docutils literal notranslate"><span class="pre">EMPTY</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">limitedDiscrepancy(branching,</span> <span class="pre">maxDisc)</span></code> — prunes paths with more than <code class="docutils literal notranslate"><span class="pre">maxDisc</span></code> right
+branches (Limited Discrepancy Search).</p></li>
+</ul>
+</section>
+<section id="branch-and-bound-optimization">
+<h2>Branch-and-Bound Optimization<a class="headerlink" href="#branch-and-bound-optimization" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// Minimize with a 60-second time limit</span>
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span>
+<span class="w">    </span><span class="n">minimize</span><span class="p">(</span><span class="n">cost</span><span class="p">),</span>
+<span class="w">    </span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">timeInMillis</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">60_000</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Each time a solution is found, the objective bound is tightened to exclude worse solutions.</p>
+</section>
+<section id="large-neighborhood-search-lns">
+<h2>Large Neighborhood Search (LNS)<a class="headerlink" href="#large-neighborhood-search-lns" title="Permalink to this heading">¶</a></h2>
+<p>LNS iteratively improves an incumbent by fixing a large subset of variables to their
+current best values (the <em>freeze</em> phase) then re-solving the relaxed sub-problem.</p>
+<p>The example below applies LNS to the Quadratic Assignment Problem (QAP).</p>
+<p><strong>Model</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
+
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">weightedDist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="o">]</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="n">weightedDist</span><span class="o">[</span><span class="n">ind</span><span class="o">++]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mul</span><span class="p">(</span><span class="n">element</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">),</span><span class="w"> </span><span class="n">w</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span><span class="p">);</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">totCost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">weightedDist</span><span class="p">);</span>
+<span class="n">Objective</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">totCost</span><span class="p">);</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">firstFailBinary</span><span class="p">(</span><span class="n">x</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><strong>Tracking the best solution</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">xBest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">).</span><span class="na">toArray</span><span class="p">();</span><span class="w">  </span><span class="c1">// identity permutation</span>
+
+<span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">xBest</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;objective: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">totCost</span><span class="p">.</span><span class="na">min</span><span class="p">());</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<p><strong>LNS loop</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">nRestarts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">failureLimit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+<span class="n">Random</span><span class="w"> </span><span class="n">rand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Random</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nRestarts</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">dfs</span><span class="p">.</span><span class="na">optimizeSubjectTo</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span>
+<span class="w">        </span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">numberOfFailures</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">failureLimit</span><span class="p">,</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// Fix 95 % of variables to their best-known value</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rand</span><span class="p">.</span><span class="na">nextInt</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">95</span><span class="p">)</span>
+<span class="w">                    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">x</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">xBest</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">));</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After each call to <code class="docutils literal notranslate"><span class="pre">optimizeSubjectTo</span></code> the solver automatically restores its state,
+retracting all temporary fixing constraints.
+<code class="docutils literal notranslate"><span class="pre">xBest</span></code> lives outside the reversible state and always reflects the globally best
+solution found so far.</p>
+<p>Full example:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAPLNS.java">QAPLNS.java (raw)</a></p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Search</a><ul>
+<li><a class="reference internal" href="#depth-first-search-with-closures">Depth-First Search with Closures</a></li>
+<li><a class="reference internal" href="#built-in-heuristics-variable-and-value-selectors">Built-In Heuristics: Variable and Value Selectors</a></li>
+<li><a class="reference internal" href="#advanced-value-selection">Advanced Value Selection</a></li>
+<li><a class="reference internal" href="#conflict-aware-heuristics">Conflict-Aware Heuristics</a></li>
+<li><a class="reference internal" href="#scheduling-and-sequencing-heuristics">Scheduling and Sequencing Heuristics</a></li>
+<li><a class="reference internal" href="#combinators">Combinators</a></li>
+<li><a class="reference internal" href="#branch-and-bound-optimization">Branch-and-Bound Optimization</a></li>
+<li><a class="reference internal" href="#large-neighborhood-search-lns">Large Neighborhood Search (LNS)</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="propagation.html"
+                          title="previous chapter">Propagation Engine</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="scheduling.html"
+                          title="next chapter">Scheduling with Conditional Intervals</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/search_strategies.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="scheduling.html" title="Scheduling with Conditional Intervals"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="propagation.html" title="Propagation Engine"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Search</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>

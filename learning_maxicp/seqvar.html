@@ -1,0 +1,367 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Sequence Variables for Routing &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Symbolic Modeling (MaxiCP-Modelling)" href="symbolic_modeling.html" />
+    <link rel="prev" title="Scheduling with Conditional Intervals" href="scheduling.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="scheduling.html" title="Scheduling with Conditional Intervals"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Sequence Variables for Routing</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sequence-variables-for-routing">
+<span id="seqvar"></span><h1>Sequence Variables for Routing<a class="headerlink" href="#sequence-variables-for-routing" title="Permalink to this heading">¶</a></h1>
+<p>MaxiCP introduces <strong>sequence variables</strong> (<code class="docutils literal notranslate"><span class="pre">CPSeqVar</span></code>), a dedicated computational domain
+for routing and sequencing problems.
+Unlike the classical successor-array model
+(integer variable <code class="docutils literal notranslate"><span class="pre">succ[i]</span></code> giving the next node after <em>i</em>),
+sequence variables represent a <em>partial, growing path</em> through node insertions
+and natively support optional visits and insertion-based branching.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/core/CPSeqVar.java">CPSeqVar.java</a></p>
+<section id="domain-of-a-sequence-variable">
+<h2>Domain of a Sequence Variable<a class="headerlink" href="#domain-of-a-sequence-variable" title="Permalink to this heading">¶</a></h2>
+<p>A sequence variable <code class="docutils literal notranslate"><span class="pre">S</span></code> represents an ordered path over pairwise distinct nodes
+from a set <em>N</em>, starting at origin <em>first</em> and ending at destination <em>last</em>.
+Its domain is represented as a tuple <code class="docutils literal notranslate"><span class="pre">(R,</span> <span class="pre">X,</span> <span class="pre">s,</span> <span class="pre">NB)</span></code> where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">R</span></code> — <strong>required</strong> nodes that must appear in every feasible sequence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">X</span></code> — <strong>excluded</strong> nodes that may not appear in any feasible sequence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span></code> — mandatory <strong>partial sequence</strong>: a sub-sequence that must appear in every feasible sequence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NB</span></code> — <strong>NotBetween</strong> triples: <code class="docutils literal notranslate"><span class="pre">(i,</span> <span class="pre">j,</span> <span class="pre">k)</span></code> forbids node <em>j</em> appearing between <em>i</em> and <em>k</em>.</p></li>
+</ul>
+<p>Nodes fall into four categories:</p>
+<ul class="simple">
+<li><p><strong>Member</strong> — currently in the partial sequence <code class="docutils literal notranslate"><span class="pre">s</span></code>.</p></li>
+<li><p><strong>Possible</strong> — may or may not enter the final sequence.</p></li>
+<li><p><strong>Required</strong> — must be in the final sequence but not yet inserted.</p></li>
+<li><p><strong>Excluded</strong> — removed from all feasible sequences.</p></li>
+</ul>
+</section>
+<section id="domain-operations">
+<h2>Domain Operations<a class="headerlink" href="#domain-operations" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">seqVar</span><span class="p">.</span><span class="na">insert</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">);</span><span class="w">            </span><span class="c1">// insert node after pred</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">exclude</span><span class="p">(</span><span class="n">node</span><span class="p">);</span><span class="w">                 </span><span class="c1">// remove node from all sequences</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">require</span><span class="p">(</span><span class="n">node</span><span class="p">);</span><span class="w">                 </span><span class="c1">// mark node as required</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">removeInsert</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">);</span><span class="w">      </span><span class="c1">// forbid inserting node after pred</span>
+</pre></div>
+</div>
+<p>All operations are reversible through the state manager.</p>
+</section>
+<section id="querying-the-domain">
+<h2>Querying the Domain<a class="headerlink" href="#querying-the-domain" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">seqVar</span><span class="p">.</span><span class="na">isFixed</span><span class="p">();</span><span class="w">                          </span><span class="c1">// true when all nodes are member or excluded</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">fillNode</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="n">INSERTABLE</span><span class="p">);</span><span class="w">          </span><span class="c1">// fill buf with insertable nodes</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">nInsert</span><span class="p">(</span><span class="n">node</span><span class="p">);</span><span class="w">                      </span><span class="c1">// number of feasible insertion points for node</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">fillInsert</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="n">preds</span><span class="p">);</span><span class="w">            </span><span class="c1">// fill preds with feasible predecessors of node</span>
+<span class="n">seqVar</span><span class="p">.</span><span class="na">memberAfter</span><span class="p">(</span><span class="n">pred</span><span class="p">);</span><span class="w">                  </span><span class="c1">// current successor of pred in the partial sequence</span>
+</pre></div>
+</div>
+</section>
+<section id="global-constraints-for-sequence-variables">
+<h2>Global Constraints for Sequence Variables<a class="headerlink" href="#global-constraints-for-sequence-variables" title="Permalink to this heading">¶</a></h2>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/engine/constraints">org.maxicp.cp.engine.constraints (seqvar)</a></p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">distance(SeqVar,</span> <span class="pre">int[][]</span> <span class="pre">dist,</span> <span class="pre">IntExpression</span> <span class="pre">totalDist)</span></code></dt><dd><p>Links the total route distance to a variable using a distance matrix.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">transitionTimes(SeqVar,</span> <span class="pre">IntExpression[]</span> <span class="pre">time,</span> <span class="pre">int[][]</span> <span class="pre">dist)</span></code></dt><dd><p>Enforces temporal consistency: for each consecutive pair <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> in the sequence,
+<code class="docutils literal notranslate"><span class="pre">time[u]</span> <span class="pre">+</span> <span class="pre">dist[u][v]</span> <span class="pre">≤</span> <span class="pre">time[v]</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cumulative(SeqVar,</span> <span class="pre">int[]</span> <span class="pre">pickups,</span> <span class="pre">int[]</span> <span class="pre">drops,</span> <span class="pre">int[]</span> <span class="pre">load,</span> <span class="pre">int</span> <span class="pre">capacity)</span></code></dt><dd><p>Simultaneously enforces: (i) capacity at every node; (ii) pickup precedes delivery;
+(iii) both nodes of a request are assigned to the same vehicle.</p>
+</dd>
+</dl>
+</section>
+<section id="modeling-the-tsptw-with-a-sequence-variable">
+<h2>Modeling the TSPTW with a Sequence Variable<a class="headerlink" href="#modeling-the-tsptw-with-a-sequence-variable" title="Permalink to this heading">¶</a></h2>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/tsptw/TSPTW.java">TSPTW.java (raw, SeqVar)</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+
+<span class="n">CPSeqVar</span><span class="w"> </span><span class="n">tour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSeqVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">require</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="c1">// all nodes mandatory</span>
+
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">horizon</span><span class="p">);</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">time</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">time</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">removeAbove</span><span class="p">(</span><span class="n">latest</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">time</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">removeBelow</span><span class="p">(</span><span class="n">earliest</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">TransitionTimes</span><span class="p">(</span><span class="n">tour</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">distMatrix</span><span class="p">));</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">totDist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">100_000</span><span class="p">);</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Distance</span><span class="p">(</span><span class="n">tour</span><span class="p">,</span><span class="w"> </span><span class="n">distMatrix</span><span class="p">,</span><span class="w"> </span><span class="n">totDist</span><span class="p">));</span>
+
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="cm">/* insertion search, see below */</span><span class="p">);</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">totDist</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-insertion-based-search">
+<h2>Custom Insertion-Based Search<a class="headerlink" href="#custom-insertion-based-search" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">nodes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">n</span><span class="o">]</span><span class="p">;</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tour</span><span class="p">.</span><span class="na">isFixed</span><span class="p">())</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">EMPTY</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// Variable selection: node with fewest insertion points (first-fail)</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">nIns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">fillNode</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span><span class="w"> </span><span class="n">INSERTABLE</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectMin</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span><span class="w"> </span><span class="n">nIns</span><span class="p">,</span>
+<span class="w">        </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">tour</span><span class="p">::</span><span class="n">nInsert</span><span class="p">).</span><span class="na">getAsInt</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// Value selection: insertion with smallest detour cost</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">nPreds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">fillInsert</span><span class="p">(</span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="n">nodes</span><span class="p">);</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">bestPred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectMin</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span><span class="w"> </span><span class="n">nPreds</span><span class="p">,</span>
+<span class="w">        </span><span class="n">pred</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">pred</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">succ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">memberAfter</span><span class="p">(</span><span class="n">pred</span><span class="p">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">dist</span><span class="o">[</span><span class="n">pred</span><span class="o">][</span><span class="n">node</span><span class="o">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dist</span><span class="o">[</span><span class="n">node</span><span class="o">][</span><span class="n">succ</span><span class="o">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dist</span><span class="o">[</span><span class="n">pred</span><span class="o">][</span><span class="n">succ</span><span class="o">]</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}).</span><span class="na">getAsInt</span><span class="p">();</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">succ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">memberAfter</span><span class="p">(</span><span class="n">bestPred</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">branch</span><span class="p">(</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">insert</span><span class="p">(</span><span class="n">tour</span><span class="p">,</span><span class="w"> </span><span class="n">bestPred</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)),</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">notBetween</span><span class="p">(</span><span class="n">tour</span><span class="p">,</span><span class="w"> </span><span class="n">bestPred</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">,</span><span class="w"> </span><span class="n">succ</span><span class="p">))</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<p>Left branch: insert <code class="docutils literal notranslate"><span class="pre">node</span></code> after <code class="docutils literal notranslate"><span class="pre">bestPred</span></code>.
+Right branch: <code class="docutils literal notranslate"><span class="pre">notBetween</span></code> forbids that placement without committing to an alternative.</p>
+</section>
+<section id="multi-vehicle-routing-cvrptw">
+<h2>Multi-Vehicle Routing (CVRPTW)<a class="headerlink" href="#multi-vehicle-routing-cvrptw" title="Permalink to this heading">¶</a></h2>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java">CVRPTW.java (raw)</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+<span class="n">CPSeqVar</span><span class="o">[]</span><span class="w"> </span><span class="n">vehicles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPSeqVar</span><span class="o">[</span><span class="n">nVehicle</span><span class="o">]</span><span class="p">;</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">time</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">nNode</span><span class="o">]</span><span class="p">;</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">distance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">nVehicle</span><span class="o">]</span><span class="p">;</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nVehicle</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">vehicles</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSeqVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">nNode</span><span class="p">,</span><span class="w"> </span><span class="n">nRequest</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">v</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">nRequest</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">v</span><span class="o">*</span><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">distance</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">depotEnd</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nRequest</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">time</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">twStart</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">twEnd</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nRequest</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nNode</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">time</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">depotStart</span><span class="p">,</span><span class="w"> </span><span class="n">depotEnd</span><span class="p">);</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nVehicle</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">TransitionTimes</span><span class="p">(</span><span class="n">vehicles</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">,</span><span class="w"> </span><span class="n">distMatrix</span><span class="p">,</span><span class="w"> </span><span class="n">duration</span><span class="p">));</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Cumulative</span><span class="p">(</span><span class="n">vehicles</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">pickups</span><span class="p">,</span><span class="w"> </span><span class="n">drops</span><span class="p">,</span><span class="w"> </span><span class="n">load</span><span class="p">,</span><span class="w"> </span><span class="n">capacity</span><span class="p">));</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Distance</span><span class="p">(</span><span class="n">vehicles</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">distMatrix</span><span class="p">,</span><span class="w"> </span><span class="n">distance</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">sumDist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">distance</span><span class="p">);</span>
+
+<span class="c1">// Each node visited by exactly one vehicle</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nNode</span><span class="p">;</span><span class="w"> </span><span class="n">node</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">visits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">nVehicle</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nVehicle</span><span class="p">;</span><span class="w"> </span><span class="n">v</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="n">visits</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vehicles</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">.</span><span class="na">getNodeVar</span><span class="p">(</span><span class="n">node</span><span class="p">).</span><span class="na">isRequired</span><span class="p">();</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Sum</span><span class="p">(</span><span class="n">visits</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="cm">/* insertion search */</span><span class="p">);</span>
+<span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">sumDist</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="lns-with-sequence-variables">
+<h2>LNS with Sequence Variables<a class="headerlink" href="#lns-with-sequence-variables" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">RelaxedSequence</span></code> constraint fixes non-relaxed nodes in their best-known order,
+leaving relaxed nodes free for re-insertion.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">bestTour</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">).</span><span class="na">toArray</span><span class="p">();</span>
+
+<span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">tour</span><span class="p">.</span><span class="na">fillNode</span><span class="p">(</span><span class="n">bestTour</span><span class="p">,</span><span class="w"> </span><span class="n">SeqStatus</span><span class="p">.</span><span class="na">MEMBER_ORDERED</span><span class="p">));</span>
+
+<span class="n">Random</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Random</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span><span class="w"> </span><span class="n">iter</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">dfs</span><span class="p">.</span><span class="na">optimizeSubjectTo</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Set</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">relaxed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">randomSubset</span><span class="p">(</span><span class="n">random</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
+<span class="w">        </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RelaxedSequence</span><span class="p">(</span><span class="n">tour</span><span class="p">,</span><span class="w"> </span><span class="n">bestTour</span><span class="p">,</span><span class="w"> </span><span class="n">relaxed</span><span class="p">));</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Sequence Variables for Routing</a><ul>
+<li><a class="reference internal" href="#domain-of-a-sequence-variable">Domain of a Sequence Variable</a></li>
+<li><a class="reference internal" href="#domain-operations">Domain Operations</a></li>
+<li><a class="reference internal" href="#querying-the-domain">Querying the Domain</a></li>
+<li><a class="reference internal" href="#global-constraints-for-sequence-variables">Global Constraints for Sequence Variables</a></li>
+<li><a class="reference internal" href="#modeling-the-tsptw-with-a-sequence-variable">Modeling the TSPTW with a Sequence Variable</a></li>
+<li><a class="reference internal" href="#custom-insertion-based-search">Custom Insertion-Based Search</a></li>
+<li><a class="reference internal" href="#multi-vehicle-routing-cvrptw">Multi-Vehicle Routing (CVRPTW)</a></li>
+<li><a class="reference internal" href="#lns-with-sequence-variables">LNS with Sequence Variables</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="scheduling.html"
+                          title="previous chapter">Scheduling with Conditional Intervals</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="symbolic_modeling.html"
+                          title="next chapter">Symbolic Modeling (MaxiCP-Modelling)</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/seqvar.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="scheduling.html" title="Scheduling with Conditional Intervals"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Sequence Variables for Routing</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>

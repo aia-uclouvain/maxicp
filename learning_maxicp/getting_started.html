@@ -1,0 +1,524 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Getting Started &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Core architecture" href="architecture.html" />
+    <link rel="prev" title="Preface" href="../intro.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="architecture.html" title="Core architecture"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../intro.html" title="Preface"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Getting Started</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="getting-started">
+<span id="id1"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h1>
+<p>This chapter walks you through MaxiCP from scratch.
+We will model and solve the N-Queens problem — the canonical <em>“hello world”</em> of
+Constraint Programming — using <strong>both</strong> APIs that MaxiCP provides, explain every step in
+detail, and show you how to read the solver’s output.</p>
+<section id="the-cp-paradigm-in-one-sentence">
+<h2>The CP Paradigm in One Sentence<a class="headerlink" href="#the-cp-paradigm-in-one-sentence" title="Permalink to this heading">¶</a></h2>
+<p>Constraint Programming = <strong>Model</strong> + <strong>Search</strong>.</p>
+<p>You declare <em>variables</em> (the decisions you want to make) and <em>constraints</em> (the rules they
+must respect).
+The solver then searches for assignments that satisfy all constraints,
+pruning large portions of the search space by propagating the constraints at every step.</p>
+</section>
+<section id="two-apis-at-a-glance">
+<h2>Two APIs at a Glance<a class="headerlink" href="#two-apis-at-a-glance" title="Permalink to this heading">¶</a></h2>
+<p>MaxiCP offers two complementary ways to write a model:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 40%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p><strong>Raw API</strong></p></th>
+<th class="head"><p><strong>Modeling (symbolic) API</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Entry point</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CPSolver</span> <span class="pre">cp</span> <span class="pre">=</span> <span class="pre">CPFactory.makeSolver()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span> <span class="pre">model</span> <span class="pre">=</span> <span class="pre">makeModelDispatcher()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Variables</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CPIntVar</span></code>, <code class="docutils literal notranslate"><span class="pre">CPBoolVar</span></code>, <code class="docutils literal notranslate"><span class="pre">CPIntervalVar</span></code>, <code class="docutils literal notranslate"><span class="pre">CPSeqVar</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IntVar</span></code>, <code class="docutils literal notranslate"><span class="pre">IntervalVar</span></code>, <code class="docutils literal notranslate"><span class="pre">SeqVar</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Constraints</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cp.post(allDifferent(q))</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model.add(allDifferent(q))</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Branching closure adds to</p></td>
+<td><p>The <strong>concrete</strong> solver state</p></td>
+<td><p>The <strong>symbolic</strong> model (immutable list)</p></td>
+</tr>
+<tr class="row-even"><td><p>Solve</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">makeDfs(cp,</span> <span class="pre">branching).solve()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model.cpInstantiate()</span></code> then <code class="docutils literal notranslate"><span class="pre">dfSearch(...).solve()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Parallelism / LNS</p></td>
+<td><p>Manual save/restore with <code class="docutils literal notranslate"><span class="pre">optimizeSubjectTo</span></code></p></td>
+<td><p>Native: immutable model branches, <code class="docutils literal notranslate"><span class="pre">symbolicCopy()</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Both APIs share the same constraint library, the same search heuristics
+(<code class="docutils literal notranslate"><span class="pre">firstFailBinary</span></code>, <code class="docutils literal notranslate"><span class="pre">fds</span></code>, <code class="docutils literal notranslate"><span class="pre">setTimes</span></code>, …), and the same <code class="docutils literal notranslate"><span class="pre">SearchStatistics</span></code> output.</p>
+<p><strong>When to use which?</strong></p>
+<ul class="simple">
+<li><p>Use the <strong>Raw API</strong> when you need maximum control: implementing custom constraints,
+experimenting with propagation internals, or following along with MiniCP exercises.</p></li>
+<li><p>Use the <strong>Modeling API</strong> for most production use-cases: it is more concise, supports
+model transformations, and enables embarrassingly parallel search out of the box.</p></li>
+</ul>
+</section>
+<section id="the-n-queens-problem">
+<h2>The N-Queens Problem<a class="headerlink" href="#the-n-queens-problem" title="Permalink to this heading">¶</a></h2>
+<p>Place <em>n</em> queens on an <em>n×n</em> chessboard so that no two queens threaten each other.
+Two queens threaten each other when they share a <strong>row</strong>, <strong>column</strong>, or <strong>diagonal</strong>.</p>
+<p><strong>Variables.</strong> Assign one queen per row. Let <code class="docutils literal notranslate"><span class="pre">q[i]</span></code> ∈ <code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">…,</span> <span class="pre">n-1}</span></code> be the
+<em>column</em> of the queen in row <code class="docutils literal notranslate"><span class="pre">i</span></code>.
+By construction, no two queens share a row.</p>
+<p><strong>Constraints.</strong></p>
+<ul class="simple">
+<li><p><em>Different columns</em>: <code class="docutils literal notranslate"><span class="pre">allDifferent(q)</span></code>  — no two queens in the same column.</p></li>
+<li><p><em>Different left diagonals</em>: <code class="docutils literal notranslate"><span class="pre">allDifferent(q[i]</span> <span class="pre">−</span> <span class="pre">i)</span></code>  — no two queens on the same <code class="docutils literal notranslate"><span class="pre">/</span></code> diagonal.</p></li>
+<li><p><em>Different right diagonals</em>: <code class="docutils literal notranslate"><span class="pre">allDifferent(q[i]</span> <span class="pre">+</span> <span class="pre">i)</span></code>  — no two queens on the same <code class="docutils literal notranslate"><span class="pre">\</span></code> diagonal.</p></li>
+</ul>
+<p>This gives a compact, complete model with three global constraints.</p>
+</section>
+<section id="step-by-step-raw-api">
+<h2>Step-by-Step: Raw API<a class="headerlink" href="#step-by-step-raw-api" title="Permalink to this heading">¶</a></h2>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/nqueens/NQueens.java">NQueens (raw)</a></p>
+<p><strong>Step 1 — Create the solver and the variables</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="p">;</span>
+<span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeSolver</span><span class="p">();</span><span class="w">     </span><span class="c1">// (1)</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">q</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeIntVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span><span class="w">  </span><span class="c1">// (2)</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">qL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeIntVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">minus</span><span class="p">(</span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span><span class="w">  </span><span class="c1">// (3)</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">qR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeIntVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">plus</span><span class="p">(</span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">));</span><span class="w">   </span><span class="c1">// (4)</span>
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CPFactory.makeSolver()</span></code> creates a fresh solver backed by a <code class="docutils literal notranslate"><span class="pre">Trailer</span></code>
+(trail-based state manager; see <a class="reference internal" href="state_management.html#state-management"><span class="std std-ref">State Management</span></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">makeIntVarArray(cp,</span> <span class="pre">n,</span> <span class="pre">n)</span></code> creates <code class="docutils literal notranslate"><span class="pre">n</span></code> integer variables each with domain
+<code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">1,</span> <span class="pre">…,</span> <span class="pre">n-1}</span></code>.  <code class="docutils literal notranslate"><span class="pre">q[i]</span></code> represents the column of the queen in row <code class="docutils literal notranslate"><span class="pre">i</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">minus(q[i],</span> <span class="pre">i)</span></code> creates a <em>view</em> — a new <code class="docutils literal notranslate"><span class="pre">CPIntVar</span></code> whose domain is
+<code class="docutils literal notranslate"><span class="pre">{v</span> <span class="pre">−</span> <span class="pre">i</span> <span class="pre">|</span> <span class="pre">v</span> <span class="pre">∈</span> <span class="pre">dom(q[i])}</span></code>, with no extra memory allocation.
+<code class="docutils literal notranslate"><span class="pre">qL[i]</span></code> encodes the left-diagonal index.</p></li>
+<li><p>Similarly, <code class="docutils literal notranslate"><span class="pre">qR[i]</span> <span class="pre">=</span> <span class="pre">q[i]</span> <span class="pre">+</span> <span class="pre">i</span></code> encodes the right-diagonal index.</p></li>
+</ol>
+<p>Views are first-class <code class="docutils literal notranslate"><span class="pre">CPIntVar</span></code> objects; any constraint can be posted on them.</p>
+<p><strong>Step 2 — Post the constraints</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">q</span><span class="p">));</span><span class="w">   </span><span class="c1">// no two queens in the same column</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qL</span><span class="p">));</span><span class="w">  </span><span class="c1">// no two queens on the same &#39;/&#39; diagonal</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qR</span><span class="p">));</span><span class="w">  </span><span class="c1">// no two queens on the same &#39;\&#39; diagonal</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">cp.post(c)</span></code> calls <code class="docutils literal notranslate"><span class="pre">c.post()</span></code>, which registers the constraint to the relevant variable
+events and runs an initial fixed-point propagation
+(see <a class="reference internal" href="propagation.html#propagation"><span class="std std-ref">Propagation Engine</span></a>).
+If propagation detects an empty domain, an <code class="docutils literal notranslate"><span class="pre">InconsistencyException</span></code> is thrown immediately.</p>
+<p><code class="docutils literal notranslate"><span class="pre">allDifferent</span></code> uses Régin’s arc-consistent filtering: it removes any value <code class="docutils literal notranslate"><span class="pre">v</span></code> from
+<code class="docutils literal notranslate"><span class="pre">q[i]</span></code> if assigning <code class="docutils literal notranslate"><span class="pre">v</span></code> to <code class="docutils literal notranslate"><span class="pre">q[i]</span></code> would force another variable to be empty.</p>
+<p><strong>Step 3 — Define the search strategy</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">         </span><span class="c1">// (1)</span>
+<span class="w">    </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">qs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectMin</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="w">                          </span><span class="c1">// (2)</span>
+<span class="w">        </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">                           </span><span class="c1">// (3)</span>
+<span class="w">        </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">());</span><span class="w">                              </span><span class="c1">// (4)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">qs</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">EMPTY</span><span class="p">;</span><span class="w">                      </span><span class="c1">// (5)</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qs</span><span class="p">.</span><span class="na">min</span><span class="p">();</span><span class="w">                                  </span><span class="c1">// (6)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">branch</span><span class="p">(</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)),</span><span class="w">                      </span><span class="c1">// (7)</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">neq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)));</span><span class="w">                    </span><span class="c1">// (8)</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">makeDfs</span></code> wraps the branching supplier into a <code class="docutils literal notranslate"><span class="pre">DFSearch</span></code> engine.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">selectMin</span></code> scans the array and returns the variable minimising the criterion (4).</p></li>
+<li><p>The <em>filter</em> <code class="docutils literal notranslate"><span class="pre">qi.size()</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> skips already-fixed variables.</p></li>
+<li><p>The <em>criterion</em> <code class="docutils literal notranslate"><span class="pre">qi.size()</span></code> implements the <strong>first-fail</strong> heuristic: branch on the
+variable with the <em>smallest</em> domain to detect failures early.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">null</span></code> means all variables are fixed → a solution has been found; return <code class="docutils literal notranslate"><span class="pre">EMPTY</span></code>
+to signal the search engine.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qs.min()</span></code> picks the smallest value in the domain — the value selector.</p></li>
+<li><p><strong>Left branch</strong>: post <code class="docutils literal notranslate"><span class="pre">qs</span> <span class="pre">=</span> <span class="pre">v</span></code>.  <code class="docutils literal notranslate"><span class="pre">cp.post</span></code> runs propagation immediately; an
+<code class="docutils literal notranslate"><span class="pre">InconsistencyException</span></code> triggers backtracking.</p></li>
+<li><p><strong>Right branch</strong>: post <code class="docutils literal notranslate"><span class="pre">qs</span> <span class="pre">≠</span> <span class="pre">v</span></code>, then try the next value on the next call to the
+branching function.</p></li>
+</ol>
+<p>This binary branching (assign / remove) is the most common pattern in MaxiCP.</p>
+<p><strong>Step 4 — Run and read the output</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">search</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">stats</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">onSolution</span></code> registers a callback that fires every time the branching function returns
+<code class="docutils literal notranslate"><span class="pre">EMPTY</span></code> (all variables are fixed and no inconsistency was detected).
+<code class="docutils literal notranslate"><span class="pre">solve()</span></code> exhausts the search tree (use <code class="docutils literal notranslate"><span class="pre">solve(stats</span> <span class="pre">-&gt;</span> <span class="pre">stats.numberOfSolutions()</span> <span class="pre">&gt;=</span> <span class="pre">1)</span></code>
+to stop after the first solution).</p>
+<p>A typical <code class="docutils literal notranslate"><span class="pre">SearchStatistics</span></code> output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#Solutions: 92</span>
+<span class="c1">#Failures: 1307</span>
+<span class="c1">#Nodes: 1490</span>
+<span class="n">Time</span><span class="p">(</span><span class="n">ms</span><span class="p">):</span> <span class="mi">12</span>
+</pre></div>
+</div>
+</section>
+<section id="step-by-step-modeling-symbolic-api">
+<h2>Step-by-Step: Modeling (Symbolic) API<a class="headerlink" href="#step-by-step-modeling-symbolic-api" title="Permalink to this heading">¶</a></h2>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/nqueens/NQueens.java">NQueens (modeling)</a></p>
+<p>The modeling API separates <em>model definition</em> from <em>resolution</em>.
+The model is an immutable linked list of constraints; adding a constraint returns a <strong>new</strong>
+model node without modifying the original.</p>
+<p><strong>Step 1 — Create the ModelDispatcher and the symbolic variables</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span><span class="p">;</span>
+<span class="n">ModelDispatcher</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeModelDispatcher</span><span class="p">();</span><span class="w">   </span><span class="c1">// (1)</span>
+
+<span class="n">IntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">q</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span><span class="w">           </span><span class="c1">// (2)</span>
+<span class="n">IntExpression</span><span class="o">[]</span><span class="w"> </span><span class="n">qL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">plus</span><span class="p">(</span><span class="n">i</span><span class="p">));</span><span class="w">   </span><span class="c1">// (3)</span>
+<span class="n">IntExpression</span><span class="o">[]</span><span class="w"> </span><span class="n">qR</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">intVarArray</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">q</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">minus</span><span class="p">(</span><span class="n">i</span><span class="p">));</span><span class="w">  </span><span class="c1">// (4)</span>
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">makeModelDispatcher()</span></code> (static import from <code class="docutils literal notranslate"><span class="pre">org.maxicp.modeling.Factory</span></code>) creates
+the dispatcher that acts as both a <em>variable factory</em> and a <em>model proxy</em>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model.intVarArray(n,</span> <span class="pre">n)</span></code> creates <code class="docutils literal notranslate"><span class="pre">n</span></code> symbolic integer variables, each with domain
+<code class="docutils literal notranslate"><span class="pre">{0,</span> <span class="pre">…,</span> <span class="pre">n-1}</span></code>.  These are <code class="docutils literal notranslate"><span class="pre">IntVar</span></code> objects — they carry no concrete domain yet.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">q[i].plus(i)</span></code> builds a symbolic <em>expression</em>.  Unlike the raw <code class="docutils literal notranslate"><span class="pre">minus</span></code> / <code class="docutils literal notranslate"><span class="pre">plus</span></code>
+functions (which create concrete views), these are algebraic expression nodes in the
+symbolic tree.</p></li>
+<li><p>Same for the right-diagonal expressions.</p></li>
+</ol>
+<p><strong>Step 2 — Add the constraints to the symbolic model</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">q</span><span class="p">));</span>
+<span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qL</span><span class="p">));</span>
+<span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">qR</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">model.add(c)</span></code> appends constraint <code class="docutils literal notranslate"><span class="pre">c</span></code> to the current symbolic model (an <em>O(1)</em>
+immutable list prepend).  No solver, no domain, no propagation happens yet.</p>
+<p><strong>Step 3 — Define the branching strategy</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">Supplier</span><span class="o">&lt;</span><span class="n">Runnable</span><span class="o">[]&gt;</span><span class="w"> </span><span class="n">branching</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">IntExpression</span><span class="w"> </span><span class="n">qs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">selectMin</span><span class="p">(</span><span class="n">q</span><span class="p">,</span>
+<span class="w">            </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">            </span><span class="n">qi</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">qi</span><span class="p">.</span><span class="na">size</span><span class="p">());</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">qs</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">EMPTY</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qs</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">branch</span><span class="p">(</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)),</span><span class="w">    </span><span class="c1">// left: add eq to the symbolic model</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">neq</span><span class="p">(</span><span class="n">qs</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">)));</span><span class="w"> </span><span class="c1">// right: add neq to the symbolic model</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>The branching logic looks identical to the raw version.
+The key difference: each closure calls <code class="docutils literal notranslate"><span class="pre">model.add(...)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">cp.post(...)</span></code>.
+During search, the <code class="docutils literal notranslate"><span class="pre">ConcreteCPModel</span></code> intercepts these symbolic additions, instantiates
+the constraint into the underlying CP engine, and runs propagation.</p>
+<p><strong>Step 4 — Concretize and solve</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">ConcreteCPModel</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">cpInstantiate</span><span class="p">();</span><span class="w">   </span><span class="c1">// (1)</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="n">branching</span><span class="p">);</span><span class="w">         </span><span class="c1">// (2)</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">toString</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dfs</span><span class="p">.</span><span class="na">solve</span><span class="p">();</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">stats</span><span class="p">);</span>
+</pre></div>
+</div>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cpInstantiate()</span></code> iterates over the symbolic constraint list, creates a fresh
+<code class="docutils literal notranslate"><span class="pre">MaxiCP</span></code> solver instance, and instantiates every constraint into it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dfSearch(branching)</span></code> wraps the branching supplier in a <code class="docutils literal notranslate"><span class="pre">DFSearch</span></code> exactly as in
+the raw API.</p></li>
+</ol>
+<p>The output is identical to the raw version.</p>
+</section>
+<section id="side-by-side-comparison">
+<h2>Side-by-Side Comparison<a class="headerlink" href="#side-by-side-comparison" title="Permalink to this heading">¶</a></h2>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Raw API</p></th>
+<th class="head"><p>Modeling API</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CPSolver</span> <span class="pre">cp</span> <span class="pre">=</span> <span class="pre">makeSolver();</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span> <span class="pre">model</span> <span class="pre">=</span> <span class="pre">makeModelDispatcher();</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CPIntVar[]</span> <span class="pre">q</span> <span class="pre">=</span> <span class="pre">makeIntVarArray(cp,</span> <span class="pre">n,</span> <span class="pre">n);</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IntVar[]</span> <span class="pre">q</span> <span class="pre">=</span> <span class="pre">model.intVarArray(n,</span> <span class="pre">n);</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CPIntVar[]</span> <span class="pre">qL</span> <span class="pre">=</span> <span class="pre">makeIntVarArray(n,</span> <span class="pre">i</span> <span class="pre">-&gt;</span> <span class="pre">minus(q[i],i));</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IntExpression[]</span> <span class="pre">qL</span> <span class="pre">=</span> <span class="pre">model.intVarArray(n,</span> <span class="pre">i</span> <span class="pre">-&gt;</span> <span class="pre">q[i].minus(i));</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cp.post(allDifferent(q));</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model.add(allDifferent(q));</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">()</span> <span class="pre">-&gt;</span> <span class="pre">cp.post(eq(qs,</span> <span class="pre">v))</span></code>  (branch closure)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">()</span> <span class="pre">-&gt;</span> <span class="pre">model.add(eq(qs,</span> <span class="pre">v))</span></code>  (branch closure)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">makeDfs(cp,</span> <span class="pre">branching).solve()</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">model.cpInstantiate();</span> <span class="pre">cp.dfSearch(branching).solve()</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The surface syntax is deliberately close. The fundamental difference is <em>when</em> things
+happen: in the raw API every <code class="docutils literal notranslate"><span class="pre">cp.post</span></code> call immediately modifies solver state and runs
+propagation; in the modeling API, <code class="docutils literal notranslate"><span class="pre">model.add</span></code> merely extends an immutable linked list
+and propagation only starts at concretization.</p>
+</section>
+<section id="using-the-built-in-first-fail-heuristic">
+<h2>Using the Built-In First-Fail Heuristic<a class="headerlink" href="#using-the-built-in-first-fail-heuristic" title="Permalink to this heading">¶</a></h2>
+<p>Writing a branching closure by hand gives full flexibility, but MaxiCP also provides
+pre-built heuristics in the <code class="docutils literal notranslate"><span class="pre">Searches</span></code> class.
+The three snippets below all produce <strong>the same search tree</strong> for N-Queens:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// (a) most concise — one-liner</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">firstFailBinary</span><span class="p">(</span><span class="n">q</span><span class="p">));</span>
+
+<span class="c1">// (b) explicit variable selector, default value = minimum</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">heuristicBinary</span><span class="p">(</span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">)));</span>
+
+<span class="c1">// (c) explicit variable and value selectors</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">s3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span>
+<span class="w">    </span><span class="n">heuristicBinary</span><span class="p">(</span>
+<span class="w">        </span><span class="n">minDomVariableSelector</span><span class="p">(</span><span class="n">q</span><span class="p">),</span><span class="w">   </span><span class="c1">// variable: smallest domain</span>
+<span class="w">        </span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="na">min</span><span class="p">()));</span><span class="w">              </span><span class="c1">// value: smallest in domain</span>
+</pre></div>
+</div>
+<p>Variant (c) is the most flexible: you can replace either selector independently.
+For example, try <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">-&gt;</span> <span class="pre">(x.min()</span> <span class="pre">+</span> <span class="pre">x.max())</span> <span class="pre">/</span> <span class="pre">2</span></code> to branch on the domain midpoint.</p>
+</section>
+<section id="stopping-early-and-limiting-the-search">
+<h2>Stopping Early and Limiting the Search<a class="headerlink" href="#stopping-early-and-limiting-the-search" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">solve()</span></code> has several overloads to control how much of the tree is explored:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// Stop after the first solution</span>
+<span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">(</span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">numberOfSolutions</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="c1">// Stop after 1 000 failures</span>
+<span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">(</span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">numberOfFailures</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1_000</span><span class="p">);</span>
+
+<span class="c1">// Stop after 10 seconds</span>
+<span class="n">search</span><span class="p">.</span><span class="na">solve</span><span class="p">(</span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">timeInMillis</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10_000</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The lambda receives live <code class="docutils literal notranslate"><span class="pre">SearchStatistics</span></code> and the search stops as soon as it
+returns <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+</section>
+<section id="optimisation">
+<h2>Optimisation<a class="headerlink" href="#optimisation" title="Permalink to this heading">¶</a></h2>
+<p>To <em>minimise</em> an objective variable, wrap the search with <code class="docutils literal notranslate"><span class="pre">optimize</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">cost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">weightedDist</span><span class="p">);</span>
+<span class="n">Objective</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">cost</span><span class="p">);</span>
+
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
+<span class="c1">// or with a time limit:</span>
+<span class="c1">// search.optimize(obj, stats -&gt; stats.timeInMillis() &gt; 60_000);</span>
+</pre></div>
+</div>
+<p>Each time a new (improving) solution is found, the solver automatically adds the constraint
+<code class="docutils literal notranslate"><span class="pre">cost</span> <span class="pre">&lt;</span> <span class="pre">bestCost</span></code>, pruning all subtrees that cannot improve on the incumbent.</p>
+</section>
+<section id="what-comes-next">
+<h2>What Comes Next<a class="headerlink" href="#what-comes-next" title="Permalink to this heading">¶</a></h2>
+<p>Now that you understand the basic building blocks, explore the deeper sections:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="state_management.html#state-management"><span class="std std-ref">State Management</span></a> — how the trail enables backtracking.</p></li>
+<li><p><a class="reference internal" href="propagation.html#propagation"><span class="std std-ref">Propagation Engine</span></a> — the fixed-point engine, event-driven scheduling, and how to write
+your own propagators.</p></li>
+<li><p><a class="reference internal" href="search_strategies.html#maxicp-search"><span class="std std-ref">Search</span></a> — all built-in heuristics, combinators, LNS, and parallel search.</p></li>
+<li><p><a class="reference internal" href="scheduling.html#scheduling"><span class="std std-ref">Scheduling with Conditional Intervals</span></a> — conditional interval variables, cumulative functions, Job-Shop, RCPSP.</p></li>
+<li><p><a class="reference internal" href="seqvar.html#seqvar"><span class="std std-ref">Sequence Variables for Routing</span></a> — sequence variables for routing (TSPTW, CVRPTW, DARP).</p></li>
+<li><p><a class="reference internal" href="symbolic_modeling.html#symbolic-modeling"><span class="std std-ref">Symbolic Modeling (MaxiCP-Modelling)</span></a> — the symbolic layer in depth: model trees, EPS, LNS neighborhoods.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#the-cp-paradigm-in-one-sentence">The CP Paradigm in One Sentence</a></li>
+<li><a class="reference internal" href="#two-apis-at-a-glance">Two APIs at a Glance</a></li>
+<li><a class="reference internal" href="#the-n-queens-problem">The N-Queens Problem</a></li>
+<li><a class="reference internal" href="#step-by-step-raw-api">Step-by-Step: Raw API</a></li>
+<li><a class="reference internal" href="#step-by-step-modeling-symbolic-api">Step-by-Step: Modeling (Symbolic) API</a></li>
+<li><a class="reference internal" href="#side-by-side-comparison">Side-by-Side Comparison</a></li>
+<li><a class="reference internal" href="#using-the-built-in-first-fail-heuristic">Using the Built-In First-Fail Heuristic</a></li>
+<li><a class="reference internal" href="#stopping-early-and-limiting-the-search">Stopping Early and Limiting the Search</a></li>
+<li><a class="reference internal" href="#optimisation">Optimisation</a></li>
+<li><a class="reference internal" href="#what-comes-next">What Comes Next</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="../intro.html"
+                          title="previous chapter">Preface</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="architecture.html"
+                          title="next chapter">Core architecture</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/getting_started.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="architecture.html" title="Core architecture"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../intro.html" title="Preface"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Getting Started</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,557 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Propagation Engine &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Search" href="search_strategies.html" />
+    <link rel="prev" title="State Management" href="state_management.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="search_strategies.html" title="Search"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="state_management.html" title="State Management"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Propagation Engine</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="propagation-engine">
+<span id="propagation"></span><h1>Propagation Engine<a class="headerlink" href="#propagation-engine" title="Permalink to this heading">¶</a></h1>
+<p>The propagation engine is the heart of any CP solver.
+In MaxiCP it is implemented in the <code class="docutils literal notranslate"><span class="pre">MaxiCP</span></code> class and follows a priority-based
+fixed-point algorithm.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/core/MaxiCP.java">MaxiCP.java</a></p>
+<section id="priority-based-scheduling">
+<h2>Priority-Based Scheduling<a class="headerlink" href="#priority-based-scheduling" title="Permalink to this heading">¶</a></h2>
+<p>Constraints implement the <code class="docutils literal notranslate"><span class="pre">CPConstraint</span></code> interface, which exposes a <code class="docutils literal notranslate"><span class="pre">propagate()</span></code>
+method and a <code class="docutils literal notranslate"><span class="pre">priority()</span></code> method.
+When a variable domain changes, every constraint subscribed to that event is <em>scheduled</em>
+for propagation.
+The engine drains a priority queue so that cheap constraints (bounds, equality) run before
+expensive global constraints (<code class="docutils literal notranslate"><span class="pre">AllDifferent</span></code>, <code class="docutils literal notranslate"><span class="pre">Cumulative</span></code>).</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">fixPoint</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">notifyFixPoint</span><span class="p">();</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">propagationQueue</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">CPConstraint</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">propagationQueue</span><span class="p">.</span><span class="na">poll</span><span class="p">();</span>
+<span class="w">        </span><span class="n">c</span><span class="p">.</span><span class="na">setScheduled</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="na">isActive</span><span class="p">())</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="na">propagate</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">schedule</span><span class="p">(</span><span class="n">CPConstraint</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="p">.</span><span class="na">isActive</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">c</span><span class="p">.</span><span class="na">isScheduled</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">c</span><span class="p">.</span><span class="na">setScheduled</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+<span class="w">        </span><span class="n">propagationQueue</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">.</span><span class="na">priority</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">propagate()</span></code> throws <code class="docutils literal notranslate"><span class="pre">InconsistencyException</span></code> the queue is cleared and the
+exception propagates to the search layer, which handles backtracking.</p>
+</section>
+<section id="event-driven-constraint-activation">
+<h2>Event-Driven Constraint Activation<a class="headerlink" href="#event-driven-constraint-activation" title="Permalink to this heading">¶</a></h2>
+<p>Constraints register to specific domain events.
+Only the relevant constraints are re-scheduled when a variable changes.</p>
+<p><strong>Integer variables (``CPIntVar``)</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnFix</span></code> — variable assigned a single value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnBoundChange</span></code> — minimum or maximum changes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnDomainChange</span></code> — any value removed.</p></li>
+</ul>
+<p><strong>Interval variables (``CPIntervalVar``)</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnChange</span></code> — any attribute (start, end, length, presence) changes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnFix</span></code> — interval fully fixed.</p></li>
+</ul>
+<p><strong>Sequence variables (``CPSeqVar``)</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnInsert</span></code> — a node is inserted into the partial sequence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnExclude</span></code> — a node is excluded.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">propagateOnRequire</span></code> — a node becomes required.</p></li>
+</ul>
+<p>Registering a constraint to an event is a <em>reversible</em> operation and is automatically
+undone on backtrack.</p>
+</section>
+<section id="posting-constraints">
+<h2>Posting Constraints<a class="headerlink" href="#posting-constraints" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">cp.post(constraint)</span></code> invokes <code class="docutils literal notranslate"><span class="pre">post()</span></code>, which typically:</p>
+<ol class="arabic simple">
+<li><p>Registers the constraint to the relevant variable events.</p></li>
+<li><p>Calls <code class="docutils literal notranslate"><span class="pre">propagate()</span></code> for an initial domain reduction.</p></li>
+</ol>
+<p>By default, a full fixed-point is computed immediately.
+Use <code class="docutils literal notranslate"><span class="pre">cp.post(constraint,</span> <span class="pre">false)</span></code> to defer it and trigger it later via <code class="docutils literal notranslate"><span class="pre">cp.fixPoint()</span></code>.</p>
+<p>Because constraint registration is reversible, branching decisions can simply be implemented
+by posting constraints that define each alternative branch.</p>
+</section>
+<section id="implementing-a-custom-constraint">
+<h2>Implementing a Custom Constraint<a class="headerlink" href="#implementing-a-custom-constraint" title="Permalink to this heading">¶</a></h2>
+<p>Extend <code class="docutils literal notranslate"><span class="pre">AbstractCPConstraint</span></code> and implement <code class="docutils literal notranslate"><span class="pre">post()</span></code> and <code class="docutils literal notranslate"><span class="pre">propagate()</span></code>.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/LessOrEqual.java">LessOrEqual.java</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">LessOrEqual</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">AbstractCPConstraint</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">LessOrEqual</span><span class="p">(</span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="na">getSolver</span><span class="p">());</span>
+<span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="na">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">post</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">x</span><span class="p">.</span><span class="na">propagateOnBoundChange</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">y</span><span class="p">.</span><span class="na">propagateOnBoundChange</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">propagate</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">propagate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">x</span><span class="p">.</span><span class="na">removeAbove</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="na">max</span><span class="p">());</span>
+<span class="w">        </span><span class="n">y</span><span class="p">.</span><span class="na">removeBelow</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="na">min</span><span class="p">());</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">removeAbove</span></code> / <code class="docutils literal notranslate"><span class="pre">removeBelow</span></code> throw <code class="docutils literal notranslate"><span class="pre">InconsistencyException</span></code> when the domain
+becomes empty, triggering backtracking.</p>
+</section>
+<section id="delta-based-incremental-propagation">
+<h2>Delta-Based Incremental Propagation<a class="headerlink" href="#delta-based-incremental-propagation" title="Permalink to this heading">¶</a></h2>
+<p>For higher performance, a constraint can subscribe to <em>delta</em> events and react only to
+the values removed since its last execution, instead of re-scanning full domains.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Element</span></code> constraint (<code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">=</span> <span class="pre">t[y]</span></code>) below uses this approach.
+<code class="docutils literal notranslate"><span class="pre">y.delta(this)</span></code> returns a <code class="docutils literal notranslate"><span class="pre">DeltaCPIntVar</span></code>; calling <code class="docutils literal notranslate"><span class="pre">yDelta.fillArray(buf)</span></code> fills
+<code class="docutils literal notranslate"><span class="pre">buf</span></code> with the values removed from <code class="docutils literal notranslate"><span class="pre">y</span></code> since the last propagation call
+and returns their count.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1D.java">Element1D.java</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">Element</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">AbstractCPConstraint</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">t</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">DeltaCPIntVar</span><span class="w"> </span><span class="n">yDelta</span><span class="p">,</span><span class="w"> </span><span class="n">zDelta</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">yValues</span><span class="p">,</span><span class="w"> </span><span class="n">zValues</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offZ</span><span class="p">;</span>
+<span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="n">StateInt</span><span class="o">[]</span><span class="w"> </span><span class="n">supportCounter</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="nf">Element</span><span class="p">(</span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">array</span><span class="p">,</span><span class="w"> </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">CPIntVar</span><span class="w"> </span><span class="n">z</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kd">super</span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="na">getSolver</span><span class="p">());</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">array</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">post</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">y</span><span class="p">.</span><span class="na">removeBelow</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="na">removeAbove</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="na">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="n">y</span><span class="p">.</span><span class="na">propagateOnDomainChange</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">yDelta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="na">delta</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">yValues</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">y</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">]</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">z</span><span class="p">.</span><span class="na">removeBelow</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">stream</span><span class="p">(</span><span class="n">t</span><span class="p">).</span><span class="na">min</span><span class="p">().</span><span class="na">getAsInt</span><span class="p">());</span>
+<span class="w">        </span><span class="n">z</span><span class="p">.</span><span class="na">removeAbove</span><span class="p">(</span><span class="n">Arrays</span><span class="p">.</span><span class="na">stream</span><span class="p">(</span><span class="n">t</span><span class="p">).</span><span class="na">max</span><span class="p">().</span><span class="na">getAsInt</span><span class="p">());</span>
+<span class="w">        </span><span class="n">z</span><span class="p">.</span><span class="na">propagateOnDomainChange</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">zDelta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="na">delta</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="w">        </span><span class="n">zValues</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">z</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">]</span><span class="p">;</span>
+
+<span class="w">        </span><span class="n">supportCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StateInt</span><span class="o">[</span><span class="n">z</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="o">]</span><span class="p">;</span>
+<span class="w">        </span><span class="n">offZ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="na">size</span><span class="p">();</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">            </span><span class="n">supportCounter</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getSolver</span><span class="p">().</span><span class="na">getStateManager</span><span class="p">().</span><span class="na">makeStateInt</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="na">length</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">y</span><span class="p">.</span><span class="na">contains</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="n">supportCounter</span><span class="o">[</span><span class="n">t</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">offZ</span><span class="o">]</span><span class="p">.</span><span class="na">increment</span><span class="p">();</span>
+
+<span class="w">        </span><span class="n">propagate</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="nd">@Override</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">propagate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">zDelta</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">sz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zDelta</span><span class="p">.</span><span class="na">fillArray</span><span class="p">(</span><span class="n">zValues</span><span class="p">);</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">sz</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zValues</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">sy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="na">fillArray</span><span class="p">(</span><span class="n">yValues</span><span class="p">);</span>
+<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">sy</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">                    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="o">[</span><span class="n">yValues</span><span class="o">[</span><span class="n">j</span><span class="o">]]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">yValues</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">yDelta</span><span class="p">.</span><span class="na">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">sy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yDelta</span><span class="p">.</span><span class="na">fillArray</span><span class="p">(</span><span class="n">yValues</span><span class="p">);</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">sy</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yValues</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">;</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">supportCounter</span><span class="o">[</span><span class="n">t</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">offZ</span><span class="o">]</span><span class="p">.</span><span class="na">decrement</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">                    </span><span class="n">z</span><span class="p">.</span><span class="na">remove</span><span class="p">(</span><span class="n">t</span><span class="o">[</span><span class="n">v</span><span class="o">]</span><span class="p">);</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">supportCounter</span></code> is an array of <code class="docutils literal notranslate"><span class="pre">StateInt</span></code> objects whose values are automatically
+restored on backtrack, keeping the counts consistent with the current search state.</p>
+</section>
+<section id="global-constraints">
+<h2>Global Constraints<a class="headerlink" href="#global-constraints" title="Permalink to this heading">¶</a></h2>
+<p>Source of the constraints package:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/engine/constraints">org.maxicp.cp.engine.constraints</a></p>
+<p><strong>Integer / Boolean constraints</strong></p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Constraint (source)</p></th>
+<th class="head"><p>Semantics</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AllDifferentDC.java">AllDifferentDC</a></p></td>
+<td><p>All variables take pairwise distinct values. Uses Régin’s arc-consistent filtering based on maximum bipartite matching.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AllDifferentFWC.java">AllDifferentFWC</a></p></td>
+<td><p>Forward-checking (bounds-consistent) variant of AllDifferent, cheaper but weaker than DC.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Among.java">Among</a></p></td>
+<td><p>Constrains the number of variables in <code class="docutils literal notranslate"><span class="pre">x</span></code> whose value belongs to a given set <code class="docutils literal notranslate"><span class="pre">S</span></code>: <code class="docutils literal notranslate"><span class="pre">lb</span> <span class="pre">≤</span> <span class="pre">|{i</span> <span class="pre">|</span> <span class="pre">x[i]</span> <span class="pre">∈</span> <span class="pre">S}|</span> <span class="pre">≤</span> <span class="pre">ub</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AtLeastNValueDC.java">AtLeastNValueDC</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AtLeastNValueFWC.java">AtLeastNValueFWC</a></p></td>
+<td><p>The number of distinct values taken by the variables is at least <code class="docutils literal notranslate"><span class="pre">n</span></code>. DC and FWC variants.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/BinPacking.java">BinPacking</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x[i]</span></code> is the bin of item <code class="docutils literal notranslate"><span class="pre">i</span></code> with weight <code class="docutils literal notranslate"><span class="pre">w[i]</span></code>; <code class="docutils literal notranslate"><span class="pre">load[b]</span></code> equals the total weight in bin <code class="docutils literal notranslate"><span class="pre">b</span></code>: <code class="docutils literal notranslate"><span class="pre">load[b]</span> <span class="pre">=</span> <span class="pre">Σ{i</span> <span class="pre">|</span> <span class="pre">x[i]=b}</span> <span class="pre">w[i]</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/BinaryKnapsack.java">BinaryKnapsack</a></p></td>
+<td><p>Binary knapsack: each item is either taken (<code class="docutils literal notranslate"><span class="pre">x[i]=1</span></code>) or not; total weight <code class="docutils literal notranslate"><span class="pre">Σ</span> <span class="pre">w[i]·x[i]</span> <span class="pre">≤</span> <span class="pre">capa</span></code> and total profit <code class="docutils literal notranslate"><span class="pre">Σ</span> <span class="pre">p[i]·x[i]</span> <span class="pre">=</span> <span class="pre">profit</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CardinalityMaxFWC.java">CardinalityMaxFWC</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CardinalityMinFWC.java">CardinalityMinFWC</a></p></td>
+<td><p>Upper / lower cardinality bounds on how many variables take each value (forward-checking).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Circuit.java">Circuit</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">succ</span></code> defines a Hamiltonian circuit: <code class="docutils literal notranslate"><span class="pre">succ[i]</span></code> is the successor of node <code class="docutils literal notranslate"><span class="pre">i</span></code> and the graph forms a single cycle covering all nodes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/SubCircuit.java">SubCircuit</a></p></td>
+<td><p>Weaker form of Circuit allowing sub-tours; used for open routing models.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CostAllDifferentDC.java">CostAllDifferentDC</a></p></td>
+<td><p>AllDifferent with an assignment cost matrix; filters both the all-different and the total-cost variable using min-cost matching.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CostCardinalityMaxDC.java">CostCardinalityMaxDC</a></p></td>
+<td><p>Global Cardinality Constraint (upper bounds only) combined with a cost variable: <code class="docutils literal notranslate"><span class="pre">|{i</span> <span class="pre">|</span> <span class="pre">x[i]=v}|</span> <span class="pre">≤</span> <span class="pre">ub[v]</span></code> and <code class="docutils literal notranslate"><span class="pre">Σ</span> <span class="pre">cost[i][x[i]]</span> <span class="pre">≤</span> <span class="pre">H</span></code>. Filtering uses min-cost flow.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/SoftCardinalityDC.java">SoftCardinalityDC</a></p></td>
+<td><p>Soft GCC: for each value <code class="docutils literal notranslate"><span class="pre">v</span></code> with bounds <code class="docutils literal notranslate"><span class="pre">[lb[v],</span> <span class="pre">ub[v]]</span></code>, the per-value violation is <code class="docutils literal notranslate"><span class="pre">max(0,</span> <span class="pre">lb[v]-c[v],</span> <span class="pre">c[v]-ub[v])</span></code>; a global <code class="docutils literal notranslate"><span class="pre">viol</span></code> variable equals the sum of violations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1D.java">Element1D</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1DDC.java">Element1DDC</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">=</span> <span class="pre">t[y]</span></code>: <code class="docutils literal notranslate"><span class="pre">z</span></code> equals the element of constant array <code class="docutils literal notranslate"><span class="pre">t</span></code> at index <code class="docutils literal notranslate"><span class="pre">y</span></code>. DC variant achieves domain consistency.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1DVar.java">Element1DVar</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">=</span> <span class="pre">t[y]</span></code>: same as Element1D but <code class="docutils literal notranslate"><span class="pre">t</span></code> is an array of <code class="docutils literal notranslate"><span class="pre">CPIntVar</span></code> instead of constants.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element2D.java">Element2D</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">z</span> <span class="pre">=</span> <span class="pre">t[x][y]</span></code>: <code class="docutils literal notranslate"><span class="pre">z</span></code> equals the element of a 2-D constant matrix at row <code class="docutils literal notranslate"><span class="pre">x</span></code>, column <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Equal.java">Equal</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">y</span></code> (or <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">c</span></code>): equality between two integer variables or between a variable and a constant.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/NotEqual.java">NotEqual</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">≠</span> <span class="pre">y</span></code> (or <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">≠</span> <span class="pre">c</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/LessOrEqual.java">LessOrEqual</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">≤</span> <span class="pre">y</span></code> (bounds-consistent).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Sum.java">Sum</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x[0]</span> <span class="pre">+</span> <span class="pre">x[1]</span> <span class="pre">+</span> <span class="pre">…</span> <span class="pre">+</span> <span class="pre">x[n-1]</span> <span class="pre">=</span> <span class="pre">s</span></code>: sum of an array of variables equals <code class="docutils literal notranslate"><span class="pre">s</span></code> (or a constant).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Maximum.java">Maximum</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">max(x[0],</span> <span class="pre">…,</span> <span class="pre">x[n-1])</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Mul.java">Mul</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/MulVar.java">MulVar</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/MulCte.java">MulCte</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/MulCteRes.java">MulCteRes</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">·</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">z</span></code> and specialised variants: <code class="docutils literal notranslate"><span class="pre">MulVar</span></code> (three variables), <code class="docutils literal notranslate"><span class="pre">MulCte</span></code> (constant multiplier <code class="docutils literal notranslate"><span class="pre">c·x</span> <span class="pre">=</span> <span class="pre">y</span></code>), <code class="docutils literal notranslate"><span class="pre">MulCteRes</span></code> (<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">·</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">c</span></code> where <code class="docutils literal notranslate"><span class="pre">c</span></code> is fixed).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Square.java">Square</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">x²</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Absolute.java">Absolute</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">=</span> <span class="pre">|x|</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Sorted.java">Sorted</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">x[0]</span> <span class="pre">≤</span> <span class="pre">x[1]</span> <span class="pre">≤</span> <span class="pre">…</span> <span class="pre">≤</span> <span class="pre">x[n-1]</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> is a sorted permutation of <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/InversePerm.java">InversePerm</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">y[x[i]]</span> <span class="pre">=</span> <span class="pre">i</span></code> for all <code class="docutils literal notranslate"><span class="pre">i</span></code>: <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are inverse permutations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Or.java">Or</a></p></td>
+<td><p>At least one Boolean variable in the array is true: <code class="docutils literal notranslate"><span class="pre">x[0]</span> <span class="pre">∨</span> <span class="pre">x[1]</span> <span class="pre">∨</span> <span class="pre">…</span> <span class="pre">∨</span> <span class="pre">x[n-1]</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsOr.java">IsOr</a></p></td>
+<td><p>Reified disjunction: <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">↔</span> <span class="pre">(x[0]</span> <span class="pre">∨</span> <span class="pre">…</span> <span class="pre">∨</span> <span class="pre">x[n-1])</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsEqual.java">IsEqual</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsEqualVar.java">IsEqualVar</a></p></td>
+<td><p>Reified equality: <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">↔</span> <span class="pre">(x</span> <span class="pre">=</span> <span class="pre">c)</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">↔</span> <span class="pre">(x</span> <span class="pre">=</span> <span class="pre">y)</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsLessOrEqual.java">IsLessOrEqual</a> / <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsLessOrEqualVar.java">IsLessOrEqualVar</a></p></td>
+<td><p>Reified inequality: <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">↔</span> <span class="pre">(x</span> <span class="pre">≤</span> <span class="pre">c)</span></code> and <code class="docutils literal notranslate"><span class="pre">b</span> <span class="pre">↔</span> <span class="pre">(x</span> <span class="pre">≤</span> <span class="pre">y)</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/TableCT.java">TableCT</a></p></td>
+<td><p>Positive extensional constraint: the assignment of <code class="docutils literal notranslate"><span class="pre">x</span></code> must match at least one row in table <code class="docutils literal notranslate"><span class="pre">T</span></code>. Uses the Compact-Table (CT) filtering algorithm.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/NegTableCT.java">NegTableCT</a></p></td>
+<td><p>Negative extensional constraint (forbidden tuples): the assignment must <em>not</em> match any row in <code class="docutils literal notranslate"><span class="pre">T</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/ShortTableCT.java">ShortTableCT</a></p></td>
+<td><p>Short (starred) table constraint with wildcard <code class="docutils literal notranslate"><span class="pre">*</span></code> entries, filtered via CT.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scheduling constraints</strong> (<code class="docutils literal notranslate"><span class="pre">org.maxicp.cp.engine.constraints.scheduling</span></code>)</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Constraint (source)</p></th>
+<th class="head"><p>Semantics</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlap.java">NoOverlap</a></p></td>
+<td><p>No two interval variables in the group execute at the same time. Filtering uses Vilim’s edge-finding and not-first/not-last algorithms (Theta-Lambda tree).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlapBC.java">NoOverlapBC</a></p></td>
+<td><p>Bounds-consistent (overload-check + detectable precedences only) variant of NoOverlap; faster but weaker.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlapBinary.java">NoOverlapBinary</a></p></td>
+<td><p>Pairwise disjunctive constraint over exactly two interval variables: <code class="docutils literal notranslate"><span class="pre">end(a)</span> <span class="pre">≤</span> <span class="pre">start(b)</span> <span class="pre">∨</span> <span class="pre">end(b)</span> <span class="pre">≤</span> <span class="pre">start(a)</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlapBinaryWithTransitionTime.java">NoOverlapBinaryWithTransitionTime</a></p></td>
+<td><p>Pairwise disjunctive constraint with a sequence-dependent setup time between two tasks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/CumulativeDecomposition.java">CumulativeDecomposition</a></p></td>
+<td><p>Decomposition-based cumulative constraint (reference implementation).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/EndBeforeStart.java">EndBeforeStart</a> and temporal ordering family</p></td>
+<td><p>Temporal precedence constraints between interval variables. The family covers all combinations of <code class="docutils literal notranslate"><span class="pre">{Start,End}Before/At{Start,End}</span></code>: e.g. <code class="docutils literal notranslate"><span class="pre">EndBeforeStart(a,b)</span></code> enforces <code class="docutils literal notranslate"><span class="pre">end(a)</span> <span class="pre">≤</span> <span class="pre">start(b)</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/Alternative.java">Alternative</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">a</span></code> is executed on exactly one of the alternative tasks <code class="docutils literal notranslate"><span class="pre">b[0],</span> <span class="pre">…,</span> <span class="pre">b[k-1]</span></code>: the selected alternative mirrors the presence, start, and end of <code class="docutils literal notranslate"><span class="pre">a</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sequence-variable constraints</strong> (<code class="docutils literal notranslate"><span class="pre">org.maxicp.cp.engine.constraints.seqvar</span></code>)</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Constraint (source)</p></th>
+<th class="head"><p>Semantics</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Insert.java">Insert</a></p></td>
+<td><p>Inserts <code class="docutils literal notranslate"><span class="pre">node</span></code> immediately after <code class="docutils literal notranslate"><span class="pre">pred</span></code> in the partial sequence.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Exclude.java">Exclude</a></p></td>
+<td><p>Removes <code class="docutils literal notranslate"><span class="pre">node</span></code> from all feasible extensions of the sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Require.java">Require</a></p></td>
+<td><p>Marks <code class="docutils literal notranslate"><span class="pre">node</span></code> as required: it must appear in every feasible sequence.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/NotBetween.java">NotBetween</a></p></td>
+<td><p>Forbids <code class="docutils literal notranslate"><span class="pre">node</span></code> from appearing between <code class="docutils literal notranslate"><span class="pre">pred</span></code> and <code class="docutils literal notranslate"><span class="pre">succ</span></code> in the sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Precedence.java">Precedence</a></p></td>
+<td><p>Node <code class="docutils literal notranslate"><span class="pre">i</span></code> must appear before node <code class="docutils literal notranslate"><span class="pre">j</span></code> whenever both are present in the sequence.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Distance.java">Distance</a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">totalDist</span> <span class="pre">=</span> <span class="pre">Σ</span> <span class="pre">dist[pred(v)][v]</span></code> over all consecutive pairs in the sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/TransitionTimes.java">TransitionTimes</a></p></td>
+<td><p>For each consecutive pair <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> in the sequence: <code class="docutils literal notranslate"><span class="pre">time[u]</span> <span class="pre">+</span> <span class="pre">dist[u][v]</span> <span class="pre">≤</span> <span class="pre">time[v]</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Cumulative.java">Cumulative</a></p></td>
+<td><p>Pickup-and-delivery load constraint on a sequence variable: enforces capacity at every node, pickup-before-delivery ordering, and that both nodes of a request belong to the same sequence.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/SubSequence.java">SubSequence</a></p></td>
+<td><p>A given partial sequence <code class="docutils literal notranslate"><span class="pre">sub</span></code> must appear as a sub-sequence of the sequence variable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/RelaxedSequence.java">RelaxedSequence</a></p></td>
+<td><p>Fixes all non-relaxed nodes to follow their order in a reference solution while leaving relaxed nodes free for re-insertion. Used in LNS.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Propagation Engine</a><ul>
+<li><a class="reference internal" href="#priority-based-scheduling">Priority-Based Scheduling</a></li>
+<li><a class="reference internal" href="#event-driven-constraint-activation">Event-Driven Constraint Activation</a></li>
+<li><a class="reference internal" href="#posting-constraints">Posting Constraints</a></li>
+<li><a class="reference internal" href="#implementing-a-custom-constraint">Implementing a Custom Constraint</a></li>
+<li><a class="reference internal" href="#delta-based-incremental-propagation">Delta-Based Incremental Propagation</a></li>
+<li><a class="reference internal" href="#global-constraints">Global Constraints</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="state_management.html"
+                          title="previous chapter">State Management</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="search_strategies.html"
+                          title="next chapter">Search</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/propagation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="search_strategies.html" title="Search"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="state_management.html" title="State Management"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Propagation Engine</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>

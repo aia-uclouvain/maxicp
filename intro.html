@@ -22,8 +22,8 @@
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Documentation" href="maxicp.html" />
-    <link rel="prev" title="MaxiCP: A CP Solver for Scheduling and Vehicle Routing" href="index.html" />
+    <link rel="next" title="Getting Started" href="learning_maxicp/getting_started.html" />
+    <link rel="prev" title="MaxiCP: A Not So Mini Constraint Programming Solver" href="index.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <!--[if lt IE 9]>
@@ -48,10 +48,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="maxicp.html" title="Documentation"
+          <a href="learning_maxicp/getting_started.html" title="Getting Started"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="MaxiCP: A CP Solver for Scheduling and Vehicle Routing"
+          <a href="index.html" title="MaxiCP: A Not So Mini Constraint Programming Solver"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Preface</a></li> 
@@ -65,73 +65,107 @@
             
   <section id="preface">
 <span id="intro"></span><h1>Preface<a class="headerlink" href="#preface" title="Permalink to this heading">¶</a></h1>
-<p>This document is made for anyone who is looking for documentation on MaxiCP</p>
+<p>This document is the user guide for MaxiCP. It covers installation, core concepts, and
+a tour of all major features through annotated code examples. Readers looking for an
+introduction to constraint programming in general are referred to the
+<a class="reference external" href="https://doi.org/10.1007/s12532-020-00190-7">MiniCP paper</a> and related literature.</p>
 <section id="what-is-maxicp">
-<h2>What is MaxiCP<a class="headerlink" href="#what-is-maxicp" title="Permalink to this heading">¶</a></h2>
+<h2>What is MaxiCP?<a class="headerlink" href="#what-is-maxicp" title="Permalink to this heading">¶</a></h2>
 <p><strong>MaxiCP</strong> is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
 for solving scheduling and vehicle routing problems.
-It is an extended version of the [MiniCP](<a class="reference external" href="https://www.minicp.org">https://www.minicp.org</a>), a lightweight,
+It is an extended version of <a class="reference external" href="https://www.minicp.org">MiniCP</a>, a lightweight,
 open-source CP solver mostly used for teaching constraint programming.</p>
 <p>The key features of MaxiCP are:</p>
 <ul class="simple">
 <li><p><strong>Improved performances</strong> (support for delta-based propagation, more efficient data structures, etc.).</p></li>
 <li><p><strong>Symbolic modeling layer</strong> also enabling search declaration.</p></li>
-<li><p><strong>Support for Embarrasingly Parallel Search</strong>.</p></li>
-<li><p><strong>More global constraints</strong> (e.g., bin-packing, gcc, etc.).</p></li>
-<li><p><strong>Sequence variables with optional visits</strong> for modeling complex vehicle routing and insertion based search heuristics, including LNS.</p></li>
-<li><p><strong>Conditional task interval variables</strong> including support for modeling with cumulative function expressions for scheduling problem.</p></li>
+<li><p><strong>Support for Embarrassingly Parallel Search</strong>.</p></li>
+<li><p><strong>More global constraints</strong> (e.g., bin-packing, gcc, soft-gcc, etc.).</p></li>
+<li><p><strong>Sequence variables with optional visits</strong> for modeling complex vehicle routing and insertion-based search heuristics, including LNS.</p></li>
+<li><p><strong>Conditional task interval variables</strong> including support for modeling with cumulative function expressions for scheduling problems.</p></li>
 </ul>
-<p>MaxiCP is aimed to be used in real-life project and research in Constraint Programming.</p>
-</section>
-<section id="javadoc">
-<h2>Javadoc<a class="headerlink" href="#javadoc" title="Permalink to this heading">¶</a></h2>
-<p>The <a class="reference external" href="https://aia-uclouvain.github.io/maxicp/javadoc/">Javadoc API</a>.</p>
-</section>
-<section id="install-maxicp">
-<span id="install"></span><h2>Install MaxiCP<a class="headerlink" href="#install-maxicp" title="Permalink to this heading">¶</a></h2>
-<p>MaxiCP source code is available from <a class="reference external" href="https://github.com/aia-uclouvain/maxicp">github</a>.</p>
-<p><strong>Using an IDE</strong></p>
-<p>We recommend using <a class="reference external" href="https://www.jetbrains.com/idea/">IntelliJ</a>.</p>
-<p>From <a class="reference external" href="https://www.jetbrains.com/idea/">IntelliJ</a> you can import the project:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Open &gt; (select pom.xml in the minicp directory and open as new project)
-</pre></div>
-</div>
-<p><strong>From the command line</strong></p>
-<p>Using <a class="reference external" href="https://maven.apache.org">maven</a> command line you can do:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$mvn compile # compile all the project
-$mvn test    # run all the test suite
-</pre></div>
-</div>
-<p>Some other useful commands:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$mvn jacoco:report          # creates a cover report in target/site/jacoco/index.html
-$mvn javadoc:javadoc        # creates javadoc in target/site/apidocs/index.html
-</pre></div>
-</div>
-</section>
-<section id="getting-help-with-maxicp">
-<h2>Getting Help with MaxiCP<a class="headerlink" href="#getting-help-with-maxicp" title="Permalink to this heading">¶</a></h2>
-<p>Contact the authors by email, enter a bug report on github.</p>
-</section>
-<section id="who-uses-maxicp">
-<h2>Who Uses MaxiCP?<a class="headerlink" href="#who-uses-maxicp" title="Permalink to this heading">¶</a></h2>
-<p>If you use it for teaching or for research, please let us know and we will add you in this list.</p>
-<ul class="simple">
-<li><p>UCLouvain, <a class="reference external" href="https://aia.info.ucl.ac.be/people/">AIA</a> Researchers in the Group of Pierre Schaus and Hélène Verhaeghe.</p></li>
-</ul>
-</section>
-<section id="citing-maxicp-and-contributors">
-<h2>Citing MaxiCP and Contributors<a class="headerlink" href="#citing-maxicp-and-contributors" title="Permalink to this heading">¶</a></h2>
-<p>If you use MaxiCP in your research,
-you may want to cite the library to acknowledge the contributions of the main developers.</p>
+<p>MaxiCP is simultaneously well-suited for education, research, and practical deployment.</p>
+<p>If you use MaxiCP in your research, please cite:</p>
 <div class="highlight-latex notranslate"><div class="highlight"><pre><span></span>@misc<span class="nb">{</span>MaxiCP2024,
   author       = <span class="nb">{</span>Pierre Schaus and Guillaume Derval and Augustin Delecluse and Laurent Michel and Pascal Van Hentenryck<span class="nb">}</span>,
   title        = <span class="nb">{</span>MaxiCP: A Constraint Programming Solver for Scheduling and Vehicle Routing<span class="nb">}</span>,
-  year         = <span class="nb">{</span>2024<span class="nb">}</span>,
+  year         = <span class="nb">{</span>2026<span class="nb">}</span>,
   url          = <span class="nb">{</span>https://github.com/aia-uclouvain/maxicp<span class="nb">}</span>,
 <span class="nb">}</span>
 </pre></div>
 </div>
-<p>Other Contributors to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Alice Burlats.</p>
+<p>Other contributors to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Alice Burlats.</p>
+</section>
+<section id="javadoc">
+<h2>Javadoc<a class="headerlink" href="#javadoc" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.maxicp.org/javadoc/org.maxicp/module-summary.html">Javadoc of the main branch</a></p></li>
+<li><p><a class="reference external" href="https://javadoc.io/doc/org.maxicp/maxicp/latest/org.maxicp/module-summary.html">Javadoc of stable releases</a></p></li>
+</ul>
+</section>
+<section id="tech-report">
+<h2>Tech Report<a class="headerlink" href="#tech-report" title="Permalink to this heading">¶</a></h2>
+<p>A detailed description of MaxiCP’s architecture, features, and design decisions is available
+as a downloadable tech report:</p>
+<p><a class="reference external" href="https://aia-uclouvain.github.io/maxicp/tech-report/maxicp.pdf">MaxiCP: A Not So Mini Constraint Programming Solver (PDF)</a></p>
+<p>The tech report covers state management, the propagation engine, all variable types
+(integer, interval, sequence), global constraints, search strategies, scheduling,
+routing, and the symbolic modeling layer.</p>
+</section>
+<section id="install-maxicp">
+<span id="install"></span><h2>Install MaxiCP<a class="headerlink" href="#install-maxicp" title="Permalink to this heading">¶</a></h2>
+<p>MaxiCP source code is available on <a class="reference external" href="https://github.com/aia-uclouvain/maxicp">GitHub</a>.</p>
+<section id="using-maxicp-as-a-maven-dependency">
+<h3>Using MaxiCP as a Maven Dependency<a class="headerlink" href="#using-maxicp-as-a-maven-dependency" title="Permalink to this heading">¶</a></h3>
+<p>Stable releases are published on <a class="reference external" href="https://central.sonatype.com/artifact/org.maxicp/maxicp">Maven Central</a>.
+Add the following to your <code class="docutils literal notranslate"><span class="pre">pom.xml</span></code>:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;dependency&gt;</span>
+<span class="w">    </span><span class="nt">&lt;groupId&gt;</span>org.maxicp<span class="nt">&lt;/groupId&gt;</span>
+<span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>maxicp<span class="nt">&lt;/artifactId&gt;</span>
+<span class="w">    </span><span class="nt">&lt;version&gt;</span>0.0.2<span class="nt">&lt;/version&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div>
+</div>
+<p>If you need the latest development version from the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch, use
+<a class="reference external" href="https://jitpack.io/#aia-uclouvain/maxicp">JitPack</a>.</p>
+</section>
+<section id="cloning-and-building-from-source">
+<h3>Cloning and Building from Source<a class="headerlink" href="#cloning-and-building-from-source" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/aia-uclouvain/maxicp.git
+<span class="nb">cd</span><span class="w"> </span>maxicp
+mvn<span class="w"> </span>compile<span class="w">   </span><span class="c1"># compile the project</span>
+mvn<span class="w"> </span><span class="nb">test</span><span class="w">      </span><span class="c1"># run the full test suite</span>
+</pre></div>
+</div>
+<p>Useful Maven commands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mvn<span class="w"> </span>jacoco:report<span class="w">       </span><span class="c1"># coverage report → target/site/jacoco/index.html</span>
+mvn<span class="w"> </span>javadoc:javadoc<span class="w">     </span><span class="c1"># javadoc        → target/site/apidocs/index.html</span>
+</pre></div>
+</div>
+</section>
+<section id="recommended-ide-intellij-idea">
+<h3>Recommended IDE: IntelliJ IDEA<a class="headerlink" href="#recommended-ide-intellij-idea" title="Permalink to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Clone the repository</strong> (see above).</p></li>
+<li><p>Launch <strong>IntelliJ IDEA</strong>, choose <em>File → Open</em>, navigate to the <code class="docutils literal notranslate"><span class="pre">maxicp</span></code> folder,
+and open <code class="docutils literal notranslate"><span class="pre">pom.xml</span></code> as a new project.</p></li>
+<li><p>To run all tests: right-click on <code class="docutils literal notranslate"><span class="pre">src/test/java</span></code> → <em>Run ‘All Tests’</em>.</p></li>
+</ol>
+</section>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>File a bug report or feature request on the <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/issues">GitHub issue tracker</a>.</p></li>
+<li><p>Contact the authors by email.</p></li>
+</ul>
+</section>
+<section id="who-uses-maxicp">
+<h2>Who Uses MaxiCP?<a class="headerlink" href="#who-uses-maxicp" title="Permalink to this heading">¶</a></h2>
+<p>If you use MaxiCP for teaching or research, please let us know and we will add you to this list.</p>
+<ul class="simple">
+<li><p>UCLouvain, <a class="reference external" href="https://aia.info.ucl.ac.be/people/">AIA</a> — Researchers in the group of Pierre Schaus and Hélène Verhaeghe.</p></li>
+</ul>
 </section>
 </section>
 
@@ -149,12 +183,17 @@ you may want to cite the library to acknowledge the contributions of the main de
     <h3><a href="index.html">Table of Contents</a></h3>
     <ul>
 <li><a class="reference internal" href="#">Preface</a><ul>
-<li><a class="reference internal" href="#what-is-maxicp">What is MaxiCP</a></li>
+<li><a class="reference internal" href="#what-is-maxicp">What is MaxiCP?</a></li>
 <li><a class="reference internal" href="#javadoc">Javadoc</a></li>
-<li><a class="reference internal" href="#install-maxicp">Install MaxiCP</a></li>
-<li><a class="reference internal" href="#getting-help-with-maxicp">Getting Help with MaxiCP</a></li>
+<li><a class="reference internal" href="#tech-report">Tech Report</a></li>
+<li><a class="reference internal" href="#install-maxicp">Install MaxiCP</a><ul>
+<li><a class="reference internal" href="#using-maxicp-as-a-maven-dependency">Using MaxiCP as a Maven Dependency</a></li>
+<li><a class="reference internal" href="#cloning-and-building-from-source">Cloning and Building from Source</a></li>
+<li><a class="reference internal" href="#recommended-ide-intellij-idea">Recommended IDE: IntelliJ IDEA</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#getting-help">Getting Help</a></li>
 <li><a class="reference internal" href="#who-uses-maxicp">Who Uses MaxiCP?</a></li>
-<li><a class="reference internal" href="#citing-maxicp-and-contributors">Citing MaxiCP and Contributors</a></li>
 </ul>
 </li>
 </ul>
@@ -163,12 +202,12 @@ you may want to cite the library to acknowledge the contributions of the main de
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="index.html"
-                          title="previous chapter">MaxiCP: A CP Solver for Scheduling and Vehicle Routing</a></p>
+                          title="previous chapter">MaxiCP: A Not So Mini Constraint Programming Solver</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="maxicp.html"
-                          title="next chapter">Documentation</a></p>
+    <p class="topless"><a href="learning_maxicp/getting_started.html"
+                          title="next chapter">Getting Started</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -198,10 +237,10 @@ you may want to cite the library to acknowledge the contributions of the main de
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="maxicp.html" title="Documentation"
+          <a href="learning_maxicp/getting_started.html" title="Getting Started"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="MaxiCP: A CP Solver for Scheduling and Vehicle Routing"
+          <a href="index.html" title="MaxiCP: A Not So Mini Constraint Programming Solver"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Preface</a></li> 

@@ -1,0 +1,365 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Scheduling with Conditional Intervals &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sequence Variables for Routing" href="seqvar.html" />
+    <link rel="prev" title="Search" href="search_strategies.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="seqvar.html" title="Sequence Variables for Routing"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="search_strategies.html" title="Search"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Scheduling with Conditional Intervals</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="scheduling-with-conditional-intervals">
+<span id="scheduling"></span><h1>Scheduling with Conditional Intervals<a class="headerlink" href="#scheduling-with-conditional-intervals" title="Permalink to this heading">¶</a></h1>
+<p>Scheduling is a major application area for constraint programming.
+MaxiCP supports optional tasks, alternative resources, and complex resource interactions
+through <strong>conditional time-interval variables</strong> and <strong>cumulative function expressions</strong>,
+following the modeling paradigm of CP Optimizer and implemented via the
+Generalized Cumulative constraint.</p>
+<section id="conditional-time-interval-variables">
+<h2>Conditional Time-Interval Variables<a class="headerlink" href="#conditional-time-interval-variables" title="Permalink to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">CPIntervalVar</span></code> represents a task that may or may not be executed.
+Its domain is a subset of <code class="docutils literal notranslate"><span class="pre">{absent}</span> <span class="pre">∪</span> <span class="pre">{[s,</span> <span class="pre">e)</span> <span class="pre">|</span> <span class="pre">s</span> <span class="pre">≤</span> <span class="pre">e}</span></code>.</p>
+<p>Each interval variable has four attributes:</p>
+<ul class="simple">
+<li><p><strong>presence</strong> <code class="docutils literal notranslate"><span class="pre">p</span> <span class="pre">∈</span> <span class="pre">{true,</span> <span class="pre">false}</span></code> — <code class="docutils literal notranslate"><span class="pre">false</span></code> means the task is absent.</p></li>
+<li><p><strong>start</strong> <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">∈</span> <span class="pre">[minS,</span> <span class="pre">maxS]</span></code></p></li>
+<li><p><strong>end</strong> <code class="docutils literal notranslate"><span class="pre">e</span> <span class="pre">∈</span> <span class="pre">[minE,</span> <span class="pre">maxE]</span></code></p></li>
+<li><p><strong>duration</strong> <code class="docutils literal notranslate"><span class="pre">d</span> <span class="pre">∈</span> <span class="pre">[minD,</span> <span class="pre">maxD]</span></code>, with <code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">+</span> <span class="pre">d</span> <span class="pre">=</span> <span class="pre">e</span></code> maintained automatically.</p></li>
+</ul>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/core/CPIntervalVar.java">CPIntervalVar.java</a></p>
+</section>
+<section id="creating-interval-variables">
+<h2>Creating Interval Variables<a class="headerlink" href="#creating-interval-variables" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+
+<span class="c1">// Mandatory task with fixed duration</span>
+<span class="n">CPIntervalVar</span><span class="w"> </span><span class="n">task</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">duration</span><span class="p">);</span>
+
+<span class="c1">// Optional task with flexible duration</span>
+<span class="n">CPIntervalVar</span><span class="w"> </span><span class="n">opt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVar</span><span class="p">(</span><span class="n">cp</span><span class="p">);</span>
+
+<span class="c1">// Mandatory task with duration in [minD, maxD]</span>
+<span class="n">CPIntervalVar</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">minD</span><span class="p">,</span><span class="w"> </span><span class="n">maxD</span><span class="p">);</span>
+
+<span class="c1">// Array of mandatory tasks with known durations</span>
+<span class="n">CPIntervalVar</span><span class="o">[]</span><span class="w"> </span><span class="n">tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">setLength</span><span class="p">(</span><span class="n">duration</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">setPresent</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The second argument of <code class="docutils literal notranslate"><span class="pre">makeIntervalVar</span></code> controls optionality:
+<code class="docutils literal notranslate"><span class="pre">false</span></code> = mandatory (present), <code class="docutils literal notranslate"><span class="pre">true</span></code> = optional.</p>
+</section>
+<section id="job-shop-scheduling">
+<h2>Job-Shop Scheduling<a class="headerlink" href="#job-shop-scheduling" title="Permalink to this heading">¶</a></h2>
+<p>The classical Job-Shop Scheduling Problem (JSP) consists of <em>n</em> jobs,
+each comprising a sequence of operations that must be processed on specific machines.</p>
+<p>Constraints: (i) <em>precedence</em> — within each job, operations execute in order;
+(ii) <em>no-overlap</em> — no two operations on the same machine can overlap.
+Objective: minimize makespan.</p>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java">JobShop.java (raw)</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+
+<span class="n">CPIntervalVar</span><span class="o">[][]</span><span class="w"> </span><span class="n">activities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntervalVar</span><span class="o">[</span><span class="n">nJobs</span><span class="o">][</span><span class="n">nMachines</span><span class="o">]</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nJobs</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nMachines</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="n">activities</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">m</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVar</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">duration</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">m</span><span class="o">]</span><span class="p">);</span>
+
+<span class="c1">// Precedences within each job</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nJobs</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nMachines</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">endBeforeStart</span><span class="p">(</span><span class="n">activities</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">m</span><span class="o">-</span><span class="mi">1</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">activities</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">m</span><span class="o">]</span><span class="p">));</span>
+
+<span class="c1">// No-overlap on each machine</span>
+<span class="n">CPIntervalVar</span><span class="o">[][]</span><span class="w"> </span><span class="n">toRank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntervalVar</span><span class="o">[</span><span class="n">nMachines</span><span class="o">][]</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nMachines</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">CPIntervalVar</span><span class="o">&gt;</span><span class="w"> </span><span class="n">onMachine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nJobs</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nMachines</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">machine</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">onMachine</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">activities</span><span class="o">[</span><span class="n">j</span><span class="o">][</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">toRank</span><span class="o">[</span><span class="n">m</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">onMachine</span><span class="p">.</span><span class="na">toArray</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">CPIntervalVar</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">noOverlap</span><span class="p">(</span><span class="n">toRank</span><span class="o">[</span><span class="n">m</span><span class="o">]</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">makespan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makespan</span><span class="p">(</span>
+<span class="w">    </span><span class="n">Arrays</span><span class="p">.</span><span class="na">stream</span><span class="p">(</span><span class="n">activities</span><span class="p">).</span><span class="na">map</span><span class="p">(</span><span class="n">job</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">job</span><span class="o">[</span><span class="n">nMachines</span><span class="o">-</span><span class="mi">1</span><span class="o">]</span><span class="p">)</span>
+<span class="w">          </span><span class="p">.</span><span class="na">toArray</span><span class="p">(</span><span class="n">CPIntervalVar</span><span class="o">[]</span><span class="p">::</span><span class="k">new</span><span class="p">));</span>
+
+<span class="n">Objective</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">makespan</span><span class="p">);</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Rank</span><span class="p">(</span><span class="n">toRank</span><span class="p">));</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">endBeforeStart(a,</span> <span class="pre">b)</span></code> enforces that operation <em>a</em> ends before <em>b</em> starts.
+<code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> ensures activities on the same machine do not overlap (Vilim’s edge-finding).
+<code class="docutils literal notranslate"><span class="pre">Rank</span></code> is a search heuristic that selects the no-overlap group with the least slack
+and decides which activity goes next on that group’s machine.</p>
+</section>
+<section id="cumulative-function-expressions">
+<h2>Cumulative Function Expressions<a class="headerlink" href="#cumulative-function-expressions" title="Permalink to this heading">¶</a></h2>
+<p>MaxiCP models cumulative resources through <em>cumulative function expressions</em>,
+built compositionally from elementary functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pulse(x,</span> <span class="pre">h)</span></code> — contributes height <em>h</em> during task <em>x</em>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stepAtStart(x,</span> <span class="pre">h)</span></code> — adds height <em>h</em> from the start of <em>x</em> until the horizon.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stepAtEnd(x,</span> <span class="pre">h)</span></code> — adds height <em>h</em> from the end of <em>x</em> until the horizon.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flat()</span></code> — the zero function (identity for summation).</p></li>
+</ul>
+<p>Functions are combined with:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sum(f1,</span> <span class="pre">f2,</span> <span class="pre">...)</span></code> — sum.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">minus(f1,</span> <span class="pre">f2)</span></code> — difference.</p></li>
+</ul>
+<p>The resulting function is bounded by:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">le(f,</span> <span class="pre">maxCapa)</span></code> — profile must not exceed <code class="docutils literal notranslate"><span class="pre">maxCapa</span></code> where at least one task executes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alwaysIn(f,</span> <span class="pre">minCapa,</span> <span class="pre">maxCapa)</span></code> — profile stays between <code class="docutils literal notranslate"><span class="pre">minCapa</span></code> and <code class="docutils literal notranslate"><span class="pre">maxCapa</span></code>.</p></li>
+</ul>
+<p>Internally these compile to a single <strong>Generalized Cumulative</strong> constraint, which accepts
+variable and possibly negative heights.</p>
+</section>
+<section id="rcpsp-resource-constrained-project-scheduling">
+<h2>RCPSP (Resource-Constrained Project Scheduling)<a class="headerlink" href="#rcpsp-resource-constrained-project-scheduling" title="Permalink to this heading">¶</a></h2>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java">RCPSP.java (raw)</a></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
+
+<span class="n">CPIntervalVar</span><span class="o">[]</span><span class="w"> </span><span class="n">tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">nActivities</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nActivities</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">setLength</span><span class="p">(</span><span class="n">duration</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">);</span>
+<span class="w">    </span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">setPresent</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="c1">// Build cumulative resource profiles</span>
+<span class="n">CPCumulFunction</span><span class="o">[]</span><span class="w"> </span><span class="n">resources</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPCumulFunction</span><span class="o">[</span><span class="n">nResources</span><span class="o">]</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nResources</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">resources</span><span class="o">[</span><span class="n">r</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPFlatCumulFunction</span><span class="p">();</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nActivities</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nResources</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="o">++</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">consumption</span><span class="o">[</span><span class="n">r</span><span class="o">][</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">            </span><span class="n">resources</span><span class="o">[</span><span class="n">r</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPPlusCumulFunction</span><span class="p">(</span>
+<span class="w">                </span><span class="n">resources</span><span class="o">[</span><span class="n">r</span><span class="o">]</span><span class="p">,</span>
+<span class="w">                </span><span class="k">new</span><span class="w"> </span><span class="n">CPPulseCumulFunction</span><span class="p">(</span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">consumption</span><span class="o">[</span><span class="n">r</span><span class="o">][</span><span class="n">i</span><span class="o">]</span><span class="p">));</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nResources</span><span class="p">;</span><span class="w"> </span><span class="n">r</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">le</span><span class="p">(</span><span class="n">resources</span><span class="o">[</span><span class="n">r</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">capa</span><span class="o">[</span><span class="n">r</span><span class="o">]</span><span class="p">));</span>
+
+<span class="c1">// Precedences</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nActivities</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">successors</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span>
+<span class="w">        </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">endBeforeStart</span><span class="p">(</span><span class="n">tasks</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">tasks</span><span class="o">[</span><span class="n">k</span><span class="o">]</span><span class="p">));</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">makespan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makespan</span><span class="p">(</span><span class="n">tasks</span><span class="p">);</span>
+<span class="n">Objective</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">makespan</span><span class="p">);</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">fds</span><span class="p">(</span><span class="n">tasks</span><span class="p">));</span><span class="w">   </span><span class="c1">// Failure-Directed Search</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="producer-consumer-scheduling">
+<h2>Producer-Consumer Scheduling<a class="headerlink" href="#producer-consumer-scheduling" title="Permalink to this heading">¶</a></h2>
+<p>Cumulative functions naturally model reservoirs: producers add to the level at their
+completion, consumers remove from it at their start.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPCumulFunction</span><span class="w"> </span><span class="n">reservoir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPFlatCumulFunction</span><span class="p">();</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nProducers</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">reservoir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPPlusCumulFunction</span><span class="p">(</span>
+<span class="w">        </span><span class="n">reservoir</span><span class="p">,</span><span class="w"> </span><span class="n">stepAtEnd</span><span class="p">(</span><span class="n">producerTask</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">producerQty</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">));</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nConsumers</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">reservoir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPPlusCumulFunction</span><span class="p">(</span>
+<span class="w">        </span><span class="n">reservoir</span><span class="p">,</span><span class="w"> </span><span class="n">stepAtStart</span><span class="p">(</span><span class="n">consumerTask</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="n">consumerQty</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">));</span>
+
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">alwaysIn</span><span class="p">(</span><span class="n">reservoir</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">capacity</span><span class="p">));</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">stepAtEnd(task,</span> <span class="pre">qty)</span></code> adds <code class="docutils literal notranslate"><span class="pre">qty</span></code> at the task’s end (producer delivers).
+<code class="docutils literal notranslate"><span class="pre">stepAtStart(task,</span> <span class="pre">-qty)</span></code> subtracts <code class="docutils literal notranslate"><span class="pre">qty</span></code> at the task’s start (consumer takes).
+<code class="docutils literal notranslate"><span class="pre">alwaysIn</span></code> keeps the level between 0 and <code class="docutils literal notranslate"><span class="pre">capacity</span></code> at all times.</p>
+<p>Full example:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java">ProducerConsumer.java (raw)</a></p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Scheduling with Conditional Intervals</a><ul>
+<li><a class="reference internal" href="#conditional-time-interval-variables">Conditional Time-Interval Variables</a></li>
+<li><a class="reference internal" href="#creating-interval-variables">Creating Interval Variables</a></li>
+<li><a class="reference internal" href="#job-shop-scheduling">Job-Shop Scheduling</a></li>
+<li><a class="reference internal" href="#cumulative-function-expressions">Cumulative Function Expressions</a></li>
+<li><a class="reference internal" href="#rcpsp-resource-constrained-project-scheduling">RCPSP (Resource-Constrained Project Scheduling)</a></li>
+<li><a class="reference internal" href="#producer-consumer-scheduling">Producer-Consumer Scheduling</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="search_strategies.html"
+                          title="previous chapter">Search</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="seqvar.html"
+                          title="next chapter">Sequence Variables for Routing</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/scheduling.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="seqvar.html" title="Sequence Variables for Routing"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="search_strategies.html" title="Search"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Scheduling with Conditional Intervals</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+pdf_new_window();
+external_new_window();
+</script>
+
+
+  </body>
+</html>
