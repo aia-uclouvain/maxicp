@@ -3,11 +3,12 @@
 check_source_links.py
 ---------------------
 Scans every .rst file under userguide/source/ and verifies that every
-GitHub source-file link of the form
+GitHub source link of the form
 
-    https://github.com/aia-uclouvain/maxicp/blob/main/<path>
+    https://github.com/aia-uclouvain/maxicp/blob/main/<path>   (file)
+    https://github.com/aia-uclouvain/maxicp/tree/main/<path>   (directory)
 
-actually resolves to an existing file inside the repository root.
+actually resolves to an existing file or directory inside the repository root.
 
 Usage (run from repo root):
     python userguide/check_source_links.py
@@ -30,12 +31,11 @@ REPO_ROOT   = os.path.dirname(SCRIPT_DIR)
 # Directory tree to scan for .rst files
 RST_ROOT = os.path.join(SCRIPT_DIR, "source")
 
-# Prefix that all source-file links must share
-GITHUB_BLOB_PREFIX = "https://github.com/aia-uclouvain/maxicp/blob/main/"
+GITHUB_BASE = "https://github.com/aia-uclouvain/maxicp/"
 
-# Regex: captures the path portion after the prefix inside RST link syntax
+# Matches both /blob/main/<path> and /tree/main/<path>
 LINK_RE = re.compile(
-    re.escape(GITHUB_BLOB_PREFIX) + r"([^\s>`'\"]+)"
+    re.escape(GITHUB_BASE) + r"(blob|tree)/main/([^\s>`'\"]+)"
 )
 
 # --- helpers -----------------------------------------------------------------
@@ -48,45 +48,45 @@ def iter_rst_files(root):
 
 
 def check_links(rst_file):
-    """Return a list of (line_no, path, full_url) tuples for broken links."""
+    """Return a list of (line_no, kind, rel_path, full_url) for broken links."""
     broken = []
     with open(rst_file, encoding="utf-8") as fh:
         for lineno, line in enumerate(fh, start=1):
             for m in LINK_RE.finditer(line):
-                rel_path = m.group(1)
-                # Remove any trailing punctuation that might follow the URL
-                rel_path = rel_path.rstrip(")>'\"`.,;")
+                kind     = m.group(1)          # "blob" or "tree"
+                rel_path = m.group(2).rstrip(")>`'\"`.,;")
                 abs_path = os.path.join(REPO_ROOT, rel_path)
-                if not os.path.isfile(abs_path):
-                    broken.append((lineno, rel_path, GITHUB_BLOB_PREFIX + rel_path))
+                full_url = GITHUB_BASE + kind + "/main/" + rel_path
+                if kind == "blob" and not os.path.isfile(abs_path):
+                    broken.append((lineno, "file", rel_path, full_url))
+                elif kind == "tree" and not os.path.isdir(abs_path):
+                    broken.append((lineno, "dir ", rel_path, full_url))
     return broken
 
 # --- main --------------------------------------------------------------------
 
 def main():
     all_broken = []
+    total      = 0
 
     for rst_file in sorted(iter_rst_files(RST_ROOT)):
         broken = check_links(rst_file)
-        if broken:
-            rel_rst = os.path.relpath(rst_file, REPO_ROOT)
-            for lineno, path, url in broken:
-                all_broken.append((rel_rst, lineno, path, url))
+        rel_rst = os.path.relpath(rst_file, REPO_ROOT)
+        with open(rst_file, encoding="utf-8") as fh:
+            total += len(LINK_RE.findall(fh.read()))
+        for lineno, kind, path, url in broken:
+            all_broken.append((rel_rst, lineno, kind, path, url))
 
     if all_broken:
         print(f"ERROR: {len(all_broken)} broken source link(s) found:\n")
-        for rst, lineno, path, url in all_broken:
+        for rst, lineno, kind, path, url in all_broken:
             print(f"  {rst}:{lineno}")
             print(f"    URL  : {url}")
-            print(f"    File : {path}  (not found in repo)")
+            print(f"    {kind} : {path}  (not found in repo)")
             print()
         sys.exit(1)
     else:
-        n = sum(
-            len(LINK_RE.findall(open(f, encoding="utf-8").read()))
-            for f in iter_rst_files(RST_ROOT)
-        )
-        print(f"OK – all {n} source link(s) are valid.")
+        print(f"OK – all {total} source link(s) are valid.")
         sys.exit(0)
 
 

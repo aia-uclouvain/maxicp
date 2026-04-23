@@ -19,6 +19,13 @@ The key features of MaxiCP are:
 - **Sequence variables with optional visits** for modeling complex vehicle routing and insertion based search heuristics, including LNS.
 - **Conditional task interval variables** including support for modeling with cumulative function expressions for scheduling problem.
 
+
+## Website and documentation
+
+- User guide: [`www.maxicp.org`](http://www.maxicp.org)
+- Tech report: [`MaxiCP: A Not So Mini Constraint Programming Solver (PDF)`](https://aia-uclouvain.github.io/maxicp/tech-report/maxicp.pdf)
+
+
 ## Installation
 
 The official more stable releases are on [maven central](https://central.sonatype.com/artifact/org.maxicp/maxicp).
@@ -170,10 +177,6 @@ public class NQueens {
 }
 ```
 
-## Website and documentation
-
-- User guide: [`www.maxicp.org`](https://www.maxicp.org)
-- Tech report: [**MaxiCP: A Not So Mini Constraint Programming Solver (PDF)**](https://aia-uclouvain.github.io/maxicp/tech-report/maxicp.pdf)
 
 ## Citing MaxiCP
 
