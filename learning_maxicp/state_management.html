@@ -23,7 +23,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Propagation Engine" href="propagation.html" />
-    <link rel="prev" title="Core architecture" href="architecture.html" />
+    <link rel="prev" title="Architecture Overview" href="architecture.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <!--[if lt IE 9]>
@@ -51,7 +51,7 @@
           <a href="propagation.html" title="Propagation Engine"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="architecture.html" title="Core architecture"
+          <a href="architecture.html" title="Architecture Overview"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">State Management</a></li> 
@@ -68,7 +68,8 @@
 <p>CP solvers must efficiently save and restore states during search.
 MaxiCP is a <em>trail-based</em> solver: rather than copying the entire state at each choice point,
 it records only the incremental changes that occur during propagation and search on a stack called the <em>trail</em>.
-When the solver backtracks, it replays those changes in reverse to restore the previous state.</p>
+When the solver backtracks, it replays those changes in reverse to restore the previous state.
+We refer to <span id="id2">[<a class="reference internal" href="../references.html#id12" title="Laurent Michel, Pierre Schaus, and Pascal Van Hentenryck. Minicp: a lightweight solver for constraint programming. Mathematical Programming Computation, 13(1):133–184, 2021. URL: https://doi.org/10.1007/s12532-020-00190-7, doi:10.1007/s12532-020-00190-7.">1</a>]</span> for a comprehensive introduction to trailing and its implementation in CP solvers.</p>
 <section id="the-statemanager-interface">
 <h2>The <code class="docutils literal notranslate"><span class="pre">StateManager</span></code> Interface<a class="headerlink" href="#the-statemanager-interface" title="Permalink to this heading">¶</a></h2>
 <p>Source:
@@ -119,7 +120,7 @@ calls <code class="docutils literal notranslate"><span class="pre">restoreState(
 data structures built on top of <code class="docutils literal notranslate"><span class="pre">StateManager</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">StateStack&lt;T&gt;</span></code> — a reversible stack.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">StateSparseSet</span></code> — a reversible sparse set (used for integer variable domains).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">StateSparseSet</span></code> — a reversible sparse set (used for integer variable domains) <span id="id3">[<a class="reference internal" href="../references.html#id40" title="Vianney le Clément de Saint-Marcq, Pierre Schaus, Christine Solnon, and Christophe Lecoutre. Sparse-sets for domain implementation. In CP workshop on Techniques foR Implementing Constraint programming Systems (TRICS), 1–10. 2013.">6</a>]</span>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">StateTriPartition</span></code> — a reversible three-way partition of a universe (required / possible / excluded); used by sequence variables.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">StateMap&lt;K,V&gt;</span></code> — a reversible map backed by a <code class="docutils literal notranslate"><span class="pre">HashMap</span></code>.</p></li>
 </ul>
@@ -151,7 +152,7 @@ data structures built on top of <code class="docutils literal notranslate"><span
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="architecture.html"
-                          title="previous chapter">Core architecture</a></p>
+                          title="previous chapter">Architecture Overview</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -189,7 +190,7 @@ data structures built on top of <code class="docutils literal notranslate"><span
           <a href="propagation.html" title="Propagation Engine"
              >next</a> |</li>
         <li class="right" >
-          <a href="architecture.html" title="Core architecture"
+          <a href="architecture.html" title="Architecture Overview"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">State Management</a></li> 

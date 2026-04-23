@@ -17,7 +17,7 @@ What is MaxiCP?
 
 **MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
 for solving scheduling and vehicle routing problems.
-It is an extended version of `MiniCP <https://www.minicp.org>`_, a lightweight,
+It is an extended version of `MiniCP <http://www.minicp.org>`_, a lightweight,
 open-source CP solver mostly used for teaching constraint programming.
 
 The key features of MaxiCP are:
@@ -33,16 +33,16 @@ MaxiCP is simultaneously well-suited for education, research, and practical depl
 
 If you use MaxiCP in your research, please cite:
 
-.. code-block:: latex
+.. code-block:: bibtex
 
-        @misc{MaxiCP2024,
-          author       = {Pierre Schaus and Guillaume Derval and Augustin Delecluse and Laurent Michel and Pascal Van Hentenryck},
-          title        = {MaxiCP: A Constraint Programming Solver for Scheduling and Vehicle Routing},
-          year         = {2026},
-          url          = {https://github.com/aia-uclouvain/maxicp},
-        }
+    @misc{maxicp,
+      title        = {{MaxiCP: A Not So Mini Constraint Programming Solver}},
+      author       = {Pierre Schaus and Guillaume Derval and Augustin Delecluse and Laurent Michel and Pascal Van Hentenryck},
+      year         = {2026},
+      howpublished = {\url{http://www.maxicp.org/}},
+    }
 
-Other contributors to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Alice Burlats.
+Other people having contributed to the project are: Hélène Verhaeghe, Charles Thomas, Roger Kameugne, Emma Legrand, Alice Burlats, Margaux Schmied, Amaury Guichard.
 
 
 Javadoc

@@ -8,6 +8,7 @@ CP solvers must efficiently save and restore states during search.
 MaxiCP is a *trail-based* solver: rather than copying the entire state at each choice point,
 it records only the incremental changes that occur during propagation and search on a stack called the *trail*.
 When the solver backtracks, it replays those changes in reverse to restore the previous state.
+We refer to :cite:`Michel2021MiniCP` for a comprehensive introduction to trailing and its implementation in CP solvers.
 
 The ``StateManager`` Interface
 ==============================
@@ -67,7 +68,7 @@ The ``org.maxicp.state.datastructures`` package provides higher-level reversible
 data structures built on top of ``StateManager``:
 
 - ``StateStack<T>`` — a reversible stack.
-- ``StateSparseSet`` — a reversible sparse set (used for integer variable domains).
+- ``StateSparseSet`` — a reversible sparse set (used for integer variable domains) :cite:`sparsets2013domain`.
 - ``StateTriPartition`` — a reversible three-way partition of a universe (required / possible / excluded); used by sequence variables.
 - ``StateMap<K,V>`` — a reversible map backed by a ``HashMap``.
 

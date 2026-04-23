@@ -22,6 +22,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="References" href="../references.html" />
     <link rel="prev" title="Symbolic Modeling (MaxiCP-Modelling)" href="symbolic_modeling.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -46,6 +47,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../references.html" title="References"
+             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
              accesskey="P">previous</a> |</li>
@@ -83,22 +87,22 @@ custom constraints or search heuristics.</p>
 <tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/nqueens/NQueens.java">NQueens (raw)</a></p></td>
 <td><p>N-Queens with first-fail binary search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/qap/QAP.java">QAP (raw)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAPLNS.java">QAP (raw)</a></p></td>
 <td><p>Quadratic Assignment Problem with LNS.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java">JobShop (raw)</a></p></td>
 <td><p>Job-Shop scheduling with <code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> and <code class="docutils literal notranslate"><span class="pre">Rank</span></code> search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java">RCPSP (raw)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java">RCPSP (raw)</a></p></td>
 <td><p>Resource-Constrained Project Scheduling with cumulative functions and FDS.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java">ProducerConsumer (raw)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/ProducerConsumer.java">ProducerConsumer (raw)</a></p></td>
 <td><p>Producer-consumer scheduling with <code class="docutils literal notranslate"><span class="pre">alwaysIn</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/tsptw/TSPTW.java">TSPTW (raw)</a></p></td>
 <td><p>Traveling Salesman with Time Windows using a sequence variable.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java">CVRPTW (raw)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/CVRPTWSeqVar.java">CVRPTW (raw)</a></p></td>
 <td><p>Capacitated Vehicle Routing with Time Windows.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/darp/DARP.java">DARP (raw)</a></p></td>
@@ -128,13 +132,13 @@ features including embarrassingly parallel search.</p>
 <tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/nqueens/NQueens.java">NQueens (modeling)</a></p></td>
 <td><p>N-Queens using the <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code> with parallel EPS variant.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/jobshop/JobShop.java">JobShop (modeling)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/JobShop.java">JobShop (modeling)</a></p></td>
 <td><p>Job-Shop with the modeling API.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/rcpsp/RCPSP.java">RCPSP (modeling)</a></p></td>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/RCPSP.java">RCPSP (modeling)</a></p></td>
 <td><p>RCPSP with the modeling API and FDS.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/cvrptw/CVRPTW.java">CVRPTW (modeling)</a></p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/VRPTWSeqVar.java">CVRPTW (modeling)</a></p></td>
 <td><p>CVRPTW using the modeling API with insertion-based LNS.</p></td>
 </tr>
 </tbody>
@@ -171,6 +175,11 @@ out of the box.</p>
     <p class="topless"><a href="symbolic_modeling.html"
                           title="previous chapter">Symbolic Modeling (MaxiCP-Modelling)</a></p>
   </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../references.html"
+                          title="next chapter">References</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -198,6 +207,9 @@ out of the box.</p>
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../references.html" title="References"
+             >next</a> |</li>
         <li class="right" >
           <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
              >previous</a> |</li>

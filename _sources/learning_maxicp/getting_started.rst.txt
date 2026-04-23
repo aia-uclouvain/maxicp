@@ -56,9 +56,9 @@ Both APIs share the same constraint library, the same search heuristics
 **When to use which?**
 
 - Use the **Raw API** when you need maximum control: implementing custom constraints,
-  experimenting with propagation internals, or following along with MiniCP exercises.
+  experimenting with propagation internals, or following along with MiniCP :cite:`Michel2021MiniCP` exercises.
 - Use the **Modeling API** for most production use-cases: it is more concise, supports
-  model transformations, and enables embarrassingly parallel search out of the box.
+  model transformations, and enables embarrassingly parallel search :cite:`regin2013embarrassingly` out of the box.
 
 The N-Queens Problem
 ======================

@@ -7,9 +7,9 @@ Symbolic Modeling (MaxiCP-Modelling)
 Having covered the raw layer — state management, propagation, search, scheduling,
 and sequence variables — we now turn to the **symbolic modeling layer**.
 
-MaxiCP provides a higher-level API that separates *model definition* from *resolution*.
+MaxiCP provides a higher-level API :cite:`Derval2023Symbolism` that separates *model definition* from *resolution*.
 Models are treated as first-class, immutable data structures, enabling model
-transformations, LNS neighborhoods, and embarrassingly parallel search.
+transformations, LNS neighborhoods, and embarrassingly parallel search :cite:`regin2013embarrassingly` :cite:`malapert2016embarrassingly`.
 
 Source:
 `org.maxicp.modeling <https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/modeling>`_
@@ -111,7 +111,8 @@ Embarrassingly Parallel Search (EPS)
 =======================================
 
 EPS decomposes the original problem into independent sub-problems by exploring the
-search tree to a fixed depth *d*. Each leaf defines a sub-problem (the base model plus
+search tree to a fixed depth *d* :cite:`regin2013embarrassingly` :cite:`malapert2016embarrassingly`.
+Each leaf defines a sub-problem (the base model plus
 the branching decisions along the path), which is solved concurrently by a thread pool.
 
 .. code-block:: java

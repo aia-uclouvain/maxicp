@@ -67,9 +67,10 @@
 <span id="scheduling"></span><h1>Scheduling with Conditional Intervals<a class="headerlink" href="#scheduling-with-conditional-intervals" title="Permalink to this heading">¶</a></h1>
 <p>Scheduling is a major application area for constraint programming.
 MaxiCP supports optional tasks, alternative resources, and complex resource interactions
-through <strong>conditional time-interval variables</strong> and <strong>cumulative function expressions</strong>,
+through <strong>conditional time-interval variables</strong> <span id="id1">[<a class="reference internal" href="../references.html#id18" title="Philippe Laborie and Jérôme Rogerie. Reasoning with conditional time-intervals. In Proceedings of the 21st International FLAIRS Conference, 555–560. 2008.">24</a>]</span> <span id="id2">[<a class="reference internal" href="../references.html#id19">25</a>]</span> <span id="id3">[<a class="reference internal" href="../references.html#id17" title="Philippe Laborie, Jérôme Rogerie, Paul Shaw, and Petr Vilím. Ibm ilog cp optimizer for scheduling: 20+ years of scheduling with constraints at ibm/ilog. Constraints, 23:210–250, 2018.">26</a>]</span>
+and <strong>cumulative function expressions</strong>,
 following the modeling paradigm of CP Optimizer and implemented via the
-Generalized Cumulative constraint.</p>
+Generalized Cumulative constraint <span id="id4">[<a class="reference internal" href="../references.html#id15" title="Pierre Schaus, Charles Thomas, and Roger Kameugne. Implementing cumulative functions with generalized cumulative constraints. arXiv preprint arXiv:2410.02456, 2024. URL: https://arxiv.org/abs/2410.02456.">27</a>]</span> <span id="id5">[<a class="reference internal" href="../references.html#id25" title="Nicolas Beldiceanu and Mats Carlsson. A new multi-resource cumulatives constraint with negative heights. In CP 2002, 63–79. Springer, 2002.">28</a>]</span>.</p>
 <section id="conditional-time-interval-variables">
 <h2>Conditional Time-Interval Variables<a class="headerlink" href="#conditional-time-interval-variables" title="Permalink to this heading">¶</a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">CPIntervalVar</span></code> represents a task that may or may not be executed.
@@ -150,7 +151,7 @@ Objective: minimize makespan.</p>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">endBeforeStart(a,</span> <span class="pre">b)</span></code> enforces that operation <em>a</em> ends before <em>b</em> starts.
-<code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> ensures activities on the same machine do not overlap (Vilim’s edge-finding).
+<code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> ensures activities on the same machine do not overlap (Vilim’s edge-finding <span id="id6">[<a class="reference internal" href="../references.html#id20">13</a>]</span>).
 <code class="docutils literal notranslate"><span class="pre">Rank</span></code> is a search heuristic that selects the no-overlap group with the least slack
 and decides which activity goes next on that group’s machine.</p>
 </section>
@@ -174,13 +175,13 @@ built compositionally from elementary functions:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">le(f,</span> <span class="pre">maxCapa)</span></code> — profile must not exceed <code class="docutils literal notranslate"><span class="pre">maxCapa</span></code> where at least one task executes.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">alwaysIn(f,</span> <span class="pre">minCapa,</span> <span class="pre">maxCapa)</span></code> — profile stays between <code class="docutils literal notranslate"><span class="pre">minCapa</span></code> and <code class="docutils literal notranslate"><span class="pre">maxCapa</span></code>.</p></li>
 </ul>
-<p>Internally these compile to a single <strong>Generalized Cumulative</strong> constraint, which accepts
-variable and possibly negative heights.</p>
+<p>Internally these compile to a single <strong>Generalized Cumulative</strong> constraint <span id="id7">[<a class="reference internal" href="../references.html#id15" title="Pierre Schaus, Charles Thomas, and Roger Kameugne. Implementing cumulative functions with generalized cumulative constraints. arXiv preprint arXiv:2410.02456, 2024. URL: https://arxiv.org/abs/2410.02456.">27</a>]</span>,
+which accepts variable and possibly negative heights <span id="id8">[<a class="reference internal" href="../references.html#id25" title="Nicolas Beldiceanu and Mats Carlsson. A new multi-resource cumulatives constraint with negative heights. In CP 2002, 63–79. Springer, 2002.">28</a>]</span>.</p>
 </section>
 <section id="rcpsp-resource-constrained-project-scheduling">
 <h2>RCPSP (Resource-Constrained Project Scheduling)<a class="headerlink" href="#rcpsp-resource-constrained-project-scheduling" title="Permalink to this heading">¶</a></h2>
 <p>Full source:
-<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java">RCPSP.java (raw)</a></p>
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java">RCPSP.java (raw)</a></p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
 
 <span class="n">CPIntervalVar</span><span class="o">[]</span><span class="w"> </span><span class="n">tasks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeIntervalVarArray</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">nActivities</span><span class="p">);</span>
@@ -211,7 +212,7 @@ variable and possibly negative heights.</p>
 
 <span class="n">CPIntVar</span><span class="w"> </span><span class="n">makespan</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makespan</span><span class="p">(</span><span class="n">tasks</span><span class="p">);</span>
 <span class="n">Objective</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">minimize</span><span class="p">(</span><span class="n">makespan</span><span class="p">);</span>
-<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">fds</span><span class="p">(</span><span class="n">tasks</span><span class="p">));</span><span class="w">   </span><span class="c1">// Failure-Directed Search</span>
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">fds</span><span class="p">(</span><span class="n">tasks</span><span class="p">));</span><span class="w">   </span><span class="c1">// Failure-Directed Search :cite:`failureDirectedSearch`</span>
 <span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -237,7 +238,7 @@ completion, consumers remove from it at their start.</p>
 <code class="docutils literal notranslate"><span class="pre">stepAtStart(task,</span> <span class="pre">-qty)</span></code> subtracts <code class="docutils literal notranslate"><span class="pre">qty</span></code> at the task’s start (consumer takes).
 <code class="docutils literal notranslate"><span class="pre">alwaysIn</span></code> keeps the level between 0 and <code class="docutils literal notranslate"><span class="pre">capacity</span></code> at all times.</p>
 <p>Full example:
-<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java">ProducerConsumer.java (raw)</a></p>
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/ProducerConsumer.java">ProducerConsumer.java (raw)</a></p>
 </section>
 </section>
 

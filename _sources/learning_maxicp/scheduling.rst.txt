@@ -6,9 +6,10 @@ Scheduling with Conditional Intervals
 
 Scheduling is a major application area for constraint programming.
 MaxiCP supports optional tasks, alternative resources, and complex resource interactions
-through **conditional time-interval variables** and **cumulative function expressions**,
+through **conditional time-interval variables** :cite:`LaborieR08` :cite:`LaborieRSV09` :cite:`laborie2018ibm`
+and **cumulative function expressions**,
 following the modeling paradigm of CP Optimizer and implemented via the
-Generalized Cumulative constraint.
+Generalized Cumulative constraint :cite:`Schaus2025GeneralizedCumulative` :cite:`BeldiceanuC02`.
 
 Conditional Time-Interval Variables
 =====================================
@@ -99,7 +100,7 @@ Full source:
     dfs.optimize(obj);
 
 ``endBeforeStart(a, b)`` enforces that operation *a* ends before *b* starts.
-``noOverlap`` ensures activities on the same machine do not overlap (Vilim's edge-finding).
+``noOverlap`` ensures activities on the same machine do not overlap (Vilim's edge-finding :cite:`vilim2007global`).
 ``Rank`` is a search heuristic that selects the no-overlap group with the least slack
 and decides which activity goes next on that group's machine.
 
@@ -124,14 +125,14 @@ The resulting function is bounded by:
 - ``le(f, maxCapa)`` — profile must not exceed ``maxCapa`` where at least one task executes.
 - ``alwaysIn(f, minCapa, maxCapa)`` — profile stays between ``minCapa`` and ``maxCapa``.
 
-Internally these compile to a single **Generalized Cumulative** constraint, which accepts
-variable and possibly negative heights.
+Internally these compile to a single **Generalized Cumulative** constraint :cite:`Schaus2025GeneralizedCumulative`,
+which accepts variable and possibly negative heights :cite:`BeldiceanuC02`.
 
 RCPSP (Resource-Constrained Project Scheduling)
 =================================================
 
 Full source:
-`RCPSP.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java>`_
+`RCPSP.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java>`_
 
 .. code-block:: java
 
@@ -165,7 +166,7 @@ Full source:
 
     CPIntVar makespan = makespan(tasks);
     Objective obj = cp.minimize(makespan);
-    DFSearch dfs = makeDfs(cp, fds(tasks));   // Failure-Directed Search
+    DFSearch dfs = makeDfs(cp, fds(tasks));   // Failure-Directed Search :cite:`failureDirectedSearch`
     dfs.optimize(obj);
 
 Producer-Consumer Scheduling
@@ -193,4 +194,4 @@ completion, consumers remove from it at their start.
 ``alwaysIn`` keeps the level between 0 and ``capacity`` at all times.
 
 Full example:
-`ProducerConsumer.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java>`_
+`ProducerConsumer.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/ProducerConsumer.java>`_

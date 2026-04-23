@@ -65,7 +65,8 @@
             
   <section id="sequence-variables-for-routing">
 <span id="seqvar"></span><h1>Sequence Variables for Routing<a class="headerlink" href="#sequence-variables-for-routing" title="Permalink to this heading">¶</a></h1>
-<p>MaxiCP introduces <strong>sequence variables</strong> (<code class="docutils literal notranslate"><span class="pre">CPSeqVar</span></code>), a dedicated computational domain
+<p>MaxiCP introduces <strong>sequence variables</strong> (<code class="docutils literal notranslate"><span class="pre">CPSeqVar</span></code>) <span id="id1">[<a class="reference internal" href="../references.html#id14" title="Augustin Delecluse, Pierre Schaus, and Pascal Van Hentenryck. Sequence variables: a constraint programming computational domain for routing and sequencing. Journal of Artificial Intelligence Research, 2026. URL: https://arxiv.org/abs/2203.11666.">29</a>]</span> <span id="id2">[<a class="reference internal" href="../references.html#id23" title="Augustin Delecluse, Pierre Schaus, and Pascal Van Hentenryck. Sequence variables for routing problems. In Proceedings of the 28th International Conference on Principles and Practice of Constraint Programming (CP 2022). 2022.">30</a>]</span>,
+a dedicated computational domain
 for routing and sequencing problems.
 Unlike the classical successor-array model
 (integer variable <code class="docutils literal notranslate"><span class="pre">succ[i]</span></code> giving the next node after <em>i</em>),
@@ -117,13 +118,13 @@ Its domain is represented as a tuple <code class="docutils literal notranslate">
 <p>Source:
 <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/engine/constraints">org.maxicp.cp.engine.constraints (seqvar)</a></p>
 <dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">distance(SeqVar,</span> <span class="pre">int[][]</span> <span class="pre">dist,</span> <span class="pre">IntExpression</span> <span class="pre">totalDist)</span></code></dt><dd><p>Links the total route distance to a variable using a distance matrix.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">distance(SeqVar,</span> <span class="pre">int[][]</span> <span class="pre">dist,</span> <span class="pre">IntExpression</span> <span class="pre">totalDist)</span></code></dt><dd><p>Links the total route distance to a variable using a distance matrix <span id="id3">[<a class="reference internal" href="../references.html#id16" title="Margaux Schmied, Augustin Delecluse, Jean-Charles Régin, and Pierre Schaus. The distance constraint on sequence variables. In Proceedings of the 30th International Conference on Principles and Practice of Constraint Programming (CP 2024). 2024. URL: https://drops.dagstuhl.de/entities/format/details/LIPIcs.CP.2024.26, doi:10.4230/LIPIcs.CP.2024.26.">14</a>]</span>.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">transitionTimes(SeqVar,</span> <span class="pre">IntExpression[]</span> <span class="pre">time,</span> <span class="pre">int[][]</span> <span class="pre">dist)</span></code></dt><dd><p>Enforces temporal consistency: for each consecutive pair <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> in the sequence,
 <code class="docutils literal notranslate"><span class="pre">time[u]</span> <span class="pre">+</span> <span class="pre">dist[u][v]</span> <span class="pre">≤</span> <span class="pre">time[v]</span></code>.</p>
 </dd>
 <dt><code class="docutils literal notranslate"><span class="pre">cumulative(SeqVar,</span> <span class="pre">int[]</span> <span class="pre">pickups,</span> <span class="pre">int[]</span> <span class="pre">drops,</span> <span class="pre">int[]</span> <span class="pre">load,</span> <span class="pre">int</span> <span class="pre">capacity)</span></code></dt><dd><p>Simultaneously enforces: (i) capacity at every node; (ii) pickup precedes delivery;
-(iii) both nodes of a request are assigned to the same vehicle.</p>
+(iii) both nodes of a request are assigned to the same vehicle <span id="id4">[<a class="reference internal" href="../references.html#id22" title="Charles Thomas and Pierre Schaus. Insertion sequence variables for hybrid routing and scheduling problems. Integration of Constraint Programming, Artificial Intelligence, and Operations Research, pages 457–474, 2020.">15</a>]</span>.</p>
 </dd>
 </dl>
 </section>
@@ -187,7 +188,7 @@ Right branch: <code class="docutils literal notranslate"><span class="pre">notBe
 <section id="multi-vehicle-routing-cvrptw">
 <h2>Multi-Vehicle Routing (CVRPTW)<a class="headerlink" href="#multi-vehicle-routing-cvrptw" title="Permalink to this heading">¶</a></h2>
 <p>Full source:
-<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java">CVRPTW.java (raw)</a></p>
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/CVRPTWSeqVar.java">CVRPTWSeqVar.java (raw)</a></p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
 <span class="n">CPSeqVar</span><span class="o">[]</span><span class="w"> </span><span class="n">vehicles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPSeqVar</span><span class="o">[</span><span class="n">nVehicle</span><span class="o">]</span><span class="p">;</span>
 <span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">time</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">nNode</span><span class="o">]</span><span class="p">;</span>

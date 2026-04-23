@@ -71,7 +71,7 @@ The core engine is depth-first search (<code class="docutils literal notranslate
 <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/search/">org.maxicp.search</a></p>
 <section id="depth-first-search-with-closures">
 <h2>Depth-First Search with Closures<a class="headerlink" href="#depth-first-search-with-closures" title="Permalink to this heading">¶</a></h2>
-<p>Following the design of MiniCP, the search in MaxiCP is defined by a <em>branching function</em>:
+<p>Following the design of MiniCP <span id="id1">[<a class="reference internal" href="../references.html#id12" title="Laurent Michel, Pierre Schaus, and Pascal Van Hentenryck. Minicp: a lightweight solver for constraint programming. Mathematical Programming Computation, 13(1):133–184, 2021. URL: https://doi.org/10.1007/s12532-020-00190-7, doi:10.1007/s12532-020-00190-7.">1</a>]</span>, the search in MaxiCP is defined by a <em>branching function</em>:
 a <code class="docutils literal notranslate"><span class="pre">Supplier</span></code> of an array of <code class="docutils literal notranslate"><span class="pre">Runnable</span></code> closures, one per child branch.
 An empty array signals a solution.</p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">DFSearch</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
@@ -140,24 +140,24 @@ An overload accepts a scoring function <code class="docutils literal notranslate
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">boundImpactValueSelector(objective)</span></code> — for each candidate value, temporarily assigns it,
 measures the resulting objective bound, then backtracks. Returns the value that tightens
-the bound the least — biasing the search towards high-quality subtrees.</p></li>
+the bound the least — biasing the search towards high-quality subtrees <span id="id2">[<a class="reference internal" href="../references.html#id44" title="Jean-Guillaume Fages and Charles Prud'homme. Making the first solution good! In 2017 IEEE 29th International Conference on Tools with Artificial Intelligence (ICTAI), 1073–1077. IEEE, 2017.">16</a>]</span>.</p></li>
 </ul>
 </section>
 <section id="conflict-aware-heuristics">
 <h2>Conflict-Aware Heuristics<a class="headerlink" href="#conflict-aware-heuristics" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">lastConflict</span></code> — after a failure, the variable that caused it is retried <em>before</em>
-consulting the fallback variable selector.</p></li>
+consulting the fallback variable selector <span id="id3">[<a class="reference internal" href="../references.html#id45" title="Christophe Lecoutre, Lakhdar Saïs, Sébastien Tabary, and Vincent Vidal. Reasoning from last conflict(s) in constraint programming. Artificial Intelligence, 173(18):1592–1614, 2009.">17</a>]</span>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">conflictOrderingSearch</span></code> — maintains a conflict counter per variable; the most conflicted
-variable is selected first.</p></li>
+variable is selected first <span id="id4">[<a class="reference internal" href="../references.html#id42" title="Steven Gay, Renaud Hartert, Christophe Lecoutre, and Pierre Schaus. Conflict ordering search for scheduling problems. In International conference on principles and practice of constraint programming, 140–148. Springer, 2015.">18</a>]</span>.</p></li>
 </ul>
 </section>
 <section id="scheduling-and-sequencing-heuristics">
 <h2>Scheduling and Sequencing Heuristics<a class="headerlink" href="#scheduling-and-sequencing-heuristics" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">fds(tasks)</span></code> — <strong>Failure-Directed Search</strong> for interval variables. Very effective for
+<li><p><code class="docutils literal notranslate"><span class="pre">fds(tasks)</span></code> — <strong>Failure-Directed Search</strong> <span id="id5">[<a class="reference internal" href="../references.html#id43" title="Petr Vilím, Philippe Laborie, and Paul Shaw. Failure-directed search for constraint-based scheduling. In International Conference on Integration of Constraint Programming, Artificial Intelligence, and Operations Research, 437–453. Springer, 2015.">19</a>]</span> for interval variables. Very effective for
 proving optimality; supports optional tasks. Branches on status, start time, and duration.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">setTimes(tasks)</span></code> — branches on the start time of the task with the smallest slack.
+<li><p><code class="docutils literal notranslate"><span class="pre">setTimes(tasks)</span></code> — branches on the start time of the task with the smallest slack <span id="id6">[<a class="reference internal" href="../references.html#id41" title="C. Le Pape, P. Couronne, D. Vergamini, and V. Gosselin. Time-versus-capacity compromises in project scheduling. In Proceedings of the Thirteenth Workshop of the U.K. Planning Special Interest Group. 1994.">20</a>]</span>.
 Assumes all tasks are mandatory.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">rank(tasks)</span></code> — imposes a total order on tasks (assumes mandatory tasks).</p></li>
 </ul>
@@ -171,7 +171,7 @@ detour cost.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">and(b1,</span> <span class="pre">b2,</span> <span class="pre">...)</span></code> — composes strategies sequentially; each strategy is activated only
 when all preceding ones return <code class="docutils literal notranslate"><span class="pre">EMPTY</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">limitedDiscrepancy(branching,</span> <span class="pre">maxDisc)</span></code> — prunes paths with more than <code class="docutils literal notranslate"><span class="pre">maxDisc</span></code> right
-branches (Limited Discrepancy Search).</p></li>
+branches (Limited Discrepancy Search) <span id="id7">[<a class="reference internal" href="../references.html#id46" title="William D. Harvey and Matthew L. Ginsberg. Limited discrepancy search. In Proceedings of the 14th International Joint Conference on Artificial Intelligence (IJCAI), 607–613. 1995.">21</a>]</span>.</p></li>
 </ul>
 </section>
 <section id="branch-and-bound-optimization">
@@ -187,7 +187,7 @@ branches (Limited Discrepancy Search).</p></li>
 <section id="large-neighborhood-search-lns">
 <h2>Large Neighborhood Search (LNS)<a class="headerlink" href="#large-neighborhood-search-lns" title="Permalink to this heading">¶</a></h2>
 <p>LNS iteratively improves an incumbent by fixing a large subset of variables to their
-current best values (the <em>freeze</em> phase) then re-solving the relaxed sub-problem.</p>
+current best values (the <em>freeze</em> phase) then re-solving the relaxed sub-problem <span id="id8">[<a class="reference internal" href="../references.html#id39" title="Paul Shaw. Using constraint programming and local search methods to solve vehicle routing problems. In International conference on principles and practice of constraint programming, 417–431. Springer, 1998.">22</a>]</span>.</p>
 <p>The example below applies LNS to the Quadratic Assignment Problem (QAP).</p>
 <p><strong>Model</strong></p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
@@ -239,6 +239,131 @@ solution found so far.</p>
 <p>Full example:
 <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAPLNS.java">QAPLNS.java (raw)</a></p>
 </section>
+<section id="variable-objective-lns-volns">
+<h2>Variable Objective LNS (VOLNS)<a class="headerlink" href="#variable-objective-lns-volns" title="Permalink to this heading">¶</a></h2>
+<p>Standard LNS applies to well-constrained problems where a feasible solution always
+exists and the goal is purely to minimise an objective.
+Many real-world problems are <strong>over-constrained</strong>: a fully feasible solution may not exist,
+and the goal is to find an assignment that violates as few constraints as possible.</p>
+<p><strong>Variable Objective LNS</strong> (VOLNS) <span id="id9">[<a class="reference internal" href="../references.html#id32" title="Pierre Schaus. Variable objective large neighborhood search: a practical approach to solve over-constrained problems. In 2013 IEEE 25th International Conference on Tools with Artificial Intelligence, 971–978. IEEE Computer Society, 2013.">23</a>]</span> handles this by reformulating each
+hard constraint that may be violated as a <em>soft constraint</em> with an individual
+violation variable, then minimising the sum of those violations.
+The key insight is that tightening the individual violations during the LNS loop drives
+the search towards globally feasible solutions more effectively than simply minimising
+the total violation sum alone.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">MinimizeObjectiveSum</span></code> class encapsulates this strategy.</p>
+<p>Source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/core/MinimizeObjectiveSum.java">MinimizeObjectiveSum.java</a></p>
+<section id="example-magic-square">
+<h3>Example: Magic Square<a class="headerlink" href="#example-magic-square" title="Permalink to this heading">¶</a></h3>
+<p>The Magic Square problem requires placing the numbers 1 … n² in an n×n grid so that
+every row, column, and diagonal sums to the same target S = n(n²+1)/2.
+It is a pure feasibility problem, but for large <em>n</em> it is extremely hard to find a
+feasible solution directly.
+VOLNS turns it into a minimisation problem by treating each <em>row</em> sum constraint as a
+soft constraint; columns and diagonals remain hard.
+The violation of row <em>i</em> is <code class="docutils literal notranslate"><span class="pre">|sum(row_i)</span> <span class="pre">−</span> <span class="pre">S|</span></code>; the total violation is their sum.
+The search succeeds when the total violation reaches 0.</p>
+<p>Full source:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/magicsquare/MagicSquareVOLNS.java">MagicSquareVOLNS.java</a></p>
+<p><strong>Step 1 — Model hard and soft constraints</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">sumResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+
+<span class="c1">// Hard: all-different, column sums, diagonal sums</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">allDifferent</span><span class="p">(</span><span class="n">xFlat</span><span class="p">));</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">n</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">col</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">][</span><span class="n">j</span><span class="o">]</span><span class="p">;</span>
+<span class="w">    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">sum</span><span class="p">(</span><span class="n">col</span><span class="p">,</span><span class="w"> </span><span class="n">sumResult</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">sum</span><span class="p">(</span><span class="n">diagonalLeft</span><span class="p">,</span><span class="w">  </span><span class="n">sumResult</span><span class="p">));</span>
+<span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">sum</span><span class="p">(</span><span class="n">diagonalRight</span><span class="p">,</span><span class="w"> </span><span class="n">sumResult</span><span class="p">));</span>
+
+<span class="c1">// Soft: row sums — violation = |sum(row_i) - sumResult|</span>
+<span class="n">CPIntVar</span><span class="o">[]</span><span class="w"> </span><span class="n">rowViolation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntVar</span><span class="o">[</span><span class="n">n</span><span class="o">]</span><span class="p">;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">rowViolation</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">abs</span><span class="p">(</span><span class="n">minus</span><span class="p">(</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">),</span><span class="w"> </span><span class="n">sumResult</span><span class="p">));</span>
+
+<span class="n">CPIntVar</span><span class="w"> </span><span class="n">totalViolation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sum</span><span class="p">(</span><span class="n">rowViolation</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Step 2 — Create the VOLNS objective</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">MinimizeObjectiveSum</span><span class="w"> </span><span class="n">globalObjective</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MinimizeObjectiveSum</span><span class="p">(</span><span class="n">rowViolation</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">MinimizeObjectiveSum</span></code> internally wraps each individual <code class="docutils literal notranslate"><span class="pre">rowViolation[i]</span></code> and their
+sum in separate <code class="docutils literal notranslate"><span class="pre">IntObjective</span></code> objects.
+On construction, only the sum objective is <em>filtered</em> (i.e., actively used for pruning);
+the individual terms are tracked but not yet enforced.</p>
+<p><strong>Step 3 — Find an initial solution</strong></p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">xFlatSol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="o">]</span><span class="p">;</span>
+<span class="kt">int</span><span class="o">[]</span><span class="w"> </span><span class="n">totalViolationSol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="o">[]</span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+
+<span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeDfs</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span><span class="w"> </span><span class="n">firstFailBinary</span><span class="p">(</span><span class="n">xFlat</span><span class="p">));</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">totalViolationSol</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">totalViolation</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">xFlatSol</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xFlat</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
+<span class="p">});</span>
+
+<span class="c1">// stop as soon as one feasible solution (or best approximation) is found</span>
+<span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">globalObjective</span><span class="p">,</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stats</span><span class="p">.</span><span class="na">numberOfSolutions</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Step 4 — VOLNS loop</strong></p>
+<p>The loop applies three tightening strategies each iteration before re-running <code class="docutils literal notranslate"><span class="pre">optimizeSubjectTo</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">Random</span><span class="w"> </span><span class="n">random</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Random</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">iter</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">maxIter</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">globalObjective</span><span class="p">.</span><span class="na">getBound</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">iter</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="c1">// (1) Weak-tighten all terms: next solution must ≥ each current bound</span>
+<span class="w">    </span><span class="n">globalObjective</span><span class="p">.</span><span class="na">weakTightenAll</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// (2) Strong-tighten the sum: next solution must strictly improve the total</span>
+<span class="w">    </span><span class="n">globalObjective</span><span class="p">.</span><span class="na">strongTightenSum</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// (3) Strong-tighten the worst individual term: force improvement of the</span>
+<span class="w">    </span><span class="c1">//     row that currently contributes the most violation</span>
+<span class="w">    </span><span class="n">globalObjective</span><span class="p">.</span><span class="na">strongTigthenWorseTerm</span><span class="p">();</span>
+
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">relaxValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">random</span><span class="p">.</span><span class="na">nextDouble</span><span class="p">();</span>
+<span class="w">    </span><span class="n">dfs</span><span class="p">.</span><span class="na">optimizeSubjectTo</span><span class="p">(</span><span class="n">globalObjective</span><span class="p">,</span>
+<span class="w">        </span><span class="n">s</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">numberOfFailures</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">        </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">random</span><span class="p">.</span><span class="na">nextDouble</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">relaxValue</span><span class="p">)</span>
+<span class="w">                    </span><span class="n">cp</span><span class="p">.</span><span class="na">post</span><span class="p">(</span><span class="n">eq</span><span class="p">(</span><span class="n">xFlat</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">xFlatSol</span><span class="o">[</span><span class="n">j</span><span class="o">]</span><span class="p">));</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The three tightening modes create a progressive pressure:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">weakTightenAll()</span></code></p></td>
+<td><p>Every individual violation and the sum must be <strong>at most equal</strong> to their current best
+values — no term may get worse.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">strongTightenSum()</span></code></p></td>
+<td><p>The total violation must <strong>strictly decrease</strong> (delta = 1).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">strongTigthenWorseTerm()</span></code></p></td>
+<td><p>The individual violation that is currently largest must also <strong>strictly decrease</strong>,
+focusing search on the hardest-to-satisfy row.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The combination forces the search to simultaneously avoid global regression,
+improve the aggregate quality, and attack the most violated constraint.
+As iterations proceed, more rows reach violation 0 and the surviving violated rows
+are progressively tightened until the total violation reaches 0 — a valid magic square.</p>
+</section>
+</section>
 </section>
 
 
@@ -263,6 +388,10 @@ solution found so far.</p>
 <li><a class="reference internal" href="#combinators">Combinators</a></li>
 <li><a class="reference internal" href="#branch-and-bound-optimization">Branch-and-Bound Optimization</a></li>
 <li><a class="reference internal" href="#large-neighborhood-search-lns">Large Neighborhood Search (LNS)</a></li>
+<li><a class="reference internal" href="#variable-objective-lns-volns">Variable Objective LNS (VOLNS)</a><ul>
+<li><a class="reference internal" href="#example-magic-square">Example: Magic Square</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

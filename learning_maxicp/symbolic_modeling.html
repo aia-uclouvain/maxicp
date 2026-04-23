@@ -67,9 +67,9 @@
 <span id="symbolic-modeling"></span><h1>Symbolic Modeling (MaxiCP-Modelling)<a class="headerlink" href="#symbolic-modeling-maxicp-modelling" title="Permalink to this heading">¶</a></h1>
 <p>Having covered the raw layer — state management, propagation, search, scheduling,
 and sequence variables — we now turn to the <strong>symbolic modeling layer</strong>.</p>
-<p>MaxiCP provides a higher-level API that separates <em>model definition</em> from <em>resolution</em>.
+<p>MaxiCP provides a higher-level API <span id="id1">[<a class="reference internal" href="../references.html#id13" title="Guillaume Derval and Damien Ernst. Symbolism for modelling, reformulations, and parallelism: maxicp-modelling. In Proceedings of the 22nd Workshop on Constraint Modelling and Reformulation (ModRef 2023). 2023. URL: https://arxiv.org/abs/2308.06013.">3</a>]</span> that separates <em>model definition</em> from <em>resolution</em>.
 Models are treated as first-class, immutable data structures, enabling model
-transformations, LNS neighborhoods, and embarrassingly parallel search.</p>
+transformations, LNS neighborhoods, and embarrassingly parallel search <span id="id2">[<a class="reference internal" href="../references.html#id48" title="Jean-Charles Régin, Mohamed Rezgui, and Arnaud Malapert. Embarrassingly parallel search. In International Conference on Principles and Practice of Constraint Programming, 596–610. Springer, 2013.">2</a>]</span> <span id="id3">[<a class="reference internal" href="../references.html#id47" title="Arnaud Malapert, Jean-Charles Régin, and Mohamed Rezgui. Embarrassingly parallel search in constraint programming. Journal of Artificial Intelligence Research, 57:421–464, 2016.">31</a>]</span>.</p>
 <p>Source:
 <a class="reference external" href="https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/modeling">org.maxicp.modeling</a></p>
 <section id="models-as-functional-linked-lists">
@@ -154,7 +154,8 @@ entirely independent model branches that can be solved concurrently.</p>
 <section id="embarrassingly-parallel-search-eps">
 <h2>Embarrassingly Parallel Search (EPS)<a class="headerlink" href="#embarrassingly-parallel-search-eps" title="Permalink to this heading">¶</a></h2>
 <p>EPS decomposes the original problem into independent sub-problems by exploring the
-search tree to a fixed depth <em>d</em>. Each leaf defines a sub-problem (the base model plus
+search tree to a fixed depth <em>d</em> <span id="id4">[<a class="reference internal" href="../references.html#id48" title="Jean-Charles Régin, Mohamed Rezgui, and Arnaud Malapert. Embarrassingly parallel search. In International Conference on Principles and Practice of Constraint Programming, 596–610. Springer, 2013.">2</a>]</span> <span id="id5">[<a class="reference internal" href="../references.html#id47" title="Arnaud Malapert, Jean-Charles Régin, and Mohamed Rezgui. Embarrassingly parallel search in constraint programming. Journal of Artificial Intelligence Research, 57:421–464, 2016.">31</a>]</span>.
+Each leaf defines a sub-problem (the base model plus
 the branching decisions along the path), which is solved concurrently by a thread pool.</p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">ExecutorService</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newFixedThreadPool</span><span class="p">(</span><span class="mi">8</span><span class="p">);</span>
 

@@ -20,6 +20,7 @@ MaxiCP: A Not So Mini Constraint Programming Solver
    learning_maxicp/seqvar
    learning_maxicp/symbolic_modeling
    learning_maxicp/allmodels
+   references
 
 
 Indices and tables

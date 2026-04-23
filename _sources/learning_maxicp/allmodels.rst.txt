@@ -24,17 +24,17 @@ custom constraints or search heuristics.
      - Description
    * - `NQueens (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/nqueens/NQueens.java>`__
      - N-Queens with first-fail binary search.
-   * - `QAP (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/qap/QAP.java>`__
+   * - `QAP (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAPLNS.java>`__
      - Quadratic Assignment Problem with LNS.
    * - `JobShop (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java>`__
      - Job-Shop scheduling with ``noOverlap`` and ``Rank`` search.
-   * - `RCPSP (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/rcpsp/RCPSP.java>`__
+   * - `RCPSP (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java>`__
      - Resource-Constrained Project Scheduling with cumulative functions and FDS.
-   * - `ProducerConsumer (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/producerconsumer/ProducerConsumer.java>`__
+   * - `ProducerConsumer (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/ProducerConsumer.java>`__
      - Producer-consumer scheduling with ``alwaysIn``.
    * - `TSPTW (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/tsptw/TSPTW.java>`__
      - Traveling Salesman with Time Windows using a sequence variable.
-   * - `CVRPTW (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java>`__
+   * - `CVRPTW (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/CVRPTWSeqVar.java>`__
      - Capacitated Vehicle Routing with Time Windows.
    * - `DARP (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/darp/DARP.java>`__
      - Dial-A-Ride Problem with ride-time constraints.
@@ -57,11 +57,11 @@ features including embarrassingly parallel search.
      - Description
    * - `NQueens (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/nqueens/NQueens.java>`__
      - N-Queens using the ``ModelDispatcher`` with parallel EPS variant.
-   * - `JobShop (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/jobshop/JobShop.java>`__
+   * - `JobShop (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/JobShop.java>`__
      - Job-Shop with the modeling API.
-   * - `RCPSP (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/rcpsp/RCPSP.java>`__
+   * - `RCPSP (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/RCPSP.java>`__
      - RCPSP with the modeling API and FDS.
-   * - `CVRPTW (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/cvrptw/CVRPTW.java>`__
+   * - `CVRPTW (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/VRPTWSeqVar.java>`__
      - CVRPTW using the modeling API with insertion-based LNS.
 
 We recommend using the **modeling API** for most use cases:

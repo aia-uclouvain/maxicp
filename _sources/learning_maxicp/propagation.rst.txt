@@ -209,7 +209,7 @@ Source of the constraints package:
    * - Constraint (source)
      - Semantics
    * - `AllDifferentDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AllDifferentDC.java>`__
-     - All variables take pairwise distinct values. Uses Régin's arc-consistent filtering based on maximum bipartite matching.
+     - All variables take pairwise distinct values. Uses Régin's arc-consistent filtering based on maximum bipartite matching :cite:`regin1996generalized`.
    * - `AllDifferentFWC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AllDifferentFWC.java>`__
      - Forward-checking (bounds-consistent) variant of AllDifferent, cheaper but weaker than DC.
    * - `Among <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Among.java>`__
@@ -217,7 +217,7 @@ Source of the constraints package:
    * - `AtLeastNValueDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AtLeastNValueDC.java>`__ / `AtLeastNValueFWC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/AtLeastNValueFWC.java>`__
      - The number of distinct values taken by the variables is at least ``n``. DC and FWC variants.
    * - `BinPacking <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/BinPacking.java>`__
-     - ``x[i]`` is the bin of item ``i`` with weight ``w[i]``; ``load[b]`` equals the total weight in bin ``b``: ``load[b] = Σ{i | x[i]=b} w[i]``.
+     - ``x[i]`` is the bin of item ``i`` with weight ``w[i]``; ``load[b]`` equals the total weight in bin ``b``: ``load[b] = Σ{i | x[i]=b} w[i]`` :cite:`shaw2004constraint`.
    * - `BinaryKnapsack <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/BinaryKnapsack.java>`__
      - Binary knapsack: each item is either taken (``x[i]=1``) or not; total weight ``Σ w[i]·x[i] ≤ capa`` and total profit ``Σ p[i]·x[i] = profit``.
    * - `CardinalityMaxFWC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CardinalityMaxFWC.java>`__ / `CardinalityMinFWC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CardinalityMinFWC.java>`__
@@ -229,9 +229,9 @@ Source of the constraints package:
    * - `CostAllDifferentDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CostAllDifferentDC.java>`__
      - AllDifferent with an assignment cost matrix; filters both the all-different and the total-cost variable using min-cost matching.
    * - `CostCardinalityMaxDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/CostCardinalityMaxDC.java>`__
-     - Global Cardinality Constraint (upper bounds only) combined with a cost variable: ``|{i | x[i]=v}| ≤ ub[v]`` and ``Σ cost[i][x[i]] ≤ H``. Filtering uses min-cost flow.
+     - Global Cardinality Constraint (upper bounds only) combined with a cost variable: ``|{i | x[i]=v}| ≤ ub[v]`` and ``Σ cost[i][x[i]] ≤ H``. Filtering uses min-cost flow :cite:`schmied2025efficient`.
    * - `SoftCardinalityDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/SoftCardinalityDC.java>`__
-     - Soft GCC: for each value ``v`` with bounds ``[lb[v], ub[v]]``, the per-value violation is ``max(0, lb[v]-c[v], c[v]-ub[v])``; a global ``viol`` variable equals the sum of violations.
+     - Soft GCC: for each value ``v`` with bounds ``[lb[v], ub[v]]``, the per-value violation is ``max(0, lb[v]-c[v], c[v]-ub[v])``; a global ``viol`` variable equals the sum of violations :cite:`van2006global` :cite:`schaus2010revisiting`.
    * - `Element1D <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1D.java>`__ / `Element1DDC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1DDC.java>`__
      - ``z = t[y]``: ``z`` equals the element of constant array ``t`` at index ``y``. DC variant achieves domain consistency.
    * - `Element1DVar <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/Element1DVar.java>`__
@@ -267,7 +267,7 @@ Source of the constraints package:
    * - `IsLessOrEqual <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsLessOrEqual.java>`__ / `IsLessOrEqualVar <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/IsLessOrEqualVar.java>`__
      - Reified inequality: ``b ↔ (x ≤ c)`` and ``b ↔ (x ≤ y)``.
    * - `TableCT <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/TableCT.java>`__
-     - Positive extensional constraint: the assignment of ``x`` must match at least one row in table ``T``. Uses the Compact-Table (CT) filtering algorithm.
+     - Positive extensional constraint: the assignment of ``x`` must match at least one row in table ``T``. Uses the Compact-Table (CT) filtering algorithm :cite:`demeulenaere2016compact`.
    * - `NegTableCT <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/NegTableCT.java>`__
      - Negative extensional constraint (forbidden tuples): the assignment must *not* match any row in ``T``.
    * - `ShortTableCT <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/ShortTableCT.java>`__
@@ -282,7 +282,7 @@ Source of the constraints package:
    * - Constraint (source)
      - Semantics
    * - `NoOverlap <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlap.java>`__
-     - No two interval variables in the group execute at the same time. Filtering uses Vilim's edge-finding and not-first/not-last algorithms (Theta-Lambda tree).
+     - No two interval variables in the group execute at the same time. Filtering uses Vilim's edge-finding and not-first/not-last algorithms (Theta-Lambda tree) :cite:`vilim2007global`.
    * - `NoOverlapBC <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlapBC.java>`__
      - Bounds-consistent (overload-check + detectable precedences only) variant of NoOverlap; faster but weaker.
    * - `NoOverlapBinary <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/scheduling/NoOverlapBinary.java>`__
@@ -315,11 +315,11 @@ Source of the constraints package:
    * - `Precedence <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Precedence.java>`__
      - Node ``i`` must appear before node ``j`` whenever both are present in the sequence.
    * - `Distance <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Distance.java>`__
-     - ``totalDist = Σ dist[pred(v)][v]`` over all consecutive pairs in the sequence.
+     - ``totalDist = Σ dist[pred(v)][v]`` over all consecutive pairs in the sequence :cite:`Schmied2024Distance`.
    * - `TransitionTimes <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/TransitionTimes.java>`__
      - For each consecutive pair ``(u, v)`` in the sequence: ``time[u] + dist[u][v] ≤ time[v]``.
    * - `Cumulative <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/Cumulative.java>`__
-     - Pickup-and-delivery load constraint on a sequence variable: enforces capacity at every node, pickup-before-delivery ordering, and that both nodes of a request belong to the same sequence.
+     - Pickup-and-delivery load constraint on a sequence variable: enforces capacity at every node, pickup-before-delivery ordering, and that both nodes of a request belong to the same sequence :cite:`thomas2020insertion`.
    * - `SubSequence <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/SubSequence.java>`__
      - A given partial sequence ``sub`` must appear as a sub-sequence of the sequence variable.
    * - `RelaxedSequence <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/engine/constraints/seqvar/RelaxedSequence.java>`__
