@@ -26,12 +26,18 @@ import sys, os
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
-extensions = ['sphinx.ext.todo', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 'sphinx.ext.autosectionlabel',]
+extensions = ['sphinx.ext.todo', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode',
+              'sphinx.ext.autosectionlabel', 'sphinxcontrib.bibtex']
 
 # Prefix every auto-generated section label with the document path to
 # prevent cross-file label collisions (e.g. "Search" in our docs vs
 # Sphinx's built-in "search" page).
 autosectionlabel_prefix_document = True
+
+# Bibliography
+bibtex_bibfiles = ['../../tech-report/maxicp.bib']
+bibtex_default_style = 'unsrt'
+bibtex_reference_style = 'label'
 
 
 # Add any paths that contain templates here, relative to this directory.

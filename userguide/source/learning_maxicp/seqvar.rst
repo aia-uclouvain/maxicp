@@ -4,7 +4,8 @@
 Sequence Variables for Routing
 ************************************
 
-MaxiCP introduces **sequence variables** (``CPSeqVar``), a dedicated computational domain
+MaxiCP introduces **sequence variables** (``CPSeqVar``) :cite:`Schaus2022SeqVar` :cite:`delecluse2022sequence`,
+a dedicated computational domain
 for routing and sequencing problems.
 Unlike the classical successor-array model
 (integer variable ``succ[i]`` giving the next node after *i*),
@@ -63,7 +64,7 @@ Source:
 `org.maxicp.cp.engine.constraints (seqvar) <https://github.com/aia-uclouvain/maxicp/tree/main/src/main/java/org/maxicp/cp/engine/constraints>`_
 
 ``distance(SeqVar, int[][] dist, IntExpression totalDist)``
-  Links the total route distance to a variable using a distance matrix.
+  Links the total route distance to a variable using a distance matrix :cite:`Schmied2024Distance`.
 
 ``transitionTimes(SeqVar, IntExpression[] time, int[][] dist)``
   Enforces temporal consistency: for each consecutive pair ``(u, v)`` in the sequence,
@@ -71,7 +72,7 @@ Source:
 
 ``cumulative(SeqVar, int[] pickups, int[] drops, int[] load, int capacity)``
   Simultaneously enforces: (i) capacity at every node; (ii) pickup precedes delivery;
-  (iii) both nodes of a request are assigned to the same vehicle.
+  (iii) both nodes of a request are assigned to the same vehicle :cite:`thomas2020insertion`.
 
 Modeling the TSPTW with a Sequence Variable
 =============================================
@@ -138,7 +139,7 @@ Multi-Vehicle Routing (CVRPTW)
 ================================
 
 Full source:
-`CVRPTW.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/cvrptw/CVRPTW.java>`_
+`CVRPTWSeqVar.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/CVRPTWSeqVar.java>`_
 
 .. code-block:: java
 
