@@ -2,6 +2,7 @@
 
 ![Javadoc](https://github.com/aia-uclouvain/maxicp/actions/workflows/javadoc.yml/badge.svg)
 ![Userguide](https://github.com/aia-uclouvain/maxicp/actions/workflows/userguide.yml/badge.svg)
+![Tech Report](https://github.com/aia-uclouvain/maxicp/actions/workflows/techreport.yml/badge.svg)
 [![Coverage](https://raw.githubusercontent.com/aia-uclouvain/maxicp/refs/heads/gh-pages/badges/coverbadge.svg)](https://aia-uclouvain.github.io/maxicp/coverage/index.html)
 
 **MaxiCP** is an open-source (MIT licence) Java-based Constraint Programming (CP) solver
@@ -171,7 +172,21 @@ public class NQueens {
 
 ## Website and documentation
 
-[`www.maxicp.org`](www.maxicp.org)
+- User guide: [`www.maxicp.org`](https://www.maxicp.org)
+- Tech report: [**MaxiCP: A Not So Mini Constraint Programming Solver (PDF)**](https://aia-uclouvain.github.io/maxicp/tech-report/maxicp.pdf)
+
+## Citing MaxiCP
+
+If you use MaxiCP in your research, please cite it as follows:
+
+```bibtex
+@misc{maxicp,
+  title        = {{maxicp: A Not So Mini Constraint Programming Solver}},
+  author       = {Pierre Schaus and Guillaume Derval and Augustin Delecluse and Laurent Michel and Pascal Van Hentenryck},
+  year         = {2026},
+  howpublished = {\url{http://www.maxicp.org/}},
+}
+```
 
 ### Recommended IDE: IntelliJ IDEA
 

@@ -1,0 +1,45 @@
+name: Tech Report
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tech-report/**'
+      - '.github/workflows/techreport.yml'
+  workflow_dispatch:
+
+jobs:
+  build-techreport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Compile LaTeX tech report
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: tech-report
+          root_file: maxicp.tex
+          # latexmk automatically handles the pdflatex + bibtex cycle
+
+      - name: Move PDF to /tmp
+        run: cp tech-report/maxicp.pdf /tmp/maxicp.pdf
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+
+      - name: Publish PDF to gh-pages
+        run: |
+          git config --local user.email "github-actions@users.noreply.github.com"
+          git config --local user.name "github-actions"
+          mkdir -p tech-report
+          cp /tmp/maxicp.pdf tech-report/maxicp.pdf
+          touch .nojekyll
+          git add tech-report/maxicp.pdf .nojekyll
+          git commit -m "Update tech report PDF" || echo "No changes to commit"
+
+      - name: Push changes to gh-pages
+        run: git push --force origin gh-pages

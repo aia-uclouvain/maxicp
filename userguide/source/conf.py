@@ -28,6 +28,11 @@ import sys, os
 
 extensions = ['sphinx.ext.todo', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 'sphinx.ext.autosectionlabel',]
 
+# Prefix every auto-generated section label with the document path to
+# prevent cross-file label collisions (e.g. "Search" in our docs vs
+# Sphinx's built-in "search" page).
+autosectionlabel_prefix_document = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

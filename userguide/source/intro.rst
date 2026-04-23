@@ -38,7 +38,7 @@ If you use MaxiCP in your research, please cite:
         @misc{MaxiCP2024,
           author       = {Pierre Schaus and Guillaume Derval and Augustin Delecluse and Laurent Michel and Pascal Van Hentenryck},
           title        = {MaxiCP: A Constraint Programming Solver for Scheduling and Vehicle Routing},
-          year         = {2024},
+          year         = {2026},
           url          = {https://github.com/aia-uclouvain/maxicp},
         }
 
@@ -50,6 +50,18 @@ Javadoc
 
 - `Javadoc of the main branch <http://www.maxicp.org/javadoc/org.maxicp/module-summary.html>`_
 - `Javadoc of stable releases <https://javadoc.io/doc/org.maxicp/maxicp/latest/org.maxicp/module-summary.html>`_
+
+Tech Report
+===========
+
+A detailed description of MaxiCP's architecture, features, and design decisions is available
+as a downloadable tech report:
+
+`MaxiCP: A Not So Mini Constraint Programming Solver (PDF) <https://aia-uclouvain.github.io/maxicp/tech-report/maxicp.pdf>`_
+
+The tech report covers state management, the propagation engine, all variable types
+(integer, interval, sequence), global constraints, search strategies, scheduling,
+routing, and the symbolic modeling layer.
 
 .. _install:
 
