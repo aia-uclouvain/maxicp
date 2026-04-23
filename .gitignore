@@ -2,3 +2,33 @@
 *.iml
 target/
 *.DS_Store
+
+# ── Python bindings: produced artefacts (do NOT commit) ────────────────────
+
+# Native shared library (built by native-image)
+python-bindings/python/maxicp/_lib/libmaxicp.dylib
+python-bindings/python/maxicp/_lib/libmaxicp.so
+python-bindings/python/maxicp/_lib/libmaxicp.dll
+
+# GraalVM-generated C headers (reproduced on every native-image build)
+python-bindings/python/maxicp/_lib/graal_isolate.h
+python-bindings/python/maxicp/_lib/graal_isolate_dynamic.h
+python-bindings/python/maxicp/_lib/libmaxicp.h
+python-bindings/python/maxicp/_lib/libmaxicp_dynamic.h
+
+# Python build / install artefacts
+python-bindings/python/maxicp.egg-info/
+python-bindings/python/maxicp/__pycache__/
+python-bindings/python/maxicp/**/__pycache__/
+python-bindings/python/**/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+python-bindings/dist/
+python-bindings/build/
+
+# Virtual environment at repo root (large; not needed in VCS)
+myvenv/
+
+

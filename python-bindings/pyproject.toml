@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "maxicp"
+version = "0.0.3"
+description = "Python bindings for the MaxiCP constraint-programming solver"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Pierre Schaus", email = "pierre.schaus@uclouvain.be" }
+]
+keywords = ["constraint programming", "optimization", "CP solver"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "cffi>=1.15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/aia-uclouvain/maxicp"
+Repository = "https://github.com/aia-uclouvain/maxicp"
+
+[project.scripts]
+maxicp-nqueens    = "maxicp.examples.nqueens:nqueens"
+maxicp-magic      = "maxicp.examples.magic_square:magic_square"
+maxicp-qap        = "maxicp.examples.qap:qap"
+
+[tool.setuptools.packages.find]
+where = ["python"]
+
+[tool.setuptools.package-data]
+maxicp = [
+    "_lib/libmaxicp.dylib",
+    "_lib/libmaxicp.so",
+    "_lib/libmaxicp.dll",
+    "_lib/graal_isolate.h",
+    "_lib/libmaxicp_dynamic.h",
+]
+
+# ---------------------------------------------------------------------------
+# Notes on building the native library
+# ---------------------------------------------------------------------------
+# Before running `pip install .` or `python -m build`, you must compile the
+# native shared library with GraalVM native-image by running:
+#
+#   cd <repo_root>
+#   ./python-bindings/build.sh
+#
+# This will place libmaxicp.{dylib,so} into python-bindings/python/maxicp/_lib/
+# which is then packaged as package data.
+#
+# For CI / wheel builds, the build.sh is called from a GitHub Actions matrix
+# job for each target platform before packaging with `python -m build --wheel`.
+

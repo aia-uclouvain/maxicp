@@ -45,4 +45,6 @@ module org.maxicp {
     requires xcsp3.tools;
     requires java.xml;
     requires java.compiler;
+    // GraalVM native-image annotations (compile-time only; optional at runtime)
+    requires static org.graalvm.nativeimage;
 }

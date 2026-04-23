@@ -1,0 +1,90 @@
+[
+  {
+    "name": "org.maxicp.bindings.HandleRegistry",
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "org.maxicp.bindings.MaxiCPNativeAPI",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.bindings.SolveContext",
+    "allPublicMethods": true,
+    "allPublicFields": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.ModelDispatcher",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.modeling.Factory",
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.maxicp.search.Searches",
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.maxicp.search.DFSearch",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.search.SearchStatistics",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.modeling.symbolic.Minimization",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.modeling.symbolic.Maximization",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.modeling.symbolic.IntVarRangeImpl",
+    "allPublicMethods": true,
+    "allDeclaredMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.modeling.symbolic.BoolVarImpl",
+    "allPublicMethods": true,
+    "allDeclaredMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.cp.modeling.ConcreteCPModel",
+    "allPublicMethods": true,
+    "allDeclaredMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "org.maxicp.cp.modeling.CPModelInstantiator",
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "java.util.ArrayList",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "java.util.concurrent.ConcurrentHashMap",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicLong",
+    "allPublicMethods": true,
+    "allPublicConstructors": true
+  }
+]
+

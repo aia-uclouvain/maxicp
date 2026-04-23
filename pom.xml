@@ -55,6 +55,16 @@
         <junit.jupiter.version>5.9.1</junit.jupiter.version>
     </properties>
     <dependencies>
+        <!-- GraalVM nativeimage: provides @CEntryPoint, IsolateThread, CIntPointer etc.
+             Scope=provided: only needed at compile time; native-image supplies the
+             real implementation when building the shared library. -->
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <version>23.1.4</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
@@ -209,4 +219,103 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- =========================================================
+             Profile: fat-jar
+             Builds a self-contained jar with all dependencies bundled.
+             Activate with: mvn package -Pfat-jar -DskipTests
+             Output: target/maxicp-native-jar-with-dependencies.jar
+             ========================================================= -->
+        <profile>
+            <id>fat-jar</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>maxicp-native</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-fat-jar</id>
+                                <phase>package</phase>
+                                <goals><goal>single</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- =========================================================
+             Profile: native
+             Full build: fat-jar then native-image (shared lib) in one go.
+             Activate with: mvn package -Pnative -DskipTests
+             Requires GraalVM native-image on PATH.
+             ========================================================= -->
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <!-- Step 1: fat jar -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <appendAssemblyId>true</appendAssemblyId>
+                            <finalName>maxicp-native</finalName>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-fat-jar</id>
+                                <phase>package</phase>
+                                <goals><goal>single</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Step 2: invoke native-image via exec-maven-plugin
+                         using the shared flag for full control over build flags -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.1</version>
+                        <executions>
+                            <execution>
+                                <id>native-image-shared</id>
+                                <phase>package</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>native-image</executable>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <arguments>
+                                        <argument>--shared</argument>
+                                        <argument>--no-fallback</argument>
+                                        <argument>-H:Name=libmaxicp</argument>
+                                        <argument>-H:+ReportExceptionStackTraces</argument>
+                                        <argument>-H:ConfigurationFileDirectories=${project.basedir}/src/main/resources/META-INF/native-image/org.maxicp/maxicp</argument>
+                                    <argument>-cp</argument>
+                                        <argument>${project.build.directory}/maxicp-native-jar-with-dependencies.jar</argument>
+                                        <argument>-o</argument>
+                                        <argument>${project.basedir}/python-bindings/python/maxicp/_lib/libmaxicp</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
