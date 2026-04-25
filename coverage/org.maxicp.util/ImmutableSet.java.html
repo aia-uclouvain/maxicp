@@ -28,12 +28,12 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 <span class="nc" id="L28">    }</span>
 <span class="nc" id="L29">    private record TrustMeBro&lt;E&gt;(Set&lt;E&gt; delegate) {}</span>
 
-<span class="nc" id="L31">    public ImmutableSet(E[] elems) {</span>
-<span class="nc" id="L32">        this.delegate = Set.of(elems);</span>
-<span class="nc" id="L33">    }</span>
+<span class="fc" id="L31">    public ImmutableSet(E[] elems) {</span>
+<span class="fc" id="L32">        this.delegate = Set.of(elems);</span>
+<span class="fc" id="L33">    }</span>
 
     public static &lt;X&gt; ImmutableSet&lt;X&gt; of(X... x) {
-<span class="nc" id="L36">        return new ImmutableSet&lt;&gt;(x);</span>
+<span class="fc" id="L36">        return new ImmutableSet&lt;&gt;(x);</span>
     }
 
     public static &lt;X&gt; ImmutableSet&lt;X&gt; of(Collection&lt;X&gt; x) {
@@ -42,7 +42,7 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 
     @Override
     public int size() {
-<span class="nc" id="L45">        return delegate.size();</span>
+<span class="fc" id="L45">        return delegate.size();</span>
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 
     @Override
     public Iterator&lt;E&gt; iterator() {
-<span class="nc" id="L60">        return delegate.iterator();</span>
+<span class="fc" id="L60">        return delegate.iterator();</span>
     }
 
     @Override

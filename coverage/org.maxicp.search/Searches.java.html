@@ -717,79 +717,87 @@ public final class Searches {
 <span class="fc" id="L717">        return new FDSModeling(intervals);</span>
     }
 
+    public static Supplier&lt;Runnable[]&gt; fds(IntExpression... intExpressions) {
+<span class="fc" id="L721">        return new FDSModeling(intExpressions);</span>
+    }
+
+    public static Supplier&lt;Runnable[]&gt; fds(IntervalVar[] intervals, IntExpression... intExpressions) {
+<span class="fc" id="L725">        return new FDSModeling(intervals, intExpressions);</span>
+    }
+
     public static Runnable[] branchOnStartMin(IntervalVar var) {
-<span class="fc" id="L721">        int min = var.startMin();</span>
-<span class="fc" id="L722">        Runnable left = () -&gt; {</span>
-<span class="fc" id="L723">            var.getModelProxy().add(start(var, min));</span>
-<span class="fc" id="L724">        };</span>
-<span class="fc" id="L725">        Runnable right = () -&gt; {</span>
-<span class="fc" id="L726">            var.getModelProxy().add(startAfter(var, min + 1));</span>
-<span class="fc" id="L727">        };</span>
-<span class="fc" id="L728">        return new Runnable[]{left, right};</span>
+<span class="fc" id="L729">        int min = var.startMin();</span>
+<span class="fc" id="L730">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L731">            var.getModelProxy().add(start(var, min));</span>
+<span class="fc" id="L732">        };</span>
+<span class="fc" id="L733">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L734">            var.getModelProxy().add(startAfter(var, min + 1));</span>
+<span class="fc" id="L735">        };</span>
+<span class="fc" id="L736">        return new Runnable[]{left, right};</span>
     }
 
     public static Runnable[] branchOnStatus(CPIntervalVar var) {
-<span class="pc bpc" id="L732" title="2 of 4 branches missed.">        if (var.isPresent() || var.isAbsent()) return EMPTY;</span>
-<span class="fc" id="L733">        Runnable left = () -&gt; {</span>
-<span class="fc" id="L734">            var.setPresent();</span>
-<span class="fc" id="L735">            var.getSolver().fixPoint();</span>
-<span class="fc" id="L736">        };</span>
-<span class="fc" id="L737">        Runnable right = () -&gt; {</span>
-<span class="fc" id="L738">            var.setAbsent();</span>
-<span class="fc" id="L739">            var.getSolver().fixPoint();</span>
-<span class="fc" id="L740">        };</span>
-<span class="fc" id="L741">        return new Runnable[]{left, right};</span>
+<span class="pc bpc" id="L740" title="2 of 4 branches missed.">        if (var.isPresent() || var.isAbsent()) return EMPTY;</span>
+<span class="fc" id="L741">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L742">            var.setPresent();</span>
+<span class="fc" id="L743">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L744">        };</span>
+<span class="fc" id="L745">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L746">            var.setAbsent();</span>
+<span class="fc" id="L747">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L748">        };</span>
+<span class="fc" id="L749">        return new Runnable[]{left, right};</span>
     }
 
 
     public static Supplier&lt;Runnable[]&gt; branchOnPresentStarts(IntervalVar... vars) {
-<span class="fc" id="L746">        return () -&gt; {</span>
-<span class="fc" id="L747">            IntervalVar notFixed = null;</span>
-<span class="fc bfc" id="L748" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
-<span class="pc bpc" id="L749" title="1 of 4 branches missed.">                if (!var.isFixed() &amp;&amp; var.isPresent()) {</span>
-<span class="fc" id="L750">                    notFixed = var;</span>
-<span class="fc" id="L751">                    break;</span>
+<span class="fc" id="L754">        return () -&gt; {</span>
+<span class="fc" id="L755">            IntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L756" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
+<span class="pc bpc" id="L757" title="1 of 4 branches missed.">                if (!var.isFixed() &amp;&amp; var.isPresent()) {</span>
+<span class="fc" id="L758">                    notFixed = var;</span>
+<span class="fc" id="L759">                    break;</span>
                 }
             }
-<span class="fc bfc" id="L754" title="All 2 branches covered.">            if (notFixed == null) {</span>
-<span class="fc" id="L755">                return EMPTY;</span>
+<span class="fc bfc" id="L762" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L763">                return EMPTY;</span>
             } else {
-<span class="fc" id="L757">                return branchOnStartMin(notFixed);</span>
+<span class="fc" id="L765">                return branchOnStartMin(notFixed);</span>
             }
         };
     }
 
     public static Supplier&lt;Runnable[]&gt; branchOnStatus(CPIntervalVar... vars) {
-<span class="fc" id="L763">        return () -&gt; {</span>
-<span class="fc" id="L764">            CPIntervalVar notFixed = null;</span>
-<span class="fc bfc" id="L765" title="All 2 branches covered.">            for (CPIntervalVar var : vars) {</span>
-<span class="fc bfc" id="L766" title="All 4 branches covered.">                if (!var.isAbsent() &amp;&amp; !var.isPresent()) {</span>
-<span class="fc" id="L767">                    notFixed = var;</span>
-<span class="fc" id="L768">                    break;</span>
+<span class="fc" id="L771">        return () -&gt; {</span>
+<span class="fc" id="L772">            CPIntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L773" title="All 2 branches covered.">            for (CPIntervalVar var : vars) {</span>
+<span class="fc bfc" id="L774" title="All 4 branches covered.">                if (!var.isAbsent() &amp;&amp; !var.isPresent()) {</span>
+<span class="fc" id="L775">                    notFixed = var;</span>
+<span class="fc" id="L776">                    break;</span>
                 }
             }
-<span class="fc bfc" id="L771" title="All 2 branches covered.">            if (notFixed == null) {</span>
-<span class="fc" id="L772">                return EMPTY;</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L780">                return EMPTY;</span>
             } else {
-<span class="fc" id="L774">                return branchOnStatus(notFixed);</span>
+<span class="fc" id="L782">                return branchOnStatus(notFixed);</span>
             }
         };
     }
 
     public static Supplier&lt;Runnable[]&gt; branchOnStatusThenStarts(CPIntervalVar... vars) {
-<span class="nc" id="L780">        return () -&gt; {</span>
-<span class="nc" id="L781">            CPIntervalVar notFixed = null;</span>
-<span class="nc bnc" id="L782" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.length; i++) {</span>
-<span class="nc bnc" id="L783" title="All 2 branches missed.">                if (!vars[i].isFixed()) {</span>
-<span class="nc" id="L784">                    notFixed = vars[i];</span>
-<span class="nc" id="L785">                    break;</span>
+<span class="nc" id="L788">        return () -&gt; {</span>
+<span class="nc" id="L789">            CPIntervalVar notFixed = null;</span>
+<span class="nc bnc" id="L790" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="nc bnc" id="L791" title="All 2 branches missed.">                if (!vars[i].isFixed()) {</span>
+<span class="nc" id="L792">                    notFixed = vars[i];</span>
+<span class="nc" id="L793">                    break;</span>
                 }
             }
-<span class="nc bnc" id="L788" title="All 2 branches missed.">            if (notFixed == null) {</span>
-<span class="nc" id="L789">                return EMPTY;</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">            if (notFixed == null) {</span>
+<span class="nc" id="L797">                return EMPTY;</span>
             } else {
-<span class="nc bnc" id="L791" title="All 2 branches missed.">                if (notFixed.isPresent()) return branchOnStartMin(notFixed);</span>
-<span class="nc" id="L792">                else return branchOnStatus(notFixed);</span>
+<span class="nc bnc" id="L799" title="All 2 branches missed.">                if (notFixed.isPresent()) return branchOnStartMin(notFixed);</span>
+<span class="nc" id="L800">                else return branchOnStatus(notFixed);</span>
             }
         };
     }

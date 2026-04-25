@@ -382,7 +382,7 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     public CPIntervalVar[] getCPVar(IntervalExpression[] v) {
-<span class="nc" id="L385">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntervalVar[]::new);</span>
+<span class="fc" id="L385">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntervalVar[]::new);</span>
     }
 
     public CPIntervalVar getCPVar(IntervalExpression v) {
@@ -604,11 +604,11 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L604">    }</span>
 
     private void instantiateConstraint(Constraint c) {
-<span class="pc bpc" id="L607" title="21 of 31 branches missed.">        switch (c) {</span>
-<span class="nc" id="L608">            case AllDifferent a -&gt; {</span>
-<span class="nc" id="L609">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L610">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
-<span class="nc" id="L611">            }</span>
+<span class="pc bpc" id="L607" title="19 of 31 branches missed.">        switch (c) {</span>
+<span class="fc" id="L608">            case AllDifferent a -&gt; {</span>
+<span class="fc" id="L609">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L610">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
+<span class="fc" id="L611">            }</span>
 <span class="nc" id="L612">            case CardinalityMin cardMin -&gt; {</span>
 <span class="nc" id="L613">                CPIntVar[] args = Arrays.stream(cardMin.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
 <span class="nc" id="L614">                int [] card = cardMin.array();</span>
@@ -683,9 +683,9 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L683">                    case IntExpression iexpr -&gt; enforceEqualityIntExpression(eqir.expr(), intExprMapping.get(iexpr));</span>
                 }
 <span class="fc" id="L685">            }</span>
-<span class="nc" id="L686">            case NoOverlap noOverlap -&gt; {</span>
-<span class="nc" id="L687">                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));</span>
-<span class="nc" id="L688">            }</span>
+<span class="fc" id="L686">            case NoOverlap noOverlap -&gt; {</span>
+<span class="fc" id="L687">                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));</span>
+<span class="fc" id="L688">            }</span>
 <span class="fc" id="L689">            case Length length -&gt; {</span>
 <span class="fc" id="L690">                getCPVar(length.interval()).setLength(length.length());</span>
 <span class="fc" id="L691">                fixpoint();</span>

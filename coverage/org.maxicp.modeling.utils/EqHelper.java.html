@@ -111,9 +111,9 @@ import java.util.stream.StreamSupport;
 <span class="fc bfc" id="L111" title="All 2 branches covered.">            for(IntExpression expr: layer) {</span>
 <span class="fc" id="L112">                IntExpression ufRepr = uf.find(expr);</span>
 <span class="fc" id="L113">                IntExpression repr = doneCC.get(ufRepr);</span>
-<span class="pc bpc" id="L114" title="3 of 4 branches missed.">                if(repr != null &amp;&amp; !repr.equals(expr)) {</span>
-<span class="nc" id="L115">                    output.addLast(new EqInstantiateAndReuse(expr, doneCC.get(ufRepr)));</span>
-<span class="nc" id="L116">                    addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, expr);</span>
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">                if(repr != null &amp;&amp; !repr.equals(expr)) {</span>
+<span class="fc" id="L115">                    output.addLast(new EqInstantiateAndReuse(expr, doneCC.get(ufRepr)));</span>
+<span class="fc" id="L116">                    addTrueRepr(trueRepr, trueReprReversed, doneCC, uf, waiting, output, expr);</span>
                 }
                 else {
 <span class="fc" id="L119">                    waiting.put(ufRepr, expr);</span>
@@ -185,9 +185,9 @@ import java.util.stream.StreamSupport;
         private int getSize(IntExpression o) {
             //This is a heuristic. We want to prioritize selecting Constant as representatives,
             //so we put their &quot;size&quot; at 0 rather than 1.
-<span class="pc bpc" id="L188" title="1 of 3 branches missed.">            return switch (o) {</span>
+<span class="fc bfc" id="L188" title="All 3 branches covered.">            return switch (o) {</span>
 <span class="fc" id="L189">                case Constant c -&gt; 0;</span>
-<span class="nc" id="L190">                case SymbolicIntVar iv -&gt; iv.defaultSize();</span>
+<span class="fc" id="L190">                case SymbolicIntVar iv -&gt; iv.defaultSize();</span>
 <span class="fc" id="L191">                default -&gt; Integer.MAX_VALUE - 10;</span>
             };
         }

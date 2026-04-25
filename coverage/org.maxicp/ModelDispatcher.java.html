@@ -129,10 +129,10 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     }
 
     public IntervalVar[] intervalVarArray(int n, Function&lt;Integer, IntervalVar&gt; body) {
-<span class="nc" id="L132">        IntervalVar[] out = new IntervalVar[n];</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">        for (int i = 0 ; i &lt; n ; i++)</span>
-<span class="nc" id="L134">            out[i] = body.apply(i);</span>
-<span class="nc" id="L135">        return out;</span>
+<span class="fc" id="L132">        IntervalVar[] out = new IntervalVar[n];</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++)</span>
+<span class="fc" id="L134">            out[i] = body.apply(i);</span>
+<span class="fc" id="L135">        return out;</span>
     }
 
     public BoolVar[] boolVarArray(int n) {
@@ -152,10 +152,10 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
 
     @Override
     public void close() throws Exception {
-<span class="nc" id="L155">        currentModel.remove();</span>
-<span class="nc" id="L156">        currentModel = null;</span>
-<span class="nc" id="L157">        initialModel = null;</span>
-<span class="nc" id="L158">    }</span>
+<span class="fc" id="L155">        currentModel.remove();</span>
+<span class="fc" id="L156">        currentModel = null;</span>
+<span class="fc" id="L157">        initialModel = null;</span>
+<span class="fc" id="L158">    }</span>
 
     public Objective minimize(Expression v) {
 <span class="nc bnc" id="L161" title="All 3 branches missed.">        return switch (getModel()) {</span>
