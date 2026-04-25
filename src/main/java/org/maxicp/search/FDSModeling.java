@@ -7,6 +7,7 @@ package org.maxicp.search;
 
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -47,7 +48,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
 
     /** Type of a binary choice. */
     private enum ChoiceType {
-        PRESENCE, START, LENGTH
+        PRESENCE, START, LENGTH, INT
     }
 
     /**
@@ -98,6 +99,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
                     }
                     yield false;
                 }
+                case INT -> false;
             };
         }
 
@@ -109,6 +111,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
             return switch (type) {
                 case PRESENCE -> false;
                 case START, LENGTH -> var.isOptional();
+                case INT -> false;
             };
         }
 
@@ -120,6 +123,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
                 case PRESENCE -> model.add(present(var));
                 case START -> model.add(startBefore(var, splitValue));   // start <= splitValue
                 case LENGTH -> model.add(le(length(var), splitValue));   // length <= splitValue
+                case INT -> throw new IllegalStateException("INT choice must be applied with IntExpression");
             }
         }
 
@@ -131,6 +135,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
                 case PRESENCE -> model.add(not(present(var)));
                 case START -> model.add(startAfter(var, splitValue + 1));    // start > splitValue
                 case LENGTH -> model.add(lt(splitValue, length(var)));   // splitValue < length, i.e. length > splitValue
+                case INT -> throw new IllegalStateException("INT choice must be applied with IntExpression");
             }
         }
 
@@ -140,6 +145,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
                 case PRESENCE -> "Presence(var=" + varIndex + ")";
                 case START -> "Start(var=" + varIndex + ",t=" + splitValue + ")";
                 case LENGTH -> "Length(var=" + varIndex + ",l=" + splitValue + ")";
+                case INT -> "Int(var=" + varIndex + ",v=" + splitValue + ")";
             };
         }
     }
@@ -147,6 +153,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
     // ------- FDS fields -------
 
     private final IntervalVar[] intervals;
+    private final IntExpression[] intExpressions;
     private final ModelProxy model;
 
     /** Decay factor for rating updates (typical values: 0.9 to 0.99). */
@@ -168,7 +175,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
      * @param intervals the interval variables to decide
      */
     public FDSModeling(IntervalVar... intervals) {
-        this(0.95, intervals);
+        this(0.95, intervals, new IntExpression[0]);
     }
 
     /**
@@ -178,8 +185,40 @@ public class FDSModeling implements Supplier<Runnable[]> {
      * @param intervals the interval variables to decide
      */
     public FDSModeling(double alpha, IntervalVar... intervals) {
-        this.intervals = intervals;
-        this.model = intervals[0].getModelProxy();
+        this(alpha, intervals, new IntExpression[0]);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for integer expressions.
+     */
+    public FDSModeling(IntExpression... intExpressions) {
+        this(0.95, new IntervalVar[0], intExpressions);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for integer expressions.
+     */
+    public FDSModeling(double alpha, IntExpression... intExpressions) {
+        this(alpha, new IntervalVar[0], intExpressions);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed interval and integer decisions.
+     */
+    public FDSModeling(IntervalVar[] intervals, IntExpression... intExpressions) {
+        this(0.95, intervals, intExpressions);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed interval and integer decisions.
+     */
+    public FDSModeling(double alpha, IntervalVar[] intervals, IntExpression... intExpressions) {
+        this.intervals = intervals == null ? new IntervalVar[0] : intervals;
+        this.intExpressions = intExpressions == null ? new IntExpression[0] : intExpressions;
+        if (this.intervals.length == 0 && this.intExpressions.length == 0) {
+            throw new IllegalArgumentException("FDSModeling requires at least one decision variable");
+        }
+        this.model = resolveModelProxy(this.intervals, this.intExpressions);
         this.sm = model.getConcreteModel().getStateManager();
         this.alpha = alpha;
         this.baseLevel = sm.getLevel();
@@ -187,6 +226,23 @@ public class FDSModeling implements Supplier<Runnable[]> {
         this.allChoices = new ArrayList<>();
 
         generateInitialChoices();
+    }
+
+    private static ModelProxy resolveModelProxy(IntervalVar[] intervals, IntExpression[] intExpressions) {
+        ModelProxy proxy = null;
+        for (IntervalVar var : intervals) {
+            if (proxy == null) proxy = var.getModelProxy();
+            else if (proxy != var.getModelProxy()) {
+                throw new IllegalArgumentException("All variables must belong to the same model");
+            }
+        }
+        for (IntExpression expr : intExpressions) {
+            if (proxy == null) proxy = expr.getModelProxy();
+            else if (proxy != expr.getModelProxy()) {
+                throw new IllegalArgumentException("All variables must belong to the same model");
+            }
+        }
+        return proxy;
     }
 
     /**
@@ -219,6 +275,13 @@ public class FDSModeling implements Supplier<Runnable[]> {
             // Length choices via binary splitting (if not fixed)
             if (var.lengthMin() < var.lengthMax()) {
                 addBinarySplitChoices(ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());
+            }
+        }
+
+        for (int i = 0; i < intExpressions.length; i++) {
+            IntExpression x = intExpressions[i];
+            if (x.min() < x.max()) {
+                addBinarySplitChoices(ChoiceType.INT, i, x.min(), x.max());
             }
         }
     }
@@ -269,23 +332,6 @@ public class FDSModeling implements Supplier<Runnable[]> {
     }
 
     /**
-     * Compute the search space size estimate R for the given intervals.
-     * R = product(domainSize_after / domainSize_before) over all variables.
-     * Returns a value between 0 and 1.
-     */
-    private double computeSearchSpaceReduction(long[] domainSizesBefore) {
-        double ratio = 1.0;
-        for (int i = 0; i < intervals.length; i++) {
-            long before = domainSizesBefore[i];
-            if (before > 0) {
-                long after = domainSize(intervals[i]);
-                ratio *= (double) after / (double) before;
-            }
-        }
-        return Math.min(ratio, 1.0);
-    }
-
-    /**
      * Estimate domain size for an interval variable.
      */
     private long domainSize(IntervalVar var) {
@@ -297,14 +343,43 @@ public class FDSModeling implements Supplier<Runnable[]> {
     }
 
     /**
-     * Snapshot domain sizes for all interval variables (before a branch).
+     * Estimate domain size for an integer expression.
+     */
+    private long domainSize(IntExpression x) {
+        return Math.max(1L, x.size());
+    }
+
+    /**
+     * Snapshot domain sizes for all decision variables (before a branch).
      */
     private long[] snapshotDomainSizes() {
-        long[] sizes = new long[intervals.length];
-        for (int i = 0; i < intervals.length; i++) {
-            sizes[i] = domainSize(intervals[i]);
+        long[] sizes = new long[intervals.length + intExpressions.length];
+        int p = 0;
+        for (IntervalVar interval : intervals) {
+            sizes[p++] = domainSize(interval);
+        }
+        for (IntExpression x : intExpressions) {
+            sizes[p++] = domainSize(x);
         }
         return sizes;
+    }
+
+    private double computeSearchSpaceReduction(long[] domainSizesBefore) {
+        double ratio = 1.0;
+        int p = 0;
+        for (IntervalVar interval : intervals) {
+            long before = domainSizesBefore[p++];
+            if (before > 0) {
+                ratio *= (double) domainSize(interval) / (double) before;
+            }
+        }
+        for (IntExpression x : intExpressions) {
+            long before = domainSizesBefore[p++];
+            if (before > 0) {
+                ratio *= (double) domainSize(x) / (double) before;
+            }
+        }
+        return Math.min(ratio, 1.0);
     }
 
     /**
@@ -348,6 +423,9 @@ public class FDSModeling implements Supplier<Runnable[]> {
         for (IntervalVar var : intervals) {
             if (!var.isFixed()) return false;
         }
+        for (IntExpression x : intExpressions) {
+            if (!x.isFixed()) return false;
+        }
         return true;
     }
 
@@ -377,9 +455,16 @@ public class FDSModeling implements Supplier<Runnable[]> {
         double bestRating = Double.MAX_VALUE;
 
         for (Choice c : allChoices) {
-            IntervalVar var = intervals[c.varIndex];
-            if (c.isWaiting(var) || c.isResolved(var)) {
-                continue;
+            if (c.type == ChoiceType.INT) {
+                IntExpression x = intExpressions[c.varIndex];
+                if (x.isFixed() || x.max() <= c.splitValue || x.min() > c.splitValue) {
+                    continue;
+                }
+            } else {
+                IntervalVar var = intervals[c.varIndex];
+                if (c.isWaiting(var) || c.isResolved(var)) {
+                    continue;
+                }
             }
             double r = c.rating();
             if (r < bestRating) {
@@ -401,20 +486,18 @@ public class FDSModeling implements Supplier<Runnable[]> {
         }
 
         final Choice chosen = bestChoice;
-        final IntervalVar var = intervals[chosen.varIndex];
-
         // Determine which branch to explore first (better rating = lower value → heads into conflict)
         boolean positiveFirst = chosen.ratingPos <= chosen.ratingNeg;
 
         if (positiveFirst) {
             return branch(
-                    makeBranch(chosen, var, true),
-                    makeBranch(chosen, var, false)
+                    makeBranch(chosen, true),
+                    makeBranch(chosen, false)
             );
         } else {
             return branch(
-                    makeBranch(chosen, var, false),
-                    makeBranch(chosen, var, true)
+                    makeBranch(chosen, false),
+                    makeBranch(chosen, true)
             );
         }
     }
@@ -424,24 +507,29 @@ public class FDSModeling implements Supplier<Runnable[]> {
      * The closure applies the branch, updates the rating, and re-throws any failure.
      *
      * @param choice     the choice to branch on
-     * @param var        the interval variable for this choice
      * @param isPositive true for positive branch, false for negative
      * @return a Runnable that applies the branch
      */
-    private Runnable makeBranch(Choice choice, IntervalVar var, boolean isPositive) {
+    private Runnable makeBranch(Choice choice, boolean isPositive) {
         return () -> {
             long[] domBefore = snapshotDomainSizes();
             try {
-                if (isPositive) {
-                    choice.applyPositive(var, model);
+                if (choice.type == ChoiceType.INT) {
+                    IntExpression x = intExpressions[choice.varIndex];
+                    if (isPositive) {
+                        model.add(le(x, choice.splitValue));
+                    } else {
+                        model.add(lt(choice.splitValue, x));
+                    }
+                } else if (isPositive) {
+                    choice.applyPositive(intervals[choice.varIndex], model);
                 } else {
-                    choice.applyNegative(var, model);
+                    choice.applyNegative(intervals[choice.varIndex], model);
                 }
             } catch (InconsistencyException e) {
                 updateRating(choice, isPositive, true, 0);
                 throw e;
             }
-            long[] domAfter = snapshotDomainSizes();
             double R = computeSearchSpaceReduction(domBefore);
             updateRating(choice, isPositive, false, R);
         };
@@ -473,6 +561,15 @@ public class FDSModeling implements Supplier<Runnable[]> {
             if (var.lengthMin() < var.lengthMax()) {
                 int mid = var.lengthMin() + (var.lengthMax() - var.lengthMin()) / 2;
                 allChoices.add(new Choice(ChoiceType.LENGTH, i, mid));
+            }
+        }
+
+        for (int i = 0; i < intExpressions.length; i++) {
+            IntExpression x = intExpressions[i];
+            if (x.isFixed()) continue;
+            if (x.min() < x.max()) {
+                int mid = x.min() + (x.max() - x.min()) / 2;
+                allChoices.add(new Choice(ChoiceType.INT, i, mid));
             }
         }
     }

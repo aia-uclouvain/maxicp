@@ -84,7 +84,7 @@ public class SMIC {
 
             bestSolution = new int[data.nbJob];
             // Search:
-            DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.firstFailBinary(starts));
+            DFSearch dfs = new DFSearch(cp.getStateManager(), Searches.fds(starts));
             dfs.onSolution(() -> {
                 bestMakespan = makespan.min();
                 for (int i = 0; i < data.nbJob; i++) {
@@ -94,7 +94,7 @@ public class SMIC {
             //Launching search:
             long begin = System.currentTimeMillis();
             SearchStatistics stats = dfs.optimize(obj);
-//            System.out.println(stats);
+            System.out.println(stats);
             elapsedTime = (System.currentTimeMillis() - begin)/1000.0;
             failures = stats.numberOfFailures();
         }

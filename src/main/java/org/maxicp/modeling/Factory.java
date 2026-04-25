@@ -96,6 +96,10 @@ public final class Factory {
         return new Abs(x);
     }
 
+    public static IntExpression div(IntExpression x, IntExpression y) {
+        return new Div(x, y);
+    }
+
     // ********************
     // Arithmetic constraints (sum, min, max)
     // ********************

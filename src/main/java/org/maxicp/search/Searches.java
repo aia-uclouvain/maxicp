@@ -717,6 +717,14 @@ public final class Searches {
         return new FDSModeling(intervals);
     }
 
+    public static Supplier<Runnable[]> fds(IntExpression... intExpressions) {
+        return new FDSModeling(intExpressions);
+    }
+
+    public static Supplier<Runnable[]> fds(IntervalVar[] intervals, IntExpression... intExpressions) {
+        return new FDSModeling(intervals, intExpressions);
+    }
+
     public static Runnable[] branchOnStartMin(IntervalVar var) {
         int min = var.startMin();
         Runnable left = () -> {

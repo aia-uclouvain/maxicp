@@ -25,7 +25,7 @@ public class Coverage {
     public static String[] data() {
         try {
             //TODO: @gderval fix this
-            return Files.walk(Paths.get("/Users/gderval/Desktop/xcsp3/XCSP17")).filter(Files::isRegularFile)
+            return Files.walk(Paths.get("data/XCSP3/tests")).filter(Files::isRegularFile)
                     .filter(x -> x.toString().contains("xml"))
                     .map(Path::toString).toArray(String[]::new);
         }
