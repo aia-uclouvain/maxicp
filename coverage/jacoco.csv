@@ -232,8 +232,8 @@ org.maxicp:maxicp,org.maxicp.modeling.symbolic,SymbolicModel,70,49,7,3,10,8,7,9,
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,IntVarRangeImpl,51,62,11,3,8,17,9,9,3,8
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,SymbolicSeqVar,247,0,26,0,44,0,31,0,18,0
 org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCallbacksDecomp,1070,0,48,0,143,0,78,0,54,0
-org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3.XCSP3LoadedInstance,16,0,0,0,3,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3,2532,0,180,0,400,0,248,0,121,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3.XCSP3LoadedInstance,19,0,0,0,3,0,2,0,2,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3,2659,0,186,0,426,0,256,0,126,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Insert,0,12,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,TransitionTimes,39,0,0,0,12,0,3,0,3,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Cumulative,38,0,4,0,10,0,5,0,3,0
