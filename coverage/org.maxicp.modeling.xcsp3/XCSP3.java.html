@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XCSP3.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.xcsp3</a> &gt; <span class="el_source">XCSP3.java</span></div><h1>XCSP3.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.xcsp3;
 
+import org.junit.Assume;
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
@@ -20,60 +21,28 @@ import org.xcsp.common.predicates.XNode;
 import org.xcsp.common.predicates.XNodeLeaf;
 import org.xcsp.common.predicates.XNodeParent;
 import org.xcsp.common.structures.Transition;
+import org.xcsp.parser.callbacks.SolutionChecker;
 import org.xcsp.parser.callbacks.XCallbacks;
 import org.xcsp.parser.entries.XVariables;
 
+import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertEquals;
 import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
-<span class="nc" id="L35">public class XCSP3 extends XCallbacksDecomp {</span>
-<span class="nc" id="L36">    public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,</span>
-                                      Supplier&lt;String&gt; solutionGenerator) implements AutoCloseable {
-        @Override
-        public void close() throws Exception {
-<span class="nc" id="L40">            md.close();</span>
-<span class="nc" id="L41">        }</span>
-    }
+<span class="nc" id="L39">public class XCSP3 extends XCallbacksDecomp {</span>
 
-    public static XCSP3LoadedInstance load(String filename) throws Exception {
-<span class="nc" id="L45">        XCSP3 xcsp3 = new XCSP3();</span>
-        try {
-<span class="nc" id="L47">            xcsp3.loadInstance(filename);</span>
-<span class="nc" id="L48">        } catch (Throwable t) {</span>
-<span class="nc" id="L49">            xcsp3.md.close();</span>
-<span class="nc" id="L50">            throw t;</span>
-<span class="nc" id="L51">        }</span>
-
-<span class="nc" id="L53">        Supplier&lt;String&gt; solutionGenerator = () -&gt; {</span>
-<span class="nc" id="L54">            StringBuilder b = new StringBuilder();</span>
-<span class="nc" id="L55">            b.append(&quot;&lt;instantiation&gt;\n\t&lt;list&gt;\n\t\t&quot;);</span>
-<span class="nc" id="L56">            b.append(String.join(&quot; &quot;, xcsp3.decisionVars));</span>
-<span class="nc" id="L57">            b.append(&quot;\n\t&lt;/list&gt;\n\t&lt;values&gt;\n\t\t&quot;);</span>
-<span class="nc" id="L58">            b.append(String.join(&quot; &quot;, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).map(x -&gt; {</span>
-                try {
-<span class="nc" id="L60">                    return Integer.toString(x.evaluate());</span>
-<span class="nc" id="L61">                } catch (VariableNotFixedException e) {</span>
-<span class="nc" id="L62">                    throw new RuntimeException(e);</span>
-                }
-<span class="nc" id="L64">            }).toArray(String[]::new)));</span>
-<span class="nc" id="L65">            b.append(&quot;\n\t&lt;/values&gt;\n&lt;/instantiation&gt;&quot;);</span>
-<span class="nc" id="L66">            return b.toString();</span>
-        };
-
-<span class="nc" id="L69">        return new XCSP3LoadedInstance(xcsp3.md, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new), solutionGenerator);</span>
-    }
 
     public static void main(String[] args) throws Exception {
-        //XCSP3LoadedInstance instance = load(&quot;data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml&quot;);
-        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml&quot;;
-        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml&quot;;
-        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml&quot;;
+        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml&quot;; // hard
+        // String path = &quot;data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml&quot;; // hard
+<span class="nc" id="L45">        String path = &quot;data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml&quot;;</span>
         //String path = &quot;data/XCSP3/2024_V3/MiniCSP/FRB-30-15-1_c18.xml&quot;;
         //String path = &quot;data/XCSP3/2024_V3/MiniCSP/HyperSudoku-mini-03_c24.xml&quot;;
         // String path = &quot;data/XCSP3/2024_V3/MiniCSP/MisteryShopper-mini-4-06-0-6-0_c24.xml&quot;;
@@ -81,22 +50,76 @@ import static org.maxicp.search.Searches.branch;
         //String path = &quot;data/XCSP3/2024_V3/MiniCSP/PoolBallTriangle-05_c24.xml&quot;;
         // String path = &quot;data/XCSP3/2024_V3/MiniCSP/Rlfap-ext-scen-11-f03_c18.xml&quot;; // hard
         // String path = &quot;data/XCSP3/2024_V3/MiniCSP/SolitairePattern-table-3-3-0.xml&quot;; // hard
-        // String path = &quot;data/XCSP3/2024_V3/MiniCSP/Subisomorphism-g08-g43_c24.xml&quot;; // hard
+        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/Subisomorphism-g08-g43_c24.xml&quot;; // hard
         // String path = &quot;data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml&quot;;
-<span class="nc" id="L86">        String path = &quot;data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml&quot;;</span>
+        //String path = &quot;data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml&quot;;
 
-<span class="nc" id="L88">        XCSP3LoadedInstance instance = load(path);</span>
+<span class="nc" id="L57">        XCSP3LoadedInstance instance = load(path);</span>
 
-<span class="nc" id="L90">        IntExpression[] q = instance.decisionVars();</span>
+<span class="nc" id="L59">        IntExpression[] q = instance.decisionVars();</span>
 
+<span class="nc" id="L61">        instance.md().runCP((cp) -&gt; {</span>
+<span class="nc" id="L62">            DFSearch search = cp.dfSearch(new FDSModeling(q));</span>
 
-<span class="nc" id="L93">        instance.md().runCP((cp) -&gt; {</span>
-<span class="nc" id="L94">            DFSearch search = cp.dfSearch(new FDSModeling(q));</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">            SearchStatistics stats = search.solve(s -&gt; s.numberOfSolutions() &gt; 0);</span>
-<span class="nc" id="L96">            System.out.println(stats);</span>
+<span class="nc" id="L64">            search.onSolution(() -&gt; {</span>
+<span class="nc" id="L65">                String sol = instance.solutionGenerator().get();</span>
+                try {
+<span class="nc" id="L67">                    SolutionChecker sc =</span>
+<span class="nc" id="L68">                            new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));</span>
+<span class="nc" id="L69">                    assertEquals(0, sc.invalidObjs.size());</span>
+<span class="nc" id="L70">                    assertEquals(0, sc.violatedCtrs.size());</span>
+<span class="nc" id="L71">                } catch (Exception e) {</span>
+<span class="nc" id="L72">                    throw new RuntimeException(e);</span>
+<span class="nc" id="L73">                }</span>
+                //System.out.println(sol);
+<span class="nc" id="L75">            });</span>
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            SearchStatistics stats = search.solve(s -&gt; s.numberOfSolutions() &gt; 0);</span>
+<span class="nc" id="L78">            System.out.println(stats);</span>
             //System.out.println(&quot;Total number of solutions: &quot; + search.solve().numberOfSolutions());
-<span class="nc" id="L98">        });</span>
-<span class="nc" id="L99">    }</span>
+<span class="nc" id="L80">        });</span>
+
+
+
+
+<span class="nc" id="L85">    }</span>
+
+
+<span class="nc" id="L88">    public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,</span>
+                                      Supplier&lt;String&gt; solutionGenerator) implements AutoCloseable {
+        @Override
+        public void close() throws Exception {
+<span class="nc" id="L92">            md.close();</span>
+<span class="nc" id="L93">        }</span>
+    }
+
+    public static XCSP3LoadedInstance load(String filename) throws Exception {
+<span class="nc" id="L97">        XCSP3 xcsp3 = new XCSP3();</span>
+        try {
+<span class="nc" id="L99">            xcsp3.loadInstance(filename);</span>
+<span class="nc" id="L100">        } catch (Throwable t) {</span>
+<span class="nc" id="L101">            xcsp3.md.close();</span>
+<span class="nc" id="L102">            throw t;</span>
+<span class="nc" id="L103">        }</span>
+
+<span class="nc" id="L105">        Supplier&lt;String&gt; solutionGenerator = () -&gt; {</span>
+<span class="nc" id="L106">            StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L107">            b.append(&quot;&lt;instantiation&gt;\n\t&lt;list&gt;\n\t\t&quot;);</span>
+<span class="nc" id="L108">            b.append(String.join(&quot; &quot;, xcsp3.decisionVars));</span>
+<span class="nc" id="L109">            b.append(&quot;\n\t&lt;/list&gt;\n\t&lt;values&gt;\n\t\t&quot;);</span>
+<span class="nc" id="L110">            b.append(String.join(&quot; &quot;, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).map(x -&gt; {</span>
+                try {
+<span class="nc" id="L112">                    return Integer.toString(x.evaluate());</span>
+<span class="nc" id="L113">                } catch (VariableNotFixedException e) {</span>
+<span class="nc" id="L114">                    throw new RuntimeException(e);</span>
+                }
+<span class="nc" id="L116">            }).toArray(String[]::new)));</span>
+<span class="nc" id="L117">            b.append(&quot;\n\t&lt;/values&gt;\n&lt;/instantiation&gt;&quot;);</span>
+<span class="nc" id="L118">            return b.toString();</span>
+        };
+
+<span class="nc" id="L121">        return new XCSP3LoadedInstance(xcsp3.md, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new), solutionGenerator);</span>
+    }
 
     private final LinkedHashMap&lt;String, IntExpression&gt; varHashMap;
     private final LinkedHashSet&lt;String&gt; decisionVars;
@@ -104,551 +127,551 @@ import static org.maxicp.search.Searches.branch;
 
     private final XCallbacks.Implem impl;
 
-<span class="nc" id="L107">    private XCSP3() {</span>
-<span class="nc" id="L108">        varHashMap = new LinkedHashMap&lt;&gt;();</span>
-<span class="nc" id="L109">        decisionVars = new LinkedHashSet&lt;&gt;();</span>
-<span class="nc" id="L110">        md = Factory.makeModelDispatcher();</span>
+<span class="nc" id="L130">    private XCSP3() {</span>
+<span class="nc" id="L131">        varHashMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L132">        decisionVars = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc" id="L133">        md = Factory.makeModelDispatcher();</span>
 
-<span class="nc" id="L112">        impl = new XCallbacks.Implem(this);</span>
-<span class="nc" id="L113">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_UNARY_PRIMITIVES, new Object());</span>
-<span class="nc" id="L114">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_BINARY_PRIMITIVES, new Object());</span>
-<span class="nc" id="L115">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_TERNARY_PRIMITIVES, new Object());</span>
-<span class="nc" id="L116">        impl.currParameters.put(XCallbacksParameters.RECOGNIZING_BEFORE_CONVERTING, true);</span>
-<span class="nc" id="L117">        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_ARITY_LIMIT, 0); // included</span>
-<span class="nc" id="L118">        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_SPACE_LIMIT, 0L); // included</span>
-<span class="nc" id="L119">    }</span>
+<span class="nc" id="L135">        impl = new XCallbacks.Implem(this);</span>
+<span class="nc" id="L136">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_UNARY_PRIMITIVES, new Object());</span>
+<span class="nc" id="L137">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_BINARY_PRIMITIVES, new Object());</span>
+<span class="nc" id="L138">        impl.currParameters.put(XCallbacksParameters.RECOGNIZE_TERNARY_PRIMITIVES, new Object());</span>
+<span class="nc" id="L139">        impl.currParameters.put(XCallbacksParameters.RECOGNIZING_BEFORE_CONVERTING, true);</span>
+<span class="nc" id="L140">        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_ARITY_LIMIT, 0); // included</span>
+<span class="nc" id="L141">        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_SPACE_LIMIT, 0L); // included</span>
+<span class="nc" id="L142">    }</span>
 
     @Override
     public Implem implem() {
-<span class="nc" id="L123">        return impl;</span>
+<span class="nc" id="L146">        return impl;</span>
     }
 
     @Override
     public void buildVarInteger(XVariables.XVarInteger x, int minValue, int maxValue) {
-<span class="nc" id="L128">        addToDV(x);</span>
-<span class="nc" id="L129">        varHashMap.put(x.id(), md.intVar(x.id(), minValue, maxValue));</span>
-<span class="nc" id="L130">    }</span>
+<span class="nc" id="L151">        addToDV(x);</span>
+<span class="nc" id="L152">        varHashMap.put(x.id(), md.intVar(x.id(), minValue, maxValue));</span>
+<span class="nc" id="L153">    }</span>
 
     @Override
     public void buildVarInteger(XVariables.XVarInteger x, int[] values) {
-<span class="nc" id="L134">        addToDV(x);</span>
-<span class="nc" id="L135">        varHashMap.put(x.id(), md.intVar(x.id(), values));</span>
-<span class="nc" id="L136">    }</span>
+<span class="nc" id="L157">        addToDV(x);</span>
+<span class="nc" id="L158">        varHashMap.put(x.id(), md.intVar(x.id(), values));</span>
+<span class="nc" id="L159">    }</span>
 
     @Override
     public void buildCtrAllDifferent(String id, XVariables.XVarInteger[] list) {
-<span class="nc" id="L140">        addToDV(list);</span>
-<span class="nc" id="L141">        md.add(new AllDifferent($(list)));</span>
-<span class="nc" id="L142">    }</span>
+<span class="nc" id="L163">        addToDV(list);</span>
+<span class="nc" id="L164">        md.add(new AllDifferent($(list)));</span>
+<span class="nc" id="L165">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeConditionOperatorRel op, int k) {
-<span class="nc" id="L146">        IntExpression o = $(x);</span>
-<span class="nc bnc" id="L147" title="All 7 branches missed.">        switch (op) {</span>
-<span class="nc" id="L148">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
-<span class="nc" id="L149">            case NE -&gt; md.add(Factory.neq(o, k));</span>
-<span class="nc" id="L150">            case GT -&gt; md.add(Factory.gt(o, k));</span>
-<span class="nc" id="L151">            case GE -&gt; md.add(Factory.ge(o, k));</span>
-<span class="nc" id="L152">            case LT -&gt; md.add(Factory.lt(o, k));</span>
-<span class="nc" id="L153">            case LE -&gt; md.add(Factory.le(o, k));</span>
-<span class="nc" id="L154">            default -&gt; unimplementedCase(op);</span>
+<span class="nc" id="L169">        IntExpression o = $(x);</span>
+<span class="nc bnc" id="L170" title="All 7 branches missed.">        switch (op) {</span>
+<span class="nc" id="L171">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
+<span class="nc" id="L172">            case NE -&gt; md.add(Factory.neq(o, k));</span>
+<span class="nc" id="L173">            case GT -&gt; md.add(Factory.gt(o, k));</span>
+<span class="nc" id="L174">            case GE -&gt; md.add(Factory.ge(o, k));</span>
+<span class="nc" id="L175">            case LT -&gt; md.add(Factory.lt(o, k));</span>
+<span class="nc" id="L176">            case LE -&gt; md.add(Factory.le(o, k));</span>
+<span class="nc" id="L177">            default -&gt; unimplementedCase(op);</span>
         }
-<span class="nc" id="L156">    }</span>
+<span class="nc" id="L179">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, int k) {
-<span class="nc" id="L160">        IntExpression $x = $(x);</span>
-<span class="nc" id="L161">        IntExpression $y = $(y);</span>
+<span class="nc" id="L183">        IntExpression $x = $(x);</span>
+<span class="nc" id="L184">        IntExpression $y = $(y);</span>
 
         // special case x - y == 0 &lt;=&gt; x == y
-<span class="nc bnc" id="L164" title="All 6 branches missed.">        if (aop == Types.TypeArithmeticOperator.SUB &amp;&amp; op == Types.TypeConditionOperatorRel.EQ &amp;&amp; k == 0) {</span>
-<span class="nc" id="L165">            md.add(Factory.eq($x, $y));</span>
-<span class="nc" id="L166">            return;</span>
+<span class="nc bnc" id="L187" title="All 6 branches missed.">        if (aop == Types.TypeArithmeticOperator.SUB &amp;&amp; op == Types.TypeConditionOperatorRel.EQ &amp;&amp; k == 0) {</span>
+<span class="nc" id="L188">            md.add(Factory.eq($x, $y));</span>
+<span class="nc" id="L189">            return;</span>
         }
         // special case x + y == 0  &lt;=&gt; x - (-y) == 0 &lt;=&gt; x == -y
-<span class="nc bnc" id="L169" title="All 6 branches missed.">        if (aop == Types.TypeArithmeticOperator.ADD &amp;&amp; op == Types.TypeConditionOperatorRel.EQ &amp;&amp; k == 0) {</span>
-<span class="nc" id="L170">            md.add(Factory.eq($x, Factory.minus($y)));</span>
-<span class="nc" id="L171">            return;</span>
+<span class="nc bnc" id="L192" title="All 6 branches missed.">        if (aop == Types.TypeArithmeticOperator.ADD &amp;&amp; op == Types.TypeConditionOperatorRel.EQ &amp;&amp; k == 0) {</span>
+<span class="nc" id="L193">            md.add(Factory.eq($x, Factory.minus($y)));</span>
+<span class="nc" id="L194">            return;</span>
         }
 
 
-<span class="nc bnc" id="L175" title="All 4 branches missed.">        IntExpression o = switch (aop) {</span>
-<span class="nc" id="L176">            case DIST -&gt; $x.minus($y).abs();</span>
-<span class="nc" id="L177">            case ADD -&gt; $x.plus($y);</span>
-<span class="nc" id="L178">            case SUB -&gt; $x.minus($y);</span>
+<span class="nc bnc" id="L198" title="All 4 branches missed.">        IntExpression o = switch (aop) {</span>
+<span class="nc" id="L199">            case DIST -&gt; $x.minus($y).abs();</span>
+<span class="nc" id="L200">            case ADD -&gt; $x.plus($y);</span>
+<span class="nc" id="L201">            case SUB -&gt; $x.minus($y);</span>
             default -&gt; {
-<span class="nc" id="L180">                unimplementedCase(aop, op);</span>
-<span class="nc" id="L181">                yield null;</span>
+<span class="nc" id="L203">                unimplementedCase(aop, op);</span>
+<span class="nc" id="L204">                yield null;</span>
             }
         };
-<span class="nc bnc" id="L184" title="All 7 branches missed.">        switch (op) {</span>
-<span class="nc" id="L185">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
-<span class="nc" id="L186">            case NE -&gt; md.add(Factory.neq(o, k));</span>
-<span class="nc" id="L187">            case GT -&gt; md.add(Factory.gt(o, k));</span>
-<span class="nc" id="L188">            case GE -&gt; md.add(Factory.ge(o, k));</span>
-<span class="nc" id="L189">            case LT -&gt; md.add(Factory.lt(o, k));</span>
-<span class="nc" id="L190">            case LE -&gt; md.add(Factory.le(o, k));</span>
-<span class="nc" id="L191">            default -&gt; unimplementedCase(aop, op);</span>
+<span class="nc bnc" id="L207" title="All 7 branches missed.">        switch (op) {</span>
+<span class="nc" id="L208">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
+<span class="nc" id="L209">            case NE -&gt; md.add(Factory.neq(o, k));</span>
+<span class="nc" id="L210">            case GT -&gt; md.add(Factory.gt(o, k));</span>
+<span class="nc" id="L211">            case GE -&gt; md.add(Factory.ge(o, k));</span>
+<span class="nc" id="L212">            case LT -&gt; md.add(Factory.lt(o, k));</span>
+<span class="nc" id="L213">            case LE -&gt; md.add(Factory.le(o, k));</span>
+<span class="nc" id="L214">            default -&gt; unimplementedCase(aop, op);</span>
         }
-<span class="nc" id="L193">    }</span>
+<span class="nc" id="L216">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
-<span class="nc" id="L197">        IntExpression $x = $(x);</span>
-<span class="nc" id="L198">        IntExpression $z = $(z);</span>
-<span class="nc bnc" id="L199" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
-<span class="nc" id="L200">            case DIST -&gt; $x.minus(p).abs();</span>
-<span class="nc" id="L201">            case ADD -&gt; $x.plus(p);</span>
-<span class="nc" id="L202">            case SUB -&gt; $x.minus(p);</span>
-<span class="nc" id="L203">            case MUL -&gt; Factory.mul($x, p);</span>
+<span class="nc" id="L220">        IntExpression $x = $(x);</span>
+<span class="nc" id="L221">        IntExpression $z = $(z);</span>
+<span class="nc bnc" id="L222" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
+<span class="nc" id="L223">            case DIST -&gt; $x.minus(p).abs();</span>
+<span class="nc" id="L224">            case ADD -&gt; $x.plus(p);</span>
+<span class="nc" id="L225">            case SUB -&gt; $x.minus(p);</span>
+<span class="nc" id="L226">            case MUL -&gt; Factory.mul($x, p);</span>
             default -&gt; {
-<span class="nc" id="L205">                unimplementedCase(aop, op);</span>
-<span class="nc" id="L206">                yield null;</span>
+<span class="nc" id="L228">                unimplementedCase(aop, op);</span>
+<span class="nc" id="L229">                yield null;</span>
             }
         };
-<span class="nc bnc" id="L209" title="All 7 branches missed.">        switch (op) {</span>
-<span class="nc" id="L210">            case EQ -&gt; md.add(Factory.eq(o, $z));</span>
-<span class="nc" id="L211">            case NE -&gt; md.add(Factory.neq(o, $z));</span>
-<span class="nc" id="L212">            case GT -&gt; md.add(Factory.gt(o, $z));</span>
-<span class="nc" id="L213">            case GE -&gt; md.add(Factory.ge(o, $z));</span>
-<span class="nc" id="L214">            case LT -&gt; md.add(Factory.lt(o, $z));</span>
-<span class="nc" id="L215">            case LE -&gt; md.add(Factory.le(o, $z));</span>
-<span class="nc" id="L216">            default -&gt; unimplementedCase(aop, op);</span>
+<span class="nc bnc" id="L232" title="All 7 branches missed.">        switch (op) {</span>
+<span class="nc" id="L233">            case EQ -&gt; md.add(Factory.eq(o, $z));</span>
+<span class="nc" id="L234">            case NE -&gt; md.add(Factory.neq(o, $z));</span>
+<span class="nc" id="L235">            case GT -&gt; md.add(Factory.gt(o, $z));</span>
+<span class="nc" id="L236">            case GE -&gt; md.add(Factory.ge(o, $z));</span>
+<span class="nc" id="L237">            case LT -&gt; md.add(Factory.lt(o, $z));</span>
+<span class="nc" id="L238">            case LE -&gt; md.add(Factory.le(o, $z));</span>
+<span class="nc" id="L239">            default -&gt; unimplementedCase(aop, op);</span>
         }
-<span class="nc" id="L218">    }</span>
+<span class="nc" id="L241">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p, Types.TypeConditionOperatorRel op, int k) {
-<span class="nc" id="L222">        IntExpression $x = $(x);</span>
-<span class="nc bnc" id="L223" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
-<span class="nc" id="L224">            case DIST -&gt; $x.minus(p).abs();</span>
-<span class="nc" id="L225">            case ADD -&gt; $x.plus(p);</span>
-<span class="nc" id="L226">            case SUB -&gt; $x.minus(p);</span>
+<span class="nc" id="L245">        IntExpression $x = $(x);</span>
+<span class="nc bnc" id="L246" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
+<span class="nc" id="L247">            case DIST -&gt; $x.minus(p).abs();</span>
+<span class="nc" id="L248">            case ADD -&gt; $x.plus(p);</span>
+<span class="nc" id="L249">            case SUB -&gt; $x.minus(p);</span>
             case DIV -&gt; {
-<span class="nc bnc" id="L228" title="All 2 branches missed.">                if (p == 0)</span>
-<span class="nc" id="L229">                    throw new NotImplementedException(&quot;Division by zero in primitive constraint&quot;);</span>
-<span class="nc" id="L230">                yield Factory.div($x, md.constant(p));</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                if (p == 0)</span>
+<span class="nc" id="L252">                    throw new NotImplementedException(&quot;Division by zero in primitive constraint&quot;);</span>
+<span class="nc" id="L253">                yield Factory.div($x, md.constant(p));</span>
             }
             default -&gt; {
-<span class="nc" id="L233">                unimplementedCase(aop, op);</span>
-<span class="nc" id="L234">                yield null;</span>
+<span class="nc" id="L256">                unimplementedCase(aop, op);</span>
+<span class="nc" id="L257">                yield null;</span>
             }
         };
-<span class="nc bnc" id="L237" title="All 7 branches missed.">        switch (op) {</span>
-<span class="nc" id="L238">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
-<span class="nc" id="L239">            case NE -&gt; md.add(Factory.neq(o, k));</span>
-<span class="nc" id="L240">            case GT -&gt; md.add(Factory.gt(o, k));</span>
-<span class="nc" id="L241">            case GE -&gt; md.add(Factory.ge(o, k));</span>
-<span class="nc" id="L242">            case LT -&gt; md.add(Factory.lt(o, k));</span>
-<span class="nc" id="L243">            case LE -&gt; md.add(Factory.le(o, k));</span>
-<span class="nc" id="L244">            default -&gt; unimplementedCase(aop, op);</span>
+<span class="nc bnc" id="L260" title="All 7 branches missed.">        switch (op) {</span>
+<span class="nc" id="L261">            case EQ -&gt; md.add(Factory.eq(o, k));</span>
+<span class="nc" id="L262">            case NE -&gt; md.add(Factory.neq(o, k));</span>
+<span class="nc" id="L263">            case GT -&gt; md.add(Factory.gt(o, k));</span>
+<span class="nc" id="L264">            case GE -&gt; md.add(Factory.ge(o, k));</span>
+<span class="nc" id="L265">            case LT -&gt; md.add(Factory.lt(o, k));</span>
+<span class="nc" id="L266">            case LE -&gt; md.add(Factory.le(o, k));</span>
+<span class="nc" id="L267">            default -&gt; unimplementedCase(aop, op);</span>
         }
-<span class="nc" id="L246">    }</span>
+<span class="nc" id="L269">    }</span>
 
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
-<span class="nc" id="L249">        IntExpression $x = $(x);</span>
-<span class="nc" id="L250">        IntExpression $y = $(y);</span>
-<span class="nc" id="L251">        IntExpression $z = $(z);</span>
-<span class="nc bnc" id="L252" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
-<span class="nc" id="L253">            case DIST -&gt; $x.minus($y).abs();</span>
-<span class="nc" id="L254">            case ADD -&gt; $x.plus($y);</span>
-<span class="nc" id="L255">            case SUB -&gt; $x.minus($y);</span>
-<span class="nc" id="L256">            case MUL -&gt; throw new NotImplementedException(&quot;No support for multiplication of variables&quot;);</span>
+<span class="nc" id="L272">        IntExpression $x = $(x);</span>
+<span class="nc" id="L273">        IntExpression $y = $(y);</span>
+<span class="nc" id="L274">        IntExpression $z = $(z);</span>
+<span class="nc bnc" id="L275" title="All 5 branches missed.">        IntExpression o = switch (aop) {</span>
+<span class="nc" id="L276">            case DIST -&gt; $x.minus($y).abs();</span>
+<span class="nc" id="L277">            case ADD -&gt; $x.plus($y);</span>
+<span class="nc" id="L278">            case SUB -&gt; $x.minus($y);</span>
+<span class="nc" id="L279">            case MUL -&gt; throw new NotImplementedException(&quot;No support for multiplication of variables&quot;);</span>
             default -&gt; {
-<span class="nc" id="L258">                unimplementedCase(aop, op);</span>
-<span class="nc" id="L259">                yield null;</span>
+<span class="nc" id="L281">                unimplementedCase(aop, op);</span>
+<span class="nc" id="L282">                yield null;</span>
             }
         };
-<span class="nc bnc" id="L262" title="All 7 branches missed.">        switch (op) {</span>
-<span class="nc" id="L263">            case EQ -&gt; md.add(Factory.eq(o, $z));</span>
-<span class="nc" id="L264">            case NE -&gt; md.add(Factory.neq(o, $z));</span>
-<span class="nc" id="L265">            case GT -&gt; md.add(Factory.gt(o, $z));</span>
-<span class="nc" id="L266">            case GE -&gt; md.add(Factory.ge(o, $z));</span>
-<span class="nc" id="L267">            case LT -&gt; md.add(Factory.lt(o, $z));</span>
-<span class="nc" id="L268">            case LE -&gt; md.add(Factory.le(o, $z));</span>
-<span class="nc" id="L269">            default -&gt; unimplementedCase(aop, op);</span>
+<span class="nc bnc" id="L285" title="All 7 branches missed.">        switch (op) {</span>
+<span class="nc" id="L286">            case EQ -&gt; md.add(Factory.eq(o, $z));</span>
+<span class="nc" id="L287">            case NE -&gt; md.add(Factory.neq(o, $z));</span>
+<span class="nc" id="L288">            case GT -&gt; md.add(Factory.gt(o, $z));</span>
+<span class="nc" id="L289">            case GE -&gt; md.add(Factory.ge(o, $z));</span>
+<span class="nc" id="L290">            case LT -&gt; md.add(Factory.lt(o, $z));</span>
+<span class="nc" id="L291">            case LE -&gt; md.add(Factory.le(o, $z));</span>
+<span class="nc" id="L292">            default -&gt; unimplementedCase(aop, op);</span>
         }
-<span class="nc" id="L271">    }</span>
+<span class="nc" id="L294">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeConditionOperatorSet op, int[] t) {
-<span class="nc" id="L275">        IntExpression $x = $(x);</span>
-<span class="nc bnc" id="L276" title="All 3 branches missed.">        switch (op) {</span>
-<span class="nc" id="L277">            case IN -&gt; md.add(new InSet($x, Arrays.stream(t).boxed().collect(ImmutableSet.toImmutableSet())));</span>
+<span class="nc" id="L298">        IntExpression $x = $(x);</span>
+<span class="nc bnc" id="L299" title="All 3 branches missed.">        switch (op) {</span>
+<span class="nc" id="L300">            case IN -&gt; md.add(new InSet($x, Arrays.stream(t).boxed().collect(ImmutableSet.toImmutableSet())));</span>
             case NOTIN -&gt; {
-<span class="nc bnc" id="L279" title="All 2 branches missed.">                for (int v : t)</span>
-<span class="nc" id="L280">                    md.add(Factory.neq($x, v));</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">                for (int v : t)</span>
+<span class="nc" id="L303">                    md.add(Factory.neq($x, v));</span>
             }
         }
-<span class="nc" id="L283">    }</span>
+<span class="nc" id="L306">    }</span>
 
     @Override
     public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeConditionOperatorSet op, int min, int max) {
-<span class="nc" id="L287">        IntExpression $x = $(x);</span>
-<span class="nc bnc" id="L288" title="All 3 branches missed.">        switch (op) {</span>
+<span class="nc" id="L310">        IntExpression $x = $(x);</span>
+<span class="nc bnc" id="L311" title="All 3 branches missed.">        switch (op) {</span>
             case IN -&gt; {
-<span class="nc" id="L290">                md.add(Factory.le(min, $x));</span>
-<span class="nc" id="L291">                md.add(Factory.le($x, max));</span>
-<span class="nc" id="L292">            }</span>
+<span class="nc" id="L313">                md.add(Factory.le(min, $x));</span>
+<span class="nc" id="L314">                md.add(Factory.le($x, max));</span>
+<span class="nc" id="L315">            }</span>
             case NOTIN -&gt; {
-<span class="nc bnc" id="L294" title="All 2 branches missed.">                for (int v = min; v &lt;= max; v++)</span>
-<span class="nc" id="L295">                    md.add(Factory.neq($x, v));</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">                for (int v = min; v &lt;= max; v++)</span>
+<span class="nc" id="L318">                    md.add(Factory.neq($x, v));</span>
             }
         }
-<span class="nc" id="L298">    }</span>
+<span class="nc" id="L321">    }</span>
 
-<span class="nc" id="L300">    protected HashMap&lt;String, IntExpression&gt; expr_cache = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L323">    protected HashMap&lt;String, IntExpression&gt; expr_cache = new HashMap&lt;&gt;();</span>
 
     private &lt;V extends IVar&gt; IntExpression _recursiveIntentionBuilder(XNode&lt;V&gt; node) {
-<span class="nc" id="L303">        String key = node.toString();</span>
-<span class="nc" id="L304">        IntExpression val = expr_cache.get(key);</span>
-<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (val == null) {</span>
-<span class="nc bnc" id="L306" title="All 3 branches missed.">            val = switch (node) {</span>
-<span class="nc" id="L307">                case XNodeLeaf&lt;V&gt; leaf -&gt; _recursiveIntentionBuilderLeafNode(leaf);</span>
-<span class="nc" id="L308">                case XNodeParent&lt;V&gt; parent -&gt; _recursiveIntentionBuilderParentNode(parent);</span>
-<span class="nc" id="L309">                default -&gt; throw new RuntimeException(&quot;Unknown node type&quot;);</span>
+<span class="nc" id="L326">        String key = node.toString();</span>
+<span class="nc" id="L327">        IntExpression val = expr_cache.get(key);</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">        if (val == null) {</span>
+<span class="nc bnc" id="L329" title="All 3 branches missed.">            val = switch (node) {</span>
+<span class="nc" id="L330">                case XNodeLeaf&lt;V&gt; leaf -&gt; _recursiveIntentionBuilderLeafNode(leaf);</span>
+<span class="nc" id="L331">                case XNodeParent&lt;V&gt; parent -&gt; _recursiveIntentionBuilderParentNode(parent);</span>
+<span class="nc" id="L332">                default -&gt; throw new RuntimeException(&quot;Unknown node type&quot;);</span>
             };
-<span class="nc" id="L311">            expr_cache.put(key, val);</span>
+<span class="nc" id="L334">            expr_cache.put(key, val);</span>
         }
-<span class="nc" id="L313">        return val;</span>
+<span class="nc" id="L336">        return val;</span>
     }
 
     private &lt;V extends IVar&gt; IntExpression _recursiveIntentionBuilderLeafNode(XNodeLeaf&lt;V&gt; node) {
-<span class="nc bnc" id="L317" title="All 3 branches missed.">        return switch (node.getType()) {</span>
-<span class="nc" id="L318">            case VAR -&gt; varHashMap.get(node.value.toString());</span>
-<span class="nc" id="L319">            case LONG -&gt; md.constant(((Long) node.value).intValue());</span>
+<span class="nc bnc" id="L340" title="All 3 branches missed.">        return switch (node.getType()) {</span>
+<span class="nc" id="L341">            case VAR -&gt; varHashMap.get(node.value.toString());</span>
+<span class="nc" id="L342">            case LONG -&gt; md.constant(((Long) node.value).intValue());</span>
             default -&gt;
-<span class="nc" id="L321">                    throw new NotYetImplementedException(&quot;Unknown node type %s in _recursiveIntentionBuilderLeafNode&quot;.formatted(node.getType()));</span>
+<span class="nc" id="L344">                    throw new NotYetImplementedException(&quot;Unknown node type %s in _recursiveIntentionBuilderLeafNode&quot;.formatted(node.getType()));</span>
         };
     }
 
     private &lt;V extends IVar&gt; IntExpression _recursiveIntentionBuilderParentNode(XNodeParent&lt;V&gt; tree) {
-<span class="nc bnc" id="L326" title="All 19 branches missed.">        return switch (tree.getType()) {</span>
+<span class="nc bnc" id="L349" title="All 19 branches missed.">        return switch (tree.getType()) {</span>
             case IN -&gt; {
-<span class="nc bnc" id="L328" title="All 2 branches missed.">                assert (tree.sons[1].getType() == Types.TypeExpr.SET);</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">                assert (tree.sons[1].getType() == Types.TypeExpr.SET);</span>
                 try {
-<span class="nc" id="L330">                    Set&lt;Integer&gt; set = Arrays.stream(((XNodeParent&lt;V&gt;) tree.sons[1]).sons).map(i -&gt; ((Long) ((XNodeLeaf&lt;V&gt;) i).value).intValue()).collect(Collectors.toSet());</span>
-<span class="nc" id="L331">                    yield new InSet(_recursiveIntentionBuilder(tree.sons[0]), set);</span>
-<span class="nc" id="L332">                } catch (ClassCastException a) {</span>
+<span class="nc" id="L353">                    Set&lt;Integer&gt; set = Arrays.stream(((XNodeParent&lt;V&gt;) tree.sons[1]).sons).map(i -&gt; ((Long) ((XNodeLeaf&lt;V&gt;) i).value).intValue()).collect(Collectors.toSet());</span>
+<span class="nc" id="L354">                    yield new InSet(_recursiveIntentionBuilder(tree.sons[0]), set);</span>
+<span class="nc" id="L355">                } catch (ClassCastException a) {</span>
                     //Cannot cast to XNodeLeaf =&gt; not only integers
-<span class="nc" id="L334">                    IntExpression main = _recursiveIntentionBuilder(tree.sons[0]);</span>
-<span class="nc" id="L335">                    yield new Or(Arrays.stream(tree.sons[1].sons).map(x -&gt; new Eq(_recursiveIntentionBuilder(x), main)).collect(ImmutableSet.toImmutableSet()));</span>
+<span class="nc" id="L357">                    IntExpression main = _recursiveIntentionBuilder(tree.sons[0]);</span>
+<span class="nc" id="L358">                    yield new Or(Arrays.stream(tree.sons[1].sons).map(x -&gt; new Eq(_recursiveIntentionBuilder(x), main)).collect(ImmutableSet.toImmutableSet()));</span>
                 }
             }
             case NE -&gt; {
-<span class="nc bnc" id="L339" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
-<span class="nc" id="L340">                    throw new NotImplementedException(&quot;No support for unequality of more than two elements&quot;);</span>
-<span class="nc" id="L341">                yield new NotEq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc bnc" id="L362" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
+<span class="nc" id="L363">                    throw new NotImplementedException(&quot;No support for unequality of more than two elements&quot;);</span>
+<span class="nc" id="L364">                yield new NotEq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
             }
             case EQ -&gt; {
-<span class="nc bnc" id="L344" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
-<span class="nc" id="L345">                    throw new NotYetImplementedException(&quot;No support for EQ with more than 2 elements yet&quot;);</span>
-<span class="nc" id="L346">                yield new Eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
+<span class="nc" id="L368">                    throw new NotYetImplementedException(&quot;No support for EQ with more than 2 elements yet&quot;);</span>
+<span class="nc" id="L369">                yield new Eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
             }
-<span class="nc" id="L348">            case ADD -&gt; new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));</span>
-<span class="nc" id="L349">            case MUL -&gt; new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));</span>
-<span class="nc" id="L350">            case LT -&gt; Factory.lt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
-<span class="nc" id="L351">            case LE -&gt; Factory.le(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
-<span class="nc" id="L352">            case GT -&gt; Factory.gt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
-<span class="nc" id="L353">            case GE -&gt; Factory.ge(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc" id="L371">            case ADD -&gt; new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));</span>
+<span class="nc" id="L372">            case MUL -&gt; new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));</span>
+<span class="nc" id="L373">            case LT -&gt; Factory.lt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc" id="L374">            case LE -&gt; Factory.le(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc" id="L375">            case GT -&gt; Factory.gt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc" id="L376">            case GE -&gt; Factory.ge(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
             case AND -&gt;
-<span class="nc" id="L355">                    Factory.and(Arrays.stream(tree.sons).map(x -&gt; (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));</span>
+<span class="nc" id="L378">                    Factory.and(Arrays.stream(tree.sons).map(x -&gt; (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));</span>
             case OR -&gt;
-<span class="nc" id="L357">                    Factory.or(Arrays.stream(tree.sons).map(x -&gt; (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));</span>
+<span class="nc" id="L380">                    Factory.or(Arrays.stream(tree.sons).map(x -&gt; (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));</span>
             case DIST -&gt;
-<span class="nc" id="L359">                    Factory.abs(Factory.minus(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1])));</span>
+<span class="nc" id="L382">                    Factory.abs(Factory.minus(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1])));</span>
             case DIV -&gt; {
-<span class="nc" id="L361">                IntExpression left = (IntExpression) _recursiveIntentionBuilder(tree.sons[0]);</span>
-<span class="nc" id="L362">                IntExpression right = (IntExpression) _recursiveIntentionBuilder(tree.sons[1]);</span>
-<span class="nc" id="L363">                yield Factory.div(left, right);</span>
+<span class="nc" id="L384">                IntExpression left = (IntExpression) _recursiveIntentionBuilder(tree.sons[0]);</span>
+<span class="nc" id="L385">                IntExpression right = (IntExpression) _recursiveIntentionBuilder(tree.sons[1]);</span>
+<span class="nc" id="L386">                yield Factory.div(left, right);</span>
             }
-<span class="nc" id="L365">            case MOD -&gt; throw new NotImplementedException(&quot;No support for modulos&quot;);</span>
+<span class="nc" id="L388">            case MOD -&gt; throw new NotImplementedException(&quot;No support for modulos&quot;);</span>
             case IMP -&gt; {
-<span class="nc" id="L367">                BoolExpression a = (BoolExpression) _recursiveIntentionBuilder(tree.sons[0]);</span>
-<span class="nc" id="L368">                BoolExpression b = (BoolExpression) _recursiveIntentionBuilder(tree.sons[1]);</span>
-<span class="nc" id="L369">                yield Factory.or(Factory.not(a), b);</span>
+<span class="nc" id="L390">                BoolExpression a = (BoolExpression) _recursiveIntentionBuilder(tree.sons[0]);</span>
+<span class="nc" id="L391">                BoolExpression b = (BoolExpression) _recursiveIntentionBuilder(tree.sons[1]);</span>
+<span class="nc" id="L392">                yield Factory.or(Factory.not(a), b);</span>
             }
-<span class="nc" id="L371">            case NOT -&gt; Factory.not((BoolExpression) _recursiveIntentionBuilder(tree.sons[0]));</span>
-<span class="nc" id="L372">            case NEG -&gt; Factory.minus(_recursiveIntentionBuilder(tree.sons[0]));</span>
+<span class="nc" id="L394">            case NOT -&gt; Factory.not((BoolExpression) _recursiveIntentionBuilder(tree.sons[0]));</span>
+<span class="nc" id="L395">            case NEG -&gt; Factory.minus(_recursiveIntentionBuilder(tree.sons[0]));</span>
             case IFF -&gt; {
-<span class="nc bnc" id="L374" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
-<span class="nc" id="L375">                    throw new NotImplementedException(&quot;No support for IFF of more than 2 elements directly&quot;);</span>
-<span class="nc" id="L376">                yield Factory.eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">                if (tree.sons.length != 2)</span>
+<span class="nc" id="L398">                    throw new NotImplementedException(&quot;No support for IFF of more than 2 elements directly&quot;);</span>
+<span class="nc" id="L399">                yield Factory.eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));</span>
             }
             default -&gt;
-<span class="nc" id="L379">                    throw new NotYetImplementedException(&quot;Unknown type %s in _recursiveIntentionBuilderParentNode&quot;.formatted(tree.getType()));</span>
+<span class="nc" id="L402">                    throw new NotYetImplementedException(&quot;Unknown type %s in _recursiveIntentionBuilderParentNode&quot;.formatted(tree.getType()));</span>
         };
     }
 
     @Override
     public void buildCtrIntension(String id, XVariables.XVarInteger[] scope, XNodeParent&lt;XVariables.XVarInteger&gt; syntaxTreeRoot) {
-<span class="nc" id="L385">        md.add(((BoolExpression) _recursiveIntentionBuilder(syntaxTreeRoot)));</span>
-<span class="nc" id="L386">    }</span>
+<span class="nc" id="L408">        md.add(((BoolExpression) _recursiveIntentionBuilder(syntaxTreeRoot)));</span>
+<span class="nc" id="L409">    }</span>
 
     private void buildCrtWithCondition(String id, IntExpression expr, Condition operator) {
-<span class="nc bnc" id="L389" title="All 3 branches missed.">        switch (operator) {</span>
-<span class="nc" id="L390">            case Condition.ConditionVal cv -&gt; {</span>
-<span class="nc" id="L391">                int cst = (int) cv.k;</span>
-<span class="nc bnc" id="L392" title="All 7 branches missed.">                switch (cv.operator) {</span>
-<span class="nc" id="L393">                    case EQ -&gt; md.add(Factory.eq(expr, cst));</span>
-<span class="nc" id="L394">                    case LE -&gt; md.add(Factory.le(expr, cst));</span>
-<span class="nc" id="L395">                    case LT -&gt; md.add(Factory.lt(expr, cst));</span>
-<span class="nc" id="L396">                    case GE -&gt; md.add(Factory.ge(expr, cst));</span>
-<span class="nc" id="L397">                    case GT -&gt; md.add(Factory.gt(expr, cst));</span>
-<span class="nc" id="L398">                    case NE -&gt; md.add(Factory.neq(expr, cst));</span>
-<span class="nc" id="L399">                    default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(cv.operator));</span>
+<span class="nc bnc" id="L412" title="All 3 branches missed.">        switch (operator) {</span>
+<span class="nc" id="L413">            case Condition.ConditionVal cv -&gt; {</span>
+<span class="nc" id="L414">                int cst = (int) cv.k;</span>
+<span class="nc bnc" id="L415" title="All 7 branches missed.">                switch (cv.operator) {</span>
+<span class="nc" id="L416">                    case EQ -&gt; md.add(Factory.eq(expr, cst));</span>
+<span class="nc" id="L417">                    case LE -&gt; md.add(Factory.le(expr, cst));</span>
+<span class="nc" id="L418">                    case LT -&gt; md.add(Factory.lt(expr, cst));</span>
+<span class="nc" id="L419">                    case GE -&gt; md.add(Factory.ge(expr, cst));</span>
+<span class="nc" id="L420">                    case GT -&gt; md.add(Factory.gt(expr, cst));</span>
+<span class="nc" id="L421">                    case NE -&gt; md.add(Factory.neq(expr, cst));</span>
+<span class="nc" id="L422">                    default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(cv.operator));</span>
                 }
-<span class="nc" id="L401">            }</span>
-<span class="nc" id="L402">            case Condition.ConditionVar cv -&gt; {</span>
-<span class="nc" id="L403">                IntExpression v = $(cv.x);</span>
-<span class="nc bnc" id="L404" title="All 7 branches missed.">                switch (cv.operator) {</span>
-<span class="nc" id="L405">                    case EQ -&gt; md.add(Factory.eq(expr, v));</span>
-<span class="nc" id="L406">                    case LE -&gt; md.add(Factory.le(expr, v));</span>
-<span class="nc" id="L407">                    case LT -&gt; md.add(Factory.lt(expr, v));</span>
-<span class="nc" id="L408">                    case GE -&gt; md.add(Factory.ge(expr, v));</span>
-<span class="nc" id="L409">                    case GT -&gt; md.add(Factory.gt(expr, v));</span>
-<span class="nc" id="L410">                    case NE -&gt; md.add(Factory.neq(expr, v));</span>
-<span class="nc" id="L411">                    default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(cv.operator));</span>
+<span class="nc" id="L424">            }</span>
+<span class="nc" id="L425">            case Condition.ConditionVar cv -&gt; {</span>
+<span class="nc" id="L426">                IntExpression v = $(cv.x);</span>
+<span class="nc bnc" id="L427" title="All 7 branches missed.">                switch (cv.operator) {</span>
+<span class="nc" id="L428">                    case EQ -&gt; md.add(Factory.eq(expr, v));</span>
+<span class="nc" id="L429">                    case LE -&gt; md.add(Factory.le(expr, v));</span>
+<span class="nc" id="L430">                    case LT -&gt; md.add(Factory.lt(expr, v));</span>
+<span class="nc" id="L431">                    case GE -&gt; md.add(Factory.ge(expr, v));</span>
+<span class="nc" id="L432">                    case GT -&gt; md.add(Factory.gt(expr, v));</span>
+<span class="nc" id="L433">                    case NE -&gt; md.add(Factory.neq(expr, v));</span>
+<span class="nc" id="L434">                    default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(cv.operator));</span>
                 }
-<span class="nc" id="L413">            }</span>
-<span class="nc" id="L414">            default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(operator.getClass()));</span>
+<span class="nc" id="L436">            }</span>
+<span class="nc" id="L437">            default -&gt; throw new RuntimeException(&quot;Unknown operator %s&quot;.formatted(operator.getClass()));</span>
         }
-<span class="nc" id="L416">    }</span>
+<span class="nc" id="L439">    }</span>
 
     public void buildCtrSum(String id, XVariables.XVarInteger[] list, Condition condition) {
-<span class="nc" id="L419">        buildCrtWithCondition(id, new Sum(Arrays.stream(list).map(i -&gt; varHashMap.get(i.id())).toArray(IntExpression[]::new)), condition);</span>
-<span class="nc" id="L420">    }</span>
+<span class="nc" id="L442">        buildCrtWithCondition(id, new Sum(Arrays.stream(list).map(i -&gt; varHashMap.get(i.id())).toArray(IntExpression[]::new)), condition);</span>
+<span class="nc" id="L443">    }</span>
 
     public void buildCtrSum(String id, XVariables.XVarInteger[] list, int[] coeffs, Condition condition) {
-<span class="nc" id="L423">        buildCrtWithCondition(id, new WeightedSum(Arrays.stream(list).map(i -&gt; varHashMap.get(i.id())).toArray(IntExpression[]::new), coeffs), condition);</span>
-<span class="nc" id="L424">    }</span>
+<span class="nc" id="L446">        buildCrtWithCondition(id, new WeightedSum(Arrays.stream(list).map(i -&gt; varHashMap.get(i.id())).toArray(IntExpression[]::new), coeffs), condition);</span>
+<span class="nc" id="L447">    }</span>
 
     public void buildCtrExtension(String id, XVariables.XVarInteger x, int[] values, boolean positive, Set&lt;Types.TypeFlag&gt; flags) {
-<span class="nc bnc" id="L427" title="All 2 branches missed.">        assert (!flags.contains(Types.TypeFlag.STARRED_TUPLES)); // no sense!</span>
-<span class="nc bnc" id="L428" title="All 2 branches missed.">        if (positive) {</span>
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        assert (!flags.contains(Types.TypeFlag.STARRED_TUPLES)); // no sense!</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        if (positive) {</span>
             //InSet constraint
-<span class="nc" id="L430">            md.add(new InSet(varHashMap.get(x.id()), ImmutableSet.of(values)));</span>
+<span class="nc" id="L453">            md.add(new InSet(varHashMap.get(x.id()), ImmutableSet.of(values)));</span>
         } else {
-<span class="nc" id="L432">            IntExpression expr = varHashMap.get(x.id());</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">            for (int v : values)</span>
-<span class="nc" id="L434">                md.add(new NotEq(expr, v));</span>
+<span class="nc" id="L455">            IntExpression expr = varHashMap.get(x.id());</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">            for (int v : values)</span>
+<span class="nc" id="L457">                md.add(new NotEq(expr, v));</span>
         }
-<span class="nc" id="L436">    }</span>
+<span class="nc" id="L459">    }</span>
 
     public void buildCtrExtension(String id, XVariables.XVarInteger[] list, int[][] tuples, boolean positive, Set&lt;Types.TypeFlag&gt; flags) {
-<span class="nc bnc" id="L439" title="All 2 branches missed.">        if (positive) {</span>
-<span class="nc bnc" id="L440" title="All 2 branches missed.">            md.add(new Table($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">        if (positive) {</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">            md.add(new Table($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));</span>
         } else {
-<span class="nc bnc" id="L442" title="All 2 branches missed.">            md.add(new NegTable($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));</span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">            md.add(new NegTable($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));</span>
         }
-<span class="nc" id="L444">    }</span>
+<span class="nc" id="L467">    }</span>
 
     public void buildCtrInstantiation(String id, XVariables.XVarInteger[] list, int[] values) {
-<span class="nc bnc" id="L447" title="All 2 branches missed.">        for (int i = 0; i &lt; list.length; i++)</span>
-<span class="nc" id="L448">            md.add(new Eq($(list[i]), values[i]));</span>
-<span class="nc" id="L449">    }</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">        for (int i = 0; i &lt; list.length; i++)</span>
+<span class="nc" id="L471">            md.add(new Eq($(list[i]), values[i]));</span>
+<span class="nc" id="L472">    }</span>
 
     public void buildCtrMinimum(String id, XVariables.XVarInteger[] list, Condition condition) {
-<span class="nc" id="L452">        buildCrtWithCondition(id, new Min($(list)), condition);</span>
-<span class="nc" id="L453">    }</span>
+<span class="nc" id="L475">        buildCrtWithCondition(id, new Min($(list)), condition);</span>
+<span class="nc" id="L476">    }</span>
 
     public void buildCtrMaximum(String id, XVariables.XVarInteger[] list, Condition condition) {
-<span class="nc" id="L456">        buildCrtWithCondition(id, new Max($(list)), condition);</span>
-<span class="nc" id="L457">    }</span>
+<span class="nc" id="L479">        buildCrtWithCondition(id, new Max($(list)), condition);</span>
+<span class="nc" id="L480">    }</span>
 
     public void buildCtrOrdered(String id, XVariables.XVarInteger[] list, Types.TypeOperatorRel operator) {
-<span class="nc bnc" id="L460" title="All 4 branches missed.">        BiFunction&lt;IntExpression, IntExpression, BoolExpression&gt; op = switch (operator) {</span>
-<span class="nc" id="L461">            case GE -&gt; Factory::ge;</span>
-<span class="nc" id="L462">            case GT -&gt; Factory::gt;</span>
-<span class="nc" id="L463">            case LT -&gt; Factory::lt;</span>
-<span class="nc" id="L464">            case LE -&gt; Factory::le;</span>
+<span class="nc bnc" id="L483" title="All 4 branches missed.">        BiFunction&lt;IntExpression, IntExpression, BoolExpression&gt; op = switch (operator) {</span>
+<span class="nc" id="L484">            case GE -&gt; Factory::ge;</span>
+<span class="nc" id="L485">            case GT -&gt; Factory::gt;</span>
+<span class="nc" id="L486">            case LT -&gt; Factory::lt;</span>
+<span class="nc" id="L487">            case LE -&gt; Factory::le;</span>
         };
-<span class="nc" id="L466">        IntExpression[] $list = $(list);</span>
-<span class="nc bnc" id="L467" title="All 2 branches missed.">        for (int i = 0; i &lt; $list.length - 1; i++)</span>
-<span class="nc" id="L468">            md.add(op.apply($list[i], $list[i + 1]));</span>
-<span class="nc" id="L469">    }</span>
+<span class="nc" id="L489">        IntExpression[] $list = $(list);</span>
+<span class="nc bnc" id="L490" title="All 2 branches missed.">        for (int i = 0; i &lt; $list.length - 1; i++)</span>
+<span class="nc" id="L491">            md.add(op.apply($list[i], $list[i + 1]));</span>
+<span class="nc" id="L492">    }</span>
 
 
     @Override
     public void buildCtrElement(String id, XVariables.XVarInteger[] list, Condition condition) {
-<span class="nc" id="L474">        IntExpression[] array = $(list);</span>
-<span class="nc" id="L475">        IntExpression indexExpr = md.intVar(0, array.length - 1);</span>
-<span class="nc" id="L476">        IntExpression element = Factory.get(array, indexExpr);</span>
-<span class="nc" id="L477">        buildCrtWithCondition(id, element, condition);</span>
-<span class="nc" id="L478">    }</span>
+<span class="nc" id="L497">        IntExpression[] array = $(list);</span>
+<span class="nc" id="L498">        IntExpression indexExpr = md.intVar(0, array.length - 1);</span>
+<span class="nc" id="L499">        IntExpression element = Factory.get(array, indexExpr);</span>
+<span class="nc" id="L500">        buildCrtWithCondition(id, element, condition);</span>
+<span class="nc" id="L501">    }</span>
 
     @Override
     public void buildCtrElement(String id, XVariables.XVarInteger[] list, int startIndex, XVariables.XVarInteger index, Types.TypeRank rank, Condition condition) {
-<span class="nc bnc" id="L482" title="All 2 branches missed.">        if (rank != Types.TypeRank.ANY)</span>
-<span class="nc" id="L483">            throw new NotImplementedException(&quot;Element constraint only supports ANY as position for the index&quot;);</span>
-<span class="nc" id="L484">        IntExpression[] array = $(list);</span>
-<span class="nc bnc" id="L485" title="All 2 branches missed.">        IntExpression indexExpr = startIndex == 0 ? $(index) : Factory.minus($(index), startIndex);</span>
-<span class="nc" id="L486">        decisionVars.add(index.id());</span>
-<span class="nc" id="L487">        IntExpression element = Factory.get(array, indexExpr);</span>
-<span class="nc" id="L488">        buildCrtWithCondition(id, element, condition);</span>
-<span class="nc" id="L489">    }</span>
+<span class="nc bnc" id="L505" title="All 2 branches missed.">        if (rank != Types.TypeRank.ANY)</span>
+<span class="nc" id="L506">            throw new NotImplementedException(&quot;Element constraint only supports ANY as position for the index&quot;);</span>
+<span class="nc" id="L507">        IntExpression[] array = $(list);</span>
+<span class="nc bnc" id="L508" title="All 2 branches missed.">        IntExpression indexExpr = startIndex == 0 ? $(index) : Factory.minus($(index), startIndex);</span>
+<span class="nc" id="L509">        decisionVars.add(index.id());</span>
+<span class="nc" id="L510">        IntExpression element = Factory.get(array, indexExpr);</span>
+<span class="nc" id="L511">        buildCrtWithCondition(id, element, condition);</span>
+<span class="nc" id="L512">    }</span>
 
     @Override
     public void buildCtrElement(String id, int[] list, int startIndex, XVariables.XVarInteger index, Types.TypeRank rank, Condition condition) {
-<span class="nc bnc" id="L493" title="All 2 branches missed.">        if (rank != Types.TypeRank.ANY)</span>
-<span class="nc" id="L494">            throw new NotImplementedException(&quot;Element constraint only supports ANY as position for the index&quot;);</span>
-<span class="nc bnc" id="L495" title="All 2 branches missed.">        IntExpression indexExpr = startIndex == 0 ? $(index) : Factory.minus($(index), startIndex);</span>
-<span class="nc" id="L496">        decisionVars.add(index.id());</span>
-<span class="nc" id="L497">        IntExpression element = Factory.get(list, indexExpr);</span>
-<span class="nc" id="L498">        buildCrtWithCondition(id, element, condition);</span>
-<span class="nc" id="L499">    }</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">        if (rank != Types.TypeRank.ANY)</span>
+<span class="nc" id="L517">            throw new NotImplementedException(&quot;Element constraint only supports ANY as position for the index&quot;);</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">        IntExpression indexExpr = startIndex == 0 ? $(index) : Factory.minus($(index), startIndex);</span>
+<span class="nc" id="L519">        decisionVars.add(index.id());</span>
+<span class="nc" id="L520">        IntExpression element = Factory.get(list, indexExpr);</span>
+<span class="nc" id="L521">        buildCrtWithCondition(id, element, condition);</span>
+<span class="nc" id="L522">    }</span>
 
 
     @Override
     public void buildCtrElement(String id, XVariables.XVarInteger[][] matrix, int startRowIndex, XVariables.XVarInteger rowIndex, int startColIndex, XVariables.XVarInteger colIndex,
                                 Condition condition) {
-<span class="nc" id="L505">        unimplementedCase(id);</span>
-<span class="nc" id="L506">    }</span>
+<span class="nc" id="L528">        unimplementedCase(id);</span>
+<span class="nc" id="L529">    }</span>
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, int[] heights, Condition condition) {
-<span class="nc bnc" id="L510" title="All 2 branches missed.">        if (!(condition instanceof Condition.ConditionVal))</span>
-<span class="nc" id="L511">            throw new NotImplementedException(&quot;No support for variable capacities&quot;);</span>
-<span class="nc" id="L512">        int cap = (int) ((Condition.ConditionVal) condition).k;</span>
-<span class="nc" id="L513">        md.add(new Cumulative($(origins), lengths, heights, cap));</span>
-<span class="nc" id="L514">    }</span>
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        if (!(condition instanceof Condition.ConditionVal))</span>
+<span class="nc" id="L534">            throw new NotImplementedException(&quot;No support for variable capacities&quot;);</span>
+<span class="nc" id="L535">        int cap = (int) ((Condition.ConditionVal) condition).k;</span>
+<span class="nc" id="L536">        md.add(new Cumulative($(origins), lengths, heights, cap));</span>
+<span class="nc" id="L537">    }</span>
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
-<span class="nc" id="L518">        IntExpression[] $origins = $(origins);</span>
-<span class="nc" id="L519">        IntExpression[] $ends = $(ends);</span>
-<span class="nc bnc" id="L520" title="All 2 branches missed.">        for (int i = 0; i &lt; origins.length; i++)</span>
-<span class="nc" id="L521">            md.add(Factory.eq(Factory.plus($origins[i], lengths[i]), $ends[i]));</span>
-<span class="nc" id="L522">        buildCtrCumulative(id, origins, lengths, heights, condition);</span>
-<span class="nc" id="L523">    }</span>
+<span class="nc" id="L541">        IntExpression[] $origins = $(origins);</span>
+<span class="nc" id="L542">        IntExpression[] $ends = $(ends);</span>
+<span class="nc bnc" id="L543" title="All 2 branches missed.">        for (int i = 0; i &lt; origins.length; i++)</span>
+<span class="nc" id="L544">            md.add(Factory.eq(Factory.plus($origins[i], lengths[i]), $ends[i]));</span>
+<span class="nc" id="L545">        buildCtrCumulative(id, origins, lengths, heights, condition);</span>
+<span class="nc" id="L546">    }</span>
 
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] origins, int[] lengths, boolean zeroIgnored) {
         //TODO check for zeroIgnored.
-<span class="nc" id="L529">        md.add(new Disjunctive($(origins), lengths));</span>
-<span class="nc" id="L530">    }</span>
+<span class="nc" id="L552">        md.add(new Disjunctive($(origins), lengths));</span>
+<span class="nc" id="L553">    }</span>
 
     @Override
     public void buildCtrCircuit(String id, XVariables.XVarInteger[] list, int startIndex) {
-<span class="nc bnc" id="L534" title="All 2 branches missed.">        if (startIndex != 0)</span>
-<span class="nc" id="L535">            throw new NotImplementedException(&quot;startIndex is not supported&quot;);</span>
-<span class="nc" id="L536">        md.add(new Circuit($(list)));</span>
-<span class="nc" id="L537">    }</span>
+<span class="nc bnc" id="L557" title="All 2 branches missed.">        if (startIndex != 0)</span>
+<span class="nc" id="L558">            throw new NotImplementedException(&quot;startIndex is not supported&quot;);</span>
+<span class="nc" id="L559">        md.add(new Circuit($(list)));</span>
+<span class="nc" id="L560">    }</span>
 
     @Override
     public void buildCtrCircuit(String id, XVariables.XVarInteger[] list, int startIndex, int size) {
-<span class="nc bnc" id="L541" title="All 2 branches missed.">        if (size != list.length)</span>
-<span class="nc" id="L542">            throw new NotImplementedException(&quot;subcircuits are not supported&quot;);</span>
-<span class="nc bnc" id="L543" title="All 2 branches missed.">        if (startIndex != 0)</span>
-<span class="nc" id="L544">            throw new NotImplementedException(&quot;startIndex is not supported&quot;);</span>
-<span class="nc" id="L545">        md.add(new Circuit($(list)));</span>
-<span class="nc" id="L546">    }</span>
+<span class="nc bnc" id="L564" title="All 2 branches missed.">        if (size != list.length)</span>
+<span class="nc" id="L565">            throw new NotImplementedException(&quot;subcircuits are not supported&quot;);</span>
+<span class="nc bnc" id="L566" title="All 2 branches missed.">        if (startIndex != 0)</span>
+<span class="nc" id="L567">            throw new NotImplementedException(&quot;startIndex is not supported&quot;);</span>
+<span class="nc" id="L568">        md.add(new Circuit($(list)));</span>
+<span class="nc" id="L569">    }</span>
 
     private IntExpression getExprForTypeObjective(Types.TypeObjective objtype, IntExpression[] list) {
-<span class="nc bnc" id="L549" title="All 4 branches missed.">        return switch (objtype) {</span>
-<span class="nc" id="L550">            case MAXIMUM -&gt; new Max(list);</span>
-<span class="nc" id="L551">            case MINIMUM -&gt; new Min(list);</span>
-<span class="nc" id="L552">            case SUM -&gt; new Sum(list);</span>
-<span class="nc" id="L553">            default -&gt; throw new NotImplementedException(&quot;Unsupported objective type %s&quot;.formatted(objtype));</span>
+<span class="nc bnc" id="L572" title="All 4 branches missed.">        return switch (objtype) {</span>
+<span class="nc" id="L573">            case MAXIMUM -&gt; new Max(list);</span>
+<span class="nc" id="L574">            case MINIMUM -&gt; new Min(list);</span>
+<span class="nc" id="L575">            case SUM -&gt; new Sum(list);</span>
+<span class="nc" id="L576">            default -&gt; throw new NotImplementedException(&quot;Unsupported objective type %s&quot;.formatted(objtype));</span>
         };
     }
 
     private IntExpression getExprForTypeObjective(Types.TypeObjective objtype, IntExpression[] list, int[] coefs) {
-<span class="nc" id="L558">        IntExpression[] listWithCoef = IntStream.range(0, list.length).mapToObj(i -&gt; Factory.mul(list[i], coefs[i])).toArray(IntExpression[]::new);</span>
-<span class="nc bnc" id="L559" title="All 4 branches missed.">        return switch (objtype) {</span>
-<span class="nc" id="L560">            case MAXIMUM -&gt; new Max(listWithCoef);</span>
-<span class="nc" id="L561">            case MINIMUM -&gt; new Min(listWithCoef);</span>
-<span class="nc" id="L562">            case SUM -&gt; new Sum(listWithCoef);</span>
-<span class="nc" id="L563">            default -&gt; throw new NotImplementedException(&quot;Unsupported objective type %s&quot;.formatted(objtype));</span>
+<span class="nc" id="L581">        IntExpression[] listWithCoef = IntStream.range(0, list.length).mapToObj(i -&gt; Factory.mul(list[i], coefs[i])).toArray(IntExpression[]::new);</span>
+<span class="nc bnc" id="L582" title="All 4 branches missed.">        return switch (objtype) {</span>
+<span class="nc" id="L583">            case MAXIMUM -&gt; new Max(listWithCoef);</span>
+<span class="nc" id="L584">            case MINIMUM -&gt; new Min(listWithCoef);</span>
+<span class="nc" id="L585">            case SUM -&gt; new Sum(listWithCoef);</span>
+<span class="nc" id="L586">            default -&gt; throw new NotImplementedException(&quot;Unsupported objective type %s&quot;.formatted(objtype));</span>
         };
     }
 
     @Override
     public void buildObjToMinimize(String id, XVariables.XVarInteger x) {
-<span class="nc" id="L569">        md.minimize($(x));</span>
-<span class="nc" id="L570">    }</span>
+<span class="nc" id="L592">        md.minimize($(x));</span>
+<span class="nc" id="L593">    }</span>
 
     @Override
     public void buildObjToMaximize(String id, XVariables.XVarInteger x) {
-<span class="nc" id="L574">        md.maximize($(x));</span>
-<span class="nc" id="L575">    }</span>
+<span class="nc" id="L597">        md.maximize($(x));</span>
+<span class="nc" id="L598">    }</span>
 
     @Override
     public void buildObjToMinimize(String id, XNodeParent&lt;XVariables.XVarInteger&gt; tree) {
-<span class="nc" id="L579">        md.minimize(_recursiveIntentionBuilder(tree));</span>
-<span class="nc" id="L580">    }</span>
+<span class="nc" id="L602">        md.minimize(_recursiveIntentionBuilder(tree));</span>
+<span class="nc" id="L603">    }</span>
 
     @Override
     public void buildObjToMaximize(String id, XNodeParent&lt;XVariables.XVarInteger&gt; tree) {
-<span class="nc" id="L584">        md.maximize(_recursiveIntentionBuilder(tree));</span>
-<span class="nc" id="L585">    }</span>
+<span class="nc" id="L607">        md.maximize(_recursiveIntentionBuilder(tree));</span>
+<span class="nc" id="L608">    }</span>
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list) {
-<span class="nc" id="L589">        md.minimize(getExprForTypeObjective(type, $(list)));</span>
-<span class="nc" id="L590">    }</span>
+<span class="nc" id="L612">        md.minimize(getExprForTypeObjective(type, $(list)));</span>
+<span class="nc" id="L613">    }</span>
 
     @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list) {
-<span class="nc" id="L594">        md.maximize(getExprForTypeObjective(type, $(list)));</span>
-<span class="nc" id="L595">    }</span>
+<span class="nc" id="L617">        md.maximize(getExprForTypeObjective(type, $(list)));</span>
+<span class="nc" id="L618">    }</span>
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list, int[] coeffs) {
-<span class="nc" id="L599">        md.minimize(getExprForTypeObjective(type, $(list), coeffs));</span>
-<span class="nc" id="L600">    }</span>
-
-    @Override
-    public void buildObjToMaximize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list, int[] coeffs) {
-<span class="nc" id="L604">        md.maximize(getExprForTypeObjective(type, $(list), coeffs));</span>
-<span class="nc" id="L605">    }</span>
-
-    @Override
-    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees) {
-<span class="nc" id="L609">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
-<span class="nc" id="L610">        md.minimize(getExprForTypeObjective(type, list));</span>
-<span class="nc" id="L611">    }</span>
-
-    @Override
-    public void buildObjToMaximize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees) {
-<span class="nc" id="L615">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
-<span class="nc" id="L616">        md.maximize(getExprForTypeObjective(type, list));</span>
-<span class="nc" id="L617">    }</span>
-
-    @Override
-    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees, int[] coeffs) {
-<span class="nc" id="L621">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
-<span class="nc" id="L622">        md.minimize(getExprForTypeObjective(type, list, coeffs));</span>
+<span class="nc" id="L622">        md.minimize(getExprForTypeObjective(type, $(list), coeffs));</span>
 <span class="nc" id="L623">    }</span>
 
     @Override
+    public void buildObjToMaximize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list, int[] coeffs) {
+<span class="nc" id="L627">        md.maximize(getExprForTypeObjective(type, $(list), coeffs));</span>
+<span class="nc" id="L628">    }</span>
+
+    @Override
+    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees) {
+<span class="nc" id="L632">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L633">        md.minimize(getExprForTypeObjective(type, list));</span>
+<span class="nc" id="L634">    }</span>
+
+    @Override
+    public void buildObjToMaximize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees) {
+<span class="nc" id="L638">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L639">        md.maximize(getExprForTypeObjective(type, list));</span>
+<span class="nc" id="L640">    }</span>
+
+    @Override
+    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees, int[] coeffs) {
+<span class="nc" id="L644">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L645">        md.minimize(getExprForTypeObjective(type, list, coeffs));</span>
+<span class="nc" id="L646">    }</span>
+
+    @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XNode&lt;XVariables.XVarInteger&gt;[] trees, int[] coeffs) {
-<span class="nc" id="L627">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
-<span class="nc" id="L628">        md.maximize(getExprForTypeObjective(type, list, coeffs));</span>
-<span class="nc" id="L629">    }</span>
+<span class="nc" id="L650">        IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L651">        md.maximize(getExprForTypeObjective(type, list, coeffs));</span>
+<span class="nc" id="L652">    }</span>
 
 
     private IntExpression[] $(XVariables.XVarInteger[] list) {
-<span class="nc" id="L633">        return Arrays.stream(list).map(this::$).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L656">        return Arrays.stream(list).map(this::$).toArray(IntExpression[]::new);</span>
     }
 
     private IntExpression $(XVariables.XVarInteger v) {
-<span class="nc" id="L637">        return varHashMap.get(v.id());</span>
+<span class="nc" id="L660">        return varHashMap.get(v.id());</span>
     }
 
     private IntExpression[] $(IVar[] list) {
-<span class="nc" id="L641">        return Arrays.stream(list).map(this::$).toArray(IntExpression[]::new);</span>
+<span class="nc" id="L664">        return Arrays.stream(list).map(this::$).toArray(IntExpression[]::new);</span>
     }
 
     private IntExpression $(IVar v) {
-<span class="nc" id="L645">        return varHashMap.get(v.id());</span>
+<span class="nc" id="L668">        return varHashMap.get(v.id());</span>
     }
 
     private void addToDV(XVariables.XVarInteger... v) {
-<span class="nc bnc" id="L649" title="All 2 branches missed.">        for (XVariables.XVarInteger e : v)</span>
-<span class="nc" id="L650">            decisionVars.add(e.id());</span>
-<span class="nc" id="L651">    }</span>
+<span class="nc bnc" id="L672" title="All 2 branches missed.">        for (XVariables.XVarInteger e : v)</span>
+<span class="nc" id="L673">            decisionVars.add(e.id());</span>
+<span class="nc" id="L674">    }</span>
 
 
     /*
@@ -657,199 +680,199 @@ import static org.maxicp.search.Searches.branch;
 
 
     public void buildCtrLex(String id, XVariables.XVarInteger[][] lists, Types.TypeOperatorRel operator) {
-<span class="nc" id="L660">        throw new NotImplementedException();</span>
+<span class="nc" id="L683">        throw new NotImplementedException();</span>
     }
 
     public void buildCtrNotAllEqual(String id, XVariables.XVarInteger[] list) {
-<span class="nc" id="L664">        throw new NotImplementedException();</span>
+<span class="nc" id="L687">        throw new NotImplementedException();</span>
     }
 
     public void buildCtrAllEqual(String id, XVariables.XVarInteger[] list) {
-<span class="nc" id="L668">        throw new NotImplementedException();</span>
+<span class="nc" id="L691">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, XVariables.XVarInteger[] occurs) {
-<span class="nc" id="L673">        throw new NotImplementedException();</span>
+<span class="nc" id="L696">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, int[] occurs) {
-<span class="nc" id="L678">        throw new NotImplementedException();</span>
+<span class="nc" id="L701">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, int[] occursMin, int[] occursMax) {
-<span class="nc" id="L683">        throw new NotImplementedException();</span>
+<span class="nc" id="L706">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, XVariables.XVarInteger[] occurs) {
-<span class="nc" id="L688">        throw new NotImplementedException();</span>
+<span class="nc" id="L711">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occurs) {
-<span class="nc" id="L693">        throw new NotImplementedException();</span>
+<span class="nc" id="L716">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occursMin, int[] occursMax) {
-<span class="nc" id="L698">        throw new NotImplementedException();</span>
+<span class="nc" id="L721">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrSum(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] coeffs, Condition condition) {
         //var*var
-<span class="nc" id="L704">        throw new NotImplementedException();</span>
+<span class="nc" id="L727">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrRegular(String id, XVariables.XVarInteger[] list, Transition[] transitions, String startState, String[] finalStates) {
-<span class="nc" id="L709">        throw new NotImplementedException();</span>
+<span class="nc" id="L732">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrMDD(String id, XVariables.XVarInteger[] list, Transition[] transitions) {
-<span class="nc" id="L714">        throw new NotImplementedException();</span>
+<span class="nc" id="L737">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
         //no support for variable heights
-<span class="nc" id="L720">        throw new NotImplementedException();</span>
+<span class="nc" id="L743">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, int[] heights, Condition condition) {
         //no support for variable lengths
-<span class="nc" id="L726">        throw new NotImplementedException();</span>
+<span class="nc" id="L749">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
         //no support for variable lengths and heights
-<span class="nc" id="L732">        throw new NotImplementedException();</span>
+<span class="nc" id="L755">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
         //no support for variable heights
-<span class="nc" id="L738">        throw new NotImplementedException();</span>
+<span class="nc" id="L761">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
         //no support for variable lengths
-<span class="nc" id="L744">        throw new NotImplementedException();</span>
+<span class="nc" id="L767">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
         //no support for variable lengths and heights
-<span class="nc" id="L750">        throw new NotImplementedException();</span>
+<span class="nc" id="L773">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCount(String id, XVariables.XVarInteger[] list, int[] values, Condition condition) {
-<span class="nc" id="L755">        throw new NotImplementedException();</span>
+<span class="nc" id="L778">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCount(String id, XNode&lt;XVariables.XVarInteger&gt;[] trees, int[] values, Condition condition) {
-<span class="nc" id="L760">        throw new NotImplementedException();</span>
+<span class="nc" id="L783">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrCount(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] values, Condition condition) {
-<span class="nc" id="L765">        throw new NotImplementedException();</span>
+<span class="nc" id="L788">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrAtLeast(String id, XVariables.XVarInteger[] list, int value, int k) {
-<span class="nc" id="L770">        throw new NotImplementedException();</span>
+<span class="nc" id="L793">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrAtMost(String id, XVariables.XVarInteger[] list, int value, int k) {
-<span class="nc" id="L775">        throw new NotImplementedException();</span>
+<span class="nc" id="L798">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrExactly(String id, XVariables.XVarInteger[] list, int value, int k) {
-<span class="nc" id="L780">        throw new NotImplementedException();</span>
+<span class="nc" id="L803">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrExactly(String id, XVariables.XVarInteger[] list, int value, XVariables.XVarInteger k) {
-<span class="nc" id="L785">        throw new NotImplementedException();</span>
+<span class="nc" id="L808">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrAmong(String id, XVariables.XVarInteger[] list, int[] values, int k) {
-<span class="nc" id="L790">        throw new NotImplementedException();</span>
+<span class="nc" id="L813">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrAmong(String id, XVariables.XVarInteger[] list, int[] values, XVariables.XVarInteger k) {
-<span class="nc" id="L795">        throw new NotImplementedException();</span>
+<span class="nc" id="L818">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNValues(String id, XVariables.XVarInteger[] list, Condition condition) {
-<span class="nc" id="L800">        throw new NotImplementedException();</span>
+<span class="nc" id="L823">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNValuesExcept(String id, XVariables.XVarInteger[] list, int[] except, Condition condition) {
-<span class="nc" id="L805">        throw new NotImplementedException();</span>
+<span class="nc" id="L828">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNValues(String id, XNode&lt;XVariables.XVarInteger&gt;[] trees, Condition condition) {
-<span class="nc" id="L810">        throw new NotImplementedException();</span>
+<span class="nc" id="L833">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, boolean zeroIgnored) {
         //no support for variable lengths
-<span class="nc" id="L816">        throw new NotImplementedException();</span>
+<span class="nc" id="L839">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, XVariables.XVarInteger[][] lengths, boolean zeroIgnored) {
         //no support for variable lengths
-<span class="nc" id="L822">        throw new NotImplementedException();</span>
+<span class="nc" id="L845">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, int[][] lengths, boolean zeroIgnored) {
-<span class="nc" id="L827">        throw new NotImplementedException();</span>
+<span class="nc" id="L850">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrChannel(String id, XVariables.XVarInteger[] list, int startIndex) {
-<span class="nc" id="L832">        throw new NotImplementedException();</span>
+<span class="nc" id="L855">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrChannel(String id, XVariables.XVarInteger[] list1, int startIndex1, XVariables.XVarInteger[] list2, int startIndex2) {
-<span class="nc" id="L837">        throw new NotImplementedException();</span>
+<span class="nc" id="L860">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrChannel(String id, XVariables.XVarInteger[] list, int startIndex, XVariables.XVarInteger value) {
-<span class="nc" id="L842">        throw new NotImplementedException();</span>
+<span class="nc" id="L865">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin, int[] widthsMax) {
-<span class="nc" id="L847">        throw new NotImplementedException();</span>
+<span class="nc" id="L870">        throw new NotImplementedException();</span>
     }
 
     @Override
     public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin, int[] widthsMax, int[][] patterns) {
-<span class="nc" id="L852">        throw new NotImplementedException();</span>
+<span class="nc" id="L875">        throw new NotImplementedException();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
