@@ -1,0 +1,89 @@
+<instance format="XCSP3" type="COP">
+  <variables>
+    <array id="x" note="x[i] is 1 iff time i is drinking time" size="[50]"> 0 1 </array>
+    <array id="y" note="y[i] is the  number of drinking times the 8 last minutes before time i" size="[50]"> 0..8 </array>
+  </variables>
+  <constraints>
+    <block note="computing the number of drinking times every 8 minutes">
+      <intension> eq(y[1],x[0]) </intension>
+      <group>
+        <sum>
+          <list> %... </list>
+          <condition> (eq,%0) </condition>
+        </sum>
+        <args> y[2] x[0] x[1] </args>
+        <args> y[3] x[0..2] </args>
+        <args> y[4] x[0..3] </args>
+        <args> y[5] x[0..4] </args>
+        <args> y[6] x[0..5] </args>
+        <args> y[7] x[0..6] </args>
+        <args> y[8] x[0..7] </args>
+        <args> y[9] x[1..8] </args>
+        <args> y[10] x[2..9] </args>
+        <args> y[11] x[3..10] </args>
+        <args> y[12] x[4..11] </args>
+        <args> y[13] x[5..12] </args>
+        <args> y[14] x[6..13] </args>
+        <args> y[15] x[7..14] </args>
+        <args> y[16] x[8..15] </args>
+        <args> y[17] x[9..16] </args>
+        <args> y[18] x[10..17] </args>
+        <args> y[19] x[11..18] </args>
+        <args> y[20] x[12..19] </args>
+        <args> y[21] x[13..20] </args>
+        <args> y[22] x[14..21] </args>
+        <args> y[23] x[15..22] </args>
+        <args> y[24] x[16..23] </args>
+        <args> y[25] x[17..24] </args>
+        <args> y[26] x[18..25] </args>
+        <args> y[27] x[19..26] </args>
+        <args> y[28] x[20..27] </args>
+        <args> y[29] x[21..28] </args>
+        <args> y[30] x[22..29] </args>
+        <args> y[31] x[23..30] </args>
+        <args> y[32] x[24..31] </args>
+        <args> y[33] x[25..32] </args>
+        <args> y[34] x[26..33] </args>
+        <args> y[35] x[27..34] </args>
+        <args> y[36] x[28..35] </args>
+        <args> y[37] x[29..36] </args>
+        <args> y[38] x[30..37] </args>
+        <args> y[39] x[31..38] </args>
+        <args> y[40] x[32..39] </args>
+        <args> y[41] x[33..40] </args>
+        <args> y[42] x[34..41] </args>
+        <args> y[43] x[35..42] </args>
+        <args> y[44] x[36..43] </args>
+        <args> y[45] x[37..44] </args>
+        <args> y[46] x[38..45] </args>
+        <args> y[47] x[39..46] </args>
+        <args> y[48] x[40..47] </args>
+        <args> y[49] x[41..48] </args>
+      </group>
+    </block>
+    <group note="must drink when the time is divisible with 5 or 7 and there was no drinking the last 8 minutes">
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,1)(1,0)(2,0)(3,0)(4,0)(5,0)(6,0)(7,0)(8,0) </supports>
+      </extension>
+      <args> y[5] x[5] </args>
+      <args> y[7] x[7] </args>
+      <args> y[10] x[10] </args>
+      <args> y[14] x[14] </args>
+      <args> y[15] x[15] </args>
+      <args> y[20] x[20] </args>
+      <args> y[21] x[21] </args>
+      <args> y[25] x[25] </args>
+      <args> y[28] x[28] </args>
+      <args> y[30] x[30] </args>
+      <args> y[35] x[35] </args>
+      <args> y[40] x[40] </args>
+      <args> y[42] x[42] </args>
+      <args> y[45] x[45] </args>
+      <args> y[49] x[49] </args>
+    </group>
+  </constraints>
+  <objectives>
+    <minimize type="sum"> x[] </minimize>
+  </objectives>
+</instance>

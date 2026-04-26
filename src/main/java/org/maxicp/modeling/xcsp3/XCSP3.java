@@ -7,6 +7,7 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.bool.*;
 import org.maxicp.modeling.algebra.integer.*;
 import org.maxicp.modeling.constraints.*;
+import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.FDSModeling;
 import org.maxicp.search.SearchStatistics;
@@ -33,13 +34,64 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
-import static org.maxicp.search.Searches.EMPTY;
-import static org.maxicp.search.Searches.branch;
+import static org.maxicp.search.Searches.*;
 
 public class XCSP3 extends XCallbacksDecomp {
 
 
     public static void main(String[] args) throws Exception {
+        cop();
+    }
+
+    // CSP
+    public static void cop() throws Exception {
+        //String path = "data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
+        //String path = "data/XCSP3/2024_V3/MiniCOP/Charlotte-mini-06-0_c24.xml"; // hard to optimize
+        // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-brock200-2_c24.xml"; // hard to optimize
+        // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-c0125-9_c24.xml"; // hard to optimize
+        // String path = "data/XCSP3/2024_V3/MiniCOP/Drinking-mini-000050_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/FoolSolitaire-table-0-2_c24.xml"; // hard to optimize
+        // String path = "data/XCSP3/2024_V3/MiniCOP/GolombRuler-a3v18-07_c18.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/LitPuzzle-10_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/MaximumDensityOscillatingLife-mini-5-2_c24.xml"; // OK
+        String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
+        //String path = "data/XCSP3/2024_V3/MiniCOP/RotationPuzzle-2_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/SameQueensKnights-mini-05_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/StillLife-05-05_c24.xml"; // OK
+        //String path = "data/XCSP3/2024_V3/MiniCOP/WordGolf-mini-4-ogd2008-50-0_c24.xml"; // hard to find an feasible solution
+
+
+        try (XCSP3LoadedInstance instance = load(path)) {
+            IntExpression[] q = instance.decisionVars();
+            instance.md().runCP((cp) -> {
+                DFSearch search = cp.dfSearch(new FDSModeling(q));
+                //DFSearch search = cp.dfSearch(firstFailBinary(q));
+
+                search.onSolution(() -> {
+                    String sol = instance.solutionGenerator().get();
+                    try {
+                        SolutionChecker sc =
+                                new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));
+                        assertEquals(0, sc.invalidObjs.size());
+                        assertEquals(0, sc.violatedCtrs.size());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                System.out.printf("objective function ?"+ instance.objective() != null ? "yes (%s)".formatted(instance.objective()) : "no");
+
+                SearchStatistics stats = instance.objective() != null
+                        ? search.optimize(instance.objective())
+                        : search.solve(s -> s.numberOfSolutions() > 0);
+                System.out.println(stats);
+            });
+        }
+    }
+
+
+    // CSP
+    public static void csp() throws Exception {
         //String path = "data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml"; // hard
         // String path = "data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml"; // hard
         String path = "data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml";
@@ -78,15 +130,12 @@ public class XCSP3 extends XCallbacksDecomp {
             System.out.println(stats);
             //System.out.println("Total number of solutions: " + search.solve().numberOfSolutions());
         });
-
-
-
-
     }
 
 
     public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,
-                                      Supplier<String> solutionGenerator) implements AutoCloseable {
+                                      Supplier<String> solutionGenerator,
+                                      Objective objective) implements AutoCloseable {
         @Override
         public void close() throws Exception {
             md.close();
@@ -118,12 +167,18 @@ public class XCSP3 extends XCallbacksDecomp {
             return b.toString();
         };
 
-        return new XCSP3LoadedInstance(xcsp3.md, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new), solutionGenerator);
+        return new XCSP3LoadedInstance(
+                xcsp3.md,
+                xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new),
+                solutionGenerator,
+                xcsp3.objective
+        );
     }
 
     private final LinkedHashMap<String, IntExpression> varHashMap;
     private final LinkedHashSet<String> decisionVars;
     private final ModelDispatcher md;
+    private Objective objective;
 
     private final XCallbacks.Implem impl;
 
@@ -131,6 +186,7 @@ public class XCSP3 extends XCallbacksDecomp {
         varHashMap = new LinkedHashMap<>();
         decisionVars = new LinkedHashSet<>();
         md = Factory.makeModelDispatcher();
+        objective = null;
 
         impl = new XCallbacks.Implem(this);
         impl.currParameters.put(XCallbacksParameters.RECOGNIZE_UNARY_PRIMITIVES, new Object());
@@ -368,8 +424,10 @@ public class XCSP3 extends XCallbacksDecomp {
                     throw new NotYetImplementedException("No support for EQ with more than 2 elements yet");
                 yield new Eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             }
-            case ADD -> new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
-            case MUL -> new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
+            case ADD ->
+                    new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
+            case MUL ->
+                    new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
             case LT -> Factory.lt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case LE -> Factory.le(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case GT -> Factory.gt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
@@ -589,66 +647,66 @@ public class XCSP3 extends XCallbacksDecomp {
 
     @Override
     public void buildObjToMinimize(String id, XVariables.XVarInteger x) {
-        md.minimize($(x));
+        objective = md.minimize($(x));
     }
 
     @Override
     public void buildObjToMaximize(String id, XVariables.XVarInteger x) {
-        md.maximize($(x));
+        objective = md.maximize($(x));
     }
 
     @Override
     public void buildObjToMinimize(String id, XNodeParent<XVariables.XVarInteger> tree) {
-        md.minimize(_recursiveIntentionBuilder(tree));
+        objective = md.minimize(_recursiveIntentionBuilder(tree));
     }
 
     @Override
     public void buildObjToMaximize(String id, XNodeParent<XVariables.XVarInteger> tree) {
-        md.maximize(_recursiveIntentionBuilder(tree));
+        objective = md.maximize(_recursiveIntentionBuilder(tree));
     }
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list) {
-        md.minimize(getExprForTypeObjective(type, $(list)));
+        objective = md.minimize(getExprForTypeObjective(type, $(list)));
     }
 
     @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list) {
-        md.maximize(getExprForTypeObjective(type, $(list)));
+        objective = md.maximize(getExprForTypeObjective(type, $(list)));
     }
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list, int[] coeffs) {
-        md.minimize(getExprForTypeObjective(type, $(list), coeffs));
+        objective = md.minimize(getExprForTypeObjective(type, $(list), coeffs));
     }
 
     @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XVariables.XVarInteger[] list, int[] coeffs) {
-        md.maximize(getExprForTypeObjective(type, $(list), coeffs));
+        objective = md.maximize(getExprForTypeObjective(type, $(list), coeffs));
     }
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
-        md.minimize(getExprForTypeObjective(type, list));
+        objective = md.minimize(getExprForTypeObjective(type, list));
     }
 
     @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
-        md.maximize(getExprForTypeObjective(type, list));
+        objective = md.maximize(getExprForTypeObjective(type, list));
     }
 
     @Override
     public void buildObjToMinimize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees, int[] coeffs) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
-        md.minimize(getExprForTypeObjective(type, list, coeffs));
+        objective = md.minimize(getExprForTypeObjective(type, list, coeffs));
     }
 
     @Override
     public void buildObjToMaximize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees, int[] coeffs) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
-        md.maximize(getExprForTypeObjective(type, list, coeffs));
+        objective = md.maximize(getExprForTypeObjective(type, list, coeffs));
     }
 
 
