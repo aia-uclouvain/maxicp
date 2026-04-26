@@ -1,5 +1,6 @@
 package org.maxicp.modeling.xcsp3;
 
+import org.junit.Assume;
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
@@ -20,19 +21,70 @@ import org.xcsp.common.predicates.XNode;
 import org.xcsp.common.predicates.XNodeLeaf;
 import org.xcsp.common.predicates.XNodeParent;
 import org.xcsp.common.structures.Transition;
+import org.xcsp.parser.callbacks.SolutionChecker;
 import org.xcsp.parser.callbacks.XCallbacks;
 import org.xcsp.parser.entries.XVariables;
 
+import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.junit.Assert.assertEquals;
 import static org.maxicp.search.Searches.EMPTY;
 import static org.maxicp.search.Searches.branch;
 
 public class XCSP3 extends XCallbacksDecomp {
+
+
+    public static void main(String[] args) throws Exception {
+        //String path = "data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml"; // hard
+        // String path = "data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml"; // hard
+        String path = "data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml";
+        //String path = "data/XCSP3/2024_V3/MiniCSP/FRB-30-15-1_c18.xml";
+        //String path = "data/XCSP3/2024_V3/MiniCSP/HyperSudoku-mini-03_c24.xml";
+        // String path = "data/XCSP3/2024_V3/MiniCSP/MisteryShopper-mini-4-06-0-6-0_c24.xml";
+        // String path = "data/XCSP3/2024_V3/MiniCSP/Pentominoes-03-20_c24.xml"; // hard
+        //String path = "data/XCSP3/2024_V3/MiniCSP/PoolBallTriangle-05_c24.xml";
+        // String path = "data/XCSP3/2024_V3/MiniCSP/Rlfap-ext-scen-11-f03_c18.xml"; // hard
+        // String path = "data/XCSP3/2024_V3/MiniCSP/SolitairePattern-table-3-3-0.xml"; // hard
+        //String path = "data/XCSP3/2024_V3/MiniCSP/Subisomorphism-g08-g43_c24.xml"; // hard
+        // String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
+        //String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
+
+        XCSP3LoadedInstance instance = load(path);
+
+        IntExpression[] q = instance.decisionVars();
+
+        instance.md().runCP((cp) -> {
+            DFSearch search = cp.dfSearch(new FDSModeling(q));
+
+            search.onSolution(() -> {
+                String sol = instance.solutionGenerator().get();
+                try {
+                    SolutionChecker sc =
+                            new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));
+                    assertEquals(0, sc.invalidObjs.size());
+                    assertEquals(0, sc.violatedCtrs.size());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                //System.out.println(sol);
+            });
+
+            SearchStatistics stats = search.solve(s -> s.numberOfSolutions() > 0);
+            System.out.println(stats);
+            //System.out.println("Total number of solutions: " + search.solve().numberOfSolutions());
+        });
+
+
+
+
+    }
+
+
     public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,
                                       Supplier<String> solutionGenerator) implements AutoCloseable {
         @Override
@@ -67,35 +119,6 @@ public class XCSP3 extends XCallbacksDecomp {
         };
 
         return new XCSP3LoadedInstance(xcsp3.md, xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new), solutionGenerator);
-    }
-
-    public static void main(String[] args) throws Exception {
-        //XCSP3LoadedInstance instance = load("data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml");
-        //String path = "data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/FRB-30-15-1_c18.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/HyperSudoku-mini-03_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/MisteryShopper-mini-4-06-0-6-0_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Pentominoes-03-20_c24.xml"; // hard
-        //String path = "data/XCSP3/2024_V3/MiniCSP/PoolBallTriangle-05_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Rlfap-ext-scen-11-f03_c18.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/SolitairePattern-table-3-3-0.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Subisomorphism-g08-g43_c24.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
-        String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
-
-        XCSP3LoadedInstance instance = load(path);
-
-        IntExpression[] q = instance.decisionVars();
-
-
-        instance.md().runCP((cp) -> {
-            DFSearch search = cp.dfSearch(new FDSModeling(q));
-            SearchStatistics stats = search.solve(s -> s.numberOfSolutions() > 0);
-            System.out.println(stats);
-            //System.out.println("Total number of solutions: " + search.solve().numberOfSolutions());
-        });
     }
 
     private final LinkedHashMap<String, IntExpression> varHashMap;
