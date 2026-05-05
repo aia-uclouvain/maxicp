@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Span.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">Span.java</span></div><h1>Span.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.Constants;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+/**
+ * Span Constraint:
+ * Enforces that if the interval span is present, then it begins with the first interval intervals from the array alt and ends with the latest.
+ * If span is absent, then all the intervals of alt must be absent.
+ *
+ * @author Augustin Delecluse
+ */
+public class Span extends AbstractCPConstraint {
+
+    private final CPIntervalVar span;
+    private final CPIntervalVar[] alts;
+
+    public Span(CPIntervalVar span, CPIntervalVar[] alts) {
+<span class="fc" id="L25">        super(span.getSolver());</span>
+<span class="fc" id="L26">        this.span = span;</span>
+<span class="fc" id="L27">        this.alts = alts;</span>
+<span class="fc" id="L28">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L32">        span.propagateOnChange(this);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);</span>
+<span class="fc" id="L34">        propagate();</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (span.isAbsent()) {</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
+<span class="fc" id="L41">                alt.setAbsent();</span>
+            }
+<span class="fc" id="L43">            setActive(false);</span>
+        } else {
+            // new bounds for span
+<span class="fc" id="L46">            int startMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L47">            int startMaxAlts = 0;</span>
+<span class="fc" id="L48">            int endMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L49">            int endMaxAlts = 0;</span>
+            // count of absence / optional, and tracking of one optional interval
+<span class="fc" id="L51">            int nAbsent = 0;</span>
+<span class="fc" id="L52">            int nOptional = 0;</span>
+<span class="fc" id="L53">            int nPresent = 0;</span>
+<span class="fc" id="L54">            CPIntervalVar onlyOptional = null;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                if (alt.isAbsent()) {</span>
+<span class="fc" id="L57">                    nAbsent++;</span>
+                } else {
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                    if (alt.isPresent()) {</span>
+<span class="fc" id="L60">                        span.setPresent();</span>
+<span class="fc" id="L61">                        nPresent++;</span>
+                    } else {
+<span class="fc" id="L63">                        nOptional++;</span>
+<span class="fc" id="L64">                        onlyOptional = alt;</span>
+                    }
+                    // interval cannot begin before / end after the span
+<span class="fc" id="L67">                    alt.setStartMin(span.startMin());</span>
+<span class="fc" id="L68">                    alt.setEndMax(span.endMax());</span>
+                    // update candidate for start / end of the span
+<span class="fc" id="L70">                    startMinAlts = Math.min(startMinAlts, alt.startMin());</span>
+<span class="fc" id="L71">                    startMaxAlts = Math.max(startMaxAlts, alt.startMax());</span>
+<span class="fc" id="L72">                    endMinAlts = Math.min(endMinAlts, alt.endMin());</span>
+<span class="fc" id="L73">                    endMaxAlts = Math.max(endMaxAlts, alt.endMax());</span>
+                }
+            }
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (nAbsent == alts.length) {</span>
+<span class="fc" id="L77">                span.setAbsent();</span>
+<span class="fc" id="L78">                setActive(false);</span>
+            } else {
+<span class="fc bfc" id="L80" title="All 6 branches covered.">                if (nOptional == 1 &amp;&amp; nPresent == 0 &amp;&amp; span.isPresent()) {</span>
+<span class="fc" id="L81">                    onlyOptional.setPresent();</span>
+                }
+                // shrink the time of span
+<span class="fc" id="L84">                span.setStartMin(startMinAlts);</span>
+<span class="fc" id="L85">                span.setStartMax(startMaxAlts);</span>
+<span class="fc" id="L86">                span.setEndMin(endMinAlts);</span>
+<span class="fc" id="L87">                span.setEndMax(endMaxAlts);</span>
+            }
+        }
+<span class="fc" id="L90">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

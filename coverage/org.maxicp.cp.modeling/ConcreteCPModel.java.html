@@ -604,7 +604,7 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L604">    }</span>
 
     private void instantiateConstraint(Constraint c) {
-<span class="pc bpc" id="L607" title="19 of 31 branches missed.">        switch (c) {</span>
+<span class="pc bpc" id="L607" title="20 of 32 branches missed.">        switch (c) {</span>
 <span class="fc" id="L608">            case AllDifferent a -&gt; {</span>
 <span class="fc" id="L609">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
 <span class="fc" id="L610">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
@@ -713,31 +713,34 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="nc" id="L713">                CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());</span>
 <span class="nc" id="L714">                solver.post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));</span>
 <span class="nc" id="L715">            }</span>
-<span class="fc" id="L716">            case CustomConstraint instantiableConstraint -&gt; {</span>
-<span class="fc" id="L717">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
-<span class="pc bpc" id="L718" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
-<span class="nc" id="L719">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot; + cpConstraint.getClass());</span>
-<span class="fc" id="L720">                solver.post(constraint);</span>
-<span class="fc" id="L721">            }</span>
-<span class="fc" id="L722">            case NoOpConstraint ignored -&gt; fixpoint();</span>
-<span class="nc" id="L723">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
+<span class="nc" id="L716">            case org.maxicp.modeling.constraints.scheduling.Span span -&gt; {</span>
+<span class="nc" id="L717">                solver.post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));</span>
+<span class="nc" id="L718">            }</span>
+<span class="fc" id="L719">            case CustomConstraint instantiableConstraint -&gt; {</span>
+<span class="fc" id="L720">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
+<span class="pc bpc" id="L721" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
+<span class="nc" id="L722">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot; + cpConstraint.getClass());</span>
+<span class="fc" id="L723">                solver.post(constraint);</span>
+<span class="fc" id="L724">            }</span>
+<span class="fc" id="L725">            case NoOpConstraint ignored -&gt; fixpoint();</span>
+<span class="nc" id="L726">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
         }
-<span class="fc" id="L725">    }</span>
+<span class="fc" id="L728">    }</span>
 
     @Override
     public org.maxicp.search.Objective createObjective(Objective obj) {
-<span class="pc bpc" id="L729" title="4 of 5 branches missed.">        return switch (obj) {</span>
-<span class="fc" id="L730">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
-<span class="nc" id="L731">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
-<span class="nc" id="L732">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L733">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L734">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
+<span class="pc bpc" id="L732" title="4 of 5 branches missed.">        return switch (obj) {</span>
+<span class="fc" id="L733">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
+<span class="nc" id="L734">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
+<span class="nc" id="L735">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L736">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L737">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
         };
     }
 
     @Override
     public StateManager getStateManager() {
-<span class="fc" id="L740">        return solver.getStateManager();</span>
+<span class="fc" id="L743">        return solver.getStateManager();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

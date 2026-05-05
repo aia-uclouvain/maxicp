@@ -54,6 +54,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IntervalVarLength,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartAtStart,0,90,3,9,0,18,3,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapBCLeftToRight.State,0,9,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapGlobal,44,596,9,61,7,103,8,35,1,7
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,Span,0,184,0,20,0,44,0,13,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapBCGlobal,30,380,6,36,6,61,6,21,0,6
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraintBaseLine.eventType,27,0,0,0,5,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CumulativeDecomposition,0,186,0,4,0,23,0,8,0,6
@@ -130,6 +131,7 @@ org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,Length,0,9,0,0,0,1,
 org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,Present,6,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,LessOrEqual,0,9,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,Start,0,9,0,0,0,1,0,1,0,1
+org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,Span,9,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,Alternative,12,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.scheduling,AlwaysIn,12,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.scheduling,StepAtStartCumulFunction,63,0,6,0,13,0,7,0,4,0
@@ -183,7 +185,7 @@ org.maxicp:maxicp,org.maxicp.modeling,Factory,393,275,3,1,53,41,54,40,52,40
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.cp,CPFactory,807,1046,26,34,155,185,82,100,64,88
+org.maxicp:maxicp,org.maxicp.cp,CPFactory,807,1052,26,34,155,186,82,101,64,89
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
@@ -197,7 +199,7 @@ org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},45,82
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},16,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.modeling,CPModelInstantiator,3,13,0,0,1,3,1,1,1,1
-org.maxicp:maxicp,org.maxicp.cp.modeling,ConcreteCPModel,1692,1307,118,106,230,258,137,96,30,36
+org.maxicp:maxicp,org.maxicp.cp.modeling,ConcreteCPModel,1708,1307,119,106,233,258,138,96,30,36
 org.maxicp:maxicp,org.maxicp.cp.modeling,CPModelInstantiator.Instantiator,0,25,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.modeling,ModelProxyInstantiatorWithCP,34,15,0,0,6,3,6,3,6,3
 org.maxicp:maxicp,org.maxicp.util.exception,InconsistencyException,0,10,0,0,0,3,0,3,0,3
@@ -322,7 +324,7 @@ org.maxicp:maxicp,org.maxicp.search,FDSModeling,132,902,25,95,19,153,25,57,2,20
 org.maxicp:maxicp,org.maxicp.search,FDSModeling.Choice,105,83,31,10,20,20,25,8,1,6
 org.maxicp:maxicp,org.maxicp.search,LimitedDiscrepancyBranching,5,66,1,5,0,17,1,5,0,3
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch,149,0,8,0,35,0,9,0,5,0
-org.maxicp:maxicp,org.maxicp.search,Searches,757,662,83,61,133,138,83,70,38,43
+org.maxicp:maxicp,org.maxicp.search,Searches,757,664,82,62,133,138,82,71,38,43
 org.maxicp:maxicp,org.maxicp.search,Rank.Ranker.new Record() {...},12,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod.IntRef,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,Sequencer,0,29,0,4,0,8,0,4,0,2
@@ -418,7 +420,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSetVarImpl,12,217,2,18,2,48,4,28,2
 org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,19,70,3,3,4,21,5,8,2,8
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MaxiCP,6,160,0,12,2,44,1,20,1,14
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MinimizeObjectiveSum,199,0,10,0,39,0,14,0,9,0
-org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntervalVarImpl,20,642,1,45,2,105,2,51,1,29
+org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntervalVarImpl,20,642,2,44,2,105,3,50,1,29
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarViewMul,109,198,9,19,21,42,15,25,8,18
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarConstant,16,68,0,10,8,27,8,20,8,15
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPBoolVarImpl,55,111,6,8,14,33,12,22,8,19

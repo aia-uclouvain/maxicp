@@ -754,7 +754,7 @@ public final class Searches {
 <span class="fc" id="L754">        return () -&gt; {</span>
 <span class="fc" id="L755">            IntervalVar notFixed = null;</span>
 <span class="fc bfc" id="L756" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
-<span class="pc bpc" id="L757" title="1 of 4 branches missed.">                if (!var.isFixed() &amp;&amp; var.isPresent()) {</span>
+<span class="fc bfc" id="L757" title="All 4 branches covered.">                if (var.isPresent() &amp;&amp; var.startMin() != var.startMax()) {</span>
 <span class="fc" id="L758">                    notFixed = var;</span>
 <span class="fc" id="L759">                    break;</span>
                 }
