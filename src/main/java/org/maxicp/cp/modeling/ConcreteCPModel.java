@@ -713,6 +713,9 @@ public class ConcreteCPModel implements ConcreteModel {
                 CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());
                 solver.post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));
             }
+            case org.maxicp.modeling.constraints.scheduling.Span span -> {
+                solver.post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));
+            }
             case CustomConstraint instantiableConstraint -> {
                 Object cpConstraint = instantiableConstraint.instantiate(this);
                 if (!(cpConstraint instanceof CPConstraint constraint))

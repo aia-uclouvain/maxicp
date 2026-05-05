@@ -754,7 +754,7 @@ public final class Searches {
         return () -> {
             IntervalVar notFixed = null;
             for (IntervalVar var : vars) {
-                if (!var.isFixed() && var.isPresent()) {
+                if (var.isPresent() && var.startMin() != var.startMax()) {
                     notFixed = var;
                     break;
                 }

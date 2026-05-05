@@ -1937,6 +1937,20 @@ public final class CPFactory {
         return alternative(interval, alternatives, 1);
     }
 
+    /**
+     * Returns a Span constraint:
+     * Enforces that if the interval variable interval is present, then it begins with the earliest intervals from the
+     * array alternatives and ends with the latest one.
+     * If the interval is not present, then all the intervals of alternatives are absent.
+     *
+     * @param interval     an interval variable
+     * @param alternatives an array of interval variables
+     * @return a {@link Span} constraint
+     */
+    public static CPConstraint span(CPIntervalVar interval, CPIntervalVar[] alternatives) {
+        return new Span(interval, alternatives);
+    }
+
     // ********************
     // Cumulative functions
     // ********************
