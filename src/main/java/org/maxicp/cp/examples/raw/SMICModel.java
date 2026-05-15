@@ -40,7 +40,8 @@ import static org.maxicp.modeling.Factory.start;
 public class SMICModel {
 
     public static void main(String[] args) throws Exception {
-        String filename = "data/SMIC/data10_1.txt";
+        //String filename = "data/SMIC/data10_1.txt";
+        String filename = "data/SMIC/debug.txt";
         if (args.length > 1) {
             filename = args[0];
         }
@@ -95,7 +96,7 @@ public class SMICModel {
 
         solution = new int[data.nbJob];
         // Search:
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.setTimes(intervals));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.fds(intervals));
 
         dfs.onSolution(() -> {
             System.out.println("solution found" + makespan.min());
