@@ -79,13 +79,6 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     /**
-     * Post to enforce that the variable is true
-     */
-    private void post(CPBoolVar b) {
-        solver.post(b);
-    }
-
-    /**
      * Calls the fixpoint if if is not disabled
      */
     private void fixpoint() {
@@ -565,7 +558,7 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case Not e -> {
                 CPBoolVar b = getCPVar(e.a());
-                post(CPFactory.not(b));
+                post(CPFactory.eq(b, 0));
             }
             case NotEq e -> post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));
             case LessOrEq e -> post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));
