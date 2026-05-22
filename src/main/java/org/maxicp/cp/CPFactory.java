@@ -629,12 +629,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x = v}
      */
     public static CPConstraint eq(CPIntVar x, int v) {
-        return new AbstractCPConstraint(x.getSolver()) {
-            @Override
-            public void post() {
-                x.fix(v);
-            }
-        };
+        return new EqualCst(x, v);
     }
 
 
@@ -693,12 +688,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x != y}
      */
     public static CPConstraint neq(CPIntVar x, int v) {
-        return new AbstractCPConstraint(x.getSolver()) {
-            @Override
-            public void post() {
-                x.remove(v);
-            }
-        };
+        return new NotEqualCst(x, v);
     }
 
     /**

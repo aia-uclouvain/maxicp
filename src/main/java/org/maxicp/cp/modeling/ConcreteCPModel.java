@@ -546,6 +546,10 @@ public class ConcreteCPModel implements ConcreteModel {
 
     private void instantiateBoolExpression(BoolExpression expr) {
         switch (expr) {
+            case Eq(Constant a, IntExpression b) -> post(new org.maxicp.cp.engine.constraints.EqualCst(getCPVar(b), a.v()));
+            case Eq(IntExpression a, Constant b) -> post(new org.maxicp.cp.engine.constraints.EqualCst(getCPVar(a), b.v()));
+            case NotEq(Constant a, IntExpression b) -> post(new org.maxicp.cp.engine.constraints.NotEqualCst(getCPVar(b), a.v()));
+            case NotEq(IntExpression a, Constant b) -> post(new org.maxicp.cp.engine.constraints.NotEqualCst(getCPVar(a), b.v()));
             case Eq e -> {
                 if (firstConstruction)
                     throw new RuntimeException("It should be impossible to post new Equal constraints while building");
