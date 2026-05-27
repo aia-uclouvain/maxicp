@@ -45,6 +45,7 @@ public class Restarter {
             nFailures += runStats.numberOfFailures();
             nNodes += runStats.numberOfNodes();
             nSolutions += runStats.numberOfSolutions();
+            timeInMillis += runStats.timeInMillis();
             completed = runStats.isCompleted();
             nRestarts++;
         }
@@ -53,7 +54,7 @@ public class Restarter {
     public Restarter(CPSolver solver, DFSearch search) {
         this.solver = solver;
         this.search = search;
-        this.shouldRestart = new LubyRestart(100); // by default, use Luby restarts with multiplier 100
+        this.shouldRestart = new LubyRestart(10000); // by default, use Luby restarts with multiplier 100
         this.shouldStop = stats -> false; // by default, never stop
     }
 
