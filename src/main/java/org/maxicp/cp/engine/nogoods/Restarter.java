@@ -6,7 +6,9 @@ import java.util.function.Predicate;
 
 import org.maxicp.cp.engine.constraints.EnforceNogood;
 import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 
 public class Restarter {
@@ -14,6 +16,8 @@ public class Restarter {
     protected DFSearch search;
     protected BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart;
     protected Predicate<RestartSearchStatistics> shouldStop;
+    protected Runnable tighten; // used to keep track of the objective tightening action, so that we can remove
+                                // it from the listeners when we're done optimizing
 
     public class RestartSearchStatistics extends SearchStatistics {
         public int nRestarts = 0;
@@ -53,6 +57,13 @@ public class Restarter {
         this.search = search;
         this.shouldRestart = new LubyRestart(100); // by default, use Luby restarts with multiplier 100
         this.shouldStop = stats -> false; // by default, never stop
+
+        this.tighten = null; // by default, no objective to optimize, so no tightening action to keep track
+                             // of
+        this.search.onSolution(() -> {
+            if (tighten != null)
+                tighten.run();
+        });
     }
 
     public void setRunLimit(BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart) {
@@ -61,6 +72,51 @@ public class Restarter {
 
     public void setRestartLimit(Predicate<RestartSearchStatistics> shouldStop) {
         this.shouldStop = shouldStop;
+    }
+
+    /**
+     * Returns a BiPredicate that implements the Luby restart strategy with the
+     * given base and multiplier.
+     * Based on the code from Charles Prud'homme, Arnaud Malapert, Hadrien Cambazard
+     * in the Choco-solver, in BSD-3 clause license.
+     */
+    public static class LubyRestart implements BiPredicate<RestartSearchStatistics, SearchStatistics> {
+        protected int scale;
+        protected int currentRun;
+        protected int externalCounter;
+        protected int curVal;
+        protected BiPredicate<RestartSearchStatistics, SearchStatistics> shouldStop;
+
+        public LubyRestart(int scale) {
+            this(scale, null);
+        }
+
+        public LubyRestart(int scale, BiPredicate<RestartSearchStatistics, SearchStatistics> shouldStop) {
+            this.scale = scale;
+            this.currentRun = 0;
+            this.curVal = 1;
+            this.externalCounter = 1;
+            this.shouldStop = shouldStop;
+        }
+
+        protected void computeNextCutOff() {
+            currentRun++;
+            if ((this.externalCounter & -this.externalCounter) == this.curVal) {
+                this.externalCounter += 1;
+                this.curVal = 1;
+            } else {
+                this.curVal <<= 1;
+            }
+        }
+
+        @Override
+        public boolean test(RestartSearchStatistics stats, SearchStatistics lastRunStats) {
+            while (stats.nRestarts > this.currentRun)
+                computeNextCutOff();
+            if (shouldStop != null && shouldStop.test(stats, lastRunStats))
+                return true;
+            return lastRunStats.numberOfNodes() >= this.scale * this.curVal;
+        }
     }
 
     public RestartSearchStatistics solve() {
@@ -80,40 +136,50 @@ public class Restarter {
         return stats;
     }
 
-    /**
-     * Returns a BiPredicate that implements the Luby restart strategy with the
-     * given base and multiplier.
-     * Based on the code from Charles Prud'homme, Arnaud Malapert, Hadrien Cambazard
-     * in the Choco-solver, in BSD-3 clause license.
-     */
-    public class LubyRestart implements BiPredicate<RestartSearchStatistics, SearchStatistics> {
-        protected int scale;
-        protected int currentRun;
-        protected int externalCounter;
-        protected int curVal;
+    public RestartSearchStatistics solveSubjectTo(Runnable subjectTo) {
+        return solver.getStateManager().withNewState(() -> {
+            subjectTo.run();
+            return solve();
+        });
+    }
 
-        public LubyRestart(int scale) {
-            this.scale = scale;
-            this.currentRun = 0;
-            this.curVal = 1;
-            this.externalCounter = 1;
-        }
-
-        protected void computeNextCutOff() {
-            currentRun++;
-            if ((this.externalCounter & -this.externalCounter) == this.curVal) {
-                this.externalCounter += 1;
-                this.curVal = 1;
-            } else {
-                this.curVal <<= 1;
+    public RestartSearchStatistics optimize(Objective obj) {
+        RestartSearchStatistics stats = new RestartSearchStatistics();
+        solver.getStateManager().withNewState(() -> {
+            NoGoodGenerator maker = new NoGoodGenerator(solver, search);
+            EnforceNogood enforcer = new EnforceNogood(solver);
+            while (!shouldStop.test(stats)) {
+                maker.clear();
+                SearchStatistics runStats = search.optimize(obj, s -> this.shouldRestart.test(stats, s));
+                stats.increaseRun(runStats);
+                if (runStats.isCompleted())
+                    break;
+                enforcer.addNogood(maker.getNoGood());
             }
-        }
+        });
+        return stats;
+    }
 
-        @Override
-        public boolean test(RestartSearchStatistics stats, SearchStatistics lastRunStats) {
-            while (stats.nRestarts > this.currentRun)
-                computeNextCutOff();
-            return lastRunStats.numberOfNodes() >= this.scale * this.curVal;
-        }
+    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj) {
+        ConcreteModel model = obj.getModelProxy().getConcreteModel();
+        Objective objective = model.createObjective(obj);
+        return optimize(objective);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, Runnable subjectTo) {
+        return solver.getStateManager().withNewState(() -> {
+            subjectTo.run();
+            return optimize(objToTighten);
+        });
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten,
+            Runnable subjectTo) {
+        return solver.getStateManager().withNewState(() -> {
+            ConcreteModel model = objToTighten.getModelProxy().getConcreteModel();
+            Objective objective = model.createObjective(objToTighten);
+            subjectTo.run();
+            return optimize(objective);
+        });
     }
 }

@@ -12,7 +12,7 @@ import org.maxicp.util.exception.InconsistencyException;
  * Global constraint to enforce multiple nogoods.
  * 
  * Currently, only "simple" nogoods are supported, that is nogoods that can be
- * represented as a list of decisions of the form "x = v" or "x != v", where x
+ * represented as a list of decisions of the form "x =/!=/<=/>= v" where x
  * is a variable and v is a value.
  * 
  * The storage here do not currently supports removing nogoods or compressing
@@ -55,6 +55,10 @@ public class EnforceNogood {
                 eq.getX().whenFixed(() -> check(idx));
             } else if (c instanceof NotEqualCst neq) {
                 neq.getX().whenDomainChange(() -> check(idx));
+            } else if (c instanceof LessOrEqualCst le) {
+                le.getX().whenBoundChange(() -> check(idx));
+            } else if (c instanceof GreaterOrEqualCst ge) {
+                ge.getX().whenBoundChange(() -> check(idx));
             } else {
                 throw new IllegalStateException("Unexpected constraint type: " + c.getClass());
             }
@@ -136,6 +140,14 @@ public class EnforceNogood {
             }
         }
 
+        /**
+         * Returns the status of the watcher, that is:
+         * -1 if the watched constraint is false
+         * 0 if the watched constraint is still unknown
+         * 1 if the watched constraint is satisfied
+         * @param whichWatcher
+         * @return
+         */
         private int getWatcherStatus(int whichWatcher) {
             int idx = watchers[whichWatcher].value();
             assert idx >= 0; // if the watcher is -1, it means that the nogood is already satisfied, so we
@@ -159,6 +171,22 @@ public class EnforceNogood {
                     } else {
                         return 0;
                     }
+                }
+                case LessOrEqualCst le -> {
+                    if (le.getX().max() <= le.getV())
+                        return 1;
+                    else if (le.getX().min() > le.getV())
+                        return -1;
+                    else
+                        return 0;
+                }
+                case GreaterOrEqualCst ge -> {
+                    if (ge.getX().min() >= ge.getV())
+                        return 1;
+                    else if (ge.getX().max() < ge.getV())
+                        return -1;
+                    else
+                        return 0;
                 }
                 default -> throw new IllegalStateException("Unexpected constraint type: " + c.getClass());
             }
@@ -193,8 +221,18 @@ public class EnforceNogood {
                     continue; // simply a placeholder to indicate that the previous branch is done
 
                 CPConstraint c = decision[0];
-                if (!(c instanceof EqualCst) && !(c instanceof NotEqualCst)) {
-                    return false;
+                switch (c) {
+                    case EqualCst eq -> {
+                    }
+                    case NotEqualCst neq -> {
+                    }
+                    case LessOrEqualCst le -> {
+                    }
+                    case GreaterOrEqualCst ge -> {
+                    }
+                    default -> {
+                        return false;
+                    }
                 }
             }
         }
@@ -211,6 +249,8 @@ public class EnforceNogood {
         // one of the following types:
         // - EqCst
         // - NotEqualCst
+        // - LessOrEqualCst
+        // - GreaterOrEqualCst
 
         // we will now write all the reduced nogoods.
         // as defined in "Nogood Recording from Restarts" (Lecoutre et al.),
@@ -272,6 +312,16 @@ public class EnforceNogood {
                 CPConstraint nogood = new EqualCst(neq.getX(), neq.getV());
                 solver.post(nogood);
             }
+            case LessOrEqualCst le -> {
+                // x <= a contrapose is x > a, which can be rewritten as x >= a+1
+                CPConstraint nogood = new GreaterOrEqualCst(le.getX(), le.getV() + 1);
+                solver.post(nogood);
+            }
+            case GreaterOrEqualCst ge -> {
+                // x >= a contrapose is x < a, which can be rewritten as x <= a-1
+                CPConstraint nogood = new LessOrEqualCst(ge.getX(), ge.getV() - 1);
+                solver.post(nogood);
+            }
             default -> throw new IllegalStateException("Unexpected constraint type: " + decision.getClass());
         }
     }
@@ -283,8 +333,10 @@ public class EnforceNogood {
      * binary)
      * - Each node (CPConstraint[]) has exactly one constraint, that is of one of
      * the following types:
-     * - EqCst
+     * - EqualCst
      * - NotEqualCst
+     * - LessOrEqualCst
+     * - GreaterOrEqualCst
      * The nogood is added as a constraint to the solver, so it may be reverted if
      * the search goes above the current node.
      * 
