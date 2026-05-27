@@ -16,8 +16,6 @@ public class Restarter {
     protected DFSearch search;
     protected BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart;
     protected Predicate<RestartSearchStatistics> shouldStop;
-    protected Runnable tighten; // used to keep track of the objective tightening action, so that we can remove
-                                // it from the listeners when we're done optimizing
 
     public class RestartSearchStatistics extends SearchStatistics {
         public int nRestarts = 0;
@@ -57,13 +55,6 @@ public class Restarter {
         this.search = search;
         this.shouldRestart = new LubyRestart(100); // by default, use Luby restarts with multiplier 100
         this.shouldStop = stats -> false; // by default, never stop
-
-        this.tighten = null; // by default, no objective to optimize, so no tightening action to keep track
-                             // of
-        this.search.onSolution(() -> {
-            if (tighten != null)
-                tighten.run();
-        });
     }
 
     public void setRunLimit(BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart) {
