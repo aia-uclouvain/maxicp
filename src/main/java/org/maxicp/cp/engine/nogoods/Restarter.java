@@ -13,7 +13,6 @@ import org.maxicp.search.SearchStatistics;
 
 public class Restarter {
     protected CPSolver solver;
-    protected DFSearch search;
     protected BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart;
     protected Predicate<RestartSearchStatistics> shouldStop;
 
@@ -51,9 +50,8 @@ public class Restarter {
         }
     }
 
-    public Restarter(CPSolver solver, DFSearch search) {
+    public Restarter(CPSolver solver) {
         this.solver = solver;
-        this.search = search;
         this.shouldRestart = new LubyRestart(10000); // by default, use Luby restarts with multiplier 100
         this.shouldStop = stats -> false; // by default, never stop
     }
@@ -111,67 +109,161 @@ public class Restarter {
         }
     }
 
-    public RestartSearchStatistics solve() {
+    public RestartSearchStatistics solve(DFSearch[] searches, boolean withNogoods) {
         RestartSearchStatistics stats = new RestartSearchStatistics();
         solver.getStateManager().withNewState(() -> {
-            NoGoodGenerator maker = new NoGoodGenerator(solver, search);
-            EnforceNogood enforcer = new EnforceNogood(solver);
+            EnforceNogood enforcer = withNogoods ? new EnforceNogood(solver) : null;
+            NoGoodGenerator maker = withNogoods ? new NoGoodGenerator(solver) : null;
+            if (withNogoods)
+                for (DFSearch search : searches)
+                    maker.registerSearch(search);
+
+            int currentSearch = 0;
             while (!shouldStop.test(stats)) {
                 maker.clear();
-                SearchStatistics runStats = search.solve(s -> this.shouldRestart.test(stats, s));
+                SearchStatistics runStats = searches[currentSearch].solve(s -> this.shouldRestart.test(stats, s));
                 stats.increaseRun(runStats);
                 if (runStats.isCompleted())
                     break;
-                enforcer.addNogood(maker.getNoGood());
+                if (withNogoods)
+                    enforcer.addNogood(maker.getNoGood());
+                currentSearch = (currentSearch + 1) % searches.length;
             }
         });
         return stats;
     }
 
-    public RestartSearchStatistics solveSubjectTo(Runnable subjectTo) {
+    public RestartSearchStatistics solve(DFSearch[] searches) {
+        return solve(searches, true);
+    }
+
+    public RestartSearchStatistics solve(DFSearch search, boolean withNogoods) {
+        return solve(new DFSearch[] { search }, withNogoods);
+    }
+
+    public RestartSearchStatistics solve(DFSearch search) {
+        return solve(new DFSearch[] { search }, true);
+    }
+
+    public RestartSearchStatistics solveSubjectTo(DFSearch[] searches, Runnable subjectTo, boolean withNogoods) {
         return solver.getStateManager().withNewState(() -> {
             subjectTo.run();
-            return solve();
+            return solve(searches, withNogoods);
         });
     }
 
-    public RestartSearchStatistics optimize(Objective obj) {
+    public RestartSearchStatistics solveSubjectTo(DFSearch[] searches, Runnable subjectTo) {
+        return solveSubjectTo(searches, subjectTo, true);
+    }
+
+    public RestartSearchStatistics solveSubjectTo(DFSearch search, Runnable subjectTo, boolean withNogoods) {
+        return solveSubjectTo(new DFSearch[] { search }, subjectTo, withNogoods);
+    }
+
+    public RestartSearchStatistics solveSubjectTo(DFSearch search, Runnable subjectTo) {
+        return solveSubjectTo(new DFSearch[] { search }, subjectTo, true);
+    }
+
+    public RestartSearchStatistics optimize(Objective obj, DFSearch[] searches, boolean withNogoods) {
         RestartSearchStatistics stats = new RestartSearchStatistics();
         solver.getStateManager().withNewState(() -> {
-            NoGoodGenerator maker = new NoGoodGenerator(solver, search);
-            EnforceNogood enforcer = new EnforceNogood(solver);
+            EnforceNogood enforcer = withNogoods ? new EnforceNogood(solver) : null;
+            NoGoodGenerator maker = withNogoods ? new NoGoodGenerator(solver) : null;
+            if (withNogoods)
+                for (DFSearch search : searches)
+                    maker.registerSearch(search);
+
+            int currentSearch = 0;
             while (!shouldStop.test(stats)) {
                 maker.clear();
-                SearchStatistics runStats = search.optimize(obj, s -> this.shouldRestart.test(stats, s));
+                SearchStatistics runStats = searches[currentSearch].optimize(obj,
+                        s -> this.shouldRestart.test(stats, s));
                 stats.increaseRun(runStats);
                 if (runStats.isCompleted())
                     break;
-                enforcer.addNogood(maker.getNoGood());
+                if (withNogoods)
+                    enforcer.addNogood(maker.getNoGood());
+                currentSearch = (currentSearch + 1) % searches.length;
             }
         });
         return stats;
     }
 
-    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj) {
+    public RestartSearchStatistics optimize(Objective obj, DFSearch[] searches) {
+        return optimize(obj, searches, true);
+    }
+
+    public RestartSearchStatistics optimize(Objective obj, DFSearch search, boolean withNogoods) {
+        return optimize(obj, new DFSearch[] { search }, withNogoods);
+    }
+
+    public RestartSearchStatistics optimize(Objective obj, DFSearch search) {
+        return optimize(obj, new DFSearch[] { search }, true);
+    }
+
+    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj, DFSearch[] searches,
+            boolean withNogoods) {
         ConcreteModel model = obj.getModelProxy().getConcreteModel();
         Objective objective = model.createObjective(obj);
-        return optimize(objective);
+        return optimize(objective, searches, withNogoods);
     }
 
-    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, Runnable subjectTo) {
+    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj, DFSearch search,
+            boolean withNogoods) {
+        return optimize(obj, new DFSearch[] { search }, withNogoods);
+    }
+
+    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj, DFSearch[] searches) {
+        return optimize(obj, searches, true);
+    }
+
+    public RestartSearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj, DFSearch search) {
+        return optimize(obj, new DFSearch[] { search }, true);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, DFSearch[] searches, Runnable subjectTo,
+            boolean withNogoods) {
         return solver.getStateManager().withNewState(() -> {
             subjectTo.run();
-            return optimize(objToTighten);
+            return optimize(objToTighten, searches, withNogoods);
         });
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, DFSearch[] searches, Runnable subjectTo) {
+        return optimizeSubjectTo(objToTighten, searches, subjectTo, true);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, DFSearch search, Runnable subjectTo,
+            boolean withNogoods) {
+        return optimizeSubjectTo(objToTighten, new DFSearch[] { search }, subjectTo, withNogoods);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(Objective objToTighten, DFSearch search, Runnable subjectTo) {
+        return optimizeSubjectTo(objToTighten, new DFSearch[] { search }, subjectTo, true);
     }
 
     public RestartSearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten,
-            Runnable subjectTo) {
+            DFSearch[] searches, Runnable subjectTo, boolean withNogoods) {
         return solver.getStateManager().withNewState(() -> {
             ConcreteModel model = objToTighten.getModelProxy().getConcreteModel();
             Objective objective = model.createObjective(objToTighten);
             subjectTo.run();
-            return optimize(objective);
+            return optimize(objective, searches, withNogoods);
         });
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten,
+            DFSearch[] searches, Runnable subjectTo) {
+        return optimizeSubjectTo(objToTighten, searches, subjectTo, true);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten,
+            DFSearch search, Runnable subjectTo, boolean withNogoods) {
+        return optimizeSubjectTo(objToTighten, new DFSearch[] { search }, subjectTo, withNogoods);
+    }
+
+    public RestartSearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten,
+            DFSearch search, Runnable subjectTo) {
+        return optimizeSubjectTo(objToTighten, new DFSearch[] { search }, subjectTo, true);
     }
 }

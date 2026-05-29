@@ -39,6 +39,11 @@ public class NoGoodGenerator {
             nodeIsSolution(id, pId);
         }
 
+        @Override
+        public void clear() {
+            NoGoodGenerator.this.clear();
+        }
+
         public void beforeConstraintPosted(CPConstraint c) {
             if (!currentlyExecutingBranchingAction)
                 return; // no need to store anything
@@ -62,15 +67,28 @@ public class NoGoodGenerator {
     }
 
     protected CPSolver solver;
-    protected DFSearch search;
     protected NGListener ngListener;
     protected ArrayDeque<NodeStatus> nodeStatuses = new ArrayDeque<>();
 
-    public NoGoodGenerator(CPSolver solver, DFSearch search) {
+    public NoGoodGenerator(CPSolver solver) {
         this.solver = solver;
-        this.search = search;
         ngListener = new NGListener();
         solver.onBeforeConstraintPosted(ngListener::beforeConstraintPosted);
+    }
+
+    /**
+     * Shortcut constructor to create a NoGoodGenerator and register it to a search
+     * in one call.
+     * 
+     * @param solver
+     * @param search
+     */
+    public NoGoodGenerator(CPSolver solver, DFSearch search) {
+        this(solver);
+        registerSearch(search);
+    }
+
+    public void registerSearch(DFSearch search) {
         search.setDFSListener(ngListener);
     }
 

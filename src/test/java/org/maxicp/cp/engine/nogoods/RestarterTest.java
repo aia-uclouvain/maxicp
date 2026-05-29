@@ -38,10 +38,10 @@ public class RestarterTest extends CPSolverTest {
         CPIntVar[] q = CPFactory.makeIntVarArray(cp, n, n);
         DFSearch search = makeQueensSearch(cp, q);
 
-        Restarter restarter = new Restarter(cp, search);
+        Restarter restarter = new Restarter(cp);
         restarter.setRunLimit((global, run) -> run.numberOfNodes() >= 100);
         
-        Restarter.RestartSearchStatistics stats = restarter.solve();
+        Restarter.RestartSearchStatistics stats = restarter.solve(search);
 
         assertTrue(stats.isCompleted());
         assertEquals(92, stats.numberOfSolutions());

@@ -70,9 +70,9 @@ public class TSPTWRestart {
                     System.out.println(Arrays.toString(x));
                     System.out.println("solution found distance:" + distance);
                 });
-                Restarter restarter = new Restarter(cp.solver, search);
+                Restarter restarter = new Restarter(cp.solver);
 
-                Restarter.RestartSearchStatistics stats = restarter.optimize(minimize(distance));
+                Restarter.RestartSearchStatistics stats = restarter.optimize(minimize(distance), search);
                 System.out.println(stats);
             });
         });

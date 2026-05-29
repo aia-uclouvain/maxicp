@@ -12,7 +12,6 @@ import org.maxicp.modeling.symbolic.Minimization;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.FDSModeling;
-import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
 import org.xcsp.parser.callbacks.SolutionChecker;
@@ -102,12 +101,12 @@ public class MiniCOPRestartTest {
                     }
                 });
 
-                Restarter restarter = new Restarter(cp.solver, search);
+                Restarter restarter = new Restarter(cp.solver);
                 restarter.setRunLimit(new LubyRestart(100, (stats, lastRunStats) -> {
                     Assume.assumeTrue("Too slow", (System.currentTimeMillis() - start) < 10000);
                     return false;
                 }));
-                Restarter.RestartSearchStatistics stats = restarter.optimize(instance.objective());
+                Restarter.RestartSearchStatistics stats = restarter.optimize(instance.objective(), search);
 
                 assertTrue("No solution found for " + filename, stats.numberOfSolutions() > 0);
                 assertTrue("Search did not complete for " + base, stats.isCompleted());
