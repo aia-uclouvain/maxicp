@@ -95,7 +95,7 @@ org.maxicp:maxicp,org.maxicp.state.copy,Copier.Backup,0,48,0,4,0,9,0,4,0,2
 org.maxicp:maxicp,org.maxicp.state.copy,CopyMap,71,49,2,2,17,9,12,5,11,4
 org.maxicp:maxicp,org.maxicp.state.copy,Copy,4,21,0,0,1,7,1,4,1,4
 org.maxicp:maxicp,org.maxicp.state.copy,Copy.CopyStateEntry,0,15,0,0,0,5,0,2,0,2
-org.maxicp:maxicp,org.maxicp,ModelDispatcher,172,175,10,10,24,34,21,17,14,13
+org.maxicp:maxicp,org.maxicp,ModelDispatcher,146,201,9,11,21,37,19,19,12,15
 org.maxicp:maxicp,org.maxicp,Constants.CumulativeAlgo,0,21,0,0,0,4,0,1,0,1
 org.maxicp:maxicp,org.maxicp,Constants,3,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.NodeType,27,0,0,0,2,0,1,0,1,0
@@ -104,7 +104,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,157,357,11,37,20,60,11,21,4,4
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -160,8 +160,8 @@ org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,StartAfter,95,9,20,0,15,1,17,
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,Not,24,6,2,0,4,1,5,1,4,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,EndBefore,101,0,20,0,17,0,18,0,8,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,Or,102,0,18,0,23,0,17,0,8,0
-org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,EndBeforeStart,110,9,28,0,17,1,22,1,8,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,NotEq,72,29,12,0,14,5,12,3,6,3
+org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,EndBeforeStart,110,9,28,0,17,1,22,1,8,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,StartBefore,95,9,20,0,15,1,17,1,7,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,And,54,0,4,0,9,0,9,0,7,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,GreaterOrEq,115,0,18,0,18,0,19,0,10,0
@@ -180,12 +180,12 @@ org.maxicp:maxicp,org.maxicp.modeling,ModelProxy.NotConcreteException,3,0,0,0,1,
 org.maxicp:maxicp,org.maxicp.modeling,NotAChildModelException,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling,SeqVar,31,0,4,0,5,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.modeling,ModelProxy,20,106,2,3,4,24,4,10,2,9
-org.maxicp:maxicp,org.maxicp.modeling,ModelProxyInstantiator,38,52,0,0,10,9,5,7,5,7
-org.maxicp:maxicp,org.maxicp.modeling,Factory,393,275,3,1,53,41,54,40,52,40
+org.maxicp:maxicp,org.maxicp.modeling,ModelProxyInstantiator,22,68,0,0,7,12,3,9,3,9
+org.maxicp:maxicp,org.maxicp.modeling,Factory,369,299,3,1,50,44,51,43,49,43
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.cp,CPFactory,807,1052,26,34,155,186,82,101,64,89
+org.maxicp:maxicp,org.maxicp.cp,CPFactory,750,1109,22,38,146,195,79,104,63,90
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
@@ -199,9 +199,9 @@ org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},45,82
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},16,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.modeling,CPModelInstantiator,3,13,0,0,1,3,1,1,1,1
-org.maxicp:maxicp,org.maxicp.cp.modeling,ConcreteCPModel,1708,1307,119,106,233,258,138,96,30,36
+org.maxicp:maxicp,org.maxicp.cp.modeling,ConcreteCPModel,1668,1347,116,109,225,266,135,99,30,36
 org.maxicp:maxicp,org.maxicp.cp.modeling,CPModelInstantiator.Instantiator,0,25,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.cp.modeling,ModelProxyInstantiatorWithCP,34,15,0,0,6,3,6,3,6,3
+org.maxicp:maxicp,org.maxicp.cp.modeling,ModelProxyInstantiatorWithCP,29,20,0,0,5,4,5,4,5,4
 org.maxicp:maxicp,org.maxicp.util.exception,InconsistencyException,0,10,0,0,0,3,0,3,0,3
 org.maxicp:maxicp,org.maxicp.util.exception,NotYetImplementedException,18,0,0,0,6,0,3,0,3,0
 org.maxicp:maxicp,org.maxicp.util.exception,NotImplementedException,18,0,0,0,6,0,3,0,3,0
@@ -217,7 +217,7 @@ org.maxicp:maxicp,org.maxicp.modeling.constraints,BinPacking,12,0,0,0,1,0,1,0,1,
 org.maxicp:maxicp,org.maxicp.modeling.constraints,Cumulative,15,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints,Sorted,12,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints,ExpressionIsTrue,0,6,0,0,0,1,0,1,0,1
-org.maxicp:maxicp,org.maxicp.modeling.constraints,Circuit,6,0,0,0,1,0,1,0,1,0
+org.maxicp:maxicp,org.maxicp.modeling.constraints,Circuit,0,6,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,IntervalStatus,1,19,1,3,0,3,1,2,0,1
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,SharedMaximization,21,0,0,0,7,0,3,0,3,0
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,IntVarSetImpl,83,33,9,1,17,11,12,4,7,4
@@ -230,12 +230,14 @@ org.maxicp:maxicp,org.maxicp.modeling.symbolic,IsNodeRequired,27,0,4,0,4,0,3,0,1
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,SeqVarImpl,417,0,100,0,81,0,76,0,21,0
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,SharedMinimization,21,0,0,0,7,0,3,0,3,0
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,Maximization,10,0,0,0,2,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.modeling.symbolic,SymbolicModel,70,49,7,3,10,8,7,9,3,8
+org.maxicp:maxicp,org.maxicp.modeling.symbolic,SymbolicModel,50,69,6,4,8,10,6,10,2,9
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,IntVarRangeImpl,51,62,11,3,8,17,9,9,3,8
 org.maxicp:maxicp,org.maxicp.modeling.symbolic,SymbolicSeqVar,247,0,26,0,44,0,31,0,18,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3Cli.SolveOutcome,39,0,10,0,10,0,7,0,2,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3Cli,280,0,50,0,71,0,33,0,8,0
 org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCallbacksDecomp,1070,0,48,0,143,0,78,0,54,0
-org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3.XCSP3LoadedInstance,19,0,0,0,3,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3,2659,0,186,0,426,0,256,0,126,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3.XCSP3LoadedInstance,22,0,0,0,3,0,2,0,2,0
+org.maxicp:maxicp,org.maxicp.modeling.xcsp3,XCSP3,2830,0,200,0,457,0,268,0,131,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Insert,0,12,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,TransitionTimes,39,0,0,0,12,0,3,0,3,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Cumulative,38,0,4,0,10,0,5,0,3,0
@@ -246,6 +248,22 @@ org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Distance,20,0,0,0,7,0,2
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Require,9,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.modeling.constraints.seqvar,Exclude,0,9,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.sequence,SeqStatus,0,51,0,0,0,9,0,1,0,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.Verbosity,0,27,0,0,0,5,0,1,0,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.Phase,5,23,2,2,1,3,2,1,0,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox,0,121,0,0,0,16,0,8,0,8
+org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,111,291,24,24,16,53,19,15,2,8
+org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.SolveConfig,10,39,0,0,4,14,2,4,2,4
+org.maxicp:maxicp,org.maxicp.search.blackbox,SearchStatus,0,39,0,0,0,7,0,1,0,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.ExhaustivePhaseOptions,5,23,2,2,1,4,2,2,0,2
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch,244,859,33,61,41,154,30,43,1,24
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.LnsPhaseOptions,15,38,5,5,2,6,5,2,0,2
+org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.OptimizeConfig,36,27,0,0,14,9,6,1,6,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.RestartPhaseOptions,10,29,3,3,1,5,3,2,0,2
+org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.Result,0,12,0,0,0,1,0,1,0,1
+org.maxicp:maxicp,org.maxicp.search.blackbox,RunnableSearch,0,11,0,0,0,4,0,2,0,2
+org.maxicp:maxicp,org.maxicp.search.blackbox,RandomizedBranching,0,44,0,4,0,11,0,4,0,2
+org.maxicp:maxicp,org.maxicp.search.blackbox,RestartRunnableSearch,7,259,6,20,2,48,6,14,0,7
+org.maxicp:maxicp,org.maxicp.search.blackbox,DFSRunnableSearch,74,180,11,13,11,32,8,11,0,7
 org.maxicp:maxicp,org.maxicp.state,StateManager,13,11,0,0,4,5,1,1,1,1
 org.maxicp:maxicp,org.maxicp.state,StateInt,0,24,0,0,0,2,0,2,0,2
 org.maxicp:maxicp,org.maxicp.state,StateLong,24,0,0,0,2,0,2,0,2,0
@@ -258,10 +276,10 @@ org.maxicp:maxicp,org.maxicp.state.datastructures,StateSparseSet,169,603,27,63,2
 org.maxicp:maxicp,org.maxicp.state.datastructures,StateSparseBitSet,101,213,6,14,15,34,5,14,2,7
 org.maxicp:maxicp,org.maxicp.state.datastructures,StateSparseBitSet.CollectionBitSet,31,62,2,4,4,8,2,5,1,3
 org.maxicp:maxicp,org.maxicp.state.datastructures,StateStack,0,52,0,2,0,11,0,5,0,4
-org.maxicp:maxicp,org.maxicp.state.datastructures,BitSet,73,79,5,5,13,16,8,7,5,5
+org.maxicp:maxicp,org.maxicp.state.datastructures,BitSet,88,64,6,4,17,12,9,6,6,4
 org.maxicp:maxicp,org.maxicp.state.datastructures,StateTriPartition,150,787,18,74,21,141,17,57,2,26
 org.maxicp:maxicp,org.maxicp.state.datastructures,StateLazySparseSet,28,340,6,42,5,76,6,36,2,16
-org.maxicp:maxicp,org.maxicp.state.datastructures,StateSparseBitSet.SupportBitSet,5,23,1,1,0,8,1,4,0,4
+org.maxicp:maxicp,org.maxicp.state.datastructures,StateSparseBitSet.SupportBitSet,22,6,2,0,5,3,3,2,2,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.setvar,IsIncluded,0,66,1,7,0,18,1,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.setvar,SetCard,8,94,2,6,0,19,2,5,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.setvar,IsSubset,0,209,0,26,0,44,0,18,0,5
@@ -285,11 +303,11 @@ org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Max,141,10,14,0,29,2,15,2,
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,WeightedSum,166,0,14,0,23,0,16,0,9,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,IntervalStart,134,22,20,2,27,4,18,5,8,4
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,CstMul,123,15,19,1,28,4,18,2,8,2
-org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Element2D,343,0,24,0,58,0,23,0,11,0
+org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Element2D,202,141,16,8,35,23,14,9,6,5
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Abs,142,0,20,0,31,0,20,0,10,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Element1D,124,92,10,4,26,17,11,7,6,5
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,IntervalEnd,134,22,20,2,27,4,18,5,8,4
-org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,SymbolicIntExpression,105,55,12,6,19,12,16,8,9,6
+org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,SymbolicIntExpression,94,66,11,7,17,14,15,9,8,7
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Div,296,0,20,0,60,0,18,0,8,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,UnaryMinus,58,10,2,0,11,2,9,2,8,2
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,MulBinary,33,15,0,0,5,2,5,2,5,2
@@ -309,18 +327,18 @@ org.maxicp:maxicp,org.maxicp.search,CartesianSpaceEvaluator,30,0,2,0,5,0,3,0,2,0
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StopMessage,12,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SaveStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StealMessage,12,0,0,0,3,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,61,446,3,23,17,110,10,43,7,33
+org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,30,479,3,23,9,118,8,46,5,36
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod,138,0,10,0,35,0,11,0,6,0
 org.maxicp:maxicp,org.maxicp.search,SequenceRank,157,0,12,0,29,0,9,0,3,0
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
-org.maxicp:maxicp,org.maxicp.search,DFSearch,29,234,0,8,6,72,2,20,2,16
+org.maxicp:maxicp,org.maxicp.search,DFSearch,16,247,0,8,5,73,1,21,1,17
 org.maxicp:maxicp,org.maxicp.search,DFSTreeRecorder,88,0,0,0,22,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.search,DFSearch.new DFSListener() {...},0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,SequenceRank.Priority,39,0,8,0,10,0,6,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SetTimes,370,0,42,0,81,0,35,0,14,0
 org.maxicp:maxicp,org.maxicp.search,RunnableSearchMethod,0,5,0,0,0,2,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,LimitedDepthBranching,65,0,6,0,17,0,6,0,3,0
-org.maxicp:maxicp,org.maxicp.search,FDSModeling,132,902,25,95,19,153,25,57,2,20
+org.maxicp:maxicp,org.maxicp.search,FDSModeling,132,902,24,96,19,153,24,58,2,20
 org.maxicp:maxicp,org.maxicp.search,FDSModeling.Choice,105,83,31,10,20,20,25,8,1,6
 org.maxicp:maxicp,org.maxicp.search,LimitedDiscrepancyBranching,5,66,1,5,0,17,1,5,0,3
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch,149,0,8,0,35,0,9,0,5,0
@@ -331,7 +349,7 @@ org.maxicp:maxicp,org.maxicp.search,Sequencer,0,29,0,4,0,8,0,4,0,2
 org.maxicp:maxicp,org.maxicp.search,RestoreStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,Rank,241,0,22,0,49,0,16,0,5,0
 org.maxicp:maxicp,org.maxicp.search,DFSLinearizer,0,57,0,0,0,12,0,7,0,7
-org.maxicp:maxicp,org.maxicp.search,SearchStatistics,84,59,14,0,7,20,11,10,4,10
+org.maxicp:maxicp,org.maxicp.search,SearchStatistics,81,62,14,0,6,21,10,11,3,11
 org.maxicp:maxicp,org.maxicp.search,StopSearchException,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,BranchingAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,SequenceRank.Ranker,326,0,20,0,50,0,22,0,12,0
@@ -364,7 +382,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Maximum,4,184,1,13,0,38,1,10,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Element2D,8,331,2,22,0,45,2,18,0,8
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,TableCT,18,576,4,52,5,98,4,28,0,4
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Element1D,8,231,2,12,2,35,2,9,0,4
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints,ShortTableCT,16,651,2,58,4,107,2,32,0,4
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints,ShortTableCT,16,724,2,70,4,122,2,38,0,4
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,SCC,1,331,1,23,1,66,1,20,0,9
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,CostCardinalityMaxDC,137,1263,18,108,18,171,14,65,1,15
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,IsOr,0,186,0,18,0,38,0,12,0,3
@@ -407,8 +425,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,Maximize,89,0,6,0,25,0,13,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node.new CPBoolVar() {...},59,239,8,40,17,64,10,40,6,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node.new NodeListener() {...},0,38,0,0,0,9,0,5,0,5
 org.maxicp:maxicp,org.maxicp.cp.engine.core,TriPartitionSetDomain,95,0,14,0,28,0,13,0,6,0
-org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVar,67,46,9,9,12,7,12,5,5,3
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.new SeqListener() {...},0,41,0,0,0,11,0,6,0,6
+org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVar,67,46,9,9,12,7,12,5,5,3
 org.maxicp:maxicp,org.maxicp.cp.engine.core,DeltaCPIntVarImpl.new Iterator() {...},48,0,4,0,7,0,5,0,3,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPBoolVar,51,41,15,7,14,9,12,6,3,4
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPNodeVarViewFlip,67,148,0,12,22,32,14,17,14,11
@@ -417,7 +435,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node,19,435,0,24,5,61,4
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarViewFlip,66,268,0,16,24,57,14,36,14,28
 org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSetVarImpl,12,217,2,18,2,48,4,28,2,20
-org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,19,70,3,3,4,21,5,8,2,8
+org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,28,74,4,4,5,22,6,8,2,8
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MaxiCP,6,160,0,12,2,44,1,20,1,14
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MinimizeObjectiveSum,199,0,10,0,39,0,14,0,9,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntervalVarImpl,20,642,2,44,2,105,3,50,1,29

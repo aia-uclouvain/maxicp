@@ -41,10 +41,10 @@ public class BitSet {
      * @param anotherBitSet bitset to be copied/shared
      * @param shared true if the internal representation is meant to be shared between multiple bitsets
      */
-<span class="fc" id="L44">    public BitSet(BitSet anotherBitSet, boolean shared) {</span>
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        words = shared ? anotherBitSet.words : anotherBitSet.words.clone();</span>
-<span class="fc" id="L46">        nbWords = anotherBitSet.nbWords;</span>
-<span class="fc" id="L47">    }</span>
+<span class="nc" id="L44">    public BitSet(BitSet anotherBitSet, boolean shared) {</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        words = shared ? anotherBitSet.words : anotherBitSet.words.clone();</span>
+<span class="nc" id="L46">        nbWords = anotherBitSet.nbWords;</span>
+<span class="nc" id="L47">    }</span>
 
     /**
      * Set the ith bit up (value 1).

@@ -11,8 +11,8 @@ public interface SymbolicIntExpression extends IntExpression {
      * @throws VariableNotFixedException when a variable is not fixed
      */
     default int evaluate() throws VariableNotFixedException {
-<span class="nc bnc" id="L14" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
-<span class="nc" id="L15">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluate();</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc" id="L15">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluate();</span>
 <span class="nc" id="L16">        return defaultEvaluate();</span>
     }
 

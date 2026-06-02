@@ -160,7 +160,7 @@ public final class Factory {
     }
 
     static public BoolExpression lt(IntExpression a, int b) {
-<span class="nc" id="L163">        return new LessOrEq(a, new Constant(a.getModelProxy(),b-1));</span>
+<span class="fc" id="L163">        return new LessOrEq(a, new Constant(a.getModelProxy(),b-1));</span>
     }
 
     static public BoolExpression lt(IntExpression a, IntExpression b) {
@@ -235,7 +235,7 @@ public final class Factory {
     // ********************
 
     public static IntExpression get(int [] T, IntExpression y) {
-<span class="nc" id="L238">        return new Element1D(T, y);</span>
+<span class="fc" id="L238">        return new Element1D(T, y);</span>
     }
 
     public static IntExpression get(IntExpression[] T, IntExpression y) {
@@ -267,7 +267,7 @@ public final class Factory {
     // ********************
 
     public static Constraint circuit(IntExpression... x) {
-<span class="nc" id="L270">        return new Circuit(x);</span>
+<span class="fc" id="L270">        return new Circuit(x);</span>
     }
 
     // ********************

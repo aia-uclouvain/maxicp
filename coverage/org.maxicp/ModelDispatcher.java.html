@@ -158,8 +158,8 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
 <span class="fc" id="L158">    }</span>
 
     public Objective minimize(Expression v) {
-<span class="nc bnc" id="L161" title="All 3 branches missed.">        return switch (getModel()) {</span>
-<span class="nc" id="L162">            case SymbolicModel sm -&gt; sm.minimize(v);</span>
+<span class="pc bpc" id="L161" title="2 of 3 branches missed.">        return switch (getModel()) {</span>
+<span class="fc" id="L162">            case SymbolicModel sm -&gt; sm.minimize(v);</span>
 <span class="nc" id="L163">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
 <span class="nc" id="L164">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
         };
@@ -174,7 +174,7 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     }
 
     public DFSearch dfSearch(Supplier&lt;Runnable[]&gt; branching) {
-<span class="nc" id="L177">        return new DFSearch(this, branching);</span>
+<span class="fc" id="L177">        return new DFSearch(this, branching);</span>
     }
 
     public ConcurrentDFSearch concurrentDFSearch(Supplier&lt;SymbolicModel[]&gt; symbolicBranching) {

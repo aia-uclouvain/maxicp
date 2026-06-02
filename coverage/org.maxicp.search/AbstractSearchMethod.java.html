@@ -285,14 +285,14 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
      */
     public SearchStatistics optimize(Objective toTighten, Predicate&lt;SearchStatistics&gt; limit) {
 <span class="fc" id="L287">        SearchStatistics statistics = new SearchStatistics();</span>
-<span class="fc" id="L288">        Runnable tighten = toTighten::tighten;</span>
-<span class="fc" id="L289">        onSolution(tighten);</span>
+<span class="fc" id="L288">        Consumer&lt;SearchStatistics&gt; tightenLambda = s -&gt; toTighten.tighten();</span>
+<span class="fc" id="L289">        solutionListeners.add(tightenLambda);</span>
         try {
 <span class="fc" id="L291">            solve(statistics, limit, toTighten::filter);</span>
 <span class="nc" id="L292">        } catch (InconsistencyException ignored) {</span>
 <span class="nc" id="L293">            ignored.printStackTrace();</span>
 <span class="fc" id="L294">        }</span>
-<span class="fc" id="L295">        solutionListeners.remove(tighten); // make sure we don't keep the objective active</span>
+<span class="fc" id="L295">        solutionListeners.remove(tightenLambda); // make sure we don't keep the objective active</span>
 <span class="fc" id="L296">        return statistics;</span>
     }
 
@@ -330,16 +330,16 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
 
 
     public SearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten, Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
-<span class="nc" id="L333">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
-<span class="nc" id="L334">        sm.withNewState(() -&gt; {</span>
+<span class="fc" id="L333">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
+<span class="fc" id="L334">        sm.withNewState(() -&gt; {</span>
             try {
-<span class="nc" id="L336">                subjectTo.run();</span>
-<span class="nc" id="L337">                statistics.set(optimize(objToTighten, limit));</span>
-<span class="nc" id="L338">            } catch (InconsistencyException ignored) {</span>
-<span class="nc" id="L339">            }</span>
+<span class="fc" id="L336">                subjectTo.run();</span>
+<span class="fc" id="L337">                statistics.set(optimize(objToTighten, limit));</span>
+<span class="fc" id="L338">            } catch (InconsistencyException ignored) {</span>
+<span class="fc" id="L339">            }</span>
 
-<span class="nc" id="L341">        });</span>
-<span class="nc" id="L342">        return statistics.get();</span>
+<span class="fc" id="L341">        });</span>
+<span class="fc" id="L342">        return statistics.get();</span>
     }
 
     /**

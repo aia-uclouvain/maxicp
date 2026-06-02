@@ -1216,17 +1216,17 @@ public final class CPFactory {
      * @return a variable equal to {@code matrix[x][y]}
      */
     public static CPIntVar element(int[][] matrix, CPIntVar x, CPIntVar y) {
-<span class="nc" id="L1219">        int min = Integer.MAX_VALUE;</span>
-<span class="nc" id="L1220">        int max = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L1221" title="All 2 branches missed.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
-<span class="nc bnc" id="L1222" title="All 2 branches missed.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
-<span class="nc" id="L1223">                min = Math.min(min, matrix[i][j]);</span>
-<span class="nc" id="L1224">                max = Math.max(max, matrix[i][j]);</span>
+<span class="fc" id="L1219">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1220">        int max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L1221" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
+<span class="fc bfc" id="L1222" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
+<span class="fc" id="L1223">                min = Math.min(min, matrix[i][j]);</span>
+<span class="fc" id="L1224">                max = Math.max(max, matrix[i][j]);</span>
             }
         }
-<span class="nc" id="L1227">        CPIntVar z = makeIntVar(x.getSolver(), min, max);</span>
-<span class="nc" id="L1228">        x.getSolver().post(new Element2D(matrix, x, y, z), false);</span>
-<span class="nc" id="L1229">        return z;</span>
+<span class="fc" id="L1227">        CPIntVar z = makeIntVar(x.getSolver(), min, max);</span>
+<span class="fc" id="L1228">        x.getSolver().post(new Element2D(matrix, x, y, z), false);</span>
+<span class="fc" id="L1229">        return z;</span>
     }
 
     // ********************

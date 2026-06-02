@@ -225,7 +225,7 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc bfc" id="L225" title="All 2 branches covered.">        if (cached != null)</span>
 <span class="fc" id="L226">            return cached;</span>
 
-<span class="pc bpc" id="L228" title="9 of 23 branches missed.">        CPIntVar newVar = switch (v) {</span>
+<span class="pc bpc" id="L228" title="8 of 23 branches missed.">        CPIntVar newVar = switch (v) {</span>
 <span class="fc" id="L229">            case IntVarSetImpl iv -&gt; CPFactory.makeIntVar(solver, iv.dom);</span>
 <span class="fc" id="L230">            case IntVarRangeImpl iv -&gt; CPFactory.makeIntVar(solver, iv.defaultMin(), iv.defaultMax());</span>
 <span class="nc" id="L231">            case CstOffset iv -&gt; CPFactory.plus(getCPVar(iv.expr()), iv.v());</span>
@@ -241,7 +241,7 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L241">            case Element1D e -&gt; CPFactory.element(e.array(), getCPVar(e.index()));</span>
 <span class="nc" id="L242">            case Element1DVar e -&gt;</span>
 <span class="nc" id="L243">                    CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new), getCPVar(e.index()));</span>
-<span class="nc" id="L244">            case Element2D e -&gt; CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));</span>
+<span class="fc" id="L244">            case Element2D e -&gt; CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));</span>
 <span class="fc" id="L245">            case IntervalEndOrValue i -&gt; CPFactory.endOr(getCPVar(i.interval()), i.value());</span>
 <span class="fc" id="L246">            case IntervalEnd i -&gt; CPFactory.end(getCPVar(i.interval()));</span>
 <span class="nc" id="L247">            case IntervalStartOrValue i -&gt; CPFactory.startOr(getCPVar(i.interval()), i.value());</span>
@@ -268,7 +268,7 @@ public class ConcreteCPModel implements ConcreteModel {
     public void enforceEqualityIntExpression(IntExpression expr, CPIntVar v) {
 <span class="pc bpc" id="L269" title="4 of 6 branches missed.">        if ((expr instanceof BoolExpression &amp;&amp; boolExprMapping.containsKey(expr)) || intExprMapping.containsKey(expr))</span>
 <span class="nc" id="L270">            throw new RuntimeException(&quot;enforceEqualityIntExpression cannot force equality on an already-instantiated expression&quot;);</span>
-<span class="pc bpc" id="L271" title="19 of 25 branches missed.">        switch (expr) {</span>
+<span class="pc bpc" id="L271" title="18 of 25 branches missed.">        switch (expr) {</span>
 <span class="nc" id="L272">            case IntVarSetImpl iv -&gt; {</span>
 <span class="nc" id="L273">                int[] content = new int[v.size()];</span>
 <span class="nc" id="L274">                v.fillArray(content);</span>
@@ -276,10 +276,10 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="nc bnc" id="L276" title="All 2 branches missed.">                    if (!iv.dom.contains(val))</span>
 <span class="nc" id="L277">                        v.remove(val);</span>
 <span class="nc" id="L278">            }</span>
-<span class="nc" id="L279">            case IntVarRangeImpl iv -&gt; {</span>
-<span class="nc" id="L280">                v.removeBelow(iv.min());</span>
-<span class="nc" id="L281">                v.removeAbove(iv.max());</span>
-<span class="nc" id="L282">            }</span>
+<span class="fc" id="L279">            case IntVarRangeImpl iv -&gt; {</span>
+<span class="fc" id="L280">                v.removeBelow(iv.min());</span>
+<span class="fc" id="L281">                v.removeAbove(iv.max());</span>
+<span class="fc" id="L282">            }</span>
 <span class="nc" id="L283">            case IntVar x -&gt; throw new RuntimeException(&quot;Unknown IntVar type %s&quot;.formatted(x.getClass()));</span>
 <span class="nc" id="L284">            case Constant c -&gt; v.fix(c.v());</span>
 <span class="nc" id="L285">            case CstOffset co -&gt; {</span>
@@ -604,7 +604,7 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L604">    }</span>
 
     private void instantiateConstraint(Constraint c) {
-<span class="pc bpc" id="L607" title="20 of 32 branches missed.">        switch (c) {</span>
+<span class="pc bpc" id="L607" title="19 of 32 branches missed.">        switch (c) {</span>
 <span class="fc" id="L608">            case AllDifferent a -&gt; {</span>
 <span class="fc" id="L609">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
 <span class="fc" id="L610">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
@@ -644,9 +644,9 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="nc" id="L644">                    throw new NotYetImplementedException(&quot;Negative Table with stars is available in maxicp.cp but not yet implemented&quot;);</span>
             }
             //-----------------------------------------
-<span class="nc" id="L647">            case Circuit circuit -&gt; {</span>
-<span class="nc" id="L648">                post(new org.maxicp.cp.engine.constraints.Circuit(getCPVar(circuit.successor())));</span>
-<span class="nc" id="L649">            }</span>
+<span class="fc" id="L647">            case Circuit circuit -&gt; {</span>
+<span class="fc" id="L648">                post(new org.maxicp.cp.engine.constraints.Circuit(getCPVar(circuit.successor())));</span>
+<span class="fc" id="L649">            }</span>
 <span class="nc" id="L650">            case Require require -&gt; {</span>
 <span class="nc" id="L651">                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Require(getCPVar(require.seqVar()), require.node()));</span>
 <span class="nc" id="L652">            }</span>

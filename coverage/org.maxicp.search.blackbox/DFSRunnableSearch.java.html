@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DFSRunnableSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">DFSRunnableSearch.java</span></div><h1>DFSRunnableSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchStatistics;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+
+public class DFSRunnableSearch extends RunnableSearch {
+
+    private final ModelDispatcher model;
+    private final List&lt;IntExpression&gt; vars;
+    private final org.maxicp.modeling.symbolic.Objective objective;
+    private final double randomSwapProbability;
+    private final Random random;
+
+    public DFSRunnableSearch(BlackBoxSearch blackBoxSearch, ModelDispatcher model, List&lt;IntExpression&gt; vars,
+                             org.maxicp.modeling.symbolic.Objective objective,
+                             double randomSwapProbability,
+                             long randomSeed) {
+<span class="fc" id="L26">        super(blackBoxSearch);</span>
+<span class="fc" id="L27">        this.model = model;</span>
+<span class="fc" id="L28">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L29">        this.objective = objective;</span>
+<span class="fc" id="L30">        this.randomSwapProbability = randomSwapProbability;</span>
+<span class="fc" id="L31">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    void updateSolution(List&lt;Integer&gt; solution) {
+        // nothing to maintain locally
+<span class="fc" id="L37">    }</span>
+
+    @Override
+    public SearchStatus run(long timeLimitInMillis) {
+<span class="fc" id="L41">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L42">        blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
+<span class="fc" id="L43">        Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (randomSwapProbability &gt; 0.0) {</span>
+<span class="nc" id="L45">            branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
+        }
+
+<span class="fc" id="L48">        DFSearch dfs = model.dfSearch(branching);</span>
+<span class="fc" id="L49">        dfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L50">            List&lt;Integer&gt; solution = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">            for (IntExpression var : vars) {</span>
+<span class="fc" id="L52">                solution.add(var.min());</span>
+<span class="fc" id="L53">            }</span>
+<span class="fc" id="L54">            blackBoxSearch.updateSolution(solution);</span>
+<span class="fc" id="L55">            blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());</span>
+<span class="fc" id="L56">        });</span>
+
+        SearchStatistics stats;
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (objective == null) {</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            stats = dfs.solve(s -&gt; (System.currentTimeMillis() - t0) &gt;= timeLimitInMillis);</span>
+        } else {
+<span class="fc" id="L62">            stats = dfs.optimizeSubjectTo(objective,</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                    s -&gt; (System.currentTimeMillis() - t0) &gt;= timeLimitInMillis,</span>
+<span class="fc" id="L64">                    blackBoxSearch::postIncumbentCut);</span>
+        }
+<span class="fc" id="L66">        blackBoxSearch.logProgress(&quot;[phase exhaustive-fds] stats: %s&quot;.formatted(blackBoxSearch.formatStats(stats)));</span>
+
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (stats.isCompleted()) {</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            if (stats.numberOfSolutions() &gt; 0) {</span>
+<span class="fc" id="L70">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                        .formatted(objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL));</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">                return objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;</span>
+            } else {
+<span class="nc bnc" id="L74" title="All 4 branches missed.">                if (objective != null &amp;&amp; hasFeasibleSolution()) {</span>
+<span class="nc" id="L75">                    blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.PROVEN_OPTIMAL));</span>
+<span class="nc" id="L76">                    return SearchStatus.PROVEN_OPTIMAL;</span>
+                }
+<span class="nc" id="L78">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.UNSAT));</span>
+<span class="nc" id="L79">                return SearchStatus.UNSAT;</span>
+            }
+        } else {
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (stats.numberOfSolutions() &gt; 0) {</span>
+<span class="nc" id="L83">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.IMPROVED));</span>
+<span class="nc" id="L84">                return SearchStatus.IMPROVED;</span>
+            } else {
+<span class="nc" id="L86">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.NOT_IMPROVED));</span>
+<span class="nc" id="L87">                return SearchStatus.NOT_IMPROVED;</span>
+            }
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

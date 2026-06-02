@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RestartRunnableSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">RestartRunnableSearch.java</span></div><h1>RestartRunnableSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchStatistics;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+
+/**
+ * Feasibility search phase based on repeated DFS restarts.
+ *
+ * &lt;p&gt;The class repeatedly launches a depth-first search on the same model,
+ * but stops each restart after a bounded number of failures. The failure budget
+ * grows according to the Luby sequence, which gives a robust restart policy for
+ * hard search spaces: many short runs are tried first, then progressively longer
+ * runs are allowed when the search still has not found a solution.&lt;/p&gt;
+ *
+ * &lt;p&gt;When a solution is found, it is copied out of the current model state and
+ * stored in the enclosing {@link BlackBoxSearch}. This phase does not optimize
+ * anything; it only tries to determine whether the model is feasible and, if so,
+ * record one feasible assignment.&lt;/p&gt;
+ */
+public class RestartRunnableSearch extends RunnableSearch {
+
+    private final ModelDispatcher model;
+    private final List&lt;IntExpression&gt; vars;
+    private final double randomSwapProbability;
+    private final int baseFailureLimit;
+    private final Random random;
+
+    public RestartRunnableSearch(BlackBoxSearch blackBoxSearch,
+                                 ModelDispatcher model,
+                                 List&lt;IntExpression&gt; vars,
+                                 int baseFailureLimit,
+                                 double randomSwapProbability,
+                                 long randomSeed) {
+<span class="fc" id="L42">        super(blackBoxSearch);</span>
+<span class="fc" id="L43">        this.model = model;</span>
+<span class="fc" id="L44">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L45">        this.baseFailureLimit = baseFailureLimit;</span>
+<span class="fc" id="L46">        this.randomSwapProbability = randomSwapProbability;</span>
+<span class="fc" id="L47">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L48">    }</span>
+
+    @Override
+    void updateSolution(List&lt;Integer&gt; solution) {
+        // nothing to do, this phase only needs to know if a solution exists
+<span class="fc" id="L53">    }</span>
+
+    @Override
+    public SearchStatus run(long timeLimitInMillis) {
+<span class="fc" id="L57">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L58">        int restart = 1;</span>
+<span class="fc" id="L59">        SearchStatus bestStatus = SearchStatus.UNKNOWN;</span>
+<span class="fc" id="L60">        blackBoxSearch.logPhase(&quot;[phase feasibility-restarts] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
+
+<span class="pc bpc" id="L62" title="2 of 4 branches missed.">        while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis &amp;&amp; !hasFeasibleSolution()) {</span>
+<span class="fc" id="L63">            Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if (randomSwapProbability &gt; 0.0) {</span>
+<span class="fc" id="L65">                branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
+            }
+
+<span class="fc" id="L68">            DFSearch dfs = model.dfSearch(branching);</span>
+<span class="fc" id="L69">            dfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L70">                List&lt;Integer&gt; solution = new ArrayList&lt;&gt;(vars.size());</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">                for (IntExpression var : vars) {</span>
+<span class="fc" id="L72">                    solution.add(var.min());</span>
+<span class="fc" id="L73">                }</span>
+<span class="fc" id="L74">                blackBoxSearch.updateSolution(solution);</span>
+<span class="fc" id="L75">                blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());</span>
+<span class="fc" id="L76">            });</span>
+
+<span class="fc" id="L78">            final int failureLimit = baseFailureLimit * luby(restart);</span>
+<span class="fc" id="L79">            blackBoxSearch.logProgress(&quot;[phase feasibility-restarts] restart=%d failureLimit=%d&quot;</span>
+<span class="fc" id="L80">                    .formatted(restart, failureLimit));</span>
+<span class="fc" id="L81">            SearchStatistics stats = dfs.solve(s -&gt; {</span>
+<span class="fc" id="L82">                long elapsed = System.currentTimeMillis() - t0;</span>
+<span class="pc bpc" id="L83" title="1 of 6 branches missed.">                return elapsed &gt;= timeLimitInMillis || s.numberOfFailures() &gt;= failureLimit || hasFeasibleSolution();</span>
+            });
+<span class="fc" id="L85">            blackBoxSearch.logTrace(&quot;[phase feasibility-restarts] restart=%d stats: %s&quot;</span>
+<span class="fc" id="L86">                    .formatted(restart, blackBoxSearch.formatStats(stats)));</span>
+
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">            if (stats.isCompleted() &amp;&amp; stats.numberOfSolutions() == 0) {</span>
+<span class="nc" id="L89">                blackBoxSearch.logPhase(&quot;[phase feasibility-restarts] proven UNSAT&quot;);</span>
+<span class="nc" id="L90">                return SearchStatus.UNSAT;</span>
+            }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (stats.numberOfSolutions() &gt; 0) {</span>
+<span class="fc" id="L93">                bestStatus = SearchStatus.SAT;</span>
+<span class="fc" id="L94">                break;</span>
+            }
+<span class="fc" id="L96">            restart++;</span>
+<span class="fc" id="L97">        }</span>
+
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">        SearchStatus status = hasFeasibleSolution() ? SearchStatus.SAT : bestStatus;</span>
+<span class="fc" id="L100">        blackBoxSearch.logPhase(&quot;[phase feasibility-restarts] end status=%s&quot;.formatted(status));</span>
+<span class="fc" id="L101">        return status;</span>
+    }
+
+    /**
+     * Returns the {@code i}-th term of the Luby sequence, using 1-based indexing.
+     *
+     * &lt;p&gt;The sequence starts as {@code 1, 1, 2, 1, 1, 2, 4, ...}. In this class,
+     * the returned value is multiplied by {@link #baseFailureLimit} to obtain the
+     * failure cutoff for a restart. This keeps the restart budget small at first
+     * while still occasionally granting much larger budgets.&lt;/p&gt;
+     *
+     * @param i position in the sequence, starting at 1
+     * @return the Luby scaling factor for restart {@code i}
+     */
+    private static int luby(int i) {
+<span class="fc" id="L116">        int k = 1;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        while ((1 &lt;&lt; k) - 1 &lt; i) {</span>
+<span class="fc" id="L118">            k++;</span>
+        }
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (i == (1 &lt;&lt; k) - 1) {</span>
+<span class="fc" id="L121">            return 1 &lt;&lt; (k - 1);</span>
+        }
+<span class="fc" id="L123">        return luby(i - (1 &lt;&lt; (k - 1)) + 1);</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

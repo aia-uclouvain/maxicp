@@ -42,31 +42,35 @@ public class Minimize implements IntObjective {
 
     @Override
     public void tighten() {
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (!x.isFixed()) throw new RuntimeException(&quot;objective not bound&quot;);</span>
-<span class="fc" id="L46">        int newValue = x.max() - delta;</span>
-<span class="fc" id="L47">        bound.getAndUpdate((value) -&gt; Math.min(newValue, value));</span>
-<span class="fc" id="L48">    }</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (!x.isFixed()) {</span>
+<span class="nc" id="L46">            System.out.printf(&quot;objective:&quot;+x);</span>
+        }
+
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (!x.isFixed()) throw new RuntimeException(&quot;objective not bound&quot;);</span>
+<span class="fc" id="L50">        int newValue = x.max() - delta;</span>
+<span class="fc" id="L51">        bound.getAndUpdate((value) -&gt; Math.min(newValue, value));</span>
+<span class="fc" id="L52">    }</span>
 
     @Override
     public void relax() {
-<span class="fc" id="L52">        bound.set(Integer.MAX_VALUE - 1);</span>
-<span class="fc" id="L53">    }</span>
+<span class="fc" id="L56">        bound.set(Integer.MAX_VALUE - 1);</span>
+<span class="fc" id="L57">    }</span>
 
     @Override
     public void setBound(int newBound) {
-<span class="nc" id="L57">        bound.set(newBound);</span>
-<span class="nc" id="L58">    }</span>
+<span class="nc" id="L61">        bound.set(newBound);</span>
+<span class="nc" id="L62">    }</span>
 
     @Override
     public int getBound() {
-<span class="fc" id="L62">        return bound.get();</span>
+<span class="fc" id="L66">        return bound.get();</span>
     }
 
     @Override
     public void filter() {
-<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (filter) {</span>
-<span class="fc" id="L68">            x.removeAbove(bound.get());</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (filter) {</span>
+<span class="fc" id="L72">            x.removeAbove(bound.get());</span>
         }
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L74">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

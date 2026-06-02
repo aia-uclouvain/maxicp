@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 public class DFSearch extends RunnableSearchMethod {
 
 <span class="fc" id="L21">    private static final DFSListener EMPTY_LISTENER = new DFSListener(){};</span>
-<span class="pc" id="L22">    private DFSListener dfsListener = EMPTY_LISTENER;</span>
+<span class="fc" id="L22">    private DFSListener dfsListener = EMPTY_LISTENER;</span>
 
     public void setDFSListener(DFSListener listener) {
 <span class="fc" id="L25">        this.dfsListener = listener;</span>
@@ -49,12 +49,12 @@ public class DFSearch extends RunnableSearchMethod {
 <span class="fc" id="L49">        dfsListener.restoreState(sm);</span>
 <span class="fc" id="L50">    }</span>
 
-<span class="pc" id="L52">    private int currNodeId = -1;</span>
+<span class="fc" id="L52">    private int currNodeId = -1;</span>
 
     public DFSearch(StateManager sm, Supplier&lt;Runnable[]&gt; branching) {
 <span class="fc" id="L55">        super(sm, branching);</span>
 <span class="fc" id="L56">    }</span>
-<span class="nc" id="L57">    public DFSearch(ModelProxy modelProxy, Supplier&lt;Runnable[]&gt; branching) { super(modelProxy.getConcreteModel().getStateManager(), branching); }</span>
+<span class="fc" id="L57">    public DFSearch(ModelProxy modelProxy, Supplier&lt;Runnable[]&gt; branching) { super(modelProxy.getConcreteModel().getStateManager(), branching); }</span>
 
     // solution to DFS with explicit stack
     private void expandNode(Stack&lt;Runnable&gt; alternatives, SearchStatistics statistics, Runnable onNodeVisit, int parentId) {

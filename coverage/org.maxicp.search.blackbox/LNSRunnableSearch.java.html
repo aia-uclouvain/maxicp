@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LNSRunnableSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">LNSRunnableSearch.java</span></div><h1>LNSRunnableSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.Factory;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchStatistics;
+
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class LNSRunnableSearch extends RunnableSearch {
+
+    static final int PROGRESS_LOG_PERIOD = 100;
+
+    private final ModelDispatcher model;
+    private final List&lt;IntExpression&gt; vars;
+    private Optional&lt;List&lt;Integer&gt;&gt; feasibleSolution;
+    private final org.maxicp.modeling.symbolic.Objective objective;
+    private final Random random;
+    private final int failureLimitPerRestart;
+    private final int freezeRatePercent;
+    private final double randomSwapProbability;
+
+    public LNSRunnableSearch(BlackBoxSearch blackBoxSearch, ModelDispatcher model, List&lt;IntExpression&gt; vars,
+                             org.maxicp.modeling.symbolic.Objective objective,
+                             int failureLimitPerRestart,
+                             int freezeRatePercent,
+                             double randomSwapProbability,
+                             long randomSeed) {
+<span class="fc" id="L33">        super(blackBoxSearch);</span>
+<span class="fc" id="L34">        this.model = model;</span>
+<span class="fc" id="L35">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L36">        this.objective = objective;</span>
+<span class="fc" id="L37">        this.feasibleSolution = Optional.empty();</span>
+<span class="fc" id="L38">        this.failureLimitPerRestart = failureLimitPerRestart;</span>
+<span class="fc" id="L39">        this.freezeRatePercent = freezeRatePercent;</span>
+<span class="fc" id="L40">        this.randomSwapProbability = randomSwapProbability;</span>
+<span class="fc" id="L41">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    void updateSolution(List&lt;Integer&gt; solution) {
+<span class="fc" id="L46">        feasibleSolution = Optional.of(solution);</span>
+<span class="fc" id="L47">    }</span>
+
+    @Override
+    public SearchStatus run(long timeLimitInMillis) {
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (feasibleSolution.isEmpty()) {</span>
+<span class="nc" id="L52">            return SearchStatus.UNKNOWN; // no feasible solution found yet to start LNS</span>
+        } else {
+<span class="fc" id="L54">            AtomicBoolean improved = new AtomicBoolean(false);</span>
+<span class="fc" id="L55">            long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L56">            List&lt;Integer&gt; best = new ArrayList&lt;&gt;(feasibleSolution.get());</span>
+<span class="fc" id="L57">            int iteration = 0;</span>
+<span class="fc" id="L58">            blackBoxSearch.logPhase(&quot;[phase lns-improvement] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
+
+<span class="fc" id="L60">            Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">            if (randomSwapProbability &gt; 0.0) {</span>
+<span class="nc" id="L62">                branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
+            }
+<span class="fc" id="L64">            DFSearch dfs = model.dfSearch(branching);</span>
+
+<span class="fc" id="L66">            dfs.onSolution(() -&gt; {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L68">                    best.set(i, vars.get(i).min());</span>
+                }
+<span class="fc" id="L70">                blackBoxSearch.updateSolution(best);</span>
+<span class="fc" id="L71">                blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());</span>
+<span class="fc" id="L72">                improved.set(true);</span>
+<span class="fc" id="L73">            });</span>
+
+<span class="fc" id="L75">            SearchStatistics lastStats = null;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis) {</span>
+<span class="fc" id="L77">                iteration++;</span>
+<span class="fc" id="L78">                final List&lt;Integer&gt; incumbent = new ArrayList&lt;&gt;(best);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (shouldLogProgressIteration(iteration)) {</span>
+<span class="fc" id="L80">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d incumbentKnown=%s&quot;</span>
+<span class="fc" id="L81">                            .formatted(iteration, blackBoxSearch.bestObjectiveValue().map(Object::toString).orElse(&quot;n/a&quot;)));</span>
+                }
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">                if (objective == null) {</span>
+<span class="nc" id="L84">                    lastStats = dfs.solveSubjectTo(stats -&gt; {</span>
+<span class="nc" id="L85">                        long elapsed = System.currentTimeMillis() - t0;</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">                        return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
+                    }, () -&gt; {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                        for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                            if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="nc" id="L90">                                model.add(Factory.eq(vars.get(i), incumbent.get(i)));</span>
+                            }
+                        }
+<span class="nc" id="L93">                    });</span>
+                } else {
+<span class="fc" id="L95">                    lastStats = dfs.optimizeSubjectTo(objective,</span>
+                            stats -&gt; {
+<span class="fc" id="L97">                                long elapsed = System.currentTimeMillis() - t0;</span>
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">                                return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
+                            }, () -&gt; {
+<span class="fc" id="L100">                                blackBoxSearch.postIncumbentCut();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">                                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">                                    if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="fc" id="L103">                                        model.add(Factory.eq(vars.get(i), incumbent.get(i)));</span>
+                                    }
+                                }
+<span class="fc" id="L106">                            });</span>
+                }
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">                                if (lastStats != null) {</span>
+<span class="fc" id="L109">                                    blackBoxSearch.logTrace(&quot;[phase lns-improvement] iteration=%d stats: %s&quot;</span>
+<span class="fc" id="L110">                                            .formatted(iteration, blackBoxSearch.formatStats(lastStats)));</span>
+                                }
+<span class="pc bpc" id="L112" title="2 of 6 branches missed.">                if (lastStats != null &amp;&amp; lastStats.isCompleted() &amp;&amp; !improved.get()) {</span>
+<span class="nc" id="L113">                    break;</span>
+                }
+<span class="fc" id="L115">            }</span>
+
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            if (improved.get()) {</span>
+<span class="fc" id="L118">                                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.IMPROVED));</span>
+<span class="fc" id="L119">                return SearchStatus.IMPROVED;</span>
+<span class="nc bnc" id="L120" title="All 4 branches missed.">            } else if (lastStats != null &amp;&amp; lastStats.isCompleted()) {</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                                SearchStatus status = lastStats.numberOfSolutions() &gt; 0 ? SearchStatus.SAT : SearchStatus.NOT_IMPROVED;</span>
+<span class="nc" id="L122">                                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(status));</span>
+<span class="nc" id="L123">                                return status;</span>
+            } else {
+<span class="nc" id="L125">                                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.NOT_IMPROVED));</span>
+<span class="nc" id="L126">                return SearchStatus.NOT_IMPROVED;</span>
+            }
+        }
+
+
+    }
+
+    static boolean shouldLogProgressIteration(int iteration) {
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">        return iteration &gt; 0 &amp;&amp; iteration % PROGRESS_LOG_PERIOD == 0;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

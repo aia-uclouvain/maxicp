@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RandomizedBranching.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">RandomizedBranching.java</span></div><h1>RandomizedBranching.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import java.util.Random;
+import java.util.function.Supplier;
+
+/**
+ * Decorates a branching supplier and randomly swaps binary branches.
+ */
+final class RandomizedBranching implements Supplier&lt;Runnable[]&gt; {
+
+    private final Supplier&lt;Runnable[]&gt; delegate;
+    private final Random random;
+    private final double swapProbability;
+
+<span class="fc" id="L15">    RandomizedBranching(Supplier&lt;Runnable[]&gt; delegate, Random random, double swapProbability) {</span>
+<span class="fc" id="L16">        this.delegate = delegate;</span>
+<span class="fc" id="L17">        this.random = random;</span>
+<span class="fc" id="L18">        this.swapProbability = swapProbability;</span>
+<span class="fc" id="L19">    }</span>
+
+    @Override
+    public Runnable[] get() {
+<span class="fc" id="L23">        Runnable[] branches = delegate.get();</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">        if (branches.length == 2 &amp;&amp; random.nextDouble() &lt; swapProbability) {</span>
+<span class="fc" id="L25">            Runnable tmp = branches[0];</span>
+<span class="fc" id="L26">            branches[0] = branches[1];</span>
+<span class="fc" id="L27">            branches[1] = tmp;</span>
+        }
+<span class="fc" id="L29">        return branches;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

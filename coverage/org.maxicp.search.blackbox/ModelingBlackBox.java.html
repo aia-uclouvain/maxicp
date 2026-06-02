@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelingBlackBox.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">ModelingBlackBox.java</span></div><h1>ModelingBlackBox.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.symbolic.Objective;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
+
+/**
+ * Convenience entry points for running {@link BlackBoxSearch} from the modeling layer.
+ *
+ * &lt;p&gt;The API exposes two workflows:&lt;/p&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #solve(ModelDispatcher, IntExpression[], int)} for feasibility problems.&lt;/li&gt;
+ *   &lt;li&gt;{@link #optimize(ModelDispatcher, IntExpression[], Objective, int)} for optimization problems.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Both workflows accept optional configurers to tune phase options, phase time shares and verbosity.
+ * The underlying model is executed through {@code model.runCP(...)} and returns a compact {@link Result}.&lt;/p&gt;
+ */
+public final class ModelingBlackBox {
+
+    /**
+     * Final outcome returned by {@link #solve} and {@link #optimize}.
+     *
+     * @param status overall search status
+     * @param solution incumbent values for decision variables when one exists
+     * @param objectiveValue incumbent objective value for optimization models
+     */
+<span class="fc" id="L32">    public record Result(SearchStatus status, Optional&lt;List&lt;Integer&gt;&gt; solution, Optional&lt;Integer&gt; objectiveValue) {</span>
+    }
+
+    private ModelingBlackBox() {
+    }
+
+    /**
+     * Configuration object used by feasibility solves.
+     */
+<span class="fc" id="L41">    public static final class SolveConfig {</span>
+<span class="fc" id="L42">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="fc" id="L43">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="fc" id="L44">        private double initialExhaustiveShare = 0.0;</span>
+<span class="fc" id="L45">        private double restartShare = 0.40;</span>
+<span class="fc" id="L46">        private double exhaustiveShare = 0.60;</span>
+<span class="fc" id="L47">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+
+        /**
+         * Sets restart-phase options.
+         */
+        public SolveConfig restart(BlackBoxSearch.RestartPhaseOptions options) {
+<span class="fc" id="L53">            this.restart = options;</span>
+<span class="fc" id="L54">            return this;</span>
+        }
+
+        /**
+         * Sets exhaustive-phase options.
+         */
+        public SolveConfig exhaustive(BlackBoxSearch.ExhaustivePhaseOptions options) {
+<span class="fc" id="L61">            this.exhaustive = options;</span>
+<span class="fc" id="L62">            return this;</span>
+        }
+
+        /**
+         * Sets time shares for restart and exhaustive phases.
+         */
+        public SolveConfig shares(double restartShare, double exhaustiveShare) {
+<span class="fc" id="L69">            this.restartShare = restartShare;</span>
+<span class="fc" id="L70">            this.exhaustiveShare = exhaustiveShare;</span>
+<span class="fc" id="L71">            return this;</span>
+        }
+
+        /**
+         * Sets the optional initial exhaustive phase time share.
+         */
+        public SolveConfig initialExhaustiveShare(double initialExhaustiveShare) {
+<span class="nc" id="L78">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
+<span class="nc" id="L79">            return this;</span>
+        }
+
+        /**
+         * Sets logging verbosity for the underlying {@link BlackBoxSearch}.
+         */
+        public SolveConfig verbosity(BlackBoxSearch.Verbosity verbosity) {
+<span class="nc" id="L86">            this.verbosity = verbosity;</span>
+<span class="nc" id="L87">            return this;</span>
+        }
+    }
+
+    /**
+     * Configuration object used by optimization solves.
+     */
+<span class="fc" id="L94">    public static final class OptimizeConfig {</span>
+<span class="fc" id="L95">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="fc" id="L96">        private BlackBoxSearch.LnsPhaseOptions lns = BlackBoxSearch.LnsPhaseOptions.defaults();</span>
+<span class="fc" id="L97">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="fc" id="L98">        private double initialExhaustiveShare = 0.25;</span>
+<span class="fc" id="L99">        private double restartShare = 0.20;</span>
+<span class="fc" id="L100">        private double lnsShare = 1.0 / 3.0;</span>
+<span class="fc" id="L101">        private double exhaustiveShare = 1.0 - 0.25 - 0.20 - 1.0 / 3.0;</span>
+<span class="fc" id="L102">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+
+        /**
+         * Sets restart-phase options.
+         */
+        public OptimizeConfig restart(BlackBoxSearch.RestartPhaseOptions options) {
+<span class="nc" id="L108">            this.restart = options;</span>
+<span class="nc" id="L109">            return this;</span>
+        }
+
+        /**
+         * Sets LNS phase options.
+         */
+        public OptimizeConfig lns(BlackBoxSearch.LnsPhaseOptions options) {
+<span class="nc" id="L116">            this.lns = options;</span>
+<span class="nc" id="L117">            return this;</span>
+        }
+
+        /**
+         * Sets exhaustive-phase options.
+         */
+        public OptimizeConfig exhaustive(BlackBoxSearch.ExhaustivePhaseOptions options) {
+<span class="nc" id="L124">            this.exhaustive = options;</span>
+<span class="nc" id="L125">            return this;</span>
+        }
+
+        /**
+         * Sets time shares for restart, LNS, and exhaustive phases.
+         */
+        public OptimizeConfig shares(double restartShare, double lnsShare, double exhaustiveShare) {
+<span class="nc" id="L132">            this.restartShare = restartShare;</span>
+<span class="nc" id="L133">            this.lnsShare = lnsShare;</span>
+<span class="nc" id="L134">            this.exhaustiveShare = exhaustiveShare;</span>
+<span class="nc" id="L135">            return this;</span>
+        }
+
+        /**
+         * Sets the optional initial exhaustive phase time share.
+         */
+        public OptimizeConfig initialExhaustiveShare(double initialExhaustiveShare) {
+<span class="nc" id="L142">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
+<span class="nc" id="L143">            return this;</span>
+        }
+
+        /**
+         * Sets logging verbosity for the underlying {@link BlackBoxSearch}.
+         */
+        public OptimizeConfig verbosity(BlackBoxSearch.Verbosity verbosity) {
+<span class="nc" id="L150">            this.verbosity = verbosity;</span>
+<span class="nc" id="L151">            return this;</span>
+        }
+    }
+
+    /**
+     * Solves a feasibility model with default black-box settings.
+     */
+    public static Result solve(ModelDispatcher model, IntExpression[] decisionVars, int timeLimitInSeconds) {
+<span class="fc" id="L159">        return solve(model, decisionVars, timeLimitInSeconds, cfg -&gt; cfg);</span>
+    }
+
+    /**
+     * Solves a feasibility model with caller-provided configuration.
+     */
+    public static Result solve(ModelDispatcher model, IntExpression[] decisionVars, int timeLimitInSeconds,
+                               UnaryOperator&lt;SolveConfig&gt; configurer) {
+<span class="fc" id="L167">        return model.runCP(() -&gt; {</span>
+<span class="fc" id="L168">            SolveConfig cfg = configurer.apply(new SolveConfig());</span>
+<span class="fc" id="L169">            BlackBoxSearch search = new BlackBoxSearch(model, decisionVars)</span>
+<span class="fc" id="L170">                    .withVerbosity(cfg.verbosity)</span>
+<span class="fc" id="L171">                    .withFeasibilityPlan(cfg.restart, cfg.exhaustive,</span>
+                            cfg.initialExhaustiveShare, cfg.restartShare, cfg.exhaustiveShare);
+<span class="fc" id="L173">            SearchStatus status = search.start(timeLimitInSeconds);</span>
+<span class="fc" id="L174">            return new Result(status, search.bestSolution(), search.bestObjectiveValue());</span>
+        });
+    }
+
+    /**
+     * Solves an optimization model with default black-box settings.
+     */
+    public static Result optimize(ModelDispatcher model, IntExpression[] decisionVars, Objective objective, int timeLimitInSeconds) {
+<span class="fc" id="L182">        return optimize(model, decisionVars, objective, timeLimitInSeconds, cfg -&gt; cfg);</span>
+    }
+
+    /**
+     * Solves an optimization model with caller-provided configuration.
+     */
+    public static Result optimize(ModelDispatcher model, IntExpression[] decisionVars, Objective objective, int timeLimitInSeconds,
+                                  UnaryOperator&lt;OptimizeConfig&gt; configurer) {
+<span class="fc" id="L190">        return model.runCP(() -&gt; {</span>
+<span class="fc" id="L191">            OptimizeConfig cfg = configurer.apply(new OptimizeConfig());</span>
+<span class="fc" id="L192">            BlackBoxSearch search = new BlackBoxSearch(model, decisionVars, objective)</span>
+<span class="fc" id="L193">                    .withVerbosity(cfg.verbosity)</span>
+<span class="fc" id="L194">                    .withOptimizationPlan(cfg.restart, cfg.lns, cfg.exhaustive,</span>
+                            cfg.initialExhaustiveShare, cfg.restartShare, cfg.lnsShare, cfg.exhaustiveShare);
+<span class="fc" id="L196">            SearchStatus status = search.start(timeLimitInSeconds);</span>
+<span class="fc" id="L197">            return new Result(status, search.bestSolution(), search.bestObjectiveValue());</span>
+        });
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -28,7 +28,7 @@ public interface ModelProxyInstantiator extends ModelProxy {
 <span class="fc" id="L28">    }</span>
 
     default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Supplier&lt;R&gt; fun) {
-<span class="nc" id="L31">        return runAsConcrete(instantiator, getModel(), fun);</span>
+<span class="fc" id="L31">        return runAsConcrete(instantiator, getModel(), fun);</span>
     }
 
     default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Runnable fun) {
@@ -54,8 +54,8 @@ public interface ModelProxyInstantiator extends ModelProxy {
 <span class="fc" id="L54">    }</span>
 
     default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Supplier&lt;R&gt; fun) {
-<span class="nc" id="L57">        T m = instantiator.instantiate(bm);</span>
-<span class="nc" id="L58">        return runWithModel(m, fun);</span>
+<span class="fc" id="L57">        T m = instantiator.instantiate(bm);</span>
+<span class="fc" id="L58">        return runWithModel(m, fun);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

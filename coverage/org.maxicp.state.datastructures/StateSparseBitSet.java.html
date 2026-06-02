@@ -43,13 +43,13 @@ public class StateSparseBitSet {
 <span class="fc" id="L43">        }</span>
 
         public SupportBitSet(BitSet anotherBitSet) {
-<span class="fc" id="L46">            this(anotherBitSet, false);</span>
-<span class="fc" id="L47">        }</span>
+<span class="nc" id="L46">            this(anotherBitSet, false);</span>
+<span class="nc" id="L47">        }</span>
 
         public SupportBitSet(BitSet anotherBitSet, boolean shared) {
-<span class="fc" id="L50">            super(anotherBitSet, shared);</span>
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">            assert anotherBitSet.nbWords == nWords : &quot;BitSet size is incomptible with State Sparse BitSet size&quot;;</span>
-<span class="fc" id="L52">        }</span>
+<span class="nc" id="L50">            super(anotherBitSet, shared);</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">            assert anotherBitSet.nbWords == nWords : &quot;BitSet size is incomptible with State Sparse BitSet size&quot;;</span>
+<span class="nc" id="L52">        }</span>
 
     }
 

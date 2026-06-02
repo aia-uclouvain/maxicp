@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XCSP3Cli.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.xcsp3</a> &gt; <span class="el_source">XCSP3Cli.java</span></div><h1>XCSP3Cli.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.xcsp3;
+
+import org.maxicp.modeling.algebra.VariableNotFixedException;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.symbolic.Maximization;
+import org.maxicp.modeling.symbolic.Minimization;
+import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.NotImplementedException;
+
+import java.util.Locale;
+
+/**
+ * Competition-oriented CLI for XCSP3 instances.
+ */
+public final class XCSP3Cli {
+
+    private XCSP3Cli() {
+        // Utility class.
+    }
+
+    public static void main(String[] args) {
+<span class="nc" id="L25">        String benchPath = findBenchPath(args);</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (benchPath == null) {</span>
+<span class="nc" id="L27">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+<span class="nc" id="L28">            return;</span>
+        }
+
+<span class="nc" id="L31">        try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(benchPath)) {</span>
+<span class="nc" id="L32">            IntExpression[] vars = instance.decisionVars();</span>
+<span class="nc" id="L33">            SolveOutcome outcome = instance.md().runCP((cp) -&gt; {</span>
+<span class="nc" id="L34">                DFSearch search = cp.dfSearch(new FDSModeling(vars));</span>
+<span class="nc" id="L35">                SolveOutcome current = new SolveOutcome(instance.objective());</span>
+
+<span class="nc" id="L37">                search.onSolution(() -&gt; {</span>
+<span class="nc" id="L38">                    current.bestSolution = instance.solutionGenerator().get();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">                    if (instance.objective() != null) {</span>
+<span class="nc" id="L40">                        int currentObj = evaluateObjective(instance.objective());</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">                        if (current.isBetterObjective(currentObj)) {</span>
+<span class="nc" id="L42">                            current.bestObjective = currentObj;</span>
+<span class="nc" id="L43">                            System.out.println(&quot;o &quot; + currentObj);</span>
+<span class="nc" id="L44">                            System.out.flush();</span>
+                        }
+                    }
+<span class="nc" id="L47">                });</span>
+
+<span class="nc bnc" id="L49" title="All 2 branches missed.">                SearchStatistics stats = instance.objective() != null</span>
+<span class="nc" id="L50">                        ? search.optimize(instance.objective())</span>
+<span class="nc" id="L51">                        : search.solve();</span>
+<span class="nc" id="L52">                current.stats = stats;</span>
+<span class="nc" id="L53">                return current;</span>
+            });
+
+<span class="nc" id="L56">            printFinalStatus(outcome);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (outcome.bestSolution != null) {</span>
+<span class="nc" id="L58">                System.out.println(&quot;v &quot; + normalizeSolution(outcome.bestSolution));</span>
+            }
+<span class="nc" id="L60">        } catch (NotImplementedException e) {</span>
+<span class="nc" id="L61">            System.out.println(&quot;s UNSUPPORTED&quot;);</span>
+<span class="nc" id="L62">        } catch (Throwable t) {</span>
+<span class="nc" id="L63">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+<span class="nc" id="L64">            System.out.println(&quot;c &quot; + t.getClass().getSimpleName() + &quot;: &quot; + sanitizeForComment(t.getMessage()));</span>
+<span class="nc" id="L65">        }</span>
+<span class="nc" id="L66">    }</span>
+
+    private static String findBenchPath(String[] args) {
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        for (String arg : args) {</span>
+<span class="nc" id="L70">            String lower = arg.toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">            if (lower.startsWith(&quot;--mem-limit=&quot;)</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                    || lower.startsWith(&quot;--time-limit=&quot;)</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                    || lower.startsWith(&quot;--tmpdir=&quot;)</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">                    || lower.startsWith(&quot;--seed=&quot;)) {</span>
+<span class="nc" id="L75">                continue;</span>
+            }
+<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (!arg.startsWith(&quot;-&quot;)) {</span>
+<span class="nc" id="L78">                return arg;</span>
+            }
+        }
+<span class="nc" id="L81">        return null;</span>
+    }
+
+    private static void printFinalStatus(SolveOutcome outcome) {
+<span class="nc" id="L85">        SearchStatistics stats = outcome.stats;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        boolean hasSolution = outcome.bestSolution != null;</span>
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (outcome.objective == null) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (hasSolution) {</span>
+<span class="nc" id="L90">                System.out.println(&quot;s SATISFIABLE&quot;);</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">            } else if (stats != null &amp;&amp; stats.isCompleted()) {</span>
+<span class="nc" id="L92">                System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
+            } else {
+<span class="nc" id="L94">                System.out.println(&quot;s UNKNOWN&quot;);</span>
+            }
+<span class="nc" id="L96">            return;</span>
+        }
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (hasSolution) {</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">            if (stats != null &amp;&amp; stats.isCompleted()) {</span>
+<span class="nc" id="L101">                System.out.println(&quot;s OPTIMUM FOUND&quot;);</span>
+            } else {
+<span class="nc" id="L103">                System.out.println(&quot;s SATISFIABLE&quot;);</span>
+            }
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        } else if (stats != null &amp;&amp; stats.isCompleted()) {</span>
+<span class="nc" id="L106">            System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
+        } else {
+<span class="nc" id="L108">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+        }
+<span class="nc" id="L110">    }</span>
+
+    private static int evaluateObjective(Objective objective) {
+        try {
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (objective instanceof Minimization min) {</span>
+<span class="nc" id="L115">                return min.expr().evaluate();</span>
+            }
+<span class="nc bnc" id="L117" title="All 2 branches missed.">            if (objective instanceof Maximization max) {</span>
+<span class="nc" id="L118">                return max.expr().evaluate();</span>
+            }
+<span class="nc" id="L120">            throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
+<span class="nc" id="L121">        } catch (VariableNotFixedException e) {</span>
+<span class="nc" id="L122">            throw new RuntimeException(e);</span>
+        }
+    }
+
+    private static String normalizeSolution(String solution) {
+<span class="nc" id="L127">        return solution.replace('\n', ' ').replaceAll(&quot;\\s+&quot;, &quot; &quot;).trim();</span>
+    }
+
+    private static String sanitizeForComment(String text) {
+<span class="nc bnc" id="L131" title="All 4 branches missed.">        if (text == null || text.isBlank()) {</span>
+<span class="nc" id="L132">            return &quot;unexpected error&quot;;</span>
+        }
+<span class="nc" id="L134">        return text.replace('\n', ' ').replace('\r', ' ').trim();</span>
+    }
+
+    private static final class SolveOutcome {
+        private final Objective objective;
+        private SearchStatistics stats;
+        private String bestSolution;
+        private Integer bestObjective;
+
+<span class="nc" id="L143">        private SolveOutcome(Objective objective) {</span>
+<span class="nc" id="L144">            this.objective = objective;</span>
+<span class="nc" id="L145">        }</span>
+
+        private boolean isBetterObjective(int candidate) {
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (bestObjective == null) {</span>
+<span class="nc" id="L149">                return true;</span>
+            }
+<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (objective instanceof Minimization) {</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">                return candidate &lt; bestObjective;</span>
+            }
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (objective instanceof Maximization) {</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">                return candidate &gt; bestObjective;</span>
+            }
+<span class="nc" id="L157">            return false;</span>
+        }
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

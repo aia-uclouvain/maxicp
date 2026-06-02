@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-<span class="nc" id="L13">public record Element2D(int[][] array, IntExpression x, IntExpression y) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L13">public record Element2D(int[][] array, IntExpression x, IntExpression y) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
 
     private int[] getTempArray(IntExpression index) {
-<span class="nc" id="L16">        int minIndex = Math.max(index.min(), 0);</span>
-<span class="nc" id="L17">        int maxIndex = Math.min(index.max(), array.length - 1);</span>
-<span class="nc" id="L18">        return new int[maxIndex - minIndex + 1];</span>
+<span class="fc" id="L16">        int minIndex = Math.max(index.min(), 0);</span>
+<span class="fc" id="L17">        int maxIndex = Math.min(index.max(), array.length - 1);</span>
+<span class="fc" id="L18">        return new int[maxIndex - minIndex + 1];</span>
     }
 
     @Override
     public Collection&lt;Expression&gt; computeSubexpressions() {
-<span class="nc" id="L23">        return List.of(x, y);</span>
+<span class="fc" id="L23">        return List.of(x, y);</span>
     }
 
     @Override
@@ -35,28 +35,28 @@ import java.util.function.Function;
 
     @Override
     public int defaultMin() {
-<span class="nc" id="L38">        int[] tempx = this.getTempArray(x);</span>
-<span class="nc" id="L39">        int sizex = x.fillArray(tempx);</span>
-<span class="nc" id="L40">        int[] tempy = this.getTempArray(y);</span>
-<span class="nc" id="L41">        int sizey = y.fillArray(tempx);</span>
-<span class="nc" id="L42">        int minValue = Integer.MAX_VALUE;</span>
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        for(int i = 0; i &lt; sizex; i++)</span>
-<span class="nc bnc" id="L44" title="All 2 branches missed.">            for(int j = 0; j &lt; sizey; j++)</span>
-<span class="nc" id="L45">                minValue = Math.min(minValue, array[tempx[i]][tempy[j]]);</span>
-<span class="nc" id="L46">        return minValue;</span>
+<span class="fc" id="L38">        int[] tempx = this.getTempArray(x);</span>
+<span class="fc" id="L39">        int sizex = x.fillArray(tempx);</span>
+<span class="fc" id="L40">        int[] tempy = this.getTempArray(y);</span>
+<span class="fc" id="L41">        int sizey = y.fillArray(tempy);</span>
+<span class="fc" id="L42">        int minValue = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for(int i = 0; i &lt; sizex; i++)</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            for(int j = 0; j &lt; sizey; j++)</span>
+<span class="fc" id="L45">                minValue = Math.min(minValue, array[tempx[i]][tempy[j]]);</span>
+<span class="fc" id="L46">        return minValue;</span>
     }
 
     @Override
     public int defaultMax() {
-<span class="nc" id="L51">        int[] tempx = this.getTempArray(x);</span>
-<span class="nc" id="L52">        int sizex = x.fillArray(tempx);</span>
-<span class="nc" id="L53">        int[] tempy = this.getTempArray(y);</span>
-<span class="nc" id="L54">        int sizey = y.fillArray(tempx);</span>
-<span class="nc" id="L55">        int maxValue = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">        for(int i = 0; i &lt; sizex; i++)</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            for(int j = 0; j &lt; sizey; j++)</span>
-<span class="nc" id="L58">                maxValue = Math.max(maxValue, array[tempx[i]][tempy[j]]);</span>
-<span class="nc" id="L59">        return maxValue;</span>
+<span class="fc" id="L51">        int[] tempx = this.getTempArray(x);</span>
+<span class="fc" id="L52">        int sizex = x.fillArray(tempx);</span>
+<span class="fc" id="L53">        int[] tempy = this.getTempArray(y);</span>
+<span class="fc" id="L54">        int sizey = y.fillArray(tempy);</span>
+<span class="fc" id="L55">        int maxValue = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for(int i = 0; i &lt; sizex; i++)</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            for(int j = 0; j &lt; sizey; j++)</span>
+<span class="fc" id="L58">                maxValue = Math.max(maxValue, array[tempx[i]][tempy[j]]);</span>
+<span class="fc" id="L59">        return maxValue;</span>
     }
 
     @Override
@@ -64,7 +64,7 @@ import java.util.function.Function;
 <span class="nc" id="L64">        int[] tempx = this.getTempArray(x);</span>
 <span class="nc" id="L65">        int sizex = x.fillArray(tempx);</span>
 <span class="nc" id="L66">        int[] tempy = this.getTempArray(y);</span>
-<span class="nc" id="L67">        int sizey = y.fillArray(tempx);</span>
+<span class="nc" id="L67">        int sizey = y.fillArray(tempy);</span>
 <span class="nc bnc" id="L68" title="All 2 branches missed.">        for(int i = 0; i &lt; sizex; i++)</span>
 <span class="nc bnc" id="L69" title="All 2 branches missed.">            for(int j = 0; j &lt; sizey; j++)</span>
 <span class="nc bnc" id="L70" title="All 2 branches missed.">                if (array[tempx[i]][tempy[j]] == v)</span>
@@ -77,7 +77,7 @@ import java.util.function.Function;
 <span class="nc" id="L77">        int[] tempx = this.getTempArray(x);</span>
 <span class="nc" id="L78">        int sizex = x.fillArray(tempx);</span>
 <span class="nc" id="L79">        int[] tempy = this.getTempArray(y);</span>
-<span class="nc" id="L80">        int sizey = y.fillArray(tempx);</span>
+<span class="nc" id="L80">        int sizey = y.fillArray(tempy);</span>
 <span class="nc" id="L81">        int k = 0;</span>
 <span class="nc" id="L82">        Set&lt;Integer&gt; s = new HashSet&lt;&gt;();</span>
 <span class="nc bnc" id="L83" title="All 2 branches missed.">        for(int i = 0; i &lt; sizex; i++) {</span>
@@ -98,7 +98,7 @@ import java.util.function.Function;
 <span class="nc" id="L98">        int[] tempx = this.getTempArray(x);</span>
 <span class="nc" id="L99">        int sizex = x.fillArray(tempx);</span>
 <span class="nc" id="L100">        int[] tempy = this.getTempArray(y);</span>
-<span class="nc" id="L101">        int sizey = y.fillArray(tempx);</span>
+<span class="nc" id="L101">        int sizey = y.fillArray(tempy);</span>
 <span class="nc" id="L102">        Set&lt;Integer&gt; s = new HashSet&lt;&gt;();</span>
 <span class="nc bnc" id="L103" title="All 2 branches missed.">        for(int i = 0; i &lt; sizex; i++)</span>
 <span class="nc bnc" id="L104" title="All 2 branches missed.">            for (int j = 0; j &lt; sizey; j++)</span>
