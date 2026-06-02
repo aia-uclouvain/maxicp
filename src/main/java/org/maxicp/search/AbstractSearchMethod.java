@@ -285,14 +285,14 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
      */
     public SearchStatistics optimize(Objective toTighten, Predicate<SearchStatistics> limit) {
         SearchStatistics statistics = new SearchStatistics();
-        Runnable tighten = toTighten::tighten;
-        onSolution(tighten);
+        Consumer<SearchStatistics> tightenLambda = s -> toTighten.tighten();
+        solutionListeners.add(tightenLambda);
         try {
             solve(statistics, limit, toTighten::filter);
         } catch (InconsistencyException ignored) {
             ignored.printStackTrace();
         }
-        solutionListeners.remove(tighten); // make sure we don't keep the objective active
+        solutionListeners.remove(tightenLambda); // make sure we don't keep the objective active
         return statistics;
     }
 

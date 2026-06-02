@@ -38,7 +38,7 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempx = this.getTempArray(x);
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
-        int sizey = y.fillArray(tempx);
+        int sizey = y.fillArray(tempy);
         int minValue = Integer.MAX_VALUE;
         for(int i = 0; i < sizex; i++)
             for(int j = 0; j < sizey; j++)
@@ -51,7 +51,7 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempx = this.getTempArray(x);
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
-        int sizey = y.fillArray(tempx);
+        int sizey = y.fillArray(tempy);
         int maxValue = Integer.MIN_VALUE;
         for(int i = 0; i < sizex; i++)
             for(int j = 0; j < sizey; j++)
@@ -64,7 +64,7 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempx = this.getTempArray(x);
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
-        int sizey = y.fillArray(tempx);
+        int sizey = y.fillArray(tempy);
         for(int i = 0; i < sizex; i++)
             for(int j = 0; j < sizey; j++)
                 if (array[tempx[i]][tempy[j]] == v)
@@ -77,7 +77,7 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempx = this.getTempArray(x);
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
-        int sizey = y.fillArray(tempx);
+        int sizey = y.fillArray(tempy);
         int k = 0;
         Set<Integer> s = new HashSet<>();
         for(int i = 0; i < sizex; i++) {
@@ -98,7 +98,7 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempx = this.getTempArray(x);
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
-        int sizey = y.fillArray(tempx);
+        int sizey = y.fillArray(tempy);
         Set<Integer> s = new HashSet<>();
         for(int i = 0; i < sizex; i++)
             for (int j = 0; j < sizey; j++)

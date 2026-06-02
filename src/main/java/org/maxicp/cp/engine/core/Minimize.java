@@ -42,6 +42,10 @@ public class Minimize implements IntObjective {
 
     @Override
     public void tighten() {
+        if (!x.isFixed()) {
+            System.out.printf("objective:"+x);
+        }
+
         if (!x.isFixed()) throw new RuntimeException("objective not bound");
         int newValue = x.max() - delta;
         bound.getAndUpdate((value) -> Math.min(newValue, value));

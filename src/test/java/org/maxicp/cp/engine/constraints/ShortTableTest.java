@@ -182,4 +182,25 @@ public class ShortTableTest extends CPSolverTest {
         cp.post(new ShortTableCT(data, table, star));
         assertEquals(-1, data[1].min());
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void starSupportActsAsFallbackUntilDisabled(CPSolver cp) {
+        final int star = 99;
+        final int[][] table = {
+                {star, 0},
+                {2, 1}
+        };
+
+        CPIntVar x0 = CPFactory.makeIntVar(cp, Set.of(0, 1, 2));
+        CPIntVar x1 = CPFactory.makeIntVar(cp, Set.of(0, 1));
+
+        cp.post(new ShortTableCT(new CPIntVar[]{x0, x1}, table, star));
+        assertEquals(3, x0.size());
+
+        x1.remove(0);
+        cp.fixPoint();
+        assertTrue(x0.isFixed());
+        assertEquals(2, x0.min());
+    }
 }

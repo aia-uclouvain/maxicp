@@ -8,6 +8,8 @@ import org.maxicp.modeling.algebra.bool.*;
 import org.maxicp.modeling.algebra.integer.*;
 import org.maxicp.modeling.constraints.*;
 import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
+import org.maxicp.search.blackbox.ModelingBlackBox;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.FDSModeling;
 import org.maxicp.search.SearchStatistics;
@@ -40,12 +42,57 @@ public class XCSP3 extends XCallbacksDecomp {
 
 
     public static void main(String[] args) throws Exception {
-        cop();
+        String path = args.length > 0
+                ? args[0]
+                :
+                //"data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
+                //"data/XCSP3/2024_V3/MiniCOP/Charlotte-mini-06-0_c24.xml"; // hard to optimize
+                "data/XCSP3/2024_V3/MiniCOP/Clique-brock200-2_c24.xml"; // hard to optimize
+                //"data/XCSP3/2024_V3/MiniCOP/Clique-c0125-9_c24.xml"; // hard to optimize
+                //"data/XCSP3/2024_V3/MiniCOP/Drinking-mini-000050_c24.xml"; // OK
+        //"data/XCSP3/2024_V3/MiniCOP/FoolSolitaire-table-0-2_c24.xml"; // hard to optimize
+        //"data/XCSP3/2024_V3/MiniCOP/GolombRuler-a3v18-07_c18.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/LitPuzzle-10_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/MaximumDensityOscillatingLife-mini-5-2_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
+        //String path = "data/XCSP3/2024_V3/MiniCOP/RotationPuzzle-2_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/SameQueensKnights-mini-05_c24.xml"; // OK
+        //"data/XCSP3/2024_V3/MiniCOP/StillLife-05-05_c24.xml"; // OK
+        //"data/XCSP3/2024_V3/MiniCOP/WordGolf-mini-4-ogd2008-50-0_c24.xml"; // hard to find a feasible solution
+
+        int timeoutInSeconds = args.length > 1 ? Integer.parseInt(args[1]) : 4 * 60;
+        runWithBlackBox(path, timeoutInSeconds);
+    }
+
+    public static void runWithBlackBox(String path, int timeoutInSeconds) throws Exception {
+        try (XCSP3LoadedInstance instance = load(path)) {
+            ModelingBlackBox.Result result = instance.objective() != null
+                    ? ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeoutInSeconds,
+                    c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS))
+                    : ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeoutInSeconds,
+                    c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS));
+
+            System.out.printf("blackbox status: %s%n", result.status());
+            System.out.printf("feasible solution found: %s%n", result.solution().isPresent() ? "yes" : "no");
+            if (result.objectiveValue().isPresent()) {
+                System.out.printf("objective: %d%n", result.objectiveValue().get());
+            }
+
+            if (result.solution().isPresent()) {
+                String sol = buildInstantiation(instance.decisionVarIds(), result.solution().get());
+                SolutionChecker sc = new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));
+                assertEquals(0, sc.invalidObjs.size());
+                assertEquals(0, sc.violatedCtrs.size());
+                System.out.println("solution validated by XCSP3 checker");
+            } else {
+                System.out.println("no solution produced within the given timeout");
+            }
+        }
     }
 
     // CSP
     public static void cop() throws Exception {
-        //String path = "data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
+        String path = "data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
         //String path = "data/XCSP3/2024_V3/MiniCOP/Charlotte-mini-06-0_c24.xml"; // hard to optimize
         // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-brock200-2_c24.xml"; // hard to optimize
         // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-c0125-9_c24.xml"; // hard to optimize
@@ -54,7 +101,7 @@ public class XCSP3 extends XCallbacksDecomp {
         // String path = "data/XCSP3/2024_V3/MiniCOP/GolombRuler-a3v18-07_c18.xml"; // OK
         // String path = "data/XCSP3/2024_V3/MiniCOP/LitPuzzle-10_c24.xml"; // OK
         // String path = "data/XCSP3/2024_V3/MiniCOP/MaximumDensityOscillatingLife-mini-5-2_c24.xml"; // OK
-        String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
+        // String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
         //String path = "data/XCSP3/2024_V3/MiniCOP/RotationPuzzle-2_c24.xml"; // OK
         // String path = "data/XCSP3/2024_V3/MiniCOP/SameQueensKnights-mini-05_c24.xml"; // OK
         // String path = "data/XCSP3/2024_V3/MiniCOP/StillLife-05-05_c24.xml"; // OK
@@ -79,7 +126,7 @@ public class XCSP3 extends XCallbacksDecomp {
                     }
                 });
 
-                System.out.printf("objective function ?"+ instance.objective() != null ? "yes (%s)".formatted(instance.objective()) : "no");
+                System.out.printf("objective function ?" + instance.objective() != null ? "yes (%s)".formatted(instance.objective()) : "no");
 
                 SearchStatistics stats = instance.objective() != null
                         ? search.optimize(instance.objective())
@@ -134,6 +181,7 @@ public class XCSP3 extends XCallbacksDecomp {
 
 
     public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,
+                                      String[] decisionVarIds,
                                       Supplier<String> solutionGenerator,
                                       Objective objective) implements AutoCloseable {
         @Override
@@ -151,28 +199,42 @@ public class XCSP3 extends XCallbacksDecomp {
             throw t;
         }
 
+        String[] decisionVarIds = xcsp3.decisionVars.toArray(String[]::new);
+
         Supplier<String> solutionGenerator = () -> {
-            StringBuilder b = new StringBuilder();
-            b.append("<instantiation>\n\t<list>\n\t\t");
-            b.append(String.join(" ", xcsp3.decisionVars));
-            b.append("\n\t</list>\n\t<values>\n\t\t");
-            b.append(String.join(" ", xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).map(x -> {
-                try {
-                    return Integer.toString(x.evaluate());
-                } catch (VariableNotFixedException e) {
-                    throw new RuntimeException(e);
-                }
-            }).toArray(String[]::new)));
-            b.append("\n\t</values>\n</instantiation>");
-            return b.toString();
+            List<Integer> values = Arrays.stream(decisionVarIds)
+                    .map(xcsp3.varHashMap::get)
+                    .map(x -> {
+                        try {
+                            return x.evaluate();
+                        } catch (VariableNotFixedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .toList();
+            return buildInstantiation(decisionVarIds, values);
         };
 
         return new XCSP3LoadedInstance(
                 xcsp3.md,
-                xcsp3.decisionVars.stream().map(xcsp3.varHashMap::get).toArray(IntExpression[]::new),
+                Arrays.stream(decisionVarIds).map(xcsp3.varHashMap::get).toArray(IntExpression[]::new),
+                decisionVarIds,
                 solutionGenerator,
                 xcsp3.objective
         );
+    }
+
+    private static String buildInstantiation(String[] varIds, List<Integer> values) {
+        if (varIds.length != values.size()) {
+            throw new IllegalArgumentException("decision variable ids and values must have same size");
+        }
+        StringBuilder b = new StringBuilder();
+        b.append("<instantiation>\n\t<list>\n\t\t");
+        b.append(String.join(" ", varIds));
+        b.append("\n\t</list>\n\t<values>\n\t\t");
+        b.append(values.stream().map(String::valueOf).collect(Collectors.joining(" ")));
+        b.append("\n\t</values>\n</instantiation>");
+        return b.toString();
     }
 
     private final LinkedHashMap<String, IntExpression> varHashMap;
@@ -193,8 +255,9 @@ public class XCSP3 extends XCallbacksDecomp {
         impl.currParameters.put(XCallbacksParameters.RECOGNIZE_BINARY_PRIMITIVES, new Object());
         impl.currParameters.put(XCallbacksParameters.RECOGNIZE_TERNARY_PRIMITIVES, new Object());
         impl.currParameters.put(XCallbacksParameters.RECOGNIZING_BEFORE_CONVERTING, true);
-        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_ARITY_LIMIT, 0); // included
-        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_SPACE_LIMIT, 0L); // included
+        // Avoid aggressive intension-to-extension conversion, which can create huge tables.
+        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_ARITY_LIMIT, 5);
+        impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_SPACE_LIMIT, 200_000L);
     }
 
     @Override
@@ -218,6 +281,11 @@ public class XCSP3 extends XCallbacksDecomp {
     public void buildCtrAllDifferent(String id, XVariables.XVarInteger[] list) {
         addToDV(list);
         md.add(new AllDifferent($(list)));
+    }
+
+    @Override
+    public void buildCtrLex(String id, XVariables.XVarInteger[] list, int[] limit, Types.TypeOperatorRel operator) {
+        unimplementedCase(id);
     }
 
     @Override
@@ -376,18 +444,17 @@ public class XCSP3 extends XCallbacksDecomp {
         }
     }
 
-    protected HashMap<String, IntExpression> expr_cache = new HashMap<>();
+    protected IdentityHashMap<XNode<?>, IntExpression> expr_cache = new IdentityHashMap<>();
 
     private <V extends IVar> IntExpression _recursiveIntentionBuilder(XNode<V> node) {
-        String key = node.toString();
-        IntExpression val = expr_cache.get(key);
+        IntExpression val = expr_cache.get(node);
         if (val == null) {
             val = switch (node) {
                 case XNodeLeaf<V> leaf -> _recursiveIntentionBuilderLeafNode(leaf);
                 case XNodeParent<V> parent -> _recursiveIntentionBuilderParentNode(parent);
                 default -> throw new RuntimeException("Unknown node type");
             };
-            expr_cache.put(key, val);
+            expr_cache.put(node, val);
         }
         return val;
     }
