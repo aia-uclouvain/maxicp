@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DecisionVarCollector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling</a> &gt; <span class="el_source">DecisionVarCollector.java</span></div><h1>DecisionVarCollector.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+package org.maxicp.modeling;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+
+import java.util.*;
+
+/**
+ * Walks the full constraint / expression graph of a {@link ModelDispatcher}
+ * and collects all candidate decision variables declared by
+ * {@link DecisionVarsProvider} nodes.
+ *
+ * &lt;p&gt;Walk strategy:&lt;/p&gt;
+ * &lt;ol&gt;
+ *   &lt;li&gt;For every {@link Constraint}: if it implements
+ *       {@link DecisionVarsProvider}, harvest its {@code decisionVariables()}.
+ *   &lt;/li&gt;
+ *   &lt;li&gt;Descend the expression sub-tree of every scope expression via
+ *       {@link Expression#subexpressions()}, collecting from any
+ *       {@link DecisionVarsProvider} node found (e.g. an {@code Element1D}
+ *       embedded inside a sum).
+ *   &lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * &lt;p&gt;Results are deduplicated by identity, preserving first-seen order.&lt;/p&gt;
+ *
+ * @see DecisionVarsProvider
+ */
+public class DecisionVarCollector {
+
+    private DecisionVarCollector() {}
+
+    /**
+     * Collects all candidate decision variables inferred from the model's
+     * constraint graph.
+     *
+     * @param model the model to inspect
+     * @return ordered, identity-deduplicated, unmodifiable list of decision variables
+     */
+    public static List&lt;IntExpression&gt; collect(ModelDispatcher model) {
+<span class="fc" id="L46">        IdentityHashMap&lt;IntExpression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L47">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            if (c instanceof DecisionVarsProvider dvp) {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                for (IntExpression v : dvp.decisionVariables())</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">                    if (seen.putIfAbsent(v, Boolean.TRUE) == null)</span>
+<span class="fc" id="L52">                        result.add(v);</span>
+            }
+<span class="fc" id="L54">            walkExpressions(c.scope(), seen, result);</span>
+<span class="fc" id="L55">        }</span>
+<span class="fc" id="L56">        return Collections.unmodifiableList(result);</span>
+    }
+
+    /** Iterative DFS over expression trees; harvests DecisionVarsProvider nodes. */
+    private static void walkExpressions(
+            Collection&lt;? extends Expression&gt; roots,
+            IdentityHashMap&lt;IntExpression, Boolean&gt; seen,
+            List&lt;IntExpression&gt; result) {
+<span class="fc" id="L64">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(roots);</span>
+<span class="fc" id="L65">        IdentityHashMap&lt;Expression, Boolean&gt; visited = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L67">            Expression node = stack.pop();</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (visited.putIfAbsent(node, Boolean.TRUE) != null) continue;</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            if (node instanceof DecisionVarsProvider dvp) {</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                for (IntExpression v : dvp.decisionVariables())</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">                    if (seen.putIfAbsent(v, Boolean.TRUE) == null)</span>
+<span class="nc" id="L72">                        result.add(v);</span>
+            }
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            for (Expression child : node.subexpressions())</span>
+<span class="nc" id="L75">                stack.push(child);</span>
+<span class="fc" id="L76">        }</span>
+<span class="fc" id="L77">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

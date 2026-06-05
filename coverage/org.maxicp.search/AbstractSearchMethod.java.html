@@ -322,8 +322,8 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
 <span class="fc" id="L322">                subjectTo.run();</span>
 <span class="fc" id="L323">                statistics.set(optimize(objToTighten, limit));</span>
 <span class="nc" id="L324">            } catch (InconsistencyException ignored) {</span>
-<span class="fc" id="L325">            }</span>
-
+<span class="nc" id="L325">                statistics.get().setCompleted();</span>
+<span class="fc" id="L326">            }</span>
 <span class="fc" id="L327">        });</span>
 <span class="fc" id="L328">        return statistics.get();</span>
     }
@@ -336,8 +336,8 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
 <span class="fc" id="L336">                subjectTo.run();</span>
 <span class="fc" id="L337">                statistics.set(optimize(objToTighten, limit));</span>
 <span class="fc" id="L338">            } catch (InconsistencyException ignored) {</span>
-<span class="fc" id="L339">            }</span>
-
+<span class="fc" id="L339">                statistics.get().setCompleted();</span>
+<span class="fc" id="L340">            }</span>
 <span class="fc" id="L341">        });</span>
 <span class="fc" id="L342">        return statistics.get();</span>
     }

@@ -16,6 +16,7 @@ import org.maxicp.search.ConcurrentDFSearch;
 import org.maxicp.search.DFSearch;
 import org.maxicp.util.Ints;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -29,17 +30,17 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     private Model initialModel;
     private ThreadLocal&lt;Model&gt; currentModel;
 
-<span class="fc" id="L32">    public ModelDispatcher() {</span>
-<span class="fc" id="L33">        initialModel = SymbolicModel.emptyModel(this);</span>
-<span class="fc" id="L34">        currentModel = new ThreadLocal&lt;&gt;();</span>
-<span class="fc" id="L35">        currentModel.set(initialModel);</span>
-<span class="fc" id="L36">    }</span>
+<span class="fc" id="L33">    public ModelDispatcher() {</span>
+<span class="fc" id="L34">        initialModel = SymbolicModel.emptyModel(this);</span>
+<span class="fc" id="L35">        currentModel = new ThreadLocal&lt;&gt;();</span>
+<span class="fc" id="L36">        currentModel.set(initialModel);</span>
+<span class="fc" id="L37">    }</span>
 
     /**
      * @return the current model
      */
     public Model getModel() {
-<span class="fc" id="L42">        return currentModel.get();</span>
+<span class="fc" id="L43">        return currentModel.get();</span>
     }
 
     /**
@@ -47,10 +48,10 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
      * @param m
      */
     public &lt;T extends Model&gt; T setModel(T m) {
-<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        if (m != null &amp;&amp; !m.getModelProxy().equals(this))</span>
-<span class="nc" id="L51">            throw new RuntimeException(&quot;Model being assigned to this ModelProxy does not originate from here&quot;);</span>
-<span class="fc" id="L52">        currentModel.set(m);</span>
-<span class="fc" id="L53">        return m;</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">        if (m != null &amp;&amp; !m.getModelProxy().equals(this))</span>
+<span class="nc" id="L52">            throw new RuntimeException(&quot;Model being assigned to this ModelProxy does not originate from here&quot;);</span>
+<span class="fc" id="L53">        currentModel.set(m);</span>
+<span class="fc" id="L54">        return m;</span>
     }
 
     /**
@@ -58,7 +59,29 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
      * @return an iterable with all the constraints in the current model
      */
     public Iterable&lt;Constraint&gt; getConstraints() {
-<span class="nc" id="L61">        return getModel().getConstraints();</span>
+<span class="fc" id="L62">        return getModel().getConstraints();</span>
+    }
+
+    /**
+     * Infers the decision variables from the constraint graph of the current model.
+     *
+     * &lt;p&gt;A variable is considered a decision variable when it appears as an
+     * &quot;index / choice&quot; argument in a constraint or expression that implements
+     * {@link DecisionVarsProvider}.  Examples: the index variable of an
+     * {@code Element1D/2D} expression, or any variable in the scope of an
+     * {@code AllDifferent}, {@code Circuit}, {@code Table}, etc.&lt;/p&gt;
+     *
+     * &lt;p&gt;Only leaf {@link IntVar} instances are returned – derived expressions
+     * (sums, element results, views) are always excluded.&lt;/p&gt;
+     *
+     * &lt;p&gt;The returned list is ordered by first-seen occurrence during a depth-first
+     * walk of the constraint graph and contains no duplicates (identity-based).&lt;/p&gt;
+     *
+     * @return unmodifiable list of candidate decision variables
+     * @see DecisionVarCollector
+     */
+    public List&lt;IntExpression&gt; getDecisionVariables() {
+<span class="fc" id="L84">        return DecisionVarCollector.collect(this);</span>
     }
 
     /**
@@ -67,122 +90,128 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
      * @param domSize size of the domains. Domains are [0, domsize-1]
      */
     public IntVar[] intVarArray(int n, int domSize) {
-<span class="fc" id="L70">        IntVar[] out = new IntVar[n];</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        for(int i = 0; i &lt; n; i++)</span>
-<span class="fc" id="L72">            out[i] = new IntVarRangeImpl(this, 0, domSize-1);</span>
-<span class="fc" id="L73">        return out;</span>
+<span class="fc" id="L93">        IntVar[] out = new IntVar[n];</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for(int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L95">            out[i] = new IntVarRangeImpl(this, 0, domSize-1);</span>
+<span class="fc" id="L96">        return out;</span>
     }
 
     public IntExpression[] intVarArray(int n, Function&lt;Integer, IntExpression&gt; body) {
-<span class="fc" id="L77">        IntExpression[] t = new IntExpression[n];</span>
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
-<span class="fc" id="L79">            t[i] = body.apply(i);</span>
-<span class="fc" id="L80">        return t;</span>
+<span class="fc" id="L100">        IntExpression[] t = new IntExpression[n];</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L102">            t[i] = body.apply(i);</span>
+<span class="fc" id="L103">        return t;</span>
     }
 
     public IntVar intVar(int min, int max) {
-<span class="fc" id="L84">        return new IntVarRangeImpl(this, min, max);</span>
+<span class="fc" id="L107">        return new IntVarRangeImpl(this, min, max);</span>
     }
 
     public IntVar intVar(String id, int min, int max) {
-<span class="nc" id="L88">        return new IntVarRangeImpl(this, id, min, max);</span>
+<span class="nc" id="L111">        return new IntVarRangeImpl(this, id, min, max);</span>
     }
 
     public IntVar intVar(int[] values) {
-<span class="nc" id="L92">        return new IntVarSetImpl(this, Set.copyOf(Ints.asList(values)));</span>
+<span class="nc" id="L115">        return new IntVarSetImpl(this, Set.copyOf(Ints.asList(values)));</span>
     }
 
     public IntVar intVar(Set&lt;Integer&gt; values) {
-<span class="fc" id="L96">        return new IntVarSetImpl(this, values);</span>
+<span class="fc" id="L119">        return new IntVarSetImpl(this, values);</span>
     }
 
     public IntVar intVar(String id, int[] values) {
-<span class="nc" id="L100">        return new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values)));</span>
+<span class="nc" id="L123">        return new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values)));</span>
     }
 
     public IntVar constant(int value) {
-<span class="nc" id="L104">        return intVar(value, value);</span>
+<span class="nc" id="L127">        return intVar(value, value);</span>
     }
 
     public IntervalVar intervalVar(int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent) {
-<span class="fc" id="L108">        return new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent);</span>
+<span class="fc" id="L131">        return new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent);</span>
     }
 
     public IntervalVar intervalVar(boolean isPresent) {
-<span class="fc" id="L112">        return intervalVar(0, HORIZON,0, HORIZON, 0, HORIZON, isPresent);</span>
+<span class="fc" id="L135">        return intervalVar(0, HORIZON,0, HORIZON, 0, HORIZON, isPresent);</span>
     }
 
     public IntervalVar intervalVar(int duration, boolean isPresent) {
-<span class="nc" id="L116">        return intervalVar(0, HORIZON,0, HORIZON, duration, duration, isPresent);</span>
+<span class="nc" id="L139">        return intervalVar(0, HORIZON,0, HORIZON, duration, duration, isPresent);</span>
     }
 
     public IntervalVar intervalVar(int startMin, int endMax, int duration, boolean isPresent) {
-<span class="fc" id="L120">        return intervalVar(startMin, endMax - duration, startMin + duration, endMax, duration, duration, isPresent);</span>
+<span class="fc" id="L143">        return intervalVar(startMin, endMax - duration, startMin + duration, endMax, duration, duration, isPresent);</span>
     }
 
     public IntervalVar[] intervalVarArray(int n, boolean present) {
-<span class="fc" id="L124">        IntervalVar[] out = new IntervalVar[n];</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++) {</span>
-<span class="fc" id="L126">            out[i] = intervalVar(present);</span>
+<span class="fc" id="L147">        IntervalVar[] out = new IntervalVar[n];</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++) {</span>
+<span class="fc" id="L149">            out[i] = intervalVar(present);</span>
         }
-<span class="fc" id="L128">        return out;</span>
+<span class="fc" id="L151">        return out;</span>
     }
 
     public IntervalVar[] intervalVarArray(int n, Function&lt;Integer, IntervalVar&gt; body) {
-<span class="fc" id="L132">        IntervalVar[] out = new IntervalVar[n];</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++)</span>
-<span class="fc" id="L134">            out[i] = body.apply(i);</span>
-<span class="fc" id="L135">        return out;</span>
+<span class="fc" id="L155">        IntervalVar[] out = new IntervalVar[n];</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (int i = 0 ; i &lt; n ; i++)</span>
+<span class="fc" id="L157">            out[i] = body.apply(i);</span>
+<span class="fc" id="L158">        return out;</span>
     }
 
     public BoolVar[] boolVarArray(int n) {
-<span class="nc" id="L139">        BoolVar[] out = new BoolVar[n];</span>
-<span class="nc bnc" id="L140" title="All 2 branches missed.">        for(int i = 0; i &lt; n; i++)</span>
-<span class="nc" id="L141">            out[i] = new BoolVarImpl(this);</span>
-<span class="nc" id="L142">        return out;</span>
+<span class="nc" id="L162">        BoolVar[] out = new BoolVar[n];</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        for(int i = 0; i &lt; n; i++)</span>
+<span class="nc" id="L164">            out[i] = new BoolVarImpl(this);</span>
+<span class="nc" id="L165">        return out;</span>
     }
 
     public BoolVar boolVar() {
-<span class="nc" id="L146">        return new BoolVarImpl(this);</span>
+<span class="nc" id="L169">        return new BoolVarImpl(this);</span>
     }
 
     public SeqVar seqVar(int nNode, int begin, int end) {
-<span class="nc" id="L150">        return new SeqVarImpl(this, nNode, begin, end);</span>
+<span class="nc" id="L173">        return new SeqVarImpl(this, nNode, begin, end);</span>
     }
 
     @Override
     public void close() throws Exception {
-<span class="fc" id="L155">        currentModel.remove();</span>
-<span class="fc" id="L156">        currentModel = null;</span>
-<span class="fc" id="L157">        initialModel = null;</span>
-<span class="fc" id="L158">    }</span>
+<span class="fc" id="L178">        currentModel.remove();</span>
+<span class="fc" id="L179">        currentModel = null;</span>
+<span class="fc" id="L180">        initialModel = null;</span>
+<span class="fc" id="L181">    }</span>
 
     public Objective minimize(Expression v) {
-<span class="pc bpc" id="L161" title="2 of 3 branches missed.">        return switch (getModel()) {</span>
-<span class="fc" id="L162">            case SymbolicModel sm -&gt; sm.minimize(v);</span>
-<span class="nc" id="L163">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
-<span class="nc" id="L164">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
+<span class="pc bpc" id="L184" title="2 of 3 branches missed.">        return switch (getModel()) {</span>
+<span class="fc" id="L185">            case SymbolicModel sm -&gt; sm.minimize(v);</span>
+<span class="nc" id="L186">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
+<span class="nc" id="L187">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
         };
     }
 
     public Objective maximize(Expression v) {
-<span class="nc bnc" id="L169" title="All 3 branches missed.">        return switch (getModel()) {</span>
-<span class="nc" id="L170">            case SymbolicModel sm -&gt; sm.maximize(v);</span>
-<span class="nc" id="L171">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
-<span class="nc" id="L172">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
+<span class="nc bnc" id="L192" title="All 3 branches missed.">        return switch (getModel()) {</span>
+<span class="nc" id="L193">            case SymbolicModel sm -&gt; sm.maximize(v);</span>
+<span class="nc" id="L194">            case ConcreteModel ignored -&gt; throw new IllegalStateException(&quot;Cannot modify the optimisation method of an instantiated model&quot;);</span>
+<span class="nc" id="L195">            default -&gt; throw new IllegalStateException(&quot;Unexpected value: &quot; + getModel());</span>
         };
     }
 
     public DFSearch dfSearch(Supplier&lt;Runnable[]&gt; branching) {
-<span class="fc" id="L177">        return new DFSearch(this, branching);</span>
+<span class="fc" id="L200">        return new DFSearch(this, branching);</span>
     }
 
     public ConcurrentDFSearch concurrentDFSearch(Supplier&lt;SymbolicModel[]&gt; symbolicBranching) {
-<span class="nc" id="L181">        return new ConcurrentDFSearch(this, symbolicBranching);</span>
+<span class="nc" id="L204">        return new ConcurrentDFSearch(this, symbolicBranching);</span>
     }
 
     public &lt;U extends Comparable&lt;U&gt;&gt; BestFirstSearch&lt;U&gt; bestFirstSearch(Supplier&lt;Runnable[]&gt; branching, Supplier&lt;U&gt; nodeEvaluator) {
-<span class="nc" id="L185">        return new BestFirstSearch&lt;U&gt;(this, branching, nodeEvaluator);</span>
+<span class="nc" id="L208">        return new BestFirstSearch&lt;U&gt;(this, branching, nodeEvaluator);</span>
     }
+
+    public void addVariableGroup(List&lt;IntExpression&gt; group) {
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (getModel() instanceof SymbolicModel sm) {</span>
+<span class="nc" id="L213">            setModel(sm.addVariableGroup(group));</span>
+        }
+<span class="nc" id="L215">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

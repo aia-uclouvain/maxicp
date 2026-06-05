@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>XCSP3Cli.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.xcsp3</a> &gt; <span class="el_source">XCSP3Cli.java</span></div><h1>XCSP3Cli.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.xcsp3;
 
-import org.maxicp.modeling.algebra.VariableNotFixedException;
-import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.modeling.symbolic.Maximization;
-import org.maxicp.modeling.symbolic.Minimization;
 import org.maxicp.modeling.symbolic.Objective;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.FDSModeling;
-import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.blackbox.BlackBoxSearch;
+import org.maxicp.search.blackbox.ModelingBlackBox;
+import org.maxicp.search.blackbox.SearchStatus;
 import org.maxicp.util.exception.NotImplementedException;
 
 import java.util.Locale;
+import java.util.OptionalLong;
 
 /**
  * Competition-oriented CLI for XCSP3 instances.
@@ -22,141 +19,199 @@ public final class XCSP3Cli {
     }
 
     public static void main(String[] args) {
-<span class="nc" id="L25">        String benchPath = findBenchPath(args);</span>
-<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (benchPath == null) {</span>
-<span class="nc" id="L27">            System.out.println(&quot;s UNKNOWN&quot;);</span>
-<span class="nc" id="L28">            return;</span>
+<span class="nc" id="L22">        String benchPath = findBenchPath(args);</span>
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (benchPath == null) {</span>
+<span class="nc" id="L24">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+<span class="nc" id="L25">            return;</span>
         }
 
-<span class="nc" id="L31">        try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(benchPath)) {</span>
-<span class="nc" id="L32">            IntExpression[] vars = instance.decisionVars();</span>
-<span class="nc" id="L33">            SolveOutcome outcome = instance.md().runCP((cp) -&gt; {</span>
-<span class="nc" id="L34">                DFSearch search = cp.dfSearch(new FDSModeling(vars));</span>
-<span class="nc" id="L35">                SolveOutcome current = new SolveOutcome(instance.objective());</span>
+<span class="nc" id="L28">        try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(benchPath)) {</span>
+<span class="nc" id="L29">            int timeLimitSeconds = findTimeLimitSeconds(args);</span>
+<span class="nc" id="L30">            OptionalLong randomSeed = findRandomSeed(args, benchPath);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">            ModelingBlackBox.Result outcome = instance.objective() != null</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">                    ? (randomSeed.isPresent()</span>
+<span class="nc" id="L33">                    ? ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeLimitSeconds,</span>
+<span class="nc" id="L34">                    cfg -&gt; configureOptimizeSeed(cfg, randomSeed.getAsLong()))</span>
+<span class="nc" id="L35">                    : ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeLimitSeconds))</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">                    : (randomSeed.isPresent()</span>
+<span class="nc" id="L37">                    ? ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeLimitSeconds,</span>
+<span class="nc" id="L38">                    cfg -&gt; configureSolveSeed(cfg, randomSeed.getAsLong()))</span>
+<span class="nc" id="L39">                    : ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeLimitSeconds));</span>
 
-<span class="nc" id="L37">                search.onSolution(() -&gt; {</span>
-<span class="nc" id="L38">                    current.bestSolution = instance.solutionGenerator().get();</span>
-<span class="nc bnc" id="L39" title="All 2 branches missed.">                    if (instance.objective() != null) {</span>
-<span class="nc" id="L40">                        int currentObj = evaluateObjective(instance.objective());</span>
-<span class="nc bnc" id="L41" title="All 2 branches missed.">                        if (current.isBetterObjective(currentObj)) {</span>
-<span class="nc" id="L42">                            current.bestObjective = currentObj;</span>
-<span class="nc" id="L43">                            System.out.println(&quot;o &quot; + currentObj);</span>
-<span class="nc" id="L44">                            System.out.flush();</span>
-                        }
-                    }
-<span class="nc" id="L47">                });</span>
-
-<span class="nc bnc" id="L49" title="All 2 branches missed.">                SearchStatistics stats = instance.objective() != null</span>
-<span class="nc" id="L50">                        ? search.optimize(instance.objective())</span>
-<span class="nc" id="L51">                        : search.solve();</span>
-<span class="nc" id="L52">                current.stats = stats;</span>
-<span class="nc" id="L53">                return current;</span>
-            });
-
-<span class="nc" id="L56">            printFinalStatus(outcome);</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (outcome.bestSolution != null) {</span>
-<span class="nc" id="L58">                System.out.println(&quot;v &quot; + normalizeSolution(outcome.bestSolution));</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">            if (outcome.objectiveValue().isPresent()) {</span>
+<span class="nc" id="L42">                System.out.println(&quot;o &quot; + outcome.objectiveValue().get());</span>
+<span class="nc" id="L43">                System.out.flush();</span>
             }
-<span class="nc" id="L60">        } catch (NotImplementedException e) {</span>
-<span class="nc" id="L61">            System.out.println(&quot;s UNSUPPORTED&quot;);</span>
-<span class="nc" id="L62">        } catch (Throwable t) {</span>
-<span class="nc" id="L63">            System.out.println(&quot;s UNKNOWN&quot;);</span>
-<span class="nc" id="L64">            System.out.println(&quot;c &quot; + t.getClass().getSimpleName() + &quot;: &quot; + sanitizeForComment(t.getMessage()));</span>
-<span class="nc" id="L65">        }</span>
-<span class="nc" id="L66">    }</span>
 
-    private static String findBenchPath(String[] args) {
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        for (String arg : args) {</span>
-<span class="nc" id="L70">            String lower = arg.toLowerCase(Locale.ROOT);</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">            if (lower.startsWith(&quot;--mem-limit=&quot;)</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">                    || lower.startsWith(&quot;--time-limit=&quot;)</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">                    || lower.startsWith(&quot;--tmpdir=&quot;)</span>
-<span class="nc bnc" id="L74" title="All 2 branches missed.">                    || lower.startsWith(&quot;--seed=&quot;)) {</span>
-<span class="nc" id="L75">                continue;</span>
+<span class="nc" id="L46">            printFinalStatus(outcome.status(), instance.objective(), outcome.solution().isPresent());</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            if (outcome.solution().isPresent()) {</span>
+<span class="nc" id="L48">                String solution = buildSolution(instance.decisionVarIds(), outcome.solution().get());</span>
+<span class="nc" id="L49">                System.out.println(&quot;v &quot; + normalizeSolution(solution));</span>
             }
-<span class="nc bnc" id="L77" title="All 2 branches missed.">            if (!arg.startsWith(&quot;-&quot;)) {</span>
-<span class="nc" id="L78">                return arg;</span>
+<span class="nc" id="L51">        } catch (NotImplementedException e) {</span>
+<span class="nc" id="L52">            System.out.println(&quot;s UNSUPPORTED&quot;);</span>
+<span class="nc" id="L53">        } catch (Throwable t) {</span>
+<span class="nc" id="L54">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+<span class="nc" id="L55">            System.out.println(&quot;c &quot; + t.getClass().getSimpleName() + &quot;: &quot; + sanitizeForComment(t.getMessage()));</span>
+<span class="nc" id="L56">        }</span>
+<span class="nc" id="L57">    }</span>
+
+    private static int findTimeLimitSeconds(String[] args) {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        for (String arg : args) {</span>
+<span class="nc" id="L61">            String lower = arg.toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            if (!lower.startsWith(&quot;--time-limit=&quot;)) {</span>
+<span class="nc" id="L63">                continue;</span>
             }
+<span class="nc" id="L65">            String raw = arg.substring(arg.indexOf('=') + 1).trim();</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            if (raw.isEmpty()) {</span>
+<span class="nc" id="L67">                continue;</span>
+            }
+            try {
+                // Competition wrappers typically pass integer seconds; tolerate decimals too.
+<span class="nc" id="L71">                int parsed = (int) Math.ceil(Double.parseDouble(raw));</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">                if (parsed &gt; 0) {</span>
+<span class="nc" id="L73">                    return parsed;</span>
+                }
+<span class="nc" id="L75">            } catch (NumberFormatException ignored) {</span>
+                // Ignore malformed time-limit and fallback below.
+<span class="nc" id="L77">            }</span>
         }
-<span class="nc" id="L81">        return null;</span>
+<span class="nc" id="L79">        return Integer.MAX_VALUE;</span>
     }
 
-    private static void printFinalStatus(SolveOutcome outcome) {
-<span class="nc" id="L85">        SearchStatistics stats = outcome.stats;</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">        boolean hasSolution = outcome.bestSolution != null;</span>
-
-<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (outcome.objective == null) {</span>
-<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (hasSolution) {</span>
-<span class="nc" id="L90">                System.out.println(&quot;s SATISFIABLE&quot;);</span>
-<span class="nc bnc" id="L91" title="All 4 branches missed.">            } else if (stats != null &amp;&amp; stats.isCompleted()) {</span>
-<span class="nc" id="L92">                System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
-            } else {
-<span class="nc" id="L94">                System.out.println(&quot;s UNKNOWN&quot;);</span>
+    private static String findBenchPath(String[] args) {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        for (String arg : args) {</span>
+<span class="nc" id="L84">            String lower = arg.toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (lower.startsWith(&quot;--mem-limit=&quot;)</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">                    || lower.startsWith(&quot;--time-limit=&quot;)</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                    || lower.startsWith(&quot;--tmpdir=&quot;)</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                    || lower.startsWith(&quot;--seed=&quot;)) {</span>
+<span class="nc" id="L89">                continue;</span>
             }
-<span class="nc" id="L96">            return;</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (!arg.startsWith(&quot;-&quot;)) {</span>
+<span class="nc" id="L92">                return arg;</span>
+            }
+        }
+<span class="nc" id="L95">        return null;</span>
+    }
+
+    private static OptionalLong findRandomSeed(String[] args, String benchPath) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (String arg : args) {</span>
+<span class="nc" id="L100">            String lower = arg.toLowerCase(Locale.ROOT);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (!lower.startsWith(&quot;--seed=&quot;)) {</span>
+<span class="nc" id="L102">                continue;</span>
+            }
+<span class="nc" id="L104">            String raw = arg.substring(arg.indexOf('=') + 1).trim();</span>
+<span class="nc" id="L105">            OptionalLong seed = parseSeed(raw);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">            if (seed.isPresent()) {</span>
+<span class="nc" id="L107">                return seed;</span>
+            }
         }
 
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        if (hasSolution) {</span>
-<span class="nc bnc" id="L100" title="All 4 branches missed.">            if (stats != null &amp;&amp; stats.isCompleted()) {</span>
-<span class="nc" id="L101">                System.out.println(&quot;s OPTIMUM FOUND&quot;);</span>
-            } else {
-<span class="nc" id="L103">                System.out.println(&quot;s SATISFIABLE&quot;);</span>
+<span class="nc" id="L111">        boolean seenBenchPath = false;</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        for (String arg : args) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (arg.startsWith(&quot;-&quot;)) {</span>
+<span class="nc" id="L114">                continue;</span>
             }
-<span class="nc bnc" id="L105" title="All 4 branches missed.">        } else if (stats != null &amp;&amp; stats.isCompleted()) {</span>
-<span class="nc" id="L106">            System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
-        } else {
-<span class="nc" id="L108">            System.out.println(&quot;s UNKNOWN&quot;);</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">            if (!seenBenchPath &amp;&amp; arg.equals(benchPath)) {</span>
+<span class="nc" id="L117">                seenBenchPath = true;</span>
+<span class="nc" id="L118">                continue;</span>
+            }
+<span class="nc" id="L120">            OptionalLong seed = parseSeed(arg.trim());</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            if (seed.isPresent()) {</span>
+<span class="nc" id="L122">                return seed;</span>
+            }
         }
-<span class="nc" id="L110">    }</span>
+<span class="nc" id="L125">        return OptionalLong.empty();</span>
+    }
 
-    private static int evaluateObjective(Objective objective) {
+    private static OptionalLong parseSeed(String raw) {
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        if (raw == null || raw.isBlank()) {</span>
+<span class="nc" id="L130">            return OptionalLong.empty();</span>
+        }
         try {
-<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (objective instanceof Minimization min) {</span>
-<span class="nc" id="L115">                return min.expr().evaluate();</span>
-            }
-<span class="nc bnc" id="L117" title="All 2 branches missed.">            if (objective instanceof Maximization max) {</span>
-<span class="nc" id="L118">                return max.expr().evaluate();</span>
-            }
-<span class="nc" id="L120">            throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
-<span class="nc" id="L121">        } catch (VariableNotFixedException e) {</span>
-<span class="nc" id="L122">            throw new RuntimeException(e);</span>
+<span class="nc" id="L133">            return OptionalLong.of(Long.parseLong(raw));</span>
+<span class="nc" id="L134">        } catch (NumberFormatException ignored) {</span>
+<span class="nc" id="L135">            return OptionalLong.empty();</span>
         }
+    }
+
+    private static ModelingBlackBox.SolveConfig configureSolveSeed(ModelingBlackBox.SolveConfig cfg, long seed) {
+<span class="nc" id="L140">        BlackBoxSearch.RestartPhaseOptions restartDefaults = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="nc" id="L141">        BlackBoxSearch.ExhaustivePhaseOptions exhaustiveDefaults = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="nc" id="L142">        return cfg</span>
+<span class="nc" id="L143">                .restart(new BlackBoxSearch.RestartPhaseOptions(</span>
+<span class="nc" id="L144">                        restartDefaults.baseFailureLimit(),</span>
+<span class="nc" id="L145">                        restartDefaults.randomSwapProbability(),</span>
+                        seed))
+<span class="nc" id="L147">                .exhaustive(new BlackBoxSearch.ExhaustivePhaseOptions(</span>
+<span class="nc" id="L148">                        exhaustiveDefaults.randomSwapProbability(),</span>
+                        seed + 1));
+    }
+
+    private static ModelingBlackBox.OptimizeConfig configureOptimizeSeed(ModelingBlackBox.OptimizeConfig cfg, long seed) {
+<span class="nc" id="L153">        BlackBoxSearch.RestartPhaseOptions restartDefaults = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="nc" id="L154">        BlackBoxSearch.LnsPhaseOptions lnsDefaults = BlackBoxSearch.LnsPhaseOptions.defaults();</span>
+<span class="nc" id="L155">        BlackBoxSearch.ExhaustivePhaseOptions exhaustiveDefaults = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="nc" id="L156">        return cfg</span>
+<span class="nc" id="L157">                .restart(new BlackBoxSearch.RestartPhaseOptions(</span>
+<span class="nc" id="L158">                        restartDefaults.baseFailureLimit(),</span>
+<span class="nc" id="L159">                        restartDefaults.randomSwapProbability(),</span>
+                        seed))
+<span class="nc" id="L161">                .lns(new BlackBoxSearch.LnsPhaseOptions(</span>
+<span class="nc" id="L162">                        lnsDefaults.failureLimitPerRestart(),</span>
+<span class="nc" id="L163">                        lnsDefaults.freezeRatePercent(),</span>
+<span class="nc" id="L164">                        lnsDefaults.randomSwapProbability(),</span>
+                        seed + 1,
+<span class="nc" id="L166">                        lnsDefaults.fragmentSelectionStrategy()))</span>
+<span class="nc" id="L167">                .exhaustive(new BlackBoxSearch.ExhaustivePhaseOptions(</span>
+<span class="nc" id="L168">                        exhaustiveDefaults.randomSwapProbability(),</span>
+                        seed + 2));
+    }
+
+    private static void printFinalStatus(SearchStatus status, Objective objective, boolean hasSolution) {
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (objective == null) {</span>
+<span class="nc bnc" id="L174" title="All 3 branches missed.">            switch (status) {</span>
+<span class="nc" id="L175">                case SAT, IMPROVED -&gt; System.out.println(&quot;s SATISFIABLE&quot;);</span>
+<span class="nc" id="L176">                case UNSAT -&gt; System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                default -&gt; System.out.println(hasSolution ? &quot;s SATISFIABLE&quot; : &quot;s UNKNOWN&quot;);</span>
+            }
+<span class="nc" id="L179">            return;</span>
+        }
+
+<span class="nc bnc" id="L182" title="All 5 branches missed.">        switch (status) {</span>
+<span class="nc" id="L183">            case PROVEN_OPTIMAL -&gt; System.out.println(&quot;s OPTIMUM FOUND&quot;);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            case IMPROVED, SAT, NOT_IMPROVED -&gt; System.out.println(hasSolution ? &quot;s SATISFIABLE&quot; : &quot;s UNKNOWN&quot;);</span>
+<span class="nc" id="L185">            case UNSAT -&gt; System.out.println(&quot;s UNSATISFIABLE&quot;);</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            case UNKNOWN -&gt; System.out.println(hasSolution ? &quot;s SATISFIABLE&quot; : &quot;s UNKNOWN&quot;);</span>
+        }
+<span class="nc" id="L188">    }</span>
+
+
+    private static String buildSolution(String[] varIds, java.util.List&lt;Integer&gt; values) {
+<span class="nc bnc" id="L192" title="All 2 branches missed.">        if (varIds.length != values.size()) {</span>
+<span class="nc" id="L193">            throw new IllegalArgumentException(&quot;decision variable ids and values must have same size&quot;);</span>
+        }
+<span class="nc" id="L195">        StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L196">        b.append(&quot;&lt;instantiation&gt;\n\t&lt;list&gt;\n\t\t&quot;);</span>
+<span class="nc" id="L197">        b.append(String.join(&quot; &quot;, varIds));</span>
+<span class="nc" id="L198">        b.append(&quot;\n\t&lt;/list&gt;\n\t&lt;values&gt;\n\t\t&quot;);</span>
+<span class="nc" id="L199">        b.append(values.stream().map(String::valueOf).reduce((a, c) -&gt; a + &quot; &quot; + c).orElse(&quot;&quot;));</span>
+<span class="nc" id="L200">        b.append(&quot;\n\t&lt;/values&gt;\n&lt;/instantiation&gt;&quot;);</span>
+<span class="nc" id="L201">        return b.toString();</span>
     }
 
     private static String normalizeSolution(String solution) {
-<span class="nc" id="L127">        return solution.replace('\n', ' ').replaceAll(&quot;\\s+&quot;, &quot; &quot;).trim();</span>
+<span class="nc" id="L205">        return solution.replace('\n', ' ').replaceAll(&quot;\\s+&quot;, &quot; &quot;).trim();</span>
     }
 
     private static String sanitizeForComment(String text) {
-<span class="nc bnc" id="L131" title="All 4 branches missed.">        if (text == null || text.isBlank()) {</span>
-<span class="nc" id="L132">            return &quot;unexpected error&quot;;</span>
+<span class="nc bnc" id="L209" title="All 4 branches missed.">        if (text == null || text.isBlank()) {</span>
+<span class="nc" id="L210">            return &quot;unexpected error&quot;;</span>
         }
-<span class="nc" id="L134">        return text.replace('\n', ' ').replace('\r', ' ').trim();</span>
+<span class="nc" id="L212">        return text.replace('\n', ' ').replace('\r', ' ').trim();</span>
     }
 
-    private static final class SolveOutcome {
-        private final Objective objective;
-        private SearchStatistics stats;
-        private String bestSolution;
-        private Integer bestObjective;
-
-<span class="nc" id="L143">        private SolveOutcome(Objective objective) {</span>
-<span class="nc" id="L144">            this.objective = objective;</span>
-<span class="nc" id="L145">        }</span>
-
-        private boolean isBetterObjective(int candidate) {
-<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (bestObjective == null) {</span>
-<span class="nc" id="L149">                return true;</span>
-            }
-<span class="nc bnc" id="L151" title="All 2 branches missed.">            if (objective instanceof Minimization) {</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">                return candidate &lt; bestObjective;</span>
-            }
-<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (objective instanceof Maximization) {</span>
-<span class="nc bnc" id="L155" title="All 2 branches missed.">                return candidate &gt; bestObjective;</span>
-            }
-<span class="nc" id="L157">            return false;</span>
-        }
-    }
 }
 
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -61,7 +61,7 @@ public class RestartRunnableSearch extends RunnableSearch {
 
 <span class="pc bpc" id="L62" title="2 of 4 branches missed.">        while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis &amp;&amp; !hasFeasibleSolution()) {</span>
 <span class="fc" id="L63">            Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if (randomSwapProbability &gt; 0.0) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            if (randomSwapProbability &gt; 0.0) {</span>
 <span class="fc" id="L65">                branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
             }
 

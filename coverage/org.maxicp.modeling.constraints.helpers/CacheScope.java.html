@@ -17,16 +17,16 @@ public interface CacheScope extends Constraint {
 
     /**
      * Returns the scope of the constraint, preferably as an immutable, unique collection.
-     * Cached conterpart of computeScope().
+     * Cached counterpart of computeScope().
      *
      * @return the scope of the constraint, i.e. all the Expressions it uses. The collection should be immutable.
      */
     default Collection&lt;? extends Expression&gt; scope() {
-<span class="nc" id="L25">        return ScopeCache.cache.computeIfAbsent(this, k -&gt; this.computeScope());</span>
+<span class="fc" id="L25">        return ScopeCache.cache.computeIfAbsent(this, k -&gt; this.computeScope());</span>
     }
 }
 
 <span class="nc" id="L29">class ScopeCache {</span>
-<span class="nc" id="L30">    static WeakHashMap&lt;CacheScope, Collection&lt;? extends Expression&gt;&gt; cache = new WeakHashMap&lt;&gt;();</span>
+<span class="fc" id="L30">    static WeakHashMap&lt;CacheScope, Collection&lt;? extends Expression&gt;&gt; cache = new WeakHashMap&lt;&gt;();</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -6,10 +6,31 @@
 
 package org.maxicp.modeling.constraints;
 
+import org.maxicp.modeling.DecisionVarsProvider;
+import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.constraints.helpers.CacheScope;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="nc" id="L13">public record Sorted(IntExpression[] x, IntExpression[] o, IntExpression[] y) implements ConstraintFromRecord, CacheScope {</span>
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Sorted constraint: {@code y} is the sorted version of {@code x} with
+ * position permutation {@code o} (i.e. {@code y[i] = x[o[i]]}).
+ * {@code x} and {@code o} are the input decision variables; {@code y}
+ * is the derived sorted output.
+ */
+<span class="nc" id="L26">public record Sorted(IntExpression[] x, IntExpression[] o, IntExpression[] y) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+
+    @Override
+    public Collection&lt;IntExpression&gt; decisionVariables() {
+        // x (values to sort) and o (rank permutation) are decisions; y is derived
+<span class="nc" id="L31">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L32">        Arrays.stream(x).filter(IntVar.class::isInstance).forEach(result::add);</span>
+<span class="nc" id="L33">        return List.copyOf(result);</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

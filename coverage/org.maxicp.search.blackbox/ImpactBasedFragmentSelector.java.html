@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ImpactBasedFragmentSelector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">ImpactBasedFragmentSelector.java</span></div><h1>ImpactBasedFragmentSelector.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
+/**
+ * PGLNS-inspired selector: keep low-impact vars fixed and relax high-impact ones.
+ *
+ * &lt;p&gt;Impact scores combine a structural prior and online updates from improving
+ * restarts. Selection also keeps a small exploration part to avoid stagnation.&lt;/p&gt;
+ */
+public class ImpactBasedFragmentSelector implements FragmentSelector {
+
+    private static final double SCORE_DECAY = 0.995;
+    private static final double IMPROVEMENT_BONUS = 1.0;
+    private static final double STAGNATION_BONUS = 0.10;
+    private static final double EXPLORATION_SHARE = 0.20;
+
+    private final Random random;
+<span class="fc" id="L27">    private final Map&lt;Integer, Double&gt; impacts = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L29">    public ImpactBasedFragmentSelector(Random random, Map&lt;Integer, Double&gt; structuralImpacts) {</span>
+<span class="fc" id="L30">        this.random = random;</span>
+<span class="fc" id="L31">        this.impacts.putAll(structuralImpacts);</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    public List&lt;Integer&gt; selectFrozenIndices(FragmentSelectionContext context) {
+<span class="nc" id="L36">        int n = context.decisionVarIndices().size();</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L38">            return List.of();</span>
+        }
+
+<span class="nc" id="L41">        int freezeCount = Math.max(0, Math.min(n, (int) Math.round(n * (context.freezeRatePercent() / 100.0))));</span>
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (n &gt; 1 &amp;&amp; freezeCount &gt;= n) {</span>
+<span class="nc" id="L43">            freezeCount = n - 1;</span>
+        }
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (freezeCount == 0) {</span>
+<span class="nc" id="L46">            return List.of();</span>
+        }
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (freezeCount == n) {</span>
+<span class="nc" id="L49">            return List.copyOf(context.decisionVarIndices());</span>
+        }
+
+<span class="nc" id="L52">        List&lt;Integer&gt; candidates = new ArrayList&lt;&gt;(context.decisionVarIndices());</span>
+<span class="nc" id="L53">        Map&lt;Integer, Double&gt; scoreByIndex = new HashMap&lt;&gt;(candidates.size());</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        for (int idx : candidates) {</span>
+<span class="nc" id="L55">            scoreByIndex.put(idx, noisyImpact(idx));</span>
+<span class="nc" id="L56">        }</span>
+        // Keep comparator stable within the restart to satisfy TimSort contract.
+<span class="nc" id="L58">        candidates.sort(Comparator.comparingDouble((Integer idx) -&gt; scoreByIndex.get(idx))</span>
+<span class="nc" id="L59">                .thenComparingInt(Integer::intValue));</span>
+
+<span class="nc" id="L61">        int deterministicCount = (int) Math.round(freezeCount * (1.0 - EXPLORATION_SHARE));</span>
+<span class="nc" id="L62">        deterministicCount = Math.max(0, Math.min(freezeCount, deterministicCount));</span>
+
+<span class="nc" id="L64">        List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;(freezeCount);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        for (int i = 0; i &lt; deterministicCount; i++) {</span>
+<span class="nc" id="L66">            frozen.add(candidates.get(i));</span>
+        }
+
+<span class="nc" id="L69">        Set&lt;Integer&gt; chosen = new HashSet&lt;&gt;(frozen);</span>
+<span class="nc" id="L70">        List&lt;Integer&gt; remaining = new ArrayList&lt;&gt;(candidates.subList(deterministicCount, candidates.size()));</span>
+<span class="nc bnc" id="L71" title="All 4 branches missed.">        while (frozen.size() &lt; freezeCount &amp;&amp; !remaining.isEmpty()) {</span>
+<span class="nc" id="L72">            int pos = random.nextInt(remaining.size());</span>
+<span class="nc" id="L73">            int idx = remaining.remove(pos);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">            if (chosen.add(idx)) {</span>
+<span class="nc" id="L75">                frozen.add(idx);</span>
+            }
+<span class="nc" id="L77">        }</span>
+
+<span class="nc" id="L79">        return List.copyOf(frozen);</span>
+    }
+
+    @Override
+    public void onRestartCompleted(FragmentSelectionFeedback feedback) {
+<span class="nc" id="L84">        decayScores(feedback.decisionVarIndices());</span>
+
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (feedback.restartImproved()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            for (int idx : feedback.changedDecisionVarIndices()) {</span>
+<span class="nc" id="L88">                impacts.merge(idx, IMPROVEMENT_BONUS, Double::sum);</span>
+<span class="nc" id="L89">            }</span>
+<span class="nc" id="L90">            return;</span>
+        }
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (feedback.reachedFailureLimit()) {</span>
+<span class="nc" id="L94">            Collection&lt;Integer&gt; relaxed = relaxedIndices(feedback);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            for (int idx : relaxed) {</span>
+<span class="nc" id="L96">                impacts.merge(idx, STAGNATION_BONUS, Double::sum);</span>
+<span class="nc" id="L97">            }</span>
+        }
+<span class="nc" id="L99">    }</span>
+
+    @Override
+    public String name() {
+<span class="nc" id="L103">        return &quot;impact-guided&quot;;</span>
+    }
+
+    private void decayScores(List&lt;Integer&gt; decisionVarIndices) {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        for (int idx : decisionVarIndices) {</span>
+<span class="nc" id="L108">            impacts.merge(idx, 0.0, (oldV, unused) -&gt; oldV * SCORE_DECAY);</span>
+<span class="nc" id="L109">        }</span>
+<span class="nc" id="L110">    }</span>
+
+    private Collection&lt;Integer&gt; relaxedIndices(FragmentSelectionFeedback feedback) {
+<span class="nc" id="L113">        Set&lt;Integer&gt; frozen = new HashSet&lt;&gt;(feedback.frozenDecisionVarIndices());</span>
+<span class="nc" id="L114">        List&lt;Integer&gt; relaxed = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        for (int idx : feedback.decisionVarIndices()) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            if (!frozen.contains(idx)) {</span>
+<span class="nc" id="L117">                relaxed.add(idx);</span>
+            }
+<span class="nc" id="L119">        }</span>
+<span class="nc" id="L120">        return relaxed;</span>
+    }
+
+    private double noisyImpact(int idx) {
+<span class="nc" id="L124">        double base = impacts.getOrDefault(idx, 0.0);</span>
+<span class="nc" id="L125">        return base + random.nextDouble() * 1e-6;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
