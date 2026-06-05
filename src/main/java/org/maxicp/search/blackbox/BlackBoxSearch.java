@@ -20,21 +20,44 @@ import java.util.Set;
 /**
  * Phase-based black-box search orchestrator for modeling-level CP problems.
  *
- * <p>A {@code BlackBoxSearch} executes a sequence of configured phases, each phase being a
- * {@link RunnableSearch} with a relative time budget. The class stores and propagates incumbents
- * (solution and objective value), handles early stopping criteria, and merges per-phase statuses
- * into a global status.</p>
+ * <p>
+ * A {@code BlackBoxSearch} executes a sequence of configured phases, each phase
+ * being a
+ * {@link RunnableSearch} with a relative time budget. The class stores and
+ * propagates incumbents
+ * (solution and objective value), handles early stopping criteria, and merges
+ * per-phase statuses
+ * into a global status.
+ * </p>
  *
- * <p><b>Time-share semantics:</b></p>
+ * <p>
+ * <b>Time-share semantics:</b>
+ * </p>
  * <ul>
- *   <li>Each phase has a {@code timeShare} in {@code (0,1]}.</li>
- *   <li>Configured shares must sum to at most {@code 1.0} (not necessarily exactly {@code 1.0}).</li>
- *   <li>If shares sum to less than {@code 1.0}, the remaining budget is assigned to the last phase
- *       in the configured sequence when that phase is reached.</li>
- *   <li>The actual per-phase budget is always capped by the currently remaining global time.</li>
+ * <li>Each phase has a {@code timeShare} in {@code (0,1]}.</li>
+ * <li>Configured shares must sum to at most {@code 1.0} (not necessarily
+ * exactly {@code 1.0}).</li>
+ * <li>If shares sum to less than {@code 1.0}, the remaining budget is assigned
+ * to the last phase
+ * in the configured sequence when that phase is reached.</li>
+ * <li>The actual per-phase budget is always capped by the currently remaining
+ * global time.</li>
  * </ul>
  */
 public class BlackBoxSearch {
+
+    /**
+     * Strategy used to choose which decision variables are frozen in each LNS
+     * restart.
+     */
+    public enum FragmentSelectionStrategy {
+        /** Legacy behavior: independent random freeze decisions. */
+        RANDOM_UNIFORM,
+        /** Impact-guided behavior inspired by PGLNS ideas. */
+        IMPACT_GUIDED,
+        /** Group-coherent behavior relaxing variables from the same array. */
+        GROUP_COHERENT
+    }
 
     /** Logging granularity for phase execution. */
     public enum Verbosity {
@@ -42,7 +65,10 @@ public class BlackBoxSearch {
         QUIET,
         /** Phase start/end and high-level orchestration logs. */
         PHASE,
-        /** Phase logs plus progress events (solutions, improvements, restart milestones). */
+        /**
+         * Phase logs plus progress events (solutions, improvements, restart
+         * milestones).
+         */
         PROGRESS,
         /** Full trace including per-iteration/per-restart fine-grained details. */
         TRACE
@@ -51,7 +77,8 @@ public class BlackBoxSearch {
     /** Configuration for restart-based feasibility phase. */
     public record RestartPhaseOptions(int baseFailureLimit, double randomSwapProbability, long randomSeed) {
         public RestartPhaseOptions {
-            if (baseFailureLimit <= 0) throw new IllegalArgumentException("baseFailureLimit must be > 0");
+            if (baseFailureLimit <= 0)
+                throw new IllegalArgumentException("baseFailureLimit must be > 0");
             if (randomSwapProbability < 0.0 || randomSwapProbability > 1.0)
                 throw new IllegalArgumentException("randomSwapProbability must be in [0,1]");
         }
@@ -63,17 +90,26 @@ public class BlackBoxSearch {
 
     /** Configuration for LNS improvement phase. */
     public record LnsPhaseOptions(int failureLimitPerRestart, int freezeRatePercent, double randomSwapProbability,
-                                  long randomSeed) {
+            long randomSeed, FragmentSelectionStrategy fragmentSelectionStrategy) {
         public LnsPhaseOptions {
-            if (failureLimitPerRestart <= 0) throw new IllegalArgumentException("failureLimitPerRestart must be > 0");
+            if (failureLimitPerRestart <= 0)
+                throw new IllegalArgumentException("failureLimitPerRestart must be > 0");
             if (freezeRatePercent < 0 || freezeRatePercent > 100)
                 throw new IllegalArgumentException("freezeRatePercent must be in [0,100]");
             if (randomSwapProbability < 0.0 || randomSwapProbability > 1.0)
                 throw new IllegalArgumentException("randomSwapProbability must be in [0,1]");
+            if (fragmentSelectionStrategy == null)
+                throw new IllegalArgumentException("fragmentSelectionStrategy must not be null");
+        }
+
+        public LnsPhaseOptions(int failureLimitPerRestart, int freezeRatePercent, double randomSwapProbability,
+                long randomSeed) {
+            this(failureLimitPerRestart, freezeRatePercent, randomSwapProbability,
+                    randomSeed, FragmentSelectionStrategy.IMPACT_GUIDED);
         }
 
         public static LnsPhaseOptions defaults() {
-            return new LnsPhaseOptions(100, 95, 0.20, 43L);
+            return new LnsPhaseOptions(100, 95, 0.20, 43L, FragmentSelectionStrategy.GROUP_COHERENT);
         }
     }
 
@@ -85,7 +121,7 @@ public class BlackBoxSearch {
         }
 
         public static ExhaustivePhaseOptions defaults() {
-            return new ExhaustivePhaseOptions(0.0, 44L);
+            return new ExhaustivePhaseOptions(0, 44L);
         }
     }
 
@@ -106,21 +142,52 @@ public class BlackBoxSearch {
     private Optional<Integer> bestObjectiveValue = Optional.empty();
     private long solutionCount = 0;
 
-    /** Creates a black-box search on decision variables with an objective (optimization). */
+    /**
+     * Creates a black-box search on decision variables with an objective
+     * (optimization).
+     */
     public BlackBoxSearch(ModelDispatcher model, List<IntExpression> vars, Objective objective) {
         this.model = model;
         this.vars = List.copyOf(vars);
         this.objective = objective;
     }
 
-    /** Creates a black-box search on an array of decision variables with an objective (optimization). */
+    /**
+     * Creates a black-box search with automatic decision-variable inference.
+     *
+     * <p>
+     * The variables are obtained from
+     * {@link ModelDispatcher#getDecisionVariables()}.
+     * This is convenient for LNS users who want to freeze only real decision
+     * variables and avoid freezing derived expressions.
+     * </p>
+     */
+    public BlackBoxSearch(ModelDispatcher model, Objective objective) {
+        this(model, model.getDecisionVariables(), objective);
+    }
+
+    /**
+     * Creates a black-box search on an array of decision variables with an
+     * objective (optimization).
+     */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars, Objective objective) {
         this(model, Arrays.asList(vars), objective);
     }
 
-    /** Creates a black-box search on decision variables without objective (feasibility). */
+    /**
+     * Creates a black-box search on decision variables without objective
+     * (feasibility).
+     */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars) {
         this(model, Arrays.asList(vars), null);
+    }
+
+    /**
+     * Creates a feasibility black-box search with automatic decision-variable
+     * inference.
+     */
+    public BlackBoxSearch(ModelDispatcher model) {
+        this(model, model.getDecisionVariables(), null);
     }
 
     /** Sets logging verbosity for this search. */
@@ -132,11 +199,14 @@ public class BlackBoxSearch {
     /**
      * Registers one executable phase in the black-box plan.
      *
-     * @param name descriptive phase name used in logs and diagnostics
-     * @param search runnable implementation executed for the phase
-     * @param timeShare relative share of the global timeout allocated to this phase for non-last phases
-     *                  (must be in {@code (0,1]}; shares across phases must sum to at most {@code 1.0})
-     * @param requiresFeasible whether this phase can run only after an incumbent exists
+     * @param name             descriptive phase name used in logs and diagnostics
+     * @param search           runnable implementation executed for the phase
+     * @param timeShare        relative share of the global timeout allocated to
+     *                         this phase for non-last phases
+     *                         (must be in {@code (0,1]}; shares across phases must
+     *                         sum to at most {@code 1.0})
+     * @param requiresFeasible whether this phase can run only after an incumbent
+     *                         exists
      * @return this search instance for fluent configuration
      */
     public BlackBoxSearch addPhase(String name, RunnableSearch search, double timeShare, boolean requiresFeasible) {
@@ -150,8 +220,12 @@ public class BlackBoxSearch {
     /**
      * Builds the built-in default plan.
      *
-     * <p>Feasibility: initial exhaustive + restart phases.</p>
-     * <p>Optimization: initial exhaustive + restart + LNS + exhaustive phases.</p>
+     * <p>
+     * Feasibility: initial exhaustive + restart phases.
+     * </p>
+     * <p>
+     * Optimization: initial exhaustive + restart + LNS + exhaustive phases.
+     * </p>
      */
     public BlackBoxSearch withDefaultPhasePlan() {
         phases.clear();
@@ -173,7 +247,8 @@ public class BlackBoxSearch {
         LnsPhaseOptions lnsOptions = LnsPhaseOptions.defaults();
         RunnableSearch lns = new LNSRunnableSearch(this, model, vars, objective,
                 lnsOptions.failureLimitPerRestart(), lnsOptions.freezeRatePercent(),
-                lnsOptions.randomSwapProbability(), lnsOptions.randomSeed());
+                lnsOptions.randomSwapProbability(), lnsOptions.randomSeed(),
+                lnsOptions.fragmentSelectionStrategy());
         addPhase("lns-improvement", lns, 1.0 / 3.0, true);
 
         RunnableSearch exhaustive = new DFSRunnableSearch(this, model, vars, objective,
@@ -186,16 +261,20 @@ public class BlackBoxSearch {
     /**
      * Configures the optimization phase plan explicitly.
      *
-     * <p>Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via remaining-time assignment.</p>
+     * <p>
+     * Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at
+     * most {@code 1.0}.
+     * Any remaining fraction is effectively left to the last configured phase via
+     * remaining-time assignment.
+     * </p>
      */
     public BlackBoxSearch withOptimizationPlan(RestartPhaseOptions restart,
-                                               LnsPhaseOptions lns,
-                                               ExhaustivePhaseOptions exhaustive,
-                                               double initialExhaustiveShare,
-                                               double restartShare,
-                                               double lnsShare,
-                                               double exhaustiveShare) {
+            LnsPhaseOptions lns,
+            ExhaustivePhaseOptions exhaustive,
+            double initialExhaustiveShare,
+            double restartShare,
+            double lnsShare,
+            double exhaustiveShare) {
         if (objective == null) {
             throw new IllegalStateException("Optimization plan requires an objective");
         }
@@ -208,7 +287,8 @@ public class BlackBoxSearch {
         RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,
                 restart.baseFailureLimit(), restart.randomSwapProbability(), restart.randomSeed());
         RunnableSearch lnsSearch = new LNSRunnableSearch(this, model, vars, objective,
-                lns.failureLimitPerRestart(), lns.freezeRatePercent(), lns.randomSwapProbability(), lns.randomSeed());
+                lns.failureLimitPerRestart(), lns.freezeRatePercent(), lns.randomSwapProbability(), lns.randomSeed(),
+                lns.fragmentSelectionStrategy());
         RunnableSearch exhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,
                 exhaustive.randomSwapProbability(), exhaustive.randomSeed());
 
@@ -222,14 +302,18 @@ public class BlackBoxSearch {
     /**
      * Configures the feasibility phase plan explicitly.
      *
-     * <p>Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via remaining-time assignment.</p>
+     * <p>
+     * Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at
+     * most {@code 1.0}.
+     * Any remaining fraction is effectively left to the last configured phase via
+     * remaining-time assignment.
+     * </p>
      */
     public BlackBoxSearch withFeasibilityPlan(RestartPhaseOptions restart,
-                                              ExhaustivePhaseOptions exhaustive,
-                                              double initialExhaustiveShare,
-                                              double restartShare,
-                                              double exhaustiveShare) {
+            ExhaustivePhaseOptions exhaustive,
+            double initialExhaustiveShare,
+            double restartShare,
+            double exhaustiveShare) {
         validateShares(initialExhaustiveShare, restartShare, exhaustiveShare);
         phases.clear();
 
@@ -268,10 +352,13 @@ public class BlackBoxSearch {
     /**
      * Executes the configured phase plan under a global timeout.
      *
-     * <p>Early stop conditions:</p>
+     * <p>
+     * Early stop conditions:
+     * </p>
      * <ul>
-     *   <li>Feasibility mode: stops on first feasible solution.</li>
-     *   <li>Any mode: stops on {@link SearchStatus#PROVEN_OPTIMAL} or {@link SearchStatus#UNSAT}.</li>
+     * <li>Feasibility mode: stops on first feasible solution.</li>
+     * <li>Any mode: stops on {@link SearchStatus#PROVEN_OPTIMAL} or
+     * {@link SearchStatus#UNSAT}.</li>
      * </ul>
      *
      * @param timeLimitInSeconds global timeout in seconds
@@ -290,7 +377,8 @@ public class BlackBoxSearch {
         solutionCount = 0;
 
         logPhase("[blackbox] start timeout=%ds phases=%d objective=%s"
-                .formatted(timeLimitInSeconds, phases.size(), objective == null ? "none" : objective.getClass().getSimpleName()));
+                .formatted(timeLimitInSeconds, phases.size(),
+                        objective == null ? "none" : objective.getClass().getSimpleName()));
 
         for (Phase phase : phases) {
             long elapsed = System.currentTimeMillis() - t0;
@@ -306,9 +394,25 @@ public class BlackBoxSearch {
             }
 
             long remaining = totalBudgetMillis - elapsed;
-            long phaseBudget = phaseIndex == phases.size() - 1
-                    ? remaining
-                    : Math.max(1L, Math.round(totalBudgetMillis * phase.timeShare));
+            long phaseBudget;
+            if (phaseIndex == phases.size() - 1) {
+                phaseBudget = remaining;
+            } else {
+                double sumAll = 0.0;
+                for (Phase p : phases) {
+                    sumAll += p.timeShare;
+                }
+                double implicitFraction = Math.max(0.0, 1.0 - sumAll);
+                double S_rem = implicitFraction;
+                for (int j = phaseIndex; j < phases.size(); j++) {
+                    S_rem += phases.get(j).timeShare;
+                }
+                if (S_rem > 0.0) {
+                    phaseBudget = Math.max(1L, Math.round(remaining * (phase.timeShare / S_rem)));
+                } else {
+                    phaseBudget = Math.max(1L, Math.round(totalBudgetMillis * phase.timeShare));
+                }
+            }
             phaseBudget = Math.min(phaseBudget, remaining);
 
             logPhase("[blackbox] phase '%s' budget=%dms remaining=%dms"
@@ -410,8 +514,7 @@ public class BlackBoxSearch {
                 SearchStatus.UNKNOWN,
                 SearchStatus.NOT_IMPROVED,
                 SearchStatus.SAT,
-                SearchStatus.IMPROVED
-        );
+                SearchStatus.IMPROVED);
         int currentRank = ranking.indexOf(current);
         int candidateRank = ranking.indexOf(candidate);
         if (candidateRank > currentRank) {
@@ -425,7 +528,8 @@ public class BlackBoxSearch {
         solutionCount++;
         bestSolution = Optional.of(Collections.unmodifiableList(new ArrayList<>(solution)));
         logProgress("[blackbox] solution #%d found%s".formatted(solutionCount, formatSolutionPreview(solution)));
-        if (!first) logTrace("[blackbox] incumbent updated");
+        if (!first)
+            logTrace("[blackbox] incumbent updated");
         for (RunnableSearch search : registeredSearches()) {
             search.updateSolution(solution);
         }
@@ -468,5 +572,8 @@ public class BlackBoxSearch {
         return " (first vars=" + solution.subList(0, maxLen) + (solution.size() > maxLen ? ", ..." : "") + ")";
     }
 
+    public List<RunnableSearch> getRunnableSearches() {
+        return phases.stream().map(p -> p.search).toList();
+    }
 
 }

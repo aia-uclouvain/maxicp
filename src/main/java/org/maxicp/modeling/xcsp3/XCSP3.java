@@ -27,6 +27,7 @@ import org.xcsp.common.structures.Transition;
 import org.xcsp.parser.callbacks.SolutionChecker;
 import org.xcsp.parser.callbacks.XCallbacks;
 import org.xcsp.parser.entries.XVariables;
+import org.xcsp.parser.entries.XVariables.XArray;
 
 import java.io.ByteArrayInputStream;
 import java.util.*;
@@ -40,37 +41,14 @@ import static org.maxicp.search.Searches.*;
 
 public class XCSP3 extends XCallbacksDecomp {
 
-
-    public static void main(String[] args) throws Exception {
-        String path = args.length > 0
-                ? args[0]
-                :
-                //"data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
-                //"data/XCSP3/2024_V3/MiniCOP/Charlotte-mini-06-0_c24.xml"; // hard to optimize
-                "data/XCSP3/2024_V3/MiniCOP/Clique-brock200-2_c24.xml"; // hard to optimize
-                //"data/XCSP3/2024_V3/MiniCOP/Clique-c0125-9_c24.xml"; // hard to optimize
-                //"data/XCSP3/2024_V3/MiniCOP/Drinking-mini-000050_c24.xml"; // OK
-        //"data/XCSP3/2024_V3/MiniCOP/FoolSolitaire-table-0-2_c24.xml"; // hard to optimize
-        //"data/XCSP3/2024_V3/MiniCOP/GolombRuler-a3v18-07_c18.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/LitPuzzle-10_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/MaximumDensityOscillatingLife-mini-5-2_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
-        //String path = "data/XCSP3/2024_V3/MiniCOP/RotationPuzzle-2_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/SameQueensKnights-mini-05_c24.xml"; // OK
-        //"data/XCSP3/2024_V3/MiniCOP/StillLife-05-05_c24.xml"; // OK
-        //"data/XCSP3/2024_V3/MiniCOP/WordGolf-mini-4-ogd2008-50-0_c24.xml"; // hard to find a feasible solution
-
-        int timeoutInSeconds = args.length > 1 ? Integer.parseInt(args[1]) : 4 * 60;
-        runWithBlackBox(path, timeoutInSeconds);
-    }
-
     public static void runWithBlackBox(String path, int timeoutInSeconds) throws Exception {
         try (XCSP3LoadedInstance instance = load(path)) {
             ModelingBlackBox.Result result = instance.objective() != null
-                    ? ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeoutInSeconds,
-                    c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS))
+                    ? ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(),
+                            timeoutInSeconds,
+                            c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS))
                     : ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeoutInSeconds,
-                    c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS));
+                            c -> c.verbosity(BlackBoxSearch.Verbosity.PROGRESS));
 
             System.out.printf("blackbox status: %s%n", result.status());
             System.out.printf("feasible solution found: %s%n", result.solution().isPresent() ? "yes" : "no");
@@ -90,100 +68,10 @@ public class XCSP3 extends XCallbacksDecomp {
         }
     }
 
-    // CSP
-    public static void cop() throws Exception {
-        String path = "data/XCSP3/2024_V3/MiniCOP/AztecDiamondSym-mini-03_c24.xml"; // hard, even to find a feasible solution
-        //String path = "data/XCSP3/2024_V3/MiniCOP/Charlotte-mini-06-0_c24.xml"; // hard to optimize
-        // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-brock200-2_c24.xml"; // hard to optimize
-        // String path = "data/XCSP3/2024_V3/MiniCOP/Clique-c0125-9_c24.xml"; // hard to optimize
-        // String path = "data/XCSP3/2024_V3/MiniCOP/Drinking-mini-000050_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/FoolSolitaire-table-0-2_c24.xml"; // hard to optimize
-        // String path = "data/XCSP3/2024_V3/MiniCOP/GolombRuler-a3v18-07_c18.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/LitPuzzle-10_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/MaximumDensityOscillatingLife-mini-5-2_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/Pyramid-07-500_c24.xml"; // OK
-        //String path = "data/XCSP3/2024_V3/MiniCOP/RotationPuzzle-2_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/SameQueensKnights-mini-05_c24.xml"; // OK
-        // String path = "data/XCSP3/2024_V3/MiniCOP/StillLife-05-05_c24.xml"; // OK
-        //String path = "data/XCSP3/2024_V3/MiniCOP/WordGolf-mini-4-ogd2008-50-0_c24.xml"; // hard to find an feasible solution
-
-
-        try (XCSP3LoadedInstance instance = load(path)) {
-            IntExpression[] q = instance.decisionVars();
-            instance.md().runCP((cp) -> {
-                DFSearch search = cp.dfSearch(new FDSModeling(q));
-                //DFSearch search = cp.dfSearch(firstFailBinary(q));
-
-                search.onSolution(() -> {
-                    String sol = instance.solutionGenerator().get();
-                    try {
-                        SolutionChecker sc =
-                                new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));
-                        assertEquals(0, sc.invalidObjs.size());
-                        assertEquals(0, sc.violatedCtrs.size());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                System.out.printf("objective function ?" + instance.objective() != null ? "yes (%s)".formatted(instance.objective()) : "no");
-
-                SearchStatistics stats = instance.objective() != null
-                        ? search.optimize(instance.objective())
-                        : search.solve(s -> s.numberOfSolutions() > 0);
-                System.out.println(stats);
-            });
-        }
-    }
-
-
-    // CSP
-    public static void csp() throws Exception {
-        //String path = "data/XCSP3/2024_V3/MiniCSP/AverageAvoiding-mini-20_c24.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/FastMatrixMultiplication-mini-1-3-3-09.xml"; // hard
-        String path = "data/XCSP3/2024_V3/MiniCSP/Fillomino-mini-5-0_c24.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/FRB-30-15-1_c18.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/HyperSudoku-mini-03_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/MisteryShopper-mini-4-06-0-6-0_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Pentominoes-03-20_c24.xml"; // hard
-        //String path = "data/XCSP3/2024_V3/MiniCSP/PoolBallTriangle-05_c24.xml";
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Rlfap-ext-scen-11-f03_c18.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/SolitairePattern-table-3-3-0.xml"; // hard
-        //String path = "data/XCSP3/2024_V3/MiniCSP/Subisomorphism-g08-g43_c24.xml"; // hard
-        // String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
-        //String path = "data/XCSP3/2024_V3/MiniCSP/Takuzu-mini-030-None_c24.xml";
-
-        XCSP3LoadedInstance instance = load(path);
-
-        IntExpression[] q = instance.decisionVars();
-
-        instance.md().runCP((cp) -> {
-            DFSearch search = cp.dfSearch(new FDSModeling(q));
-
-            search.onSolution(() -> {
-                String sol = instance.solutionGenerator().get();
-                try {
-                    SolutionChecker sc =
-                            new SolutionChecker(false, path, new ByteArrayInputStream(sol.getBytes()));
-                    assertEquals(0, sc.invalidObjs.size());
-                    assertEquals(0, sc.violatedCtrs.size());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                //System.out.println(sol);
-            });
-
-            SearchStatistics stats = search.solve(s -> s.numberOfSolutions() > 0);
-            System.out.println(stats);
-            //System.out.println("Total number of solutions: " + search.solve().numberOfSolutions());
-        });
-    }
-
-
     public record XCSP3LoadedInstance(ModelDispatcher md, IntExpression[] decisionVars,
-                                      String[] decisionVarIds,
-                                      Supplier<String> solutionGenerator,
-                                      Objective objective) implements AutoCloseable {
+            String[] decisionVarIds,
+            Supplier<String> solutionGenerator,
+            Objective objective) implements AutoCloseable {
         @Override
         public void close() throws Exception {
             md.close();
@@ -220,8 +108,7 @@ public class XCSP3 extends XCallbacksDecomp {
                 Arrays.stream(decisionVarIds).map(xcsp3.varHashMap::get).toArray(IntExpression[]::new),
                 decisionVarIds,
                 solutionGenerator,
-                xcsp3.objective
-        );
+                xcsp3.objective);
     }
 
     private static String buildInstantiation(String[] varIds, List<Integer> values) {
@@ -255,7 +142,8 @@ public class XCSP3 extends XCallbacksDecomp {
         impl.currParameters.put(XCallbacksParameters.RECOGNIZE_BINARY_PRIMITIVES, new Object());
         impl.currParameters.put(XCallbacksParameters.RECOGNIZE_TERNARY_PRIMITIVES, new Object());
         impl.currParameters.put(XCallbacksParameters.RECOGNIZING_BEFORE_CONVERTING, true);
-        // Avoid aggressive intension-to-extension conversion, which can create huge tables.
+        // Avoid aggressive intension-to-extension conversion, which can create huge
+        // tables.
         impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_ARITY_LIMIT, 5);
         impl.currParameters.put(XCallbacksParameters.CONVERT_INTENSION_TO_EXTENSION_SPACE_LIMIT, 200_000L);
     }
@@ -275,6 +163,23 @@ public class XCSP3 extends XCallbacksDecomp {
     public void buildVarInteger(XVariables.XVarInteger x, int[] values) {
         addToDV(x);
         varHashMap.put(x.id(), md.intVar(x.id(), values));
+    }
+
+    @Override
+    public void endArray(XArray a) {
+        super.endArray(a);
+        List<IntExpression> groupVars = new ArrayList<>();
+        for (XVariables.XVar x : a.vars) {
+            if (x instanceof XVariables.XVarInteger) {
+                IntExpression expr = varHashMap.get(x.id());
+                if (expr != null) {
+                    groupVars.add(expr);
+                }
+            }
+        }
+        if (!groupVars.isEmpty()) {
+            md.addVariableGroup(groupVars);
+        }
     }
 
     @Override
@@ -303,7 +208,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, int k) {
+    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop,
+            XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, int k) {
         IntExpression $x = $(x);
         IntExpression $y = $(y);
 
@@ -312,12 +218,11 @@ public class XCSP3 extends XCallbacksDecomp {
             md.add(Factory.eq($x, $y));
             return;
         }
-        // special case x + y == 0  <=> x - (-y) == 0 <=> x == -y
+        // special case x + y == 0 <=> x - (-y) == 0 <=> x == -y
         if (aop == Types.TypeArithmeticOperator.ADD && op == Types.TypeConditionOperatorRel.EQ && k == 0) {
             md.add(Factory.eq($x, Factory.minus($y)));
             return;
         }
-
 
         IntExpression o = switch (aop) {
             case DIST -> $x.minus($y).abs();
@@ -340,7 +245,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
+    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p,
+            Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
         IntExpression $x = $(x);
         IntExpression $z = $(z);
         IntExpression o = switch (aop) {
@@ -348,6 +254,7 @@ public class XCSP3 extends XCallbacksDecomp {
             case ADD -> $x.plus(p);
             case SUB -> $x.minus(p);
             case MUL -> Factory.mul($x, p);
+            case DIV -> Factory.div($x, p);
             default -> {
                 unimplementedCase(aop, op);
                 yield null;
@@ -365,7 +272,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p, Types.TypeConditionOperatorRel op, int k) {
+    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, int p,
+            Types.TypeConditionOperatorRel op, int k) {
         IntExpression $x = $(x);
         IntExpression o = switch (aop) {
             case DIST -> $x.minus(p).abs();
@@ -392,7 +300,8 @@ public class XCSP3 extends XCallbacksDecomp {
         }
     }
 
-    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop, XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
+    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeArithmeticOperator aop,
+            XVariables.XVarInteger y, Types.TypeConditionOperatorRel op, XVariables.XVarInteger z) {
         IntExpression $x = $(x);
         IntExpression $y = $(y);
         IntExpression $z = $(z);
@@ -400,7 +309,8 @@ public class XCSP3 extends XCallbacksDecomp {
             case DIST -> $x.minus($y).abs();
             case ADD -> $x.plus($y);
             case SUB -> $x.minus($y);
-            case MUL -> throw new NotImplementedException("No support for multiplication of variables");
+            case MUL -> Factory.mul($x, $y);
+            case DIV -> Factory.div($x, $y);
             default -> {
                 unimplementedCase(aop, op);
                 yield null;
@@ -430,7 +340,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeConditionOperatorSet op, int min, int max) {
+    public void buildCtrPrimitive(String id, XVariables.XVarInteger x, Types.TypeConditionOperatorSet op, int min,
+            int max) {
         IntExpression $x = $(x);
         switch (op) {
             case IN -> {
@@ -464,7 +375,8 @@ public class XCSP3 extends XCallbacksDecomp {
             case VAR -> varHashMap.get(node.value.toString());
             case LONG -> md.constant(((Long) node.value).intValue());
             default ->
-                    throw new NotYetImplementedException("Unknown node type %s in _recursiveIntentionBuilderLeafNode".formatted(node.getType()));
+                throw new NotYetImplementedException(
+                        "Unknown node type %s in _recursiveIntentionBuilderLeafNode".formatted(node.getType()));
         };
     }
 
@@ -473,12 +385,14 @@ public class XCSP3 extends XCallbacksDecomp {
             case IN -> {
                 assert (tree.sons[1].getType() == Types.TypeExpr.SET);
                 try {
-                    Set<Integer> set = Arrays.stream(((XNodeParent<V>) tree.sons[1]).sons).map(i -> ((Long) ((XNodeLeaf<V>) i).value).intValue()).collect(Collectors.toSet());
+                    Set<Integer> set = Arrays.stream(((XNodeParent<V>) tree.sons[1]).sons)
+                            .map(i -> ((Long) ((XNodeLeaf<V>) i).value).intValue()).collect(Collectors.toSet());
                     yield new InSet(_recursiveIntentionBuilder(tree.sons[0]), set);
                 } catch (ClassCastException a) {
-                    //Cannot cast to XNodeLeaf => not only integers
+                    // Cannot cast to XNodeLeaf => not only integers
                     IntExpression main = _recursiveIntentionBuilder(tree.sons[0]);
-                    yield new Or(Arrays.stream(tree.sons[1].sons).map(x -> new Eq(_recursiveIntentionBuilder(x), main)).collect(ImmutableSet.toImmutableSet()));
+                    yield new Or(Arrays.stream(tree.sons[1].sons).map(x -> new Eq(_recursiveIntentionBuilder(x), main))
+                            .collect(ImmutableSet.toImmutableSet()));
                 }
             }
             case NE -> {
@@ -492,19 +406,22 @@ public class XCSP3 extends XCallbacksDecomp {
                 yield new Eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             }
             case ADD ->
-                    new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
+                new Sum(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
             case MUL ->
-                    new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
+                new Mul(Arrays.stream(tree.sons).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new));
             case LT -> Factory.lt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case LE -> Factory.le(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case GT -> Factory.gt(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case GE -> Factory.ge(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             case AND ->
-                    Factory.and(Arrays.stream(tree.sons).map(x -> (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));
+                Factory.and(Arrays.stream(tree.sons).map(x -> (BoolExpression) _recursiveIntentionBuilder(x))
+                        .toArray(BoolExpression[]::new));
             case OR ->
-                    Factory.or(Arrays.stream(tree.sons).map(x -> (BoolExpression) _recursiveIntentionBuilder(x)).toArray(BoolExpression[]::new));
+                Factory.or(Arrays.stream(tree.sons).map(x -> (BoolExpression) _recursiveIntentionBuilder(x))
+                        .toArray(BoolExpression[]::new));
             case DIST ->
-                    Factory.abs(Factory.minus(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1])));
+                Factory.abs(Factory.minus(_recursiveIntentionBuilder(tree.sons[0]),
+                        _recursiveIntentionBuilder(tree.sons[1])));
             case DIV -> {
                 IntExpression left = (IntExpression) _recursiveIntentionBuilder(tree.sons[0]);
                 IntExpression right = (IntExpression) _recursiveIntentionBuilder(tree.sons[1]);
@@ -524,12 +441,14 @@ public class XCSP3 extends XCallbacksDecomp {
                 yield Factory.eq(_recursiveIntentionBuilder(tree.sons[0]), _recursiveIntentionBuilder(tree.sons[1]));
             }
             default ->
-                    throw new NotYetImplementedException("Unknown type %s in _recursiveIntentionBuilderParentNode".formatted(tree.getType()));
+                throw new NotYetImplementedException(
+                        "Unknown type %s in _recursiveIntentionBuilderParentNode".formatted(tree.getType()));
         };
     }
 
     @Override
-    public void buildCtrIntension(String id, XVariables.XVarInteger[] scope, XNodeParent<XVariables.XVarInteger> syntaxTreeRoot) {
+    public void buildCtrIntension(String id, XVariables.XVarInteger[] scope,
+            XNodeParent<XVariables.XVarInteger> syntaxTreeRoot) {
         md.add(((BoolExpression) _recursiveIntentionBuilder(syntaxTreeRoot)));
     }
 
@@ -564,17 +483,20 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     public void buildCtrSum(String id, XVariables.XVarInteger[] list, Condition condition) {
-        buildCrtWithCondition(id, new Sum(Arrays.stream(list).map(i -> varHashMap.get(i.id())).toArray(IntExpression[]::new)), condition);
+        buildCrtWithCondition(id,
+                new Sum(Arrays.stream(list).map(i -> varHashMap.get(i.id())).toArray(IntExpression[]::new)), condition);
     }
 
     public void buildCtrSum(String id, XVariables.XVarInteger[] list, int[] coeffs, Condition condition) {
-        buildCrtWithCondition(id, new WeightedSum(Arrays.stream(list).map(i -> varHashMap.get(i.id())).toArray(IntExpression[]::new), coeffs), condition);
+        buildCrtWithCondition(id, new WeightedSum(
+                Arrays.stream(list).map(i -> varHashMap.get(i.id())).toArray(IntExpression[]::new), coeffs), condition);
     }
 
-    public void buildCtrExtension(String id, XVariables.XVarInteger x, int[] values, boolean positive, Set<Types.TypeFlag> flags) {
+    public void buildCtrExtension(String id, XVariables.XVarInteger x, int[] values, boolean positive,
+            Set<Types.TypeFlag> flags) {
         assert (!flags.contains(Types.TypeFlag.STARRED_TUPLES)); // no sense!
         if (positive) {
-            //InSet constraint
+            // InSet constraint
             md.add(new InSet(varHashMap.get(x.id()), ImmutableSet.of(values)));
         } else {
             IntExpression expr = varHashMap.get(x.id());
@@ -583,11 +505,16 @@ public class XCSP3 extends XCallbacksDecomp {
         }
     }
 
-    public void buildCtrExtension(String id, XVariables.XVarInteger[] list, int[][] tuples, boolean positive, Set<Types.TypeFlag> flags) {
+    public void buildCtrExtension(String id, XVariables.XVarInteger[] list, int[][] tuples, boolean positive,
+            Set<Types.TypeFlag> flags) {
         if (positive) {
-            md.add(new Table($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));
+            md.add(new Table($(list), tuples,
+                    flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT)
+                            : Optional.empty()));
         } else {
-            md.add(new NegTable($(list), tuples, flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT) : Optional.empty()));
+            md.add(new NegTable($(list), tuples,
+                    flags.contains(Types.TypeFlag.STARRED_TUPLES) ? Optional.of(Constants.STAR_INT)
+                            : Optional.empty()));
         }
     }
 
@@ -616,7 +543,6 @@ public class XCSP3 extends XCallbacksDecomp {
             md.add(op.apply($list[i], $list[i + 1]));
     }
 
-
     @Override
     public void buildCtrElement(String id, XVariables.XVarInteger[] list, Condition condition) {
         IntExpression[] array = $(list);
@@ -626,7 +552,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrElement(String id, XVariables.XVarInteger[] list, int startIndex, XVariables.XVarInteger index, Types.TypeRank rank, Condition condition) {
+    public void buildCtrElement(String id, XVariables.XVarInteger[] list, int startIndex, XVariables.XVarInteger index,
+            Types.TypeRank rank, Condition condition) {
         if (rank != Types.TypeRank.ANY)
             throw new NotImplementedException("Element constraint only supports ANY as position for the index");
         IntExpression[] array = $(list);
@@ -637,7 +564,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrElement(String id, int[] list, int startIndex, XVariables.XVarInteger index, Types.TypeRank rank, Condition condition) {
+    public void buildCtrElement(String id, int[] list, int startIndex, XVariables.XVarInteger index,
+            Types.TypeRank rank, Condition condition) {
         if (rank != Types.TypeRank.ANY)
             throw new NotImplementedException("Element constraint only supports ANY as position for the index");
         IntExpression indexExpr = startIndex == 0 ? $(index) : Factory.minus($(index), startIndex);
@@ -646,15 +574,16 @@ public class XCSP3 extends XCallbacksDecomp {
         buildCrtWithCondition(id, element, condition);
     }
 
-
     @Override
-    public void buildCtrElement(String id, XVariables.XVarInteger[][] matrix, int startRowIndex, XVariables.XVarInteger rowIndex, int startColIndex, XVariables.XVarInteger colIndex,
-                                Condition condition) {
+    public void buildCtrElement(String id, XVariables.XVarInteger[][] matrix, int startRowIndex,
+            XVariables.XVarInteger rowIndex, int startColIndex, XVariables.XVarInteger colIndex,
+            Condition condition) {
         unimplementedCase(id);
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, int[] heights, Condition condition) {
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, int[] heights,
+            Condition condition) {
         if (!(condition instanceof Condition.ConditionVal))
             throw new NotImplementedException("No support for variable capacities");
         int cap = (int) ((Condition.ConditionVal) condition).k;
@@ -662,7 +591,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths,
+            XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
         IntExpression[] $origins = $(origins);
         IntExpression[] $ends = $(ends);
         for (int i = 0; i < origins.length; i++)
@@ -670,10 +600,9 @@ public class XCSP3 extends XCallbacksDecomp {
         buildCtrCumulative(id, origins, lengths, heights, condition);
     }
 
-
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] origins, int[] lengths, boolean zeroIgnored) {
-        //TODO check for zeroIgnored.
+        // TODO check for zeroIgnored.
         md.add(new Disjunctive($(origins), lengths));
     }
 
@@ -703,7 +632,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     private IntExpression getExprForTypeObjective(Types.TypeObjective objtype, IntExpression[] list, int[] coefs) {
-        IntExpression[] listWithCoef = IntStream.range(0, list.length).mapToObj(i -> Factory.mul(list[i], coefs[i])).toArray(IntExpression[]::new);
+        IntExpression[] listWithCoef = IntStream.range(0, list.length).mapToObj(i -> Factory.mul(list[i], coefs[i]))
+                .toArray(IntExpression[]::new);
         return switch (objtype) {
             case MAXIMUM -> new Max(listWithCoef);
             case MINIMUM -> new Min(listWithCoef);
@@ -765,17 +695,18 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees, int[] coeffs) {
+    public void buildObjToMinimize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees,
+            int[] coeffs) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
         objective = md.minimize(getExprForTypeObjective(type, list, coeffs));
     }
 
     @Override
-    public void buildObjToMaximize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees, int[] coeffs) {
+    public void buildObjToMaximize(String id, Types.TypeObjective type, XNode<XVariables.XVarInteger>[] trees,
+            int[] coeffs) {
         IntExpression[] list = Arrays.stream(trees).map(this::_recursiveIntentionBuilder).toArray(IntExpression[]::new);
         objective = md.maximize(getExprForTypeObjective(type, list, coeffs));
     }
-
 
     private IntExpression[] $(XVariables.XVarInteger[] list) {
         return Arrays.stream(list).map(this::$).toArray(IntExpression[]::new);
@@ -798,11 +729,9 @@ public class XCSP3 extends XCallbacksDecomp {
             decisionVars.add(e.id());
     }
 
-
     /*
      * CONSTRAINTS NOT IMPLEMENTED IN MAXICP
      */
-
 
     public void buildCtrLex(String id, XVariables.XVarInteger[][] lists, Types.TypeOperatorRel operator) {
         throw new NotImplementedException();
@@ -817,43 +746,51 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, XVariables.XVarInteger[] occurs) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values,
+            XVariables.XVarInteger[] occurs) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, int[] occurs) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values,
+            int[] occurs) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values, int[] occursMin, int[] occursMax) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, int[] values,
+            int[] occursMin, int[] occursMax) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, XVariables.XVarInteger[] occurs) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed,
+            XVariables.XVarInteger[] values, XVariables.XVarInteger[] occurs) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occurs) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed,
+            XVariables.XVarInteger[] values, int[] occurs) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed, XVariables.XVarInteger[] values, int[] occursMin, int[] occursMax) {
+    public void buildCtrCardinality(String id, XVariables.XVarInteger[] list, boolean closed,
+            XVariables.XVarInteger[] values, int[] occursMin, int[] occursMax) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrSum(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] coeffs, Condition condition) {
-        //var*var
+    public void buildCtrSum(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] coeffs,
+            Condition condition) {
+        // var*var
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrRegular(String id, XVariables.XVarInteger[] list, Transition[] transitions, String startState, String[] finalStates) {
+    public void buildCtrRegular(String id, XVariables.XVarInteger[] list, Transition[] transitions, String startState,
+            String[] finalStates) {
         throw new NotImplementedException();
     }
 
@@ -863,38 +800,44 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
-        //no support for variable heights
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths,
+            XVariables.XVarInteger[] heights, Condition condition) {
+        // no support for variable heights
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, int[] heights, Condition condition) {
-        //no support for variable lengths
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths,
+            int[] heights, Condition condition) {
+        // no support for variable lengths
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] heights, Condition condition) {
-        //no support for variable lengths and heights
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths,
+            XVariables.XVarInteger[] heights, Condition condition) {
+        // no support for variable lengths and heights
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
-        //no support for variable heights
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, int[] lengths,
+            XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
+        // no support for variable heights
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
-        //no support for variable lengths
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths,
+            XVariables.XVarInteger[] ends, int[] heights, Condition condition) {
+        // no support for variable lengths
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
-        //no support for variable lengths and heights
+    public void buildCtrCumulative(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths,
+            XVariables.XVarInteger[] ends, XVariables.XVarInteger[] heights, Condition condition) {
+        // no support for variable lengths and heights
         throw new NotImplementedException();
     }
 
@@ -909,7 +852,8 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrCount(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] values, Condition condition) {
+    public void buildCtrCount(String id, XVariables.XVarInteger[] list, XVariables.XVarInteger[] values,
+            Condition condition) {
         throw new NotImplementedException();
     }
 
@@ -959,14 +903,16 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths, boolean zeroIgnored) {
-        //no support for variable lengths
+    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[] origins, XVariables.XVarInteger[] lengths,
+            boolean zeroIgnored) {
+        // no support for variable lengths
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, XVariables.XVarInteger[][] lengths, boolean zeroIgnored) {
-        //no support for variable lengths
+    public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, XVariables.XVarInteger[][] lengths,
+            boolean zeroIgnored) {
+        // no support for variable lengths
         throw new NotImplementedException();
     }
 
@@ -981,22 +927,26 @@ public class XCSP3 extends XCallbacksDecomp {
     }
 
     @Override
-    public void buildCtrChannel(String id, XVariables.XVarInteger[] list1, int startIndex1, XVariables.XVarInteger[] list2, int startIndex2) {
+    public void buildCtrChannel(String id, XVariables.XVarInteger[] list1, int startIndex1,
+            XVariables.XVarInteger[] list2, int startIndex2) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrChannel(String id, XVariables.XVarInteger[] list, int startIndex, XVariables.XVarInteger value) {
+    public void buildCtrChannel(String id, XVariables.XVarInteger[] list, int startIndex,
+            XVariables.XVarInteger value) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin, int[] widthsMax) {
+    public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin,
+            int[] widthsMax) {
         throw new NotImplementedException();
     }
 
     @Override
-    public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin, int[] widthsMax, int[][] patterns) {
+    public void buildCtrStretch(String id, XVariables.XVarInteger[] list, int[] values, int[] widthsMin,
+            int[] widthsMax, int[][] patterns) {
         throw new NotImplementedException();
     }
 }

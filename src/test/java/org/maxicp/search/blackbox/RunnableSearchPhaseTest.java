@@ -105,6 +105,78 @@ public class RunnableSearchPhaseTest {
         assertEquals(SearchStatus.SAT, status);
     }
 
+    static class TrackingRunnableSearch extends RunnableSearch {
+        long lastAllocatedBudget = -1;
+        final RunnableSearch delegate;
+
+        TrackingRunnableSearch(BlackBoxSearch blackBoxSearch, RunnableSearch delegate) {
+            super(blackBoxSearch);
+            this.delegate = delegate;
+        }
+
+        @Override
+        void updateSolution(List<Integer> solution) {
+            if (delegate != null) delegate.updateSolution(solution);
+        }
+
+        @Override
+        public SearchStatus run(long timeLimitInMillis) {
+            this.lastAllocatedBudget = timeLimitInMillis;
+            if (delegate != null) {
+                return delegate.run(timeLimitInMillis);
+            }
+            return SearchStatus.SAT;
+        }
+    }
+
+    @Test
+    public void testRestartPhaseEarlyExitAndReallocation() {
+        ModelDispatcher model = Factory.makeModelDispatcher();
+        IntVar x = model.intVar(0, 10);
+        Objective obj = minimize(x);
+
+        SearchStatus status = model.runCP(() -> {
+            BlackBoxSearch blackBoxSearch = new BlackBoxSearch(model, new IntVar[]{x}, obj);
+
+            RestartRunnableSearch restart = new RestartRunnableSearch(
+                    blackBoxSearch,
+                    model,
+                    List.of(x),
+                    1,
+                    0.0,
+                    42L
+            );
+
+            LNSRunnableSearch lns = new LNSRunnableSearch(
+                    blackBoxSearch,
+                    model,
+                    List.of(x),
+                    obj,
+                    1,
+                    50,
+                    0.0,
+                    43L
+            );
+
+            TrackingRunnableSearch trackingRestart = new TrackingRunnableSearch(blackBoxSearch, restart);
+            TrackingRunnableSearch trackingLns = new TrackingRunnableSearch(blackBoxSearch, lns);
+
+            blackBoxSearch.addPhase("restart", trackingRestart, 0.40, false);
+            blackBoxSearch.addPhase("lns", trackingLns, 0.60, true);
+            blackBoxSearch.withVerbosity(BlackBoxSearch.Verbosity.QUIET);
+
+            SearchStatus phaseStatus = blackBoxSearch.start(1);
+
+            assertTrue(blackBoxSearch.bestSolution().isPresent());
+            assertTrue(trackingRestart.lastAllocatedBudget > 0);
+            assertTrue(trackingLns.lastAllocatedBudget > 600,
+                    "LNS budget should be reallocated and greater than 600ms, but was " + trackingLns.lastAllocatedBudget);
+
+            return phaseStatus;
+        });
+    }
+
+
     private static TspModel buildTsp(ModelDispatcher model) {
 
         TSPInstance instance = new TSPInstance("src/test/resources/TSP/gr21.xml");

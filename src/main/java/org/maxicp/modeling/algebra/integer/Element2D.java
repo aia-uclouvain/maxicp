@@ -1,16 +1,19 @@
 package org.maxicp.modeling.algebra.integer;
 
+import org.maxicp.modeling.DecisionVarsProvider;
+import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.NonLeafExpressionNode;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public record Element2D(int[][] array, IntExpression x, IntExpression y) implements SymbolicIntExpression, NonLeafExpressionNode {
+public record Element2D(int[][] array, IntExpression x, IntExpression y) implements SymbolicIntExpression, NonLeafExpressionNode, DecisionVarsProvider {
 
     private int[] getTempArray(IntExpression index) {
         int minIndex = Math.max(index.min(), 0);
@@ -104,6 +107,15 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
             for (int j = 0; j < sizey; j++)
                 s.add(array[tempx[i]][tempy[j]]);
         return s.size();
+    }
+
+    /** Both row index x and column index y are decision variables; the result is derived. */
+    @Override
+    public Collection<IntExpression> decisionVariables() {
+        List<IntExpression> result = new ArrayList<>(2);
+        if (x instanceof IntVar) result.add(x);
+        if (y instanceof IntVar) result.add(y);
+        return List.copyOf(result);
     }
 
     @Override

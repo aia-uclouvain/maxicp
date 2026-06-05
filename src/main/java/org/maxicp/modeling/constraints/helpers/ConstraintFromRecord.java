@@ -13,6 +13,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * Utility class to automagically compute the scope of a record constraint.
@@ -22,14 +23,15 @@ import java.util.Collection;
  * - {@code Collection<Collection<Expression>>} and derivatives
  * - {@code Expression[]}
  * - {@code Expression[][]}
- *
+ * <p>
  * Explodes when it discovers a type it doesn't know.
  * You can @IgnoreScope custom types you want it to ignore.
  */
 public interface ConstraintFromRecord extends Constraint, CacheScope {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.RECORD_COMPONENT)
-    @interface IgnoreScope {}
+    @interface IgnoreScope {
+    }
 
     @Override
     default Collection<? extends Expression> computeScope() {
@@ -39,10 +41,10 @@ public interface ConstraintFromRecord extends Constraint, CacheScope {
 
 class ConstraintFromRecordHelper {
     static Collection<? extends Expression> computeScope(ConstraintFromRecord record) {
-        if(!record.getClass().isRecord())
+        if (!record.getClass().isRecord())
             throw new ClassCastException("A class implementing ConstraintFromRecord must be a record");
         ImmutableSet.Builder<Expression> fset = new ImmutableSet.Builder<>();
-        for(RecordComponent rc: record.getClass().getRecordComponents()) {
+        for (RecordComponent rc : record.getClass().getRecordComponents()) {
             rc.getAccessor().setAccessible(true);
             findTypeAndExtract(fset, record, rc);
         }
@@ -60,12 +62,16 @@ class ConstraintFromRecordHelper {
         try {
             Type type = rc.getGenericType();
 
-            if(rc.isAnnotationPresent(ConstraintFromRecord.IgnoreScope.class))
+            if (rc.isAnnotationPresent(ConstraintFromRecord.IgnoreScope.class))
                 return;
 
             switch (type) {
                 case ParameterizedType pt -> {
                     Type rawType = pt.getRawType();
+                    // Ignore Optional<*> types (no Expression content)
+                    if (rawType instanceof Class<?> && Optional.class.isAssignableFrom((Class<?>) rawType)) {
+                        return;
+                    }
                     if (rawType instanceof Class<?> && Collection.class.isAssignableFrom((Class<?>) rawType)) {
                         processCollection(fset, record, rc);
                         return;
@@ -77,19 +83,19 @@ class ConstraintFromRecordHelper {
                         return;
                     }
 
-                    if(Expression[].class.isAssignableFrom(cls)) {
+                    if (Expression[].class.isAssignableFrom(cls)) {
                         fset.add((Expression[]) rc.getAccessor().invoke(record));
                         return;
                     }
 
-                    if(Expression[][].class.isAssignableFrom(cls)) {
+                    if (Expression[][].class.isAssignableFrom(cls)) {
                         Expression[][] t = (Expression[][]) rc.getAccessor().invoke(record);
-                        for(Expression[] tt: t)
+                        for (Expression[] tt : t)
                             fset.add(tt);
                         return;
                     }
 
-                    if(ignored.contains(cls))
+                    if (ignored.contains(cls))
                         return;
                 }
                 default -> {
@@ -97,23 +103,22 @@ class ConstraintFromRecordHelper {
                 }
             }
             throw new IllegalArgumentException("Unknown argument type " + type);
-        }
-        catch (IllegalAccessException | InvocationTargetException ex) {
+        } catch (IllegalAccessException | InvocationTargetException ex) {
             throw new IllegalArgumentException("Unknown argument type");
         }
     }
 
     static void processCollection(ImmutableSet.Builder<Expression> fset, ConstraintFromRecord record, RecordComponent rc) throws InvocationTargetException, IllegalAccessException {
-        ParameterizedType type = (ParameterizedType)rc.getGenericType();
+        ParameterizedType type = (ParameterizedType) rc.getGenericType();
         assert Collection.class.isAssignableFrom((Class<?>) type.getRawType());
         Type[] ta = type.getActualTypeArguments();
         //For now we support only basic collections
-        if(ta.length != 1)
+        if (ta.length != 1)
             throw new IllegalArgumentException("Unknown argument type");
 
         switch (ta[0]) {
             case Class<?> cls -> {
-                if(Expression.class.isAssignableFrom((Class<?>) cls)) {
+                if (Expression.class.isAssignableFrom((Class<?>) cls)) {
                     fset.addAll((Collection<? extends Expression>) rc.getAccessor().invoke(record));
                     return;
                 }
@@ -123,15 +128,14 @@ class ConstraintFromRecordHelper {
                 Type rawType = pt.getRawType();
                 if (rawType instanceof Class<?> && Collection.class.isAssignableFrom((Class<?>) rawType)) {
                     Type[] tb = pt.getActualTypeArguments();
-                    if(tb.length == 1 && tb[0] instanceof Class<?> && Expression.class.isAssignableFrom((Class<?>) tb[0])) {
+                    if (tb.length == 1 && tb[0] instanceof Class<?> && Expression.class.isAssignableFrom((Class<?>) tb[0])) {
                         Collection<Collection<? extends Expression>> top = (Collection<Collection<? extends Expression>>) rc.getAccessor().invoke(record);
-                        for(Collection<? extends Expression> c: top)
+                        for (Collection<? extends Expression> c : top)
                             fset.addAll(c);
                         return;
                     }
                     throw new IllegalArgumentException("Unknown argument type");
-                }
-                else
+                } else
                     throw new IllegalArgumentException("Unknown argument type " + pt);
             }
             default -> {

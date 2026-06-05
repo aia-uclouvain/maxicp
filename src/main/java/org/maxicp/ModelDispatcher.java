@@ -16,6 +16,7 @@ import org.maxicp.search.ConcurrentDFSearch;
 import org.maxicp.search.DFSearch;
 import org.maxicp.util.Ints;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -59,6 +60,28 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
      */
     public Iterable<Constraint> getConstraints() {
         return getModel().getConstraints();
+    }
+
+    /**
+     * Infers the decision variables from the constraint graph of the current model.
+     *
+     * <p>A variable is considered a decision variable when it appears as an
+     * "index / choice" argument in a constraint or expression that implements
+     * {@link DecisionVarsProvider}.  Examples: the index variable of an
+     * {@code Element1D/2D} expression, or any variable in the scope of an
+     * {@code AllDifferent}, {@code Circuit}, {@code Table}, etc.</p>
+     *
+     * <p>Only leaf {@link IntVar} instances are returned – derived expressions
+     * (sums, element results, views) are always excluded.</p>
+     *
+     * <p>The returned list is ordered by first-seen occurrence during a depth-first
+     * walk of the constraint graph and contains no duplicates (identity-based).</p>
+     *
+     * @return unmodifiable list of candidate decision variables
+     * @see DecisionVarCollector
+     */
+    public List<IntExpression> getDecisionVariables() {
+        return DecisionVarCollector.collect(this);
     }
 
     /**
@@ -183,5 +206,11 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
 
     public <U extends Comparable<U>> BestFirstSearch<U> bestFirstSearch(Supplier<Runnable[]> branching, Supplier<U> nodeEvaluator) {
         return new BestFirstSearch<U>(this, branching, nodeEvaluator);
+    }
+
+    public void addVariableGroup(List<IntExpression> group) {
+        if (getModel() instanceof SymbolicModel sm) {
+            setModel(sm.addVariableGroup(group));
+        }
     }
 }

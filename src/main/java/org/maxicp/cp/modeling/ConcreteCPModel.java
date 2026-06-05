@@ -542,6 +542,11 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     @Override
+    public java.util.List<java.util.List<IntExpression>> getVariableGroups() {
+        return model.value().getVariableGroups();
+    }
+
+    @Override
     public Iterable<Constraint> getConstraints() {
         return model.value().getConstraints();
     }

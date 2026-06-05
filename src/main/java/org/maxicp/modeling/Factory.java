@@ -80,6 +80,10 @@ public final class Factory {
         return new CstMul(a, b);
     }
 
+    static public IntExpression div(IntExpression a, int b) {
+        return div(a, new Constant(a.getModelProxy(), b));
+    }
+
     static public IntExpression mul(int b, IntExpression a) {
         return new CstMul(a, b);
     }

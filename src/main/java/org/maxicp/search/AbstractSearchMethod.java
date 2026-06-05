@@ -322,8 +322,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                 subjectTo.run();
                 statistics.set(optimize(objToTighten, limit));
             } catch (InconsistencyException ignored) {
+                statistics.get().setCompleted();
             }
-
         });
         return statistics.get();
     }
@@ -336,8 +336,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                 subjectTo.run();
                 statistics.set(optimize(objToTighten, limit));
             } catch (InconsistencyException ignored) {
+                statistics.get().setCompleted();
             }
-
         });
         return statistics.get();
     }
