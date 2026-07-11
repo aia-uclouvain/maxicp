@@ -183,6 +183,81 @@ public class StateSparseBitSet {
         return count;
     }
 
+    /**
+     * Counts the number of set bits.
+     *
+     * @return the number of set bits
+     */
+    public int count() {
+        int count = 0;
+        for (int i = nNonZero.value() - 1; i >= 0; i--) {
+            count += java.lang.Long.bitCount(words[nonZeroIdx[i]].value());
+        }
+        return count;
+    }
+
+    /**
+     * Counts the size of the intersection with a given BitSet,
+     * stopping early as soon as the given cap is proved unreachable.
+     * The returned value is exact when it is at least cap; otherwise it is
+     * a value smaller than cap (the exact count is then also smaller than cap).
+     *
+     * @param bs  the BitSet to intersect with
+     * @param cap the threshold of interest
+     * @return the possibly capped size of the intersection
+     */
+    public int countIntersection(BitSet bs, int cap) {
+        int count = 0;
+        for (int i = nNonZero.value() - 1; i >= 0 && (i + 1) * 64 >= cap - count; i--) {
+            int idx = nonZeroIdx[i];
+            long word = bs.words[idx];
+            if (word != 0L) {
+                count += java.lang.Long.bitCount(words[idx].value() & word);
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Tests if the set of bits is a subset of the bits of a given BitSet.
+     *
+     * @param bs the BitSet to test the inclusion in
+     * @return true if every set bit is also set in bs
+     */
+    public boolean isSubsetOf(BitSet bs) {
+        for (int i = nNonZero.value() - 1; i >= 0; i--) {
+            int idx = nonZeroIdx[i];
+            if ((words[idx].value() & ~bs.words[idx]) != 0L) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Counts the size of the intersection with several BitSets at once,
+     * that is {@code |this ∩ sets[idx[0]] ∩ ... ∩ sets[idx[limit-1]]|}.
+     *
+     * @param sets  the BitSets to intersect with
+     * @param idx   the indices in sets of the BitSets to consider
+     * @param limit the number of indices to consider in idx
+     * @return the size of the intersection of this with all designated BitSets
+     */
+    public int countIntersectionAll(BitSet[] sets, int[] idx, int limit) {
+        int count = 0;
+        for (int i = nNonZero.value() - 1; i >= 0; i--) {
+            int offset = nonZeroIdx[i];
+            long word = ~0L;
+            for (int j = limit - 1; j >= 0 && word != 0L; j--) {
+                word &= sets[idx[j]].words[offset];
+            }
+            if (word != 0L) {
+                count += java.lang.Long.bitCount(words[offset].value() & word);
+            }
+        }
+        return count;
+    }
+
     @Override
     public String toString() {
         String res = "";
