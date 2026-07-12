@@ -12,11 +12,15 @@ import org.maxicp.cp.engine.constraints.patternvar.ClosedItemset;
 import org.maxicp.cp.engine.constraints.patternvar.ClosedNv;
 import org.maxicp.cp.engine.constraints.patternvar.CoverSize;
 import org.maxicp.cp.engine.constraints.patternvar.MinSupportItemset;
+import org.maxicp.cp.engine.constraints.patternvar.MinSupportSeq;
+import org.maxicp.cp.engine.constraints.patternvar.PrefixProjection;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPItemsetVar;
+import org.maxicp.cp.engine.core.CPSeqPatternVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.engine.core.mining.MiningIO;
+import org.maxicp.cp.engine.core.mining.SequenceDb;
 import org.maxicp.cp.engine.core.mining.TransactionDb;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.PatternSearches;
@@ -126,18 +130,64 @@ public class MiningBench {
         return search.solve();
     }
 
+    static Supplier<Runnable[]> positionalBranching(CPSolver cp, CPIntVar[] p) {
+        return () -> {
+            CPIntVar next = null;
+            for (CPIntVar position : p) {
+                if (!position.isFixed()) {
+                    next = position;
+                    break;
+                }
+            }
+            if (next == null)
+                return EMPTY;
+            CPIntVar selected = next;
+            int v = selected.min();
+            return branch(
+                    () -> {
+                        selected.fix(v);
+                        cp.fixPoint();
+                    },
+                    () -> {
+                        selected.remove(v);
+                        cp.fixPoint();
+                    });
+        };
+    }
+
+    static SearchStatistics runSeq(SequenceDb db, int theta, String model) {
+        CPSolver cp = makeSolver();
+        DFSearch search;
+        switch (model) {
+            case "nvgc-seq" -> {
+                CPIntVar[] p = makeIntVarArray(cp, db.maxSeqLength(), db.nSymbols());
+                cp.post(new PrefixProjection(p, theta, db));
+                search = CPFactory.makeDfs(cp, positionalBranching(cp, p));
+            }
+            case "pv-seq" -> {
+                CPSeqPatternVar pattern = makeSeqPatternVar(cp, db);
+                cp.post(new MinSupportSeq(pattern, theta));
+                search = CPFactory.makeDfs(cp, PatternSearches.appendExclude(pattern));
+            }
+            default -> throw new IllegalArgumentException("unknown sequence model " + model);
+        }
+        return search.solve();
+    }
+
     public static void main(String[] args) {
         String file = args[0];
         int theta = Integer.parseInt(args[1]);
         String model = args[2];
         int nRuns = args.length > 3 ? Integer.parseInt(args[3]) : 3;
 
-        TransactionDb db = MiningIO.readTransactionDb(file);
-        String dataset = file.substring(file.lastIndexOf('/') + 1).replace(".txt", "");
+        boolean sequences = file.endsWith(".spmf");
+        TransactionDb tdb = sequences ? null : MiningIO.readTransactionDb(file);
+        SequenceDb sdb = sequences ? SequenceDb.readSpmf(file) : null;
+        String dataset = file.substring(file.lastIndexOf('/') + 1).replaceAll("\\.(txt|spmf)$", "");
 
         for (int run = 0; run <= nRuns; run++) { // run 0 is a warm-up
             long start = System.currentTimeMillis();
-            SearchStatistics stats = run(db, theta, model);
+            SearchStatistics stats = sequences ? runSeq(sdb, theta, model) : run(tdb, theta, model);
             long elapsed = System.currentTimeMillis() - start;
             System.out.printf("%s,%s,%d,%d,%d,%d,%d,%d%n",
                     model, dataset, theta, run, elapsed,

@@ -8,9 +8,7 @@ package org.maxicp.cp.engine.core;
 import org.maxicp.cp.engine.core.mining.SequenceDb;
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.state.StateInt;
-import org.maxicp.state.StateLong;
 import org.maxicp.state.StateManager;
-import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.state.datastructures.StateStack;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -26,12 +24,14 @@ import java.util.Arrays;
  * prefix in the sequence); two reversible integers delimit the segment of the
  * current projection, so backtracking simply moves them back.
  * <p>
- * The candidate frontier is one {@link StateSparseSet} per prefix depth:
- * appending a symbol moves to the next depth whose set is full (all removals
- * at deeper depths having been undone by backtracking) and restricts it to the
- * symbols with a positive projected support. This makes every frontier update
- * removal-only while giving each prefix its own frontier, which is required
- * for the append/exclude search to enumerate every pattern exactly once.
+ * The candidate frontier is one refill array per prefix depth: appending a
+ * symbol REWRITES the next depth's array with exactly the symbols supported by
+ * the new projection (an O(supported) operation, independent of the alphabet
+ * size), and exclusions swap-and-shrink under a reversible size. Rewriting is
+ * sound because the search is LIFO: when an append reaches a depth, every
+ * deeper decision has been undone, so the old content is dead. Each prefix
+ * thus has its own frontier, which is required for the append/exclude search
+ * to enumerate every pattern exactly once.
  */
 public class CPSeqPatternVarImpl implements CPSeqPatternVar {
 
@@ -42,7 +42,12 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
     private final int[] prefix;
     private final StateInt prefixLen;
 
-    private final StateSparseSet[] frontier; // frontier[d] = candidates when prefixLen == d
+    // frontier[d] = candidates when prefixLen == d; positions in [0, nFrontier[d])
+    // are the current members, posOf[d][a] is a's position (checked against the
+    // content, since entries of older rewrites may be stale)
+    private final int[][] frontier;
+    private final int[][] posOf;
+    private final StateInt[] nFrontier;
     private final StateInt status;
 
     // PPIC pseudo-projected database: grow-only trail of (sequence id, position) pairs
@@ -52,11 +57,10 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
     private final StateInt psdbStart; // start of the current projection segment
     private final StateInt psdbSize; // number of sequences in the current projection
 
-    // supportCounter[a] = support of prefix·a, valid for the projection stamped cachedVersion
-    private final int[] supportCounter;
-    private final StateLong projVersion; // version of the projection of the current node
-    private long versionCounter = 0;
-    private long cachedVersion = 0;
+    // supportCounter[d][a] = support of prefix·a when prefixLen == d; computed by
+    // the projection that enters depth d and valid for the whole subtree by the
+    // same LIFO argument as the frontier arrays (deeper appends write deeper rows)
+    private final int[][] supportCounter;
 
     private final StateStack<CPConstraint> onDomain;
     private final StateStack<CPConstraint> onFix;
@@ -76,9 +80,12 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
         StateManager sm = cp.getStateManager();
         prefix = new int[db.maxSeqLength()];
         prefixLen = sm.makeStateInt(0);
-        frontier = new StateSparseSet[db.maxSeqLength() + 1];
-        for (int d = 0; d < frontier.length; d++)
-            frontier[d] = new StateSparseSet(sm, nSymbols - 1, 1);
+        int nDepths = db.maxSeqLength() + 1;
+        frontier = new int[nDepths][Math.max(nSymbols - 1, 1)];
+        posOf = new int[nDepths][nSymbols];
+        nFrontier = new StateInt[nDepths];
+        for (int d = 0; d < nDepths; d++)
+            nFrontier[d] = sm.makeStateInt(0);
         status = sm.makeStateInt(POSSIBLE);
         int nSeqs = db.nSeqs();
         innerTrailSize = Math.max(nSeqs * 5, 4);
@@ -89,18 +96,33 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
         Arrays.fill(psdbPosInSeq, -1);
         psdbStart = sm.makeStateInt(0);
         psdbSize = sm.makeStateInt(nSeqs);
-        projVersion = sm.makeStateLong(0L);
-        supportCounter = new int[nSymbols];
+        supportCounter = new int[nDepths][nSymbols];
         for (int a = 1; a < nSymbols; a++)
-            supportCounter[a] = db.symbolSupport(a);
+            supportCounter[0][a] = db.symbolSupport(a);
         onDomain = new StateStack<>(sm);
         onFix = new StateStack<>(sm);
         tmpSymbols = new int[Math.max(nSymbols - 1, 1)];
+        int n = 0;
         for (int a = 1; a < nSymbols; a++)
-            if (db.symbolSupport(a) == 0)
-                frontier[0].remove(a);
-        if (frontier[0].isEmpty())
+            if (db.symbolSupport(a) > 0)
+                tmpSymbols[n++] = a;
+        refillFrontier(0, tmpSymbols, n);
+        if (n == 0)
             status.setValue(TERMINATED); // the empty pattern is the only possible value
+    }
+
+    /**
+     * Rewrites the frontier of a depth with the given symbols; only sound when
+     * the depth is being (re-)entered, i.e. no deeper state is alive.
+     */
+    private void refillFrontier(int depth, int[] symbols, int n) {
+        int[] arr = frontier[depth];
+        int[] pos = posOf[depth];
+        for (int i = 0; i < n; i++) {
+            arr[i] = symbols[i];
+            pos[symbols[i]] = i;
+        }
+        nFrontier[depth].setValue(n);
     }
 
     @Override
@@ -134,17 +156,24 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
 
     @Override
     public boolean isCandidate(int a) {
-        return frontier[prefixLen.value()].contains(a);
+        if (a <= 0 || a >= nSymbols)
+            return false;
+        int d = prefixLen.value();
+        int p = posOf[d][a];
+        return p < nFrontier[d].value() && frontier[d][p] == a;
     }
 
     @Override
     public int nCandidates() {
-        return frontier[prefixLen.value()].size();
+        return nFrontier[prefixLen.value()].value();
     }
 
     @Override
     public int fillCandidates(int[] dest) {
-        return frontier[prefixLen.value()].fillArray(dest);
+        int d = prefixLen.value();
+        int n = nFrontier[d].value();
+        System.arraycopy(frontier[d], 0, dest, 0, n);
+        return n;
     }
 
     @Override
@@ -171,12 +200,13 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
     public int supportAfter(int a) {
         if (a <= 0 || a >= nSymbols)
             return 0;
-        // recompute the counters if the projection changed since they were last computed
-        if (cachedVersion != projVersion.value()) {
-            recomputeSupportCounter();
-            cachedVersion = projVersion.value();
-        }
-        return supportCounter[a];
+        return supportCounter[prefixLen.value()][a];
+    }
+
+    @Override
+    public int completeSupport() {
+        // the subsequence policy is entirely anti-monotone
+        return support();
     }
 
     @Override
@@ -185,16 +215,12 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
             throw new InconsistencyException();
         prefix[prefixLen.value()] = a;
         prefixLen.increment();
-        projectSDB(a);
+        int nSupported = projectSDB(a);
         if (status.value() == FORBIDDEN)
             status.setValue(POSSIBLE); // the forbidden prefix has been strictly extended
-        StateSparseSet next = frontier[prefixLen.value()];
-        int n = next.fillArray(tmpSymbols);
-        for (int i = 0; i < n; i++)
-            if (supportCounter[tmpSymbols[i]] == 0)
-                next.remove(tmpSymbols[i]);
+        refillFrontier(prefixLen.value(), tmpSymbols, nSupported);
         scheduleAll(onDomain);
-        if (next.isEmpty())
+        if (nSupported == 0)
             autoTerminate();
     }
 
@@ -202,11 +228,19 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
     public void excludeNext(int a) {
         if (isTerminated())
             return;
-        StateSparseSet f = frontier[prefixLen.value()];
-        if (!f.remove(a))
+        if (!isCandidate(a))
             return;
+        int d = prefixLen.value();
+        int n = nFrontier[d].value();
+        int p = posOf[d][a];
+        int lastSymbol = frontier[d][n - 1];
+        frontier[d][p] = lastSymbol;
+        posOf[d][lastSymbol] = p;
+        frontier[d][n - 1] = a;
+        posOf[d][a] = n - 1;
+        nFrontier[d].setValue(n - 1);
         scheduleAll(onDomain);
-        if (f.isEmpty())
+        if (n - 1 == 0)
             autoTerminate();
     }
 
@@ -217,9 +251,7 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
         if (status.value() == TERMINATED)
             return;
         status.setValue(TERMINATED);
-        StateSparseSet f = frontier[prefixLen.value()];
-        if (!f.isEmpty())
-            f.removeAll();
+        nFrontier[prefixLen.value()].setValue(0);
         scheduleAll(onDomain);
         scheduleAll(onFix);
     }
@@ -228,7 +260,7 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
     public void forbidTerminate() {
         if (status.value() == TERMINATED)
             throw new InconsistencyException();
-        if (frontier[prefixLen.value()].isEmpty())
+        if (nFrontier[prefixLen.value()].value() == 0)
             throw new InconsistencyException();
         if (status.value() == FORBIDDEN)
             return;
@@ -248,13 +280,18 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
      * The new segment is appended after the current one and the reversible
      * start/size are moved to it; the support counters of the one-symbol
      * extensions of the new prefix are recomputed on the fly from the ordered
-     * last-position lists.
+     * last-position lists, and the distinct supported symbols are collected in
+     * {@code tmpSymbols} for the frontier refill.
+     *
+     * @return the number of distinct supported next symbols (in tmpSymbols)
      */
-    private void projectSDB(int a) {
+    private int projectSDB(int a) {
         int startInit = psdbStart.value();
         int sizeInit = psdbSize.value();
         int nbAddedTarget = db.symbolSupport(a); // at most this many sequences contain a
-        Arrays.fill(supportCounter, 0);
+        int[] counter = supportCounter[prefixLen.value()];
+        Arrays.fill(counter, 0);
+        int nSupported = 0;
         int i = startInit;
         int j = startInit + sizeInit;
         int nbAdded = 0;
@@ -278,34 +315,17 @@ public class CPSeqPatternVarImpl implements CPSeqPatternVar {
                 psdbPosInSeq[j] = pos + 1;
                 j++;
                 int[] tiLast = db.lastPosList(sid);
-                for (int c = 0; c < tiLast.length && tiLast[c] - 1 > pos; c++)
-                    supportCounter[ti[tiLast[c] - 1]]++;
+                for (int c = 0; c < tiLast.length && tiLast[c] - 1 > pos; c++) {
+                    int symbol = ti[tiLast[c] - 1];
+                    if (counter[symbol]++ == 0)
+                        tmpSymbols[nSupported++] = symbol;
+                }
             }
             i++;
         }
         psdbStart.setValue(startInit + sizeInit);
         psdbSize.setValue(nbAdded);
-        versionCounter++;
-        projVersion.setValue(versionCounter);
-        cachedVersion = versionCounter;
-    }
-
-    /**
-     * Recomputes the support counters from the current projection segment,
-     * needed after backtracking since the counters are not reversible.
-     */
-    private void recomputeSupportCounter() {
-        Arrays.fill(supportCounter, 0);
-        int start = psdbStart.value();
-        int end = start + psdbSize.value();
-        for (int i = start; i < end; i++) {
-            int sid = psdbSeqId[i];
-            int startPos = psdbPosInSeq[i];
-            int[] ti = db.sequence(sid);
-            int[] tiLast = db.lastPosList(sid);
-            for (int c = 0; c < tiLast.length && tiLast[c] - 1 >= startPos; c++)
-                supportCounter[ti[tiLast[c] - 1]]++;
-        }
+        return nSupported;
     }
 
     private void growInnerTrail() {

@@ -133,6 +133,26 @@ public final class CPFactory {
         return new CPSeqPatternVarImpl(cp, db);
     }
 
+    /**
+     * Creates a time-constrained sequence pattern variable over the symbols of
+     * a timed sequence database (PPICt occurrence policy: gap and span windows,
+     * see {@link org.maxicp.cp.engine.core.mining.TimeOption}).
+     * Initially the prefix is empty and every symbol occurring in the database
+     * is a candidate next symbol.
+     *
+     * @param cp   the solver in which the variable is created
+     * @param db   the sequence database against which the pattern is interpreted;
+     *             it must be timed ({@code db.hasTimes()})
+     * @param time the time restrictions of the occurrence policy
+     * @return a time-constrained sequence pattern variable with an empty prefix
+     */
+    public static CPSeqPatternVar makeSeqPatternVar(CPSolver cp, org.maxicp.cp.engine.core.mining.SequenceDb db,
+                                                    org.maxicp.cp.engine.core.mining.TimeOption time) {
+        if (!db.hasTimes())
+            throw new IllegalArgumentException("database " + db.name() + " has no timestamps");
+        return new CPSeqPatternVarTimedImpl(cp, db, time);
+    }
+
     // ********************
     // Integer variables
     // ********************

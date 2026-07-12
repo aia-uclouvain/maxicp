@@ -11,11 +11,21 @@ import org.maxicp.util.exception.InconsistencyException;
 
 /**
  * Minimum support constraint on a sequence pattern variable:
- * the pattern must be contained in at least theta database sequences.
+ * the pattern must occur in at least theta database sequences.
  * <p>
  * The filtering is exact for the immediate extensions of the current prefix:
- * by anti-monotonicity of the support, a candidate whose projected support is
- * below the threshold can never lead to a frequent pattern and is excluded.
+ * by anti-monotonicity of the (anti-monotone) support, a candidate whose
+ * projected support is below the threshold can never lead to a frequent
+ * pattern and is excluded.
+ * <p>
+ * Occurrence policies with a non-anti-monotone part (such as the minimum span
+ * of a time-constrained variable) are handled through
+ * {@link CPSeqPatternVar#completeSupport()}: when the complete support of the
+ * current prefix is below the threshold the pattern cannot terminate here
+ * (termination is forbidden, which is reset by the next append), and a
+ * terminated pattern whose complete support is below the threshold fails.
+ * For plain subsequence variables the complete support equals the support and
+ * this adds no filtering.
  */
 public class MinSupportSeq extends AbstractCPConstraint {
 
@@ -52,5 +62,13 @@ public class MinSupportSeq extends AbstractCPConstraint {
         for (int i = 0; i < n; i++)
             if (p.supportAfter(candidates[i]) < theta)
                 p.excludeNext(candidates[i]);
+        // the complete support (e.g. including a minimum span) is not anti-monotone:
+        // it only decides whether the pattern may be exactly the current prefix
+        if (p.isTerminated()) {
+            if (p.completeSupport() < theta)
+                throw new InconsistencyException();
+        } else if (p.completeSupport() < theta) {
+            p.forbidTerminate();
+        }
     }
 }

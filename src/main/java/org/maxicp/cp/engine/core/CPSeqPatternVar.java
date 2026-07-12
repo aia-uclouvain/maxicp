@@ -145,6 +145,28 @@ public interface CPSeqPatternVar extends CPVar, ConcreteVar {
     int supportAfter(int a);
 
     /**
+     * Returns the support that the pattern would have if it were terminated at
+     * the current prefix, under the complete occurrence policy of the variable.
+     * <p>
+     * {@link #support()} only accounts for the anti-monotone part of the
+     * occurrence policy (a valid occurrence remains valid for every prefix of
+     * the pattern), which makes it sound for support-based pruning of the
+     * candidate frontier. Policies with non-anti-monotone conditions, such as
+     * the minimum span of a time-constrained variable, additionally restrict
+     * which occurrences count for the final pattern: this method counts the
+     * sequences with at least one occurrence satisfying the complete policy,
+     * so {@code completeSupport() <= support()}. For a variable whose policy
+     * is entirely anti-monotone (e.g. the plain subsequence policy of
+     * {@link CPSeqPatternVarImpl}) it is equal to {@link #support()}.
+     * <p>
+     * A pattern value must occur at least once under the complete policy:
+     * {@link #terminate()} fails when this support is 0.
+     *
+     * @return the support of the current prefix under the complete policy
+     */
+    int completeSupport();
+
+    /**
      * Appends a symbol to the committed prefix.
      * The symbol must be a candidate, otherwise an {@link org.maxicp.util.exception.InconsistencyException}
      * is thrown. The pseudo-projected database is extended and the candidate frontier
