@@ -105,7 +105,7 @@ public class Permutation extends AbstractCPConstraint {
     @Override
     public void post() {
         // channeling between positionOfNode and taskInPosition positionOfNode[i] = p <=> taskInPosition[p] = i
-        getSolver().post(new InversePerm(posOfInterval, intervalInPos));
+        getSolver().post(new InversePerm(posOfInterval, intervalInPos)); // this also post the allDifferent constraints
         // no overlap between visits
         getSolver().post(noOverlap(intervals));
         // noOverlap with transition times

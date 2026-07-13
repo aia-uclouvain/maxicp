@@ -10,6 +10,7 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.NoOverlapBinaryWithTransitionTime;
 import org.maxicp.cp.engine.constraints.scheduling.Permutation;
+import org.maxicp.cp.engine.constraints.scheduling.PermutationGlobal;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.examples.utils.TSPTWInstance;
 import org.maxicp.modeling.IntVar;
@@ -42,7 +43,8 @@ public class TSPTWScheduling {
             visits[i].setEndMax(instance.latest[i]);
         }
         // enforce the min distance constraints between visits
-        Permutation perm = new Permutation(visits, instance.distMatrix);
+        //Permutation perm = new Permutation(visits, instance.distMatrix);
+        PermutationGlobal perm = new PermutationGlobal(visits, instance.distMatrix);
         cp.post(perm);
 
         cp.post(eq(perm.posOfInterval[0],0)); // start at depot
