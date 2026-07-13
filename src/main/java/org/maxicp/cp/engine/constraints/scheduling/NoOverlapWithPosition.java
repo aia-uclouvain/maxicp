@@ -12,6 +12,7 @@ import org.maxicp.cp.engine.constraints.setvar.IsSubset;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.util.algo.DistanceMatrix;
 
+import java.util.Arrays;
 import java.util.PriorityQueue;
 
 import static org.maxicp.Constants.HORIZON;
@@ -256,11 +257,12 @@ public class NoOverlapWithPosition extends AbstractCPConstraint {
             posOfInterval[i].removeAbove(n - 1);
             befores[i] = new CPSetVarImpl(cp, n);
             befores[i].exclude(i);                     // i cannot be before itself
+            // position of i = number of intervals before i
+            cp.post(CPFactory.eq(posOfInterval[i], befores[i].card()));
+
             befores[i].propagateOnDomainChange(this);
             posOfInterval[i].propagateOnDomainChange(this);
             intervals[i].propagateOnChange(this);
-            // position of i = number of intervals before i
-            cp.post(CPFactory.eq(posOfInterval[i], befores[i].card()));
         }
 
         // 3) Pairwise channeling: ordering boolean <-> set inclusion <-> position <->

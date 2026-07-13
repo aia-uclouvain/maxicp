@@ -340,6 +340,31 @@ public final class Factory {
         return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);
     }
 
+    /**
+     * Creates a noOverlap constraint with position variables and zero transition times.
+     *
+     * @param intervals        the interval variables
+     * @param posOfInterval    position of each interval
+     * @param intervalInPos    interval at each position
+     * @return a NoOverlapWithPosition constraint
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval, IntExpression[] intervalInPos) {
+        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, null);
+    }
+
+    /**
+     * Creates a noOverlap constraint with position variables and minimum transition times.
+     *
+     * @param intervals        the interval variables
+     * @param posOfInterval    position of each interval
+     * @param intervalInPos    interval at each position
+     * @param minTransition    n×n transition time matrix
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval, IntExpression[] intervalInPos, int[][] minTransition) {
+        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);
+    }
+
     public static Constraint alternative(IntervalVar real, IntervalVar... alternatives) {
         return new org.maxicp.modeling.constraints.scheduling.Alternative(real, new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);
     }

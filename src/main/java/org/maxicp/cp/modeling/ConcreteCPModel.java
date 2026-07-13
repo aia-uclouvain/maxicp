@@ -691,6 +691,15 @@ public class ConcreteCPModel implements ConcreteModel {
             case NoOverlap noOverlap -> {
                 solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));
             }
+            case org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition noOverlapPos -> {
+                int[][] trans = noOverlapPos.minTransition();
+                if (trans == null) trans = new int[noOverlapPos.intervals().length][noOverlapPos.intervals().length];
+                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlapWithPosition(
+                        getCPVar(noOverlapPos.intervals()),
+                        getCPVar(noOverlapPos.posOfInterval()),
+                        getCPVar(noOverlapPos.intervalInPos()),
+                        trans));
+            }
             case Length length -> {
                 getCPVar(length.interval()).setLength(length.length());
                 fixpoint();
