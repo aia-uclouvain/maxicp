@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IsEndBeforeStartWithTransition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">IsEndBeforeStartWithTransition.java</span></div><h1>IsEndBeforeStartWithTransition.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+
+/**
+ * Reified temporal ordering constraint with transition times.
+ *
+ * &lt;p&gt;Links a boolean variable {@code isBefore} to the temporal ordering of two intervals
+ * with minimum transition times:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code isBefore = true}  &amp;hArr; {@code end(a) + transitionAB &lt;= start(b)}
+ *       (interval a finishes before b starts, with at least {@code transitionAB} in between)&lt;/li&gt;
+ *   &lt;li&gt;{@code isBefore = false} &amp;hArr; {@code end(b) + transitionBA &lt;= start(a)}
+ *       (interval b finishes before a starts, with at least {@code transitionBA} in between)&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;The constraint propagates in three directions:
+ * &lt;ol&gt;
+ *   &lt;li&gt;&lt;b&gt;Boolean &amp;rarr; temporal:&lt;/b&gt; when {@code isBefore} is fixed, enforce the
+ *       corresponding start/end bounds with transition times.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Temporal &amp;rarr; boolean:&lt;/b&gt; when the temporal gap between the intervals is
+ *       large enough, fix {@code isBefore} to the entailed ordering.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Infeasibility detection:&lt;/b&gt; when one ordering is impossible (the earliest
+ *       end of one interval plus the transition exceeds the latest start of the other),
+ *       fix {@code isBefore} to the only feasible ordering.&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * &lt;p&gt;This constraint is a building block of {@link NoOverlapWithPosition} and replaces the
+ * more generically named {@link NoOverlapBinaryWithTransitionTime} in that context,
+ * making the reified semantics explicit.
+ *
+ * @author Pierre Schaus
+ */
+public class IsEndBeforeStartWithTransition extends AbstractCPConstraint {
+
+    private final CPIntervalVar a, b;
+    private final CPBoolVar isBefore;
+    private final int transitionAB; // minimum gap if a is before b
+    private final int transitionBA; // minimum gap if b is before a
+
+    /**
+     * Creates a reified temporal ordering constraint with transition times.
+     *
+     * @param isBefore    boolean variable: true iff a ends before b starts (with transitionAB gap)
+     * @param a           first interval
+     * @param b           second interval
+     * @param transitionAB minimum gap between end(a) and start(b) when a precedes b
+     * @param transitionBA minimum gap between end(b) and start(a) when b precedes a
+     */
+    public IsEndBeforeStartWithTransition(CPBoolVar isBefore, CPIntervalVar a, CPIntervalVar b,
+                                          int transitionAB, int transitionBA) {
+<span class="fc" id="L60">        super(a.getSolver());</span>
+<span class="fc" id="L61">        this.a = a;</span>
+<span class="fc" id="L62">        this.b = b;</span>
+<span class="fc" id="L63">        this.isBefore = isBefore;</span>
+<span class="fc" id="L64">        this.transitionAB = transitionAB;</span>
+<span class="fc" id="L65">        this.transitionBA = transitionBA;</span>
+<span class="fc" id="L66">    }</span>
+
+    @Override
+    public void post() {
+<span class="pc bpc" id="L70" title="2 of 4 branches missed.">        if (!a.isAbsent() &amp;&amp; !b.isAbsent()) {</span>
+<span class="fc" id="L71">            a.propagateOnChange(this);</span>
+<span class="fc" id="L72">            b.propagateOnChange(this);</span>
+<span class="fc" id="L73">            isBefore.propagateOnFix(this);</span>
+<span class="fc" id="L74">            propagate();</span>
+        }
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">        if (a.isPresent() &amp;&amp; b.isPresent()) {</span>
+            // Direction 1: boolean is fixed -&gt; enforce temporal bounds
+            // Direction 3: one ordering is infeasible -&gt; fix boolean
+            // Both are checked together, as in NoOverlapBinaryWithTransitionTime.
+
+<span class="fc bfc" id="L85" title="All 4 branches covered.">            if (a.endMin() + transitionAB &gt; b.startMax() || isBefore.isFalse()) {</span>
+                // a cannot be before b (or isBefore is already false) -&gt; b must be before a
+<span class="fc" id="L87">                isBefore.fix(false);</span>
+<span class="fc" id="L88">                b.setEndMax(a.startMax() - transitionBA);</span>
+<span class="fc" id="L89">                a.setStartMin(b.endMin() + transitionBA);</span>
+            }
+<span class="fc bfc" id="L91" title="All 4 branches covered.">            if (b.endMin() + transitionBA &gt; a.startMax() || isBefore.isTrue()) {</span>
+                // b cannot be before a (or isBefore is already true) -&gt; a must be before b
+<span class="fc" id="L93">                isBefore.fix(true);</span>
+<span class="fc" id="L94">                a.setEndMax(b.startMax() - transitionAB);</span>
+<span class="fc" id="L95">                b.setStartMin(a.endMin() + transitionAB);</span>
+            }
+        }
+<span class="pc bpc" id="L98" title="2 of 4 branches missed.">        if (a.isAbsent() || b.isAbsent()) {</span>
+<span class="nc" id="L99">            setActive(false);</span>
+        }
+<span class="fc" id="L101">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

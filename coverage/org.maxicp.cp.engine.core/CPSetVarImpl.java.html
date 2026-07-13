@@ -102,7 +102,7 @@ public class CPSetVarImpl implements CPSetVar {
      * @return true if the set variable is fixed, false otherwise
      */
     public boolean isFixed() {
-<span class="pc bpc" id="L105" title="1 of 4 branches missed.">        return card.isFixed() &amp;&amp; domain.nIncluded() == card.min();</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        return card.isFixed() &amp;&amp; domain.nIncluded() == card.min();</span>
     }
 
     protected void scheduleAll(StateStack&lt;CPConstraint&gt; constraints) {
