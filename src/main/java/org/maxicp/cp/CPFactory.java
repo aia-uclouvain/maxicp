@@ -1864,6 +1864,54 @@ public final class CPFactory {
         return new NoOverlap(vars);
     }
 
+    /**
+     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
+     * between the intervals with minimum transition times and links them with position variables.
+     *
+     * <p>The position variables are created internally and can be accessed via
+     * {@link NoOverlapWithPosition#posOfInterval} and {@link NoOverlapWithPosition#intervalInPos}.
+     *
+     * @param intervals      the interval variables to be sequenced (all must be present)
+     * @param minTransition  n×n matrix where {@code minTransition[i][j]} is the minimum transition time
+     *                       from interval i to interval j
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, int[][] minTransition) {
+        CPSolver cp = intervals[0].getSolver();
+        int n = intervals.length;
+        CPIntVar[] posOfInterval = makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = makeIntVarArray(cp, n, n);
+        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);
+    }
+
+    /**
+     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
+     * between the intervals and links them with the given position variables, with zero transition times.
+     *
+     * @param intervals        the interval variables to be sequenced (all must be present)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
+     * @return a NoOverlapWithPosition constraint
+     */
+    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
+        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);
+    }
+
+    /**
+     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
+     * between the intervals with minimum transition times and links them with the given position variables.
+     *
+     * @param intervals        the interval variables to be sequenced (all must be present)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
+     * @param minTransition    n×n matrix where {@code minTransition[i][j]} is the minimum transition time
+     *                         from interval i to interval j
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
+        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);
+    }
+
 
     /**
      * Creates and post a non-overlap constraint on the intervals in vars
@@ -1895,8 +1943,8 @@ public final class CPFactory {
     /**
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then cardinality intervals from the array alternatives
-     * must be present and synchronized with a.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * must be present and synchronized with interval.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables
@@ -1912,7 +1960,7 @@ public final class CPFactory {
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then cardinality intervals from the array alternatives
      * must be present and synchronized with interval.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables
@@ -1926,8 +1974,8 @@ public final class CPFactory {
     /**
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then one of the intervals from the array alternatives
-     * must be present and synchronized with a.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * must be present and synchronized with interval.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables

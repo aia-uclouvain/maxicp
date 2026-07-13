@@ -12,11 +12,7 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.IntVar;
-import org.maxicp.util.Arrays;
 import org.maxicp.util.algo.DistanceMatrix;
-
-import java.util.ArrayList;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.cp.CPFactory.eq;
@@ -42,7 +38,7 @@ import static org.maxicp.cp.CPFactory.eq;
  * @see InversePerm
  * @see NoOverlapBinaryWithTransitionTime
  */
-public class Permutation extends AbstractCPConstraint {
+public class NoOverlapWithPositionDecomposition extends AbstractCPConstraint {
 
     /**
      * Number of intervals
@@ -66,10 +62,12 @@ public class Permutation extends AbstractCPConstraint {
     /**
      * Creates a permutation constraint with zero transition times.
      *
-     * @param intervals the interval variables to be sequenced (all intervals must belong to the same solver)
+     * @param intervals        the interval variables to be sequenced (all intervals must belong to the same solver)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
      */
-    public Permutation(CPIntervalVar[] intervals) {
-        this(intervals,new int[intervals.length][intervals.length]);
+    public NoOverlapWithPositionDecomposition(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
+        this(intervals, posOfInterval, intervalInPos, new int[intervals.length][intervals.length]);
     }
 
     /**
@@ -78,14 +76,18 @@ public class Permutation extends AbstractCPConstraint {
      * <p>The transition time matrix must satisfy the triangular inequality property,
      * i.e., for all i, j, k: {@code minTransition[i][j] <= minTransition[i][k] + minTransition[k][j]}.
      *
-     * @param intervals the interval variables to be sequenced (all intervals must belong to the same solver)
-     * @param minTransition a square matrix where {@code minTransition[i][j]} is the minimum transition time
-     *                      from interval i to interval j. Must have dimensions n×n where n is the number of intervals.
+     * @param intervals        the interval variables to be sequenced (all intervals must belong to the same solver)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
+     * @param minTransition    a square matrix where {@code minTransition[i][j]} is the minimum transition time
+     *                         from interval i to interval j. Must have dimensions n×n where n is the number of intervals.
      * @throws AssertionError if the matrix dimensions don't match the number of intervals
      * @throws AssertionError if the triangular inequality is violated
      */
-    public Permutation(CPIntervalVar[] intervals, int [][] minTransition) {
+    public NoOverlapWithPositionDecomposition(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
         super(intervals[0].getSolver());
+        assert posOfInterval.length == intervals.length;
+        assert intervalInPos.length == intervals.length;
         assert minTransition.length == intervals.length;
         assert minTransition[0].length == intervals.length;
         DistanceMatrix.checkTriangularInequality(minTransition);
@@ -95,8 +97,8 @@ public class Permutation extends AbstractCPConstraint {
         for (int i = 0; i < n; i++) {
             assert intervals[i].isPresent();
         }
-        posOfInterval = CPFactory.makeIntVarArray(getSolver(), n,n);
-        intervalInPos = CPFactory.makeIntVarArray(getSolver(), n,n);
+        this.posOfInterval = posOfInterval;
+        this.intervalInPos = intervalInPos;
         this.minTransitions = minTransition;
     }
 
@@ -119,36 +121,5 @@ public class Permutation extends AbstractCPConstraint {
                 getSolver().post(new NoOverlapBinaryWithTransitionTime(order, intervals[i], intervals[j], minTransitions[i][j], minTransitions[j][i]));
             }
         }
-    }
-
-    /**
-     * Creates and returns a variable representing the total transition cost of the sequence.
-     *
-     * <p>The transition cost is computed as the sum of transition times between consecutive
-     * intervals in the sequence: {@code sum(transitionCost[intervalInPos[i]][intervalInPos[i+1]])}
-     * for i from 0 to n-2.
-     *
-     * <p>The transition cost matrix must satisfy the triangular inequality property.
-     *
-     * @param transitionCost a square matrix where {@code transitionCost[i][j]} is the cost
-     *                       of transitioning from interval i to interval j. Must have dimensions n×n.
-     * @return a CPIntVar representing the total transition cost of the permutation
-     * @throws AssertionError if the matrix is null or dimensions don't match
-     * @throws AssertionError if the triangular inequality is violated
-     */
-    public CPIntVar transitionCost(int [][] transitionCost) {
-        assert(transitionCost != null);
-        assert(transitionCost.length == n);
-        assert(transitionCost[0].length == n);
-        DistanceMatrix.checkTriangularInequality(transitionCost);
-        int maxTransition = Arrays.max(transitionCost);
-        // transition times and objective
-        CPIntVar[] transitionTimes = makeIntVarArray(getSolver(), n-1, 0, maxTransition);
-        for (int i = 0; i < n-1; i++) {
-            getSolver().post(eq(transitionTimes[i],
-                    CPFactory.element(transitionCost, intervalInPos[i], intervalInPos[i+1])));
-        }
-        CPIntVar totTransition = CPFactory.sum(transitionTimes);
-        return totTransition;
     }
 }

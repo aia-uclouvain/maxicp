@@ -8,6 +8,7 @@ package org.maxicp.cp.engine.constraints.scheduling;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
@@ -20,14 +21,14 @@ import static org.maxicp.search.Searches.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests comparing the decomposition-based {@link Permutation} and the global
- * {@link PermutationGlobal} constraints. Verifies that:
+ * Tests comparing the decomposition-based {@link NoOverlapWithPositionDecomposition} and the global
+ * {@link NoOverlapWithPosition} constraints. Verifies that:
  * <ul>
  *   <li>No solution is removed by either constraint (same solution count)</li>
- *   <li>PermutationGlobal filtering is at least as strong as Permutation</li>
+ *   <li>NoOverlapWithPosition filtering is at least as strong as NoOverlapWithPositionDecomposition</li>
  * </ul>
  */
-class PermutationGlobalTest extends CPSolverTest {
+class NoOverlapWithPositionTest extends CPSolverTest {
 
     /**
      * Helper: create n present intervals of given length with given endMax.
@@ -42,6 +43,20 @@ class PermutationGlobalTest extends CPSolverTest {
         return intervals;
     }
 
+    /**
+     * Helper: creates a variable representing the total transition cost of a sequence.
+     */
+    private static CPIntVar transitionCost(CPSolver cp, CPIntVar[] intervalInPos, int[][] costMatrix) {
+        int n = intervalInPos.length;
+        int maxTransition = org.maxicp.util.Arrays.max(costMatrix);
+        CPIntVar[] transitionTimes = makeIntVarArray(cp, n - 1, 0, maxTransition);
+        for (int i = 0; i < n - 1; i++) {
+            cp.post(eq(transitionTimes[i],
+                    CPFactory.element(costMatrix, intervalInPos[i], intervalInPos[i + 1])));
+        }
+        return CPFactory.sum(transitionTimes);
+    }
+
     // ----------------------------------------------------------------------
     // Solution count comparison: both constraints must find the same number
     // of solutions (no solution removed).
@@ -51,20 +66,23 @@ class PermutationGlobalTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void testSameSolutionCount3NoTransition(CPSolver cp) {
         int n = 3;
-        int[][] trans = new int[n][n];
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 1, n);
-        Permutation perm1 = new Permutation(intervals1);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 1, n);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -75,20 +93,23 @@ class PermutationGlobalTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void testSameSolutionCount4NoTransition(CPSolver cp) {
         int n = 4;
-        int[][] trans = new int[n][n];
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 1, n);
-        Permutation perm1 = new Permutation(intervals1);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 1, n);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -106,17 +127,21 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 1, 10);
-        Permutation perm1 = new Permutation(intervals1, trans);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1, trans);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 1, 10);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2, trans);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2, trans);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -135,17 +160,21 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 2, 20);
-        Permutation perm1 = new Permutation(intervals1, trans);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1, trans);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 2, 20);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2, trans);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2, trans);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -153,8 +182,8 @@ class PermutationGlobalTest extends CPSolverTest {
     }
 
     // ----------------------------------------------------------------------
-    // Filtering strength: PermutationGlobal should explore at most as many
-    // nodes as Permutation (filtering at least as strong).
+    // Filtering strength: NoOverlapWithPosition should explore at most as many
+    // nodes as NoOverlapWithPositionDecomposition (filtering at least as strong).
     // ----------------------------------------------------------------------
 
     @ParameterizedTest
@@ -162,22 +191,26 @@ class PermutationGlobalTest extends CPSolverTest {
     public void testFilteringStrengthNoTransition(CPSolver cp) {
         int n = 5;
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 2, 15);
-        Permutation perm1 = new Permutation(intervals1);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 2, 15);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
         assertTrue(stats2.numberOfNodes() <= stats1.numberOfNodes(),
-                "PermutationGlobal should explore at most as many nodes as Permutation");
+                "NoOverlapWithPosition should explore at most as many nodes as NoOverlapWithPositionDecomposition");
     }
 
     @ParameterizedTest
@@ -193,27 +226,31 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 2, 30);
-        Permutation perm1 = new Permutation(intervals1, trans);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1, trans);
         cp.post(perm1);
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 2, 30);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2, trans);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2, trans);
         cp.post(perm2);
 
-        DFSearch dfs1 = makeDfs(cp, firstFailBinary(perm1.posOfInterval));
+        DFSearch dfs1 = makeDfs(cp, firstFailBinary(pos1));
         SearchStatistics stats1 = dfs1.solve();
 
-        DFSearch dfs2 = makeDfs(cp, firstFailBinary(perm2.posOfInterval));
+        DFSearch dfs2 = makeDfs(cp, firstFailBinary(pos2));
         SearchStatistics stats2 = dfs2.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
         assertTrue(stats2.numberOfNodes() <= stats1.numberOfNodes(),
-                "PermutationGlobal should explore at most as many nodes as Permutation");
+                "NoOverlapWithPosition should explore at most as many nodes as NoOverlapWithPositionDecomposition");
     }
 
     // ----------------------------------------------------------------------
-    // Domain comparison after fixPoint: PermutationGlobal domains should be
-    // at least as tight as Permutation domains.
+    // Domain comparison after fixPoint: NoOverlapWithPosition domains should be
+    // at least as tight as NoOverlapWithPositionDecomposition domains.
     // ----------------------------------------------------------------------
 
     @ParameterizedTest
@@ -228,20 +265,24 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 2, 25);
-        Permutation perm1 = new Permutation(intervals1, trans);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1, trans);
         cp.post(perm1);
         cp.fixPoint();
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 2, 25);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2, trans);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2, trans);
         cp.post(perm2);
         cp.fixPoint();
 
         for (int i = 0; i < n; i++) {
             assertTrue(intervals2[i].startMin() >= intervals1[i].startMin(),
-                    "PermutationGlobal startMin should be >= Permutation startMin for interval " + i);
+                    "NoOverlapWithPosition startMin should be >= NoOverlapWithPositionDecomposition startMin for interval " + i);
             assertTrue(intervals2[i].startMax() <= intervals1[i].startMax(),
-                    "PermutationGlobal startMax should be <= Permutation startMax for interval " + i);
+                    "NoOverlapWithPosition startMax should be <= NoOverlapWithPositionDecomposition startMax for interval " + i);
         }
     }
 
@@ -250,25 +291,29 @@ class PermutationGlobalTest extends CPSolverTest {
     public void testDomainFilteringNoTransition(CPSolver cp) {
         int n = 4;
         CPIntervalVar[] intervals1 = makeIntervals(cp, n, 2, 12);
-        Permutation perm1 = new Permutation(intervals1);
+        CPIntVar[] pos1 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos1 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm1 = new NoOverlapWithPositionDecomposition(intervals1, pos1, inPos1);
         cp.post(perm1);
         cp.fixPoint();
 
         CPIntervalVar[] intervals2 = makeIntervals(cp, n, 2, 12);
-        PermutationGlobal perm2 = new PermutationGlobal(intervals2);
+        CPIntVar[] pos2 = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] inPos2 = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm2 = new NoOverlapWithPosition(intervals2, pos2, inPos2);
         cp.post(perm2);
         cp.fixPoint();
 
         for (int i = 0; i < n; i++) {
             assertTrue(intervals2[i].startMin() >= intervals1[i].startMin(),
-                    "PermutationGlobal startMin should be >= Permutation startMin for interval " + i);
+                    "NoOverlapWithPosition startMin should be >= NoOverlapWithPositionDecomposition startMin for interval " + i);
             assertTrue(intervals2[i].startMax() <= intervals1[i].startMax(),
-                    "PermutationGlobal startMax should be <= Permutation startMax for interval " + i);
+                    "NoOverlapWithPosition startMax should be <= NoOverlapWithPositionDecomposition startMax for interval " + i);
         }
     }
 
     // ----------------------------------------------------------------------
-    // Transition cost: both constraints should give the same cost values.
+    // Transition cost: verify cost variable is correctly computed.
     // ----------------------------------------------------------------------
 
     @ParameterizedTest
@@ -282,21 +327,23 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals = makeIntervals(cp, n, 1, 10);
-        PermutationGlobal perm = new PermutationGlobal(intervals, trans);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm = new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, trans);
         cp.post(perm);
 
-        CPIntVar cost = perm.transitionCost(trans);
+        CPIntVar cost = transitionCost(cp, intervalInPos, trans);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
             }
             int expectedCost = 0;
             for (int i = 0; i < n - 1; i++) {
-                int from = perm.intervalInPos[i].min();
-                int to = perm.intervalInPos[i + 1].min();
+                int from = intervalInPos[i].min();
+                int to = intervalInPos[i + 1].min();
                 expectedCost += trans[from][to];
             }
             assertTrue(cost.isFixed());
@@ -320,17 +367,19 @@ class PermutationGlobalTest extends CPSolverTest {
 
         int[][] times = {{0, 2}, {2, 0}};
 
-        PermutationGlobal perm = new PermutationGlobal(new CPIntervalVar[]{a, b}, times);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, 2, 2);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, 2, 2);
+        NoOverlapWithPosition perm = new NoOverlapWithPosition(new CPIntervalVar[]{a, b}, posOfInterval, intervalInPos, times);
         cp.post(perm);
 
-        cp.post(eq(perm.posOfInterval[0], 0));
+        cp.post(eq(posOfInterval[0], 0));
 
         assertEquals(0, a.startMin());
         assertEquals(4, b.startMin());
     }
 
     // ----------------------------------------------------------------------
-    // Solution validation: all solutions from PermutationGlobal must satisfy
+    // Solution validation: all solutions from NoOverlapWithPosition must satisfy
     // the no-overlap with transition times constraint.
     // ----------------------------------------------------------------------
 
@@ -346,14 +395,16 @@ class PermutationGlobalTest extends CPSolverTest {
         };
 
         CPIntervalVar[] intervals = makeIntervals(cp, n, 2, 20);
-        PermutationGlobal perm = new PermutationGlobal(intervals, times);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm = new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, times);
         cp.post(perm);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
             }
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
@@ -361,8 +412,8 @@ class PermutationGlobalTest extends CPSolverTest {
                     int startB = intervals[j].startMin();
                     int endB = intervals[j].endMin();
                     int startA = intervals[i].startMin();
-                    int posA = perm.posOfInterval[i].min();
-                    int posB = perm.posOfInterval[j].min();
+                    int posA = posOfInterval[i].min();
+                    int posB = posOfInterval[j].min();
                     if (posA < posB) {
                         assertTrue(endA + times[i][j] <= startB,
                                 "interval " + i + " before " + j + " must respect transition time");
@@ -382,16 +433,18 @@ class PermutationGlobalTest extends CPSolverTest {
     public void testSolutionValidityNoTransition(CPSolver cp) {
         int n = 4;
         CPIntervalVar[] intervals = makeIntervals(cp, n, 1, n);
-        PermutationGlobal perm = new PermutationGlobal(intervals);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPosition perm = new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);
         cp.post(perm);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
-                assertEquals(i, perm.intervalInPos[perm.posOfInterval[i].min()].min());
-                assertEquals(i, perm.posOfInterval[perm.intervalInPos[i].min()].min());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
+                assertEquals(i, intervalInPos[posOfInterval[i].min()].min());
+                assertEquals(i, posOfInterval[intervalInPos[i].min()].min());
             }
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {

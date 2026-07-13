@@ -20,11 +20,11 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class PermutationTest extends CPSolverTest {
+class NoOverlapWithPositionDecompositionTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutation3NoTransition(CPSolver cp) {
+    public void testNoOverlapWithPosition3NoTransition(CPSolver cp) {
         int n = 3;
         CPIntervalVar[] intervals = makeIntervalVarArray(cp, n);
         for (int i = 0; i < n; i++) {
@@ -33,7 +33,9 @@ class PermutationTest extends CPSolverTest {
             intervals[i].setEndMax(n);
         }
 
-        Permutation perm = new Permutation(intervals);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(intervals, posOfInterval, intervalInPos);
         cp.post(perm);
 
         DFSearch dfs = makeDfs(cp, setTimes(intervals));
@@ -43,10 +45,10 @@ class PermutationTest extends CPSolverTest {
                     assertTrue(intervals[i].endMin() <= intervals[j].startMin() ||
                             intervals[j].endMin() <= intervals[i].startMin());
                 }
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
-                assertEquals(i, perm.intervalInPos[perm.posOfInterval[i].min()].min());
-                assertEquals(i, perm.posOfInterval[perm.intervalInPos[i].min()].min());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
+                assertEquals(i, intervalInPos[posOfInterval[i].min()].min());
+                assertEquals(i, posOfInterval[intervalInPos[i].min()].min());
             }
         });
         SearchStatistics stats = dfs.solve();
@@ -55,7 +57,7 @@ class PermutationTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutation4NoTransition(CPSolver cp) {
+    public void testNoOverlapWithPosition4NoTransition(CPSolver cp) {
         int n = 4;
         CPIntervalVar[] intervals = makeIntervalVarArray(cp, n);
         for (int i = 0; i < n; i++) {
@@ -64,7 +66,9 @@ class PermutationTest extends CPSolverTest {
             intervals[i].setEndMax(n);
         }
 
-        Permutation perm = new Permutation(intervals);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(intervals, posOfInterval, intervalInPos);
         cp.post(perm);
 
         DFSearch dfs = makeDfs(cp, setTimes(intervals));
@@ -74,10 +78,10 @@ class PermutationTest extends CPSolverTest {
                     assertTrue(intervals[i].endMin() <= intervals[j].startMin() ||
                             intervals[j].endMin() <= intervals[i].startMin());
                 }
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
-                assertEquals(i, perm.intervalInPos[perm.posOfInterval[i].min()].min());
-                assertEquals(i, perm.posOfInterval[perm.intervalInPos[i].min()].min());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
+                assertEquals(i, intervalInPos[posOfInterval[i].min()].min());
+                assertEquals(i, posOfInterval[intervalInPos[i].min()].min());
             }
         });
         SearchStatistics stats = dfs.solve();
@@ -86,7 +90,7 @@ class PermutationTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutation3TransitionCost(CPSolver cp) {
+    public void testNoOverlapWithPosition3TransitionCost(CPSolver cp) {
         int n = 3;
         CPIntervalVar[] intervals = makeIntervalVarArray(cp, n);
         for (int i = 0; i < n; i++) {
@@ -101,21 +105,24 @@ class PermutationTest extends CPSolverTest {
                 {2, 1, 0}
         };
 
-        Permutation perm = new Permutation(intervals, transitionCost);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(intervals, posOfInterval, intervalInPos, transitionCost);
         cp.post(perm);
 
-        CPIntVar cost = perm.transitionCost(transitionCost);
+        // model transition cost externally
+        CPIntVar cost = transitionCost(cp, intervalInPos, transitionCost);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
             }
             int expectedCost = 0;
             for (int i = 0; i < n - 1; i++) {
-                int from = perm.intervalInPos[i].min();
-                int to = perm.intervalInPos[i + 1].min();
+                int from = intervalInPos[i].min();
+                int to = intervalInPos[i + 1].min();
                 expectedCost += transitionCost[from][to];
             }
             assertTrue(cost.isFixed());
@@ -127,7 +134,7 @@ class PermutationTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutationPositionBranching(CPSolver cp) {
+    public void testNoOverlapWithPositionPositionBranching(CPSolver cp) {
         int n = 3;
         CPIntervalVar[] intervals = makeIntervalVarArray(cp, n);
         for (int i = 0; i < n; i++) {
@@ -136,16 +143,18 @@ class PermutationTest extends CPSolverTest {
             intervals[i].setEndMax(n);
         }
 
-        Permutation perm = new Permutation(intervals);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(intervals, posOfInterval, intervalInPos);
         cp.post(perm);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
-                assertEquals(i, perm.intervalInPos[perm.posOfInterval[i].min()].min());
-                assertEquals(i, perm.posOfInterval[perm.intervalInPos[i].min()].min());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
+                assertEquals(i, intervalInPos[posOfInterval[i].min()].min());
+                assertEquals(i, posOfInterval[intervalInPos[i].min()].min());
             }
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
@@ -160,7 +169,7 @@ class PermutationTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutationBinaryPropagation(CPSolver cp) {
+    public void testNoOverlapWithPositionBinaryPropagation(CPSolver cp) {
         CPIntervalVar a = makeIntervalVar(cp, false, 2, 2);
         CPIntervalVar b = makeIntervalVar(cp, false, 2, 2);
         a.setEndMax(10);
@@ -171,10 +180,12 @@ class PermutationTest extends CPSolverTest {
                 {2, 0}
         };
 
-        Permutation perm = new Permutation(new CPIntervalVar[]{a, b}, times);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, 2, 2);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, 2, 2);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(new CPIntervalVar[]{a, b}, posOfInterval, intervalInPos, times);
         cp.post(perm);
 
-        cp.post(eq(perm.posOfInterval[0], 0));
+        cp.post(eq(posOfInterval[0], 0));
 
         assertEquals(0, a.startMin());
         assertEquals(4, b.startMin());
@@ -183,7 +194,7 @@ class PermutationTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
-    public void testPermutation4WithTransitionTimes(CPSolver cp) {
+    public void testNoOverlapWithPosition4WithTransitionTimes(CPSolver cp) {
         int n = 4;
         CPIntervalVar[] intervals = makeIntervalVarArray(cp, n);
         for (int i = 0; i < n; i++) {
@@ -199,14 +210,16 @@ class PermutationTest extends CPSolverTest {
                 {1, 1, 1, 0}
         };
 
-        Permutation perm = new Permutation(intervals, times);
+        CPIntVar[] posOfInterval = CPFactory.makeIntVarArray(cp, n, n);
+        CPIntVar[] intervalInPos = CPFactory.makeIntVarArray(cp, n, n);
+        NoOverlapWithPositionDecomposition perm = new NoOverlapWithPositionDecomposition(intervals, posOfInterval, intervalInPos, times);
         cp.post(perm);
 
-        DFSearch dfs = makeDfs(cp, firstFailBinary(perm.posOfInterval));
+        DFSearch dfs = makeDfs(cp, firstFailBinary(posOfInterval));
         dfs.onSolution(() -> {
             for (int i = 0; i < n; i++) {
-                assertTrue(perm.posOfInterval[i].isFixed());
-                assertTrue(perm.intervalInPos[i].isFixed());
+                assertTrue(posOfInterval[i].isFixed());
+                assertTrue(intervalInPos[i].isFixed());
             }
             for (int i = 0; i < n; i++) {
                 for (int j = i + 1; j < n; j++) {
@@ -214,8 +227,8 @@ class PermutationTest extends CPSolverTest {
                     int startB = intervals[j].startMin();
                     int endB = intervals[j].endMin();
                     int startA = intervals[i].startMin();
-                    int posA = perm.posOfInterval[i].min();
-                    int posB = perm.posOfInterval[j].min();
+                    int posA = posOfInterval[i].min();
+                    int posB = posOfInterval[j].min();
                     if (posA < posB) {
                         assertTrue(endA + times[i][j] <= startB);
                     } else {
@@ -226,5 +239,19 @@ class PermutationTest extends CPSolverTest {
         });
         SearchStatistics stats = dfs.solve();
         assertEquals(24, stats.numberOfSolutions());
+    }
+
+    /**
+     * Helper: creates a variable representing the total transition cost of a sequence.
+     */
+    private static CPIntVar transitionCost(CPSolver cp, CPIntVar[] intervalInPos, int[][] costMatrix) {
+        int n = intervalInPos.length;
+        int maxTransition = org.maxicp.util.Arrays.max(costMatrix);
+        CPIntVar[] transitionTimes = makeIntVarArray(cp, n - 1, 0, maxTransition);
+        for (int i = 0; i < n - 1; i++) {
+            cp.post(eq(transitionTimes[i],
+                    CPFactory.element(costMatrix, intervalInPos[i], intervalInPos[i + 1])));
+        }
+        return CPFactory.sum(transitionTimes);
     }
 }
