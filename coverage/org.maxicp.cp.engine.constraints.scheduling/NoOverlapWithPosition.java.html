@@ -12,6 +12,7 @@ import org.maxicp.cp.engine.constraints.setvar.IsSubset;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.util.algo.DistanceMatrix;
 
+import java.util.Arrays;
 import java.util.PriorityQueue;
 
 import static org.maxicp.Constants.HORIZON;
@@ -84,7 +85,7 @@ import static org.maxicp.Constants.HORIZON;
  * @see NoOverlap
  * @see IsEndBeforeStartWithTransition
  */
-<span class="fc" id="L87">public class NoOverlapWithPosition extends AbstractCPConstraint {</span>
+<span class="fc" id="L88">public class NoOverlapWithPosition extends AbstractCPConstraint {</span>
 
     /**
      * Number of intervals.
@@ -163,8 +164,8 @@ import static org.maxicp.Constants.HORIZON;
      * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
      */
     public NoOverlapWithPosition(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
-<span class="fc" id="L166">        this(intervals, posOfInterval, intervalInPos, new int[intervals.length][intervals.length]);</span>
-<span class="fc" id="L167">    }</span>
+<span class="fc" id="L167">        this(intervals, posOfInterval, intervalInPos, new int[intervals.length][intervals.length]);</span>
+<span class="fc" id="L168">    }</span>
 
     /**
      * Creates a global permutation constraint with minimum transition times between intervals.
@@ -180,63 +181,63 @@ import static org.maxicp.Constants.HORIZON;
      * @throws AssertionError if the matrix dimensions don't match or triangular inequality is violated
      */
     public NoOverlapWithPosition(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
-<span class="fc" id="L183">        super(intervals[0].getSolver());</span>
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">        assert posOfInterval.length == intervals.length;</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        assert intervalInPos.length == intervals.length;</span>
-<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        assert minTransition.length == intervals.length;</span>
-<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        assert minTransition[0].length == intervals.length;</span>
-<span class="fc" id="L188">        DistanceMatrix.checkTriangularInequality(minTransition);</span>
-<span class="fc" id="L189">        this.intervals = intervals;</span>
-<span class="fc" id="L190">        this.n = intervals.length;</span>
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="pc bpc" id="L192" title="1 of 2 branches missed.">            assert intervals[i].isPresent();</span>
+<span class="fc" id="L184">        super(intervals[0].getSolver());</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">        assert posOfInterval.length == intervals.length;</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        assert intervalInPos.length == intervals.length;</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        assert minTransition.length == intervals.length;</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        assert minTransition[0].length == intervals.length;</span>
+<span class="fc" id="L189">        DistanceMatrix.checkTriangularInequality(minTransition);</span>
+<span class="fc" id="L190">        this.intervals = intervals;</span>
+<span class="fc" id="L191">        this.n = intervals.length;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            assert intervals[i].isPresent();</span>
         }
-<span class="fc" id="L194">        this.minTransitions = minTransition;</span>
-<span class="fc" id="L195">        this.posOfInterval = posOfInterval;</span>
-<span class="fc" id="L196">        this.intervalInPos = intervalInPos;</span>
+<span class="fc" id="L195">        this.minTransitions = minTransition;</span>
+<span class="fc" id="L196">        this.posOfInterval = posOfInterval;</span>
+<span class="fc" id="L197">        this.intervalInPos = intervalInPos;</span>
 
-<span class="fc" id="L198">        this.befores = new CPSetVar[n];</span>
-<span class="fc" id="L199">        this.isIncludedVars = new CPBoolVar[n][n];</span>
-<span class="fc" id="L200">        this.ect = new int[n];</span>
-<span class="fc" id="L201">        this.lct = new int[n];</span>
-<span class="fc" id="L202">        this.possibleTasks = new int[n];</span>
-<span class="fc" id="L203">        this.mandatoryTasks = new int[n];</span>
-<span class="fc" id="L204">        this.beforeTasks = new int[n];</span>
-<span class="fc" id="L205">        this.positions = new int[n];</span>
-<span class="fc" id="L206">        this.remainingDur = new int[n];</span>
-<span class="fc" id="L207">        this.isMandatoryTask = new boolean[n];</span>
+<span class="fc" id="L199">        this.befores = new CPSetVar[n];</span>
+<span class="fc" id="L200">        this.isIncludedVars = new CPBoolVar[n][n];</span>
+<span class="fc" id="L201">        this.ect = new int[n];</span>
+<span class="fc" id="L202">        this.lct = new int[n];</span>
+<span class="fc" id="L203">        this.possibleTasks = new int[n];</span>
+<span class="fc" id="L204">        this.mandatoryTasks = new int[n];</span>
+<span class="fc" id="L205">        this.beforeTasks = new int[n];</span>
+<span class="fc" id="L206">        this.positions = new int[n];</span>
+<span class="fc" id="L207">        this.remainingDur = new int[n];</span>
+<span class="fc" id="L208">        this.isMandatoryTask = new boolean[n];</span>
 
         // Compute global minimum transition and per-interval minimum transition to/from
-<span class="fc" id="L210">        int minT = Integer.MAX_VALUE;</span>
-<span class="fc" id="L211">        this.minTransTo = new int[n];</span>
-<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L213">            int minToI = Integer.MAX_VALUE;</span>
-<span class="fc bfc" id="L214" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
-<span class="fc bfc" id="L215" title="All 2 branches covered.">                if (i != j) {</span>
-<span class="fc" id="L216">                    minT = Math.min(minT, minTransition[i][j]);</span>
-<span class="fc" id="L217">                    minToI = Math.min(minToI, minTransition[j][i]);</span>
+<span class="fc" id="L211">        int minT = Integer.MAX_VALUE;</span>
+<span class="fc" id="L212">        this.minTransTo = new int[n];</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L214">            int minToI = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">                if (i != j) {</span>
+<span class="fc" id="L217">                    minT = Math.min(minT, minTransition[i][j]);</span>
+<span class="fc" id="L218">                    minToI = Math.min(minToI, minTransition[j][i]);</span>
                 }
             }
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">            this.minTransTo[i] = (minToI == Integer.MAX_VALUE) ? 0 : minToI;</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">            this.minTransTo[i] = (minToI == Integer.MAX_VALUE) ? 0 : minToI;</span>
         }
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        this.minTransition = (minT == Integer.MAX_VALUE) ? 0 : minT;</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">        this.minTransition = (minT == Integer.MAX_VALUE) ? 0 : minT;</span>
 
         // Priority queues operate on interval indices (int) to avoid HashMap lookups
-<span class="fc" id="L225">        this.qByStart = new PriorityQueue&lt;&gt;((i1, i2) -&gt; Integer.compare(intervals[i1].startMin(), intervals[i2].startMin()));</span>
-<span class="fc" id="L226">        this.qByEnd = new PriorityQueue&lt;&gt;((i1, i2) -&gt; Integer.compare(intervals[i2].endMax(), intervals[i1].endMax()));</span>
-<span class="fc" id="L227">        this.qForward = new PriorityQueue&lt;&gt;((i1, i2) -&gt; {</span>
+<span class="fc" id="L226">        this.qByStart = new PriorityQueue&lt;&gt;((i1, i2) -&gt; Integer.compare(intervals[i1].startMin(), intervals[i2].startMin()));</span>
+<span class="fc" id="L227">        this.qByEnd = new PriorityQueue&lt;&gt;((i1, i2) -&gt; Integer.compare(intervals[i2].endMax(), intervals[i1].endMax()));</span>
+<span class="fc" id="L228">        this.qForward = new PriorityQueue&lt;&gt;((i1, i2) -&gt; {</span>
             // Mandatory tasks are scheduled first (they must be before i)
-<span class="fc bfc" id="L229" title="All 4 branches covered.">            if (isMandatoryTask[i1] &amp;&amp; !isMandatoryTask[i2]) return -1;</span>
-<span class="fc bfc" id="L230" title="All 4 branches covered.">            if (!isMandatoryTask[i1] &amp;&amp; isMandatoryTask[i2]) return 1;</span>
-<span class="fc" id="L231">            return Integer.compare(remainingDur[i1], remainingDur[i2]);</span>
+<span class="fc bfc" id="L230" title="All 4 branches covered.">            if (isMandatoryTask[i1] &amp;&amp; !isMandatoryTask[i2]) return -1;</span>
+<span class="fc bfc" id="L231" title="All 4 branches covered.">            if (!isMandatoryTask[i1] &amp;&amp; isMandatoryTask[i2]) return 1;</span>
+<span class="fc" id="L232">            return Integer.compare(remainingDur[i1], remainingDur[i2]);</span>
         });
-<span class="fc" id="L233">        this.qBackward = new PriorityQueue&lt;&gt;((i1, i2) -&gt; {</span>
+<span class="fc" id="L234">        this.qBackward = new PriorityQueue&lt;&gt;((i1, i2) -&gt; {</span>
             // Mandatory tasks are scheduled last (they must be before i)
-<span class="fc bfc" id="L235" title="All 4 branches covered.">            if (isMandatoryTask[i1] &amp;&amp; !isMandatoryTask[i2]) return 1;</span>
-<span class="fc bfc" id="L236" title="All 4 branches covered.">            if (!isMandatoryTask[i1] &amp;&amp; isMandatoryTask[i2]) return -1;</span>
-<span class="fc" id="L237">            return Integer.compare(remainingDur[i1], remainingDur[i2]);</span>
+<span class="fc bfc" id="L236" title="All 4 branches covered.">            if (isMandatoryTask[i1] &amp;&amp; !isMandatoryTask[i2]) return 1;</span>
+<span class="fc bfc" id="L237" title="All 4 branches covered.">            if (!isMandatoryTask[i1] &amp;&amp; isMandatoryTask[i2]) return -1;</span>
+<span class="fc" id="L238">            return Integer.compare(remainingDur[i1], remainingDur[i2]);</span>
         });
-<span class="fc" id="L239">    }</span>
+<span class="fc" id="L240">    }</span>
 
     // -----------------------------------------------------------------------
     //  Constraint posting
@@ -244,57 +245,58 @@ import static org.maxicp.Constants.HORIZON;
 
     @Override
     public void post() {
-<span class="fc" id="L247">        CPSolver cp = getSolver();</span>
+<span class="fc" id="L248">        CPSolver cp = getSolver();</span>
 
         // 1) Position channeling + global no-overlap
-<span class="fc" id="L250">        cp.post(new InversePerm(posOfInterval, intervalInPos));</span>
-<span class="fc" id="L251">        cp.post(new NoOverlap(intervals));</span>
+<span class="fc" id="L251">        cp.post(new InversePerm(posOfInterval, intervalInPos));</span>
+<span class="fc" id="L252">        cp.post(new NoOverlap(intervals));</span>
 
         // 2) Set-variable model: befores[i] and its channelings
-<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L255">            posOfInterval[i].removeBelow(0);</span>
-<span class="fc" id="L256">            posOfInterval[i].removeAbove(n - 1);</span>
-<span class="fc" id="L257">            befores[i] = new CPSetVarImpl(cp, n);</span>
-<span class="fc" id="L258">            befores[i].exclude(i);                     // i cannot be before itself</span>
-<span class="fc" id="L259">            befores[i].propagateOnDomainChange(this);</span>
-<span class="fc" id="L260">            posOfInterval[i].propagateOnDomainChange(this);</span>
-<span class="fc" id="L261">            intervals[i].propagateOnChange(this);</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L256">            posOfInterval[i].removeBelow(0);</span>
+<span class="fc" id="L257">            posOfInterval[i].removeAbove(n - 1);</span>
+<span class="fc" id="L258">            befores[i] = new CPSetVarImpl(cp, n);</span>
+<span class="fc" id="L259">            befores[i].exclude(i);                     // i cannot be before itself</span>
             // position of i = number of intervals before i
-<span class="fc" id="L263">            cp.post(CPFactory.eq(posOfInterval[i], befores[i].card()));</span>
+<span class="fc" id="L261">            cp.post(CPFactory.eq(posOfInterval[i], befores[i].card()));</span>
+
+<span class="fc" id="L263">            befores[i].propagateOnDomainChange(this);</span>
+<span class="fc" id="L264">            posOfInterval[i].propagateOnDomainChange(this);</span>
+<span class="fc" id="L265">            intervals[i].propagateOnChange(this);</span>
         }
 
         // 3) Pairwise channeling: ordering boolean &lt;-&gt; set inclusion &lt;-&gt; position &lt;-&gt;
         //    temporal ordering with transition times
-<span class="fc bfc" id="L268" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">                if (i == j) continue;</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">                if (i == j) continue;</span>
 
-<span class="fc" id="L272">                isIncludedVars[i][j] = CPFactory.makeBoolVar(cp);</span>
+<span class="fc" id="L274">                isIncludedVars[i][j] = CPFactory.makeBoolVar(cp);</span>
                 // i in befores[j]  &lt;=&gt;  isIncludedVars[i][j]
-<span class="fc" id="L274">                cp.post(new IsIncluded(isIncludedVars[i][j], befores[j], i));</span>
+<span class="fc" id="L276">                cp.post(new IsIncluded(isIncludedVars[i][j], befores[j], i));</span>
                 // befores[i] ⊆ befores[j]  &lt;=&gt;  isIncludedVars[i][j]  (transitivity)
-<span class="fc" id="L276">                CPBoolVar biSubBj = CPFactory.makeBoolVar(cp);</span>
-<span class="fc" id="L277">                cp.post(new IsSubset(biSubBj, befores[i], befores[j]));</span>
-<span class="fc" id="L278">                cp.post(CPFactory.eq(isIncludedVars[i][j], biSubBj));</span>
+<span class="fc" id="L278">                CPBoolVar biSubBj = CPFactory.makeBoolVar(cp);</span>
+<span class="fc" id="L279">                cp.post(new IsSubset(biSubBj, befores[i], befores[j]));</span>
+<span class="fc" id="L280">                cp.post(CPFactory.eq(isIncludedVars[i][j], biSubBj));</span>
                 // pos[i] &lt; pos[j]  &lt;=&gt;  isIncludedVars[i][j]
-<span class="fc" id="L280">                cp.post(CPFactory.eq(isIncludedVars[i][j],</span>
-<span class="fc" id="L281">                        CPFactory.isLt(posOfInterval[i], posOfInterval[j])));</span>
+<span class="fc" id="L282">                cp.post(CPFactory.eq(isIncludedVars[i][j],</span>
+<span class="fc" id="L283">                        CPFactory.isLt(posOfInterval[i], posOfInterval[j])));</span>
                 // end(i) + trans[i][j] &lt;= start(j)  &lt;=&gt;  isIncludedVars[i][j]
-<span class="fc" id="L283">                cp.post(new IsEndBeforeStartWithTransition(</span>
+<span class="fc" id="L285">                cp.post(new IsEndBeforeStartWithTransition(</span>
                         isIncludedVars[i][j], intervals[i], intervals[j],
                         minTransitions[i][j], minTransitions[j][i]));
             }
         }
 
         // 4) Exactly one of (i before j) / (j before i) holds
-<span class="fc bfc" id="L290" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">            for (int j = i + 1; j &lt; n; j++) {</span>
-<span class="fc" id="L292">                cp.post(CPFactory.neq(isIncludedVars[i][j], isIncludedVars[j][i]));</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">            for (int j = i + 1; j &lt; n; j++) {</span>
+<span class="fc" id="L294">                cp.post(CPFactory.neq(isIncludedVars[i][j], isIncludedVars[j][i]));</span>
             }
         }
 
-<span class="fc" id="L296">        propagate();</span>
-<span class="fc" id="L297">    }</span>
+<span class="fc" id="L298">        propagate();</span>
+<span class="fc" id="L299">    }</span>
 
     // -----------------------------------------------------------------------
     //  Global propagation: sweep-based position + start/end pruning
@@ -302,73 +304,73 @@ import static org.maxicp.Constants.HORIZON;
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L305" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
             // Gather predecessors of i from befores[i] (possible + mandatory)
-<span class="fc" id="L307">            int nbPossible = befores[i].fillPossible(possibleTasks);</span>
-<span class="fc" id="L308">            int nbMandatory = befores[i].fillIncluded(mandatoryTasks);</span>
-<span class="fc" id="L309">            nbBeforeTasks = nbPossible + nbMandatory;</span>
+<span class="fc" id="L309">            int nbPossible = befores[i].fillPossible(possibleTasks);</span>
+<span class="fc" id="L310">            int nbMandatory = befores[i].fillIncluded(mandatoryTasks);</span>
+<span class="fc" id="L311">            nbBeforeTasks = nbPossible + nbMandatory;</span>
 
             // Merge into beforeTasks and mark mandatory ones
-<span class="fc" id="L312">            java.util.Arrays.fill(isMandatoryTask, 0, n, false);</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">            for (int j = 0; j &lt; nbPossible; j++) {</span>
-<span class="fc" id="L314">                beforeTasks[j] = possibleTasks[j];</span>
+<span class="fc" id="L314">            java.util.Arrays.fill(isMandatoryTask, 0, n, false);</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">            for (int j = 0; j &lt; nbPossible; j++) {</span>
+<span class="fc" id="L316">                beforeTasks[j] = possibleTasks[j];</span>
             }
-<span class="fc bfc" id="L316" title="All 2 branches covered.">            for (int j = 0; j &lt; nbMandatory; j++) {</span>
-<span class="fc" id="L317">                int id = mandatoryTasks[j];</span>
-<span class="fc" id="L318">                beforeTasks[nbPossible + j] = id;</span>
-<span class="fc" id="L319">                isMandatoryTask[id] = true;</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">            for (int j = 0; j &lt; nbMandatory; j++) {</span>
+<span class="fc" id="L319">                int id = mandatoryTasks[j];</span>
+<span class="fc" id="L320">                beforeTasks[nbPossible + j] = id;</span>
+<span class="fc" id="L321">                isMandatoryTask[id] = true;</span>
             }
 
             // Compute earliest/latest completion time profiles
-<span class="fc" id="L323">            computeEarliestCompletionTimes();</span>
-<span class="fc" id="L324">            computeLatestCompletionTimes();</span>
+<span class="fc" id="L325">            computeEarliestCompletionTimes();</span>
+<span class="fc" id="L326">            computeLatestCompletionTimes();</span>
 
             // Minimum transition from any possible predecessor to i
             // (computed from the beforeTasks array, not a full O(n) scan)
-<span class="fc" id="L328">            int minTransToI = minTransTo[i];</span>
-<span class="fc bfc" id="L329" title="All 2 branches covered.">            for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
-<span class="fc" id="L330">                int taskId = beforeTasks[j];</span>
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">                if (minTransitions[taskId][i] &lt; minTransToI) {</span>
-<span class="nc" id="L332">                    minTransToI = minTransitions[taskId][i];</span>
+<span class="fc" id="L330">            int minTransToI = minTransTo[i];</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">            for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
+<span class="fc" id="L332">                int taskId = beforeTasks[j];</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">                if (minTransitions[taskId][i] &lt; minTransToI) {</span>
+<span class="nc" id="L334">                    minTransToI = minTransitions[taskId][i];</span>
                 }
             }
 
             // Evaluate each candidate position p for interval i
-<span class="fc" id="L337">            int remainingPos = posOfInterval[i].fillArray(positions);</span>
-<span class="fc" id="L338">            int minEst = Integer.MAX_VALUE;</span>
-<span class="fc" id="L339">            int maxLst = Integer.MIN_VALUE;</span>
-<span class="fc" id="L340">            int startMinI = intervals[i].startMin();</span>
-<span class="fc" id="L341">            int startMaxI = intervals[i].startMax();</span>
-<span class="fc" id="L342">            int lenMinI = intervals[i].lengthMin();</span>
+<span class="fc" id="L339">            int remainingPos = posOfInterval[i].fillArray(positions);</span>
+<span class="fc" id="L340">            int minEst = Integer.MAX_VALUE;</span>
+<span class="fc" id="L341">            int maxLst = Integer.MIN_VALUE;</span>
+<span class="fc" id="L342">            int startMinI = intervals[i].startMin();</span>
+<span class="fc" id="L343">            int startMaxI = intervals[i].startMax();</span>
+<span class="fc" id="L344">            int lenMinI = intervals[i].lengthMin();</span>
 
-<span class="fc bfc" id="L344" title="All 2 branches covered.">            for (int j = 0; j &lt; remainingPos; j++) {</span>
-<span class="fc" id="L345">                int p = positions[j];</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">            for (int j = 0; j &lt; remainingPos; j++) {</span>
+<span class="fc" id="L347">                int p = positions[j];</span>
                 // Earliest start at position p:
                 //   p predecessors scheduled back-to-back, each separated by &gt;= minTransition,
                 //   plus a transition &gt;= minTransToI from the last predecessor to i.
-<span class="fc bfc" id="L349" title="All 2 branches covered.">                int transBefore = (p &gt; 0) ? (p - 1) * minTransition + minTransToI : 0;</span>
-<span class="fc" id="L350">                int est = Math.max(ect[p] + transBefore, startMinI);</span>
+<span class="fc bfc" id="L351" title="All 2 branches covered.">                int transBefore = (p &gt; 0) ? (p - 1) * minTransition + minTransToI : 0;</span>
+<span class="fc" id="L352">                int est = Math.max(ect[p] + transBefore, startMinI);</span>
 
                 // Latest start at position p:
                 //   lct[p] is the latest completion at position p (from the backward sweep).
                 //   Subtract the same transition lower bound for the predecessors.
-<span class="fc" id="L355">                int adjustedLct = lct[p] - transBefore;</span>
-<span class="fc" id="L356">                int lst = Math.min(adjustedLct - lenMinI, startMaxI);</span>
+<span class="fc" id="L357">                int adjustedLct = lct[p] - transBefore;</span>
+<span class="fc" id="L358">                int lst = Math.min(adjustedLct - lenMinI, startMaxI);</span>
 
-<span class="pc bpc" id="L358" title="2 of 4 branches missed.">                if (lst &lt; startMinI || est &gt; startMaxI) {</span>
+<span class="pc bpc" id="L360" title="2 of 4 branches missed.">                if (lst &lt; startMinI || est &gt; startMaxI) {</span>
                     // Position p is infeasible for interval i
-<span class="nc" id="L360">                    posOfInterval[i].remove(p);</span>
+<span class="nc" id="L362">                    posOfInterval[i].remove(p);</span>
                 } else {
-<span class="fc" id="L362">                    minEst = Math.min(minEst, est);</span>
-<span class="fc" id="L363">                    maxLst = Math.max(maxLst, lst);</span>
+<span class="fc" id="L364">                    minEst = Math.min(minEst, est);</span>
+<span class="fc" id="L365">                    maxLst = Math.max(maxLst, lst);</span>
                 }
             }
-<span class="pc bpc" id="L366" title="1 of 2 branches missed.">            if (remainingPos &gt; 0) {</span>
-<span class="fc" id="L367">                intervals[i].setStartMin(minEst);</span>
-<span class="fc" id="L368">                intervals[i].setStartMax(maxLst);</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">            if (remainingPos &gt; 0) {</span>
+<span class="fc" id="L369">                intervals[i].setStartMin(minEst);</span>
+<span class="fc" id="L370">                intervals[i].setStartMax(maxLst);</span>
             }
         }
-<span class="fc" id="L371">    }</span>
+<span class="fc" id="L373">    }</span>
 
     // -----------------------------------------------------------------------
     //  Forward sweep: earliest completion time profile (Jackson's rule)
@@ -385,44 +387,44 @@ import static org.maxicp.Constants.HORIZON;
      * When a task completes, {@code ect[++p]} records the completion time.
      */
     private void computeEarliestCompletionTimes() {
-<span class="fc" id="L388">        qByStart.clear();</span>
-<span class="fc" id="L389">        qForward.clear();</span>
+<span class="fc" id="L390">        qByStart.clear();</span>
+<span class="fc" id="L391">        qForward.clear();</span>
 
-<span class="fc bfc" id="L391" title="All 2 branches covered.">        for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
-<span class="fc" id="L392">            int id = beforeTasks[j];</span>
-<span class="fc" id="L393">            remainingDur[id] = intervals[id].lengthMin();</span>
-<span class="fc" id="L394">            qByStart.add(id);</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">        for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
+<span class="fc" id="L394">            int id = beforeTasks[j];</span>
+<span class="fc" id="L395">            remainingDur[id] = intervals[id].lengthMin();</span>
+<span class="fc" id="L396">            qByStart.add(id);</span>
         }
 
-<span class="fc" id="L397">        int p = 0;</span>
-<span class="fc bfc" id="L398" title="All 2 branches covered.">        while (!qByStart.isEmpty()) {</span>
-<span class="fc" id="L399">            int id = qByStart.poll();</span>
-<span class="fc" id="L400">            int time = intervals[id].startMin();</span>
-<span class="fc" id="L401">            qForward.add(id);</span>
+<span class="fc" id="L399">        int p = 0;</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">        while (!qByStart.isEmpty()) {</span>
+<span class="fc" id="L401">            int id = qByStart.poll();</span>
+<span class="fc" id="L402">            int time = intervals[id].startMin();</span>
+<span class="fc" id="L403">            qForward.add(id);</span>
 
             // Release all tasks with the same earliest start
-<span class="fc bfc" id="L404" title="All 4 branches covered.">            while (!qByStart.isEmpty() &amp;&amp; intervals[qByStart.peek()].startMin() == time) {</span>
-<span class="fc" id="L405">                qForward.add(qByStart.poll());</span>
+<span class="fc bfc" id="L406" title="All 4 branches covered.">            while (!qByStart.isEmpty() &amp;&amp; intervals[qByStart.peek()].startMin() == time) {</span>
+<span class="fc" id="L407">                qForward.add(qByStart.poll());</span>
             }
 
             // Execute tasks until the next release or all done
-<span class="fc bfc" id="L409" title="All 2 branches covered.">            while (!qForward.isEmpty() &amp;&amp;</span>
-<span class="fc bfc" id="L410" title="All 4 branches covered.">                    (qByStart.isEmpty() || time + remainingDur[qForward.peek()] &lt; intervals[qByStart.peek()].startMin())) {</span>
-<span class="fc" id="L411">                id = qForward.poll();</span>
-<span class="fc" id="L412">                time += remainingDur[id];</span>
-<span class="fc" id="L413">                remainingDur[id] = 0;</span>
-<span class="fc" id="L414">                p++;</span>
-<span class="fc" id="L415">                ect[p] = time;</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">            while (!qForward.isEmpty() &amp;&amp;</span>
+<span class="fc bfc" id="L412" title="All 4 branches covered.">                    (qByStart.isEmpty() || time + remainingDur[qForward.peek()] &lt; intervals[qByStart.peek()].startMin())) {</span>
+<span class="fc" id="L413">                id = qForward.poll();</span>
+<span class="fc" id="L414">                time += remainingDur[id];</span>
+<span class="fc" id="L415">                remainingDur[id] = 0;</span>
+<span class="fc" id="L416">                p++;</span>
+<span class="fc" id="L417">                ect[p] = time;</span>
             }
             // Preempt: partial execution of the current task until the next release
-<span class="fc bfc" id="L418" title="All 2 branches covered.">            if (!qForward.isEmpty()) {</span>
-<span class="fc" id="L419">                id = qForward.poll();</span>
-<span class="fc" id="L420">                int nextStart = intervals[qByStart.peek()].startMin();</span>
-<span class="fc" id="L421">                remainingDur[id] += time - nextStart;</span>
-<span class="fc" id="L422">                qForward.add(id);</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">            if (!qForward.isEmpty()) {</span>
+<span class="fc" id="L421">                id = qForward.poll();</span>
+<span class="fc" id="L422">                int nextStart = intervals[qByStart.peek()].startMin();</span>
+<span class="fc" id="L423">                remainingDur[id] += time - nextStart;</span>
+<span class="fc" id="L424">                qForward.add(id);</span>
             }
-<span class="fc" id="L424">        }</span>
-<span class="fc" id="L425">    }</span>
+<span class="fc" id="L426">        }</span>
+<span class="fc" id="L427">    }</span>
 
     // -----------------------------------------------------------------------
     //  Backward sweep: latest completion time profile
@@ -436,42 +438,42 @@ import static org.maxicp.Constants.HORIZON;
      * tasks by latest end (descending); {@code qBackward} selects by SRPT (mandatory last).
      */
     private void computeLatestCompletionTimes() {
-<span class="fc" id="L439">        qByEnd.clear();</span>
-<span class="fc" id="L440">        qBackward.clear();</span>
+<span class="fc" id="L441">        qByEnd.clear();</span>
+<span class="fc" id="L442">        qBackward.clear();</span>
 
-<span class="fc bfc" id="L442" title="All 2 branches covered.">        for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
-<span class="fc" id="L443">            int id = beforeTasks[j];</span>
-<span class="fc" id="L444">            remainingDur[id] = intervals[id].lengthMin();</span>
-<span class="fc" id="L445">            qByEnd.add(id);</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">        for (int j = 0; j &lt; nbBeforeTasks; j++) {</span>
+<span class="fc" id="L445">            int id = beforeTasks[j];</span>
+<span class="fc" id="L446">            remainingDur[id] = intervals[id].lengthMin();</span>
+<span class="fc" id="L447">            qByEnd.add(id);</span>
         }
 
-<span class="fc" id="L448">        int p = nbBeforeTasks;</span>
-<span class="fc" id="L449">        lct[p] = HORIZON;</span>
+<span class="fc" id="L450">        int p = nbBeforeTasks;</span>
+<span class="fc" id="L451">        lct[p] = HORIZON;</span>
 
-<span class="fc bfc" id="L451" title="All 2 branches covered.">        while (!qByEnd.isEmpty()) {</span>
-<span class="fc" id="L452">            int id = qByEnd.poll();</span>
-<span class="fc" id="L453">            int time = intervals[id].endMax();</span>
-<span class="fc" id="L454">            qBackward.add(id);</span>
+<span class="fc bfc" id="L453" title="All 2 branches covered.">        while (!qByEnd.isEmpty()) {</span>
+<span class="fc" id="L454">            int id = qByEnd.poll();</span>
+<span class="fc" id="L455">            int time = intervals[id].endMax();</span>
+<span class="fc" id="L456">            qBackward.add(id);</span>
 
-<span class="fc bfc" id="L456" title="All 4 branches covered.">            while (!qByEnd.isEmpty() &amp;&amp; intervals[qByEnd.peek()].endMax() == time) {</span>
-<span class="fc" id="L457">                qBackward.add(qByEnd.poll());</span>
+<span class="fc bfc" id="L458" title="All 4 branches covered.">            while (!qByEnd.isEmpty() &amp;&amp; intervals[qByEnd.peek()].endMax() == time) {</span>
+<span class="fc" id="L459">                qBackward.add(qByEnd.poll());</span>
             }
 
-<span class="fc bfc" id="L460" title="All 2 branches covered.">            while (!qBackward.isEmpty() &amp;&amp;</span>
-<span class="fc bfc" id="L461" title="All 4 branches covered.">                    (qByEnd.isEmpty() || time - remainingDur[qBackward.peek()] &gt;= intervals[qByEnd.peek()].endMax())) {</span>
-<span class="fc" id="L462">                id = qBackward.poll();</span>
-<span class="fc" id="L463">                time -= remainingDur[id];</span>
-<span class="fc" id="L464">                remainingDur[id] = 0;</span>
-<span class="fc" id="L465">                p--;</span>
-<span class="fc" id="L466">                lct[p] = time;</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">            while (!qBackward.isEmpty() &amp;&amp;</span>
+<span class="fc bfc" id="L463" title="All 4 branches covered.">                    (qByEnd.isEmpty() || time - remainingDur[qBackward.peek()] &gt;= intervals[qByEnd.peek()].endMax())) {</span>
+<span class="fc" id="L464">                id = qBackward.poll();</span>
+<span class="fc" id="L465">                time -= remainingDur[id];</span>
+<span class="fc" id="L466">                remainingDur[id] = 0;</span>
+<span class="fc" id="L467">                p--;</span>
+<span class="fc" id="L468">                lct[p] = time;</span>
             }
-<span class="fc bfc" id="L468" title="All 2 branches covered.">            if (!qBackward.isEmpty()) {</span>
-<span class="fc" id="L469">                id = qBackward.poll();</span>
-<span class="fc" id="L470">                int nextEnd = intervals[qByEnd.peek()].endMax();</span>
-<span class="fc" id="L471">                remainingDur[id] -= time - nextEnd;</span>
-<span class="fc" id="L472">                qBackward.add(id);</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">            if (!qBackward.isEmpty()) {</span>
+<span class="fc" id="L471">                id = qBackward.poll();</span>
+<span class="fc" id="L472">                int nextEnd = intervals[qByEnd.peek()].endMax();</span>
+<span class="fc" id="L473">                remainingDur[id] -= time - nextEnd;</span>
+<span class="fc" id="L474">                qBackward.add(id);</span>
             }
-<span class="fc" id="L474">        }</span>
-<span class="fc" id="L475">    }</span>
+<span class="fc" id="L476">        }</span>
+<span class="fc" id="L477">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

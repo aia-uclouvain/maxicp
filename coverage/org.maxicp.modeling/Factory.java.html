@@ -340,17 +340,42 @@ public final class Factory {
 <span class="fc" id="L340">        return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);</span>
     }
 
+    /**
+     * Creates a noOverlap constraint with position variables and zero transition times.
+     *
+     * @param intervals        the interval variables
+     * @param posOfInterval    position of each interval
+     * @param intervalInPos    interval at each position
+     * @return a NoOverlapWithPosition constraint
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval, IntExpression[] intervalInPos) {
+<span class="fc" id="L352">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, null);</span>
+    }
+
+    /**
+     * Creates a noOverlap constraint with position variables and minimum transition times.
+     *
+     * @param intervals        the interval variables
+     * @param posOfInterval    position of each interval
+     * @param intervalInPos    interval at each position
+     * @param minTransition    n×n transition time matrix
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval, IntExpression[] intervalInPos, int[][] minTransition) {
+<span class="fc" id="L365">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
+    }
+
     public static Constraint alternative(IntervalVar real, IntervalVar... alternatives) {
-<span class="nc" id="L344">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);</span>
+<span class="nc" id="L369">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);</span>
     }
 
     public static Constraint alternative(IntervalVar real, IntExpression n, IntervalVar... alternatives) {
-<span class="nc" id="L348">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);</span>
+<span class="nc" id="L373">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);</span>
     }
 
 
     public static Constraint length(IntervalVar var, int length) {
-<span class="fc" id="L353">        return new org.maxicp.modeling.constraints.scheduling.Length(var, length);</span>
+<span class="fc" id="L378">        return new org.maxicp.modeling.constraints.scheduling.Length(var, length);</span>
     }
 
     //public static Constraint present(IntervalVar var) {
@@ -358,11 +383,11 @@ public final class Factory {
     //}
 
     public static BoolExpression present(IntervalVar var) {
-<span class="fc" id="L361">        return new org.maxicp.modeling.algebra.bool.Present(var);</span>
+<span class="fc" id="L386">        return new org.maxicp.modeling.algebra.bool.Present(var);</span>
     }
 
     public static Constraint start(IntervalVar var, int start) {
-<span class="fc" id="L365">        return new org.maxicp.modeling.constraints.scheduling.Start(var, start);</span>
+<span class="fc" id="L390">        return new org.maxicp.modeling.constraints.scheduling.Start(var, start);</span>
     }
 
     /*
@@ -373,100 +398,100 @@ public final class Factory {
      */
 
     public static IntExpression startOr(IntervalVar interval, int v) {
-<span class="nc" id="L376">        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);</span>
+<span class="nc" id="L401">        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);</span>
     }
 
     public static IntExpression start(IntervalVar interval) {
-<span class="fc" id="L380">        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);</span>
+<span class="fc" id="L405">        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);</span>
     }
 
     public static IntExpression endOr(IntervalVar interval, int v) {
-<span class="fc" id="L384">        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);</span>
+<span class="fc" id="L409">        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);</span>
     }
 
     public static IntExpression end(IntervalVar interval) {
-<span class="fc" id="L388">        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);</span>
+<span class="fc" id="L413">        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);</span>
     }
 
     public static IntExpression length(IntervalVar interval) {
-<span class="fc" id="L392">        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);</span>
+<span class="fc" id="L417">        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);</span>
     }
 
     public static IntExpression lengthOr(IntervalVar interval, int v) {
-<span class="nc" id="L396">        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);</span>
+<span class="nc" id="L421">        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);</span>
     }
 
 
     public static BoolExpression endBefore(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L401">        return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);</span>
+<span class="nc" id="L426">        return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);</span>
     }
 
     public static BoolExpression endAfter(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L405">        return new EndAfter(intervalVar, value);</span>
+<span class="nc" id="L430">        return new EndAfter(intervalVar, value);</span>
     }
 
     public static BoolExpression endAfter(IntervalVar intervalVar, int value) {
-<span class="nc" id="L409">        return new EndAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="nc" id="L434">        return new EndAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static BoolExpression startBefore(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L413">        return new StartBefore(intervalVar, value);</span>
+<span class="nc" id="L438">        return new StartBefore(intervalVar, value);</span>
     }
 
     public static BoolExpression startBefore(IntervalVar intervalVar, int value) {
-<span class="fc" id="L417">        return new StartBefore(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="fc" id="L442">        return new StartBefore(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static BoolExpression startAfter(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L421">        return new StartAfter(intervalVar, value);</span>
+<span class="nc" id="L446">        return new StartAfter(intervalVar, value);</span>
     }
 
     public static BoolExpression startAfter(IntervalVar intervalVar, int value) {
-<span class="fc" id="L425">        return new StartAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="fc" id="L450">        return new StartAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static CumulFunction flat() {
-<span class="fc" id="L429">        return new org.maxicp.modeling.algebra.scheduling.FlatCumulFunction();</span>
+<span class="fc" id="L454">        return new org.maxicp.modeling.algebra.scheduling.FlatCumulFunction();</span>
     }
 
     public static CumulFunction pulse(IntervalVar interval, int height) {
-<span class="fc" id="L433">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
+<span class="fc" id="L458">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
     }
 
     public static CumulFunction pulse(IntervalVar interval, int hMin, int hMax) {
-<span class="fc" id="L437">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);</span>
+<span class="fc" id="L462">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);</span>
     }
 
     public static CumulFunction sum(CumulFunction ... functions) {
-<span class="fc" id="L441">        return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);</span>
+<span class="fc" id="L466">        return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);</span>
     }
 
     public static CumulFunction minus(CumulFunction left, CumulFunction right) {
-<span class="nc" id="L445">        return new org.maxicp.modeling.algebra.scheduling.MinusCumulFunction(left, right);</span>
+<span class="nc" id="L470">        return new org.maxicp.modeling.algebra.scheduling.MinusCumulFunction(left, right);</span>
     }
 
     public static CumulFunction stepAtEnd(IntervalVar interval, int hMin, int hMax) {
-<span class="nc" id="L449">        return new org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction(interval, hMin, hMax);</span>
+<span class="nc" id="L474">        return new org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction(interval, hMin, hMax);</span>
     }
 
     public static CumulFunction stepAtEnd(IntervalVar interval, int height) {
-<span class="nc" id="L453">        return stepAtEnd(interval, height, height);</span>
+<span class="nc" id="L478">        return stepAtEnd(interval, height, height);</span>
     }
 
     public static CumulFunction stepAtStart(IntervalVar interval, int hMin, int hMax) {
-<span class="nc" id="L457">        return new org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction(interval, hMin, hMax);</span>
+<span class="nc" id="L482">        return new org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction(interval, hMin, hMax);</span>
     }
 
     public static CumulFunction stepAtStart(IntervalVar interval, int height) {
-<span class="nc" id="L461">        return stepAtStart(interval, height, height);</span>
+<span class="nc" id="L486">        return stepAtStart(interval, height, height);</span>
     }
 
     public static Constraint le(CumulFunction function, int limit) {
-<span class="fc" id="L465">        return new LessOrEqual(function, limit);</span>
+<span class="fc" id="L490">        return new LessOrEqual(function, limit);</span>
     }
 
     public static Constraint alwaysIn(CumulFunction expression, int heightMin, int heightMax) {
-<span class="nc" id="L469">        return new AlwaysIn(expression, heightMin, heightMax);</span>
+<span class="nc" id="L494">        return new AlwaysIn(expression, heightMin, heightMax);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

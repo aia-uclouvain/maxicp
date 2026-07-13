@@ -609,7 +609,7 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L609">    }</span>
 
     private void instantiateConstraint(Constraint c) {
-<span class="pc bpc" id="L612" title="19 of 32 branches missed.">        switch (c) {</span>
+<span class="pc bpc" id="L612" title="19 of 33 branches missed.">        switch (c) {</span>
 <span class="fc" id="L613">            case AllDifferent a -&gt; {</span>
 <span class="fc" id="L614">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
 <span class="fc" id="L615">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
@@ -691,61 +691,70 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L691">            case NoOverlap noOverlap -&gt; {</span>
 <span class="fc" id="L692">                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));</span>
 <span class="fc" id="L693">            }</span>
-<span class="fc" id="L694">            case Length length -&gt; {</span>
-<span class="fc" id="L695">                getCPVar(length.interval()).setLength(length.length());</span>
-<span class="fc" id="L696">                fixpoint();</span>
-<span class="fc" id="L697">            }</span>
-<span class="nc" id="L698">            case Present present -&gt; {</span>
-<span class="nc" id="L699">                getCPVar(present.intervalVar()).setPresent();</span>
-<span class="nc" id="L700">                fixpoint();</span>
-<span class="nc" id="L701">            }</span>
-<span class="fc" id="L702">            case Start start -&gt; {</span>
-<span class="fc" id="L703">                getCPVar(start.intervalVar()).setStart(start.start());</span>
-<span class="fc" id="L704">                fixpoint();</span>
-<span class="fc" id="L705">            }</span>
-<span class="nc" id="L706">            case org.maxicp.modeling.constraints.scheduling.StartAfter start -&gt; {</span>
-<span class="nc" id="L707">                getCPVar(start.var()).setStartMin(start.start() + 1);</span>
-<span class="nc" id="L708">                fixpoint();</span>
-<span class="nc" id="L709">            }</span>
-<span class="fc" id="L710">            case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -&gt; {</span>
-<span class="fc" id="L711">                CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());</span>
-<span class="fc" id="L712">                solver.post(CPFactory.le(cpExpression, lessOrEqual.limit()));</span>
-<span class="fc" id="L713">            }</span>
-<span class="nc" id="L714">            case org.maxicp.modeling.constraints.scheduling.Alternative alternative -&gt; {</span>
-<span class="nc" id="L715">                solver.post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()), getCPVar(alternative.n())));</span>
-<span class="nc" id="L716">            }</span>
-<span class="nc" id="L717">            case org.maxicp.modeling.constraints.scheduling.AlwaysIn alwaysIn -&gt; {</span>
-<span class="nc" id="L718">                CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());</span>
-<span class="nc" id="L719">                solver.post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));</span>
-<span class="nc" id="L720">            }</span>
-<span class="nc" id="L721">            case org.maxicp.modeling.constraints.scheduling.Span span -&gt; {</span>
-<span class="nc" id="L722">                solver.post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));</span>
-<span class="nc" id="L723">            }</span>
-<span class="fc" id="L724">            case CustomConstraint instantiableConstraint -&gt; {</span>
-<span class="fc" id="L725">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
-<span class="pc bpc" id="L726" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
-<span class="nc" id="L727">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot; + cpConstraint.getClass());</span>
-<span class="fc" id="L728">                solver.post(constraint);</span>
-<span class="fc" id="L729">            }</span>
-<span class="fc" id="L730">            case NoOpConstraint ignored -&gt; fixpoint();</span>
-<span class="nc" id="L731">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
+<span class="fc" id="L694">            case org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition noOverlapPos -&gt; {</span>
+<span class="fc" id="L695">                int[][] trans = noOverlapPos.minTransition();</span>
+<span class="fc bfc" id="L696" title="All 2 branches covered.">                if (trans == null) trans = new int[noOverlapPos.intervals().length][noOverlapPos.intervals().length];</span>
+<span class="fc" id="L697">                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlapWithPosition(</span>
+<span class="fc" id="L698">                        getCPVar(noOverlapPos.intervals()),</span>
+<span class="fc" id="L699">                        getCPVar(noOverlapPos.posOfInterval()),</span>
+<span class="fc" id="L700">                        getCPVar(noOverlapPos.intervalInPos()),</span>
+                        trans));
+<span class="fc" id="L702">            }</span>
+<span class="fc" id="L703">            case Length length -&gt; {</span>
+<span class="fc" id="L704">                getCPVar(length.interval()).setLength(length.length());</span>
+<span class="fc" id="L705">                fixpoint();</span>
+<span class="fc" id="L706">            }</span>
+<span class="nc" id="L707">            case Present present -&gt; {</span>
+<span class="nc" id="L708">                getCPVar(present.intervalVar()).setPresent();</span>
+<span class="nc" id="L709">                fixpoint();</span>
+<span class="nc" id="L710">            }</span>
+<span class="fc" id="L711">            case Start start -&gt; {</span>
+<span class="fc" id="L712">                getCPVar(start.intervalVar()).setStart(start.start());</span>
+<span class="fc" id="L713">                fixpoint();</span>
+<span class="fc" id="L714">            }</span>
+<span class="nc" id="L715">            case org.maxicp.modeling.constraints.scheduling.StartAfter start -&gt; {</span>
+<span class="nc" id="L716">                getCPVar(start.var()).setStartMin(start.start() + 1);</span>
+<span class="nc" id="L717">                fixpoint();</span>
+<span class="nc" id="L718">            }</span>
+<span class="fc" id="L719">            case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -&gt; {</span>
+<span class="fc" id="L720">                CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());</span>
+<span class="fc" id="L721">                solver.post(CPFactory.le(cpExpression, lessOrEqual.limit()));</span>
+<span class="fc" id="L722">            }</span>
+<span class="nc" id="L723">            case org.maxicp.modeling.constraints.scheduling.Alternative alternative -&gt; {</span>
+<span class="nc" id="L724">                solver.post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()), getCPVar(alternative.n())));</span>
+<span class="nc" id="L725">            }</span>
+<span class="nc" id="L726">            case org.maxicp.modeling.constraints.scheduling.AlwaysIn alwaysIn -&gt; {</span>
+<span class="nc" id="L727">                CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());</span>
+<span class="nc" id="L728">                solver.post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));</span>
+<span class="nc" id="L729">            }</span>
+<span class="nc" id="L730">            case org.maxicp.modeling.constraints.scheduling.Span span -&gt; {</span>
+<span class="nc" id="L731">                solver.post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));</span>
+<span class="nc" id="L732">            }</span>
+<span class="fc" id="L733">            case CustomConstraint instantiableConstraint -&gt; {</span>
+<span class="fc" id="L734">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
+<span class="pc bpc" id="L735" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
+<span class="nc" id="L736">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot; + cpConstraint.getClass());</span>
+<span class="fc" id="L737">                solver.post(constraint);</span>
+<span class="fc" id="L738">            }</span>
+<span class="fc" id="L739">            case NoOpConstraint ignored -&gt; fixpoint();</span>
+<span class="nc" id="L740">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
         }
-<span class="fc" id="L733">    }</span>
+<span class="fc" id="L742">    }</span>
 
     @Override
     public org.maxicp.search.Objective createObjective(Objective obj) {
-<span class="pc bpc" id="L737" title="4 of 5 branches missed.">        return switch (obj) {</span>
-<span class="fc" id="L738">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
-<span class="nc" id="L739">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
-<span class="nc" id="L740">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L741">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L742">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
+<span class="pc bpc" id="L746" title="4 of 5 branches missed.">        return switch (obj) {</span>
+<span class="fc" id="L747">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
+<span class="nc" id="L748">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
+<span class="nc" id="L749">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L750">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L751">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
         };
     }
 
     @Override
     public StateManager getStateManager() {
-<span class="fc" id="L748">        return solver.getStateManager();</span>
+<span class="fc" id="L757">        return solver.getStateManager();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

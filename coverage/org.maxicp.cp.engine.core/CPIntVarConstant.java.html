@@ -2,6 +2,8 @@
 
 import org.maxicp.modeling.ModelProxy;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
@@ -11,124 +13,179 @@ public class CPIntVarConstant implements CPIntVar{
     private final CPSolver cp;
     private final int value;
 
-<span class="fc" id="L14">    public CPIntVarConstant(CPSolver cp, int value) {</span>
-<span class="fc" id="L15">        this.cp = cp;</span>
-<span class="fc" id="L16">        this.value = value;</span>
-<span class="fc" id="L17">    }</span>
+<span class="fc" id="L16">    public CPIntVarConstant(CPSolver cp, int value) {</span>
+<span class="fc" id="L17">        this.cp = cp;</span>
+<span class="fc" id="L18">        this.value = value;</span>
+<span class="fc" id="L19">    }</span>
 
     @Override
     public CPSolver getSolver() {
-<span class="fc" id="L21">        return cp;</span>
+<span class="fc" id="L23">        return cp;</span>
     }
 
     @Override
     public void whenFixed(Runnable f) {
 
-<span class="nc" id="L27">    }</span>
+<span class="nc" id="L29">    }</span>
 
     @Override
     public void whenBoundChange(Runnable f) {
 
-<span class="nc" id="L32">    }</span>
+<span class="nc" id="L34">    }</span>
 
     @Override
     public void whenDomainChange(Runnable f) {
 
-<span class="nc" id="L37">    }</span>
+<span class="nc" id="L39">    }</span>
 
     @Override
     public void whenDomainChange(Consumer&lt;DeltaCPIntVar&gt; f) {
 
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L44">    }</span>
 
     @Override
     public void propagateOnDomainChange(CPConstraint c) {
 
-<span class="fc" id="L47">    }</span>
+<span class="fc" id="L49">    }</span>
 
     @Override
     public void propagateOnFix(CPConstraint c) {
 
-<span class="nc" id="L52">    }</span>
+<span class="nc" id="L54">    }</span>
 
     @Override
     public void propagateOnBoundChange(CPConstraint c) {
 
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L59">    }</span>
 
     @Override
     public int min() {
-<span class="fc" id="L61">        return value;</span>
+<span class="fc" id="L63">        return value;</span>
     }
 
     @Override
     public int max() {
-<span class="fc" id="L66">        return value;</span>
+<span class="fc" id="L68">        return value;</span>
     }
 
     @Override
     public int size() {
-<span class="fc" id="L71">        return 1;</span>
+<span class="fc" id="L73">        return 1;</span>
     }
 
     @Override
     public int fillArray(int[] dest) {
-<span class="fc" id="L76">        dest[0] = value;</span>
-<span class="fc" id="L77">        return 1;</span>
+<span class="fc" id="L78">        dest[0] = value;</span>
+<span class="fc" id="L79">        return 1;</span>
     }
 
     @Override
     public boolean isFixed() {
-<span class="fc" id="L82">        return true;</span>
+<span class="fc" id="L84">        return true;</span>
     }
 
     @Override
     public boolean contains(int v) {
-<span class="fc bfc" id="L87" title="All 2 branches covered.">        return v == value;</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        return v == value;</span>
     }
 
     @Override
     public void remove(int v) {
-<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (v == value)</span>
-<span class="fc" id="L93">            throw INCONSISTENCY;</span>
-<span class="fc" id="L94">    }</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (v == value)</span>
+<span class="fc" id="L95">            throw INCONSISTENCY;</span>
+<span class="fc" id="L96">    }</span>
 
     @Override
     public void fix(int v) {
-<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (v != value)</span>
-<span class="fc" id="L99">            throw INCONSISTENCY;</span>
-<span class="fc" id="L100">    }</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (v != value)</span>
+<span class="fc" id="L101">            throw INCONSISTENCY;</span>
+<span class="fc" id="L102">    }</span>
 
     @Override
     public void removeBelow(int v) {
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (v &gt; value)</span>
-<span class="fc" id="L105">            throw INCONSISTENCY;</span>
-<span class="fc" id="L106">    }</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (v &gt; value)</span>
+<span class="fc" id="L107">            throw INCONSISTENCY;</span>
+<span class="fc" id="L108">    }</span>
 
     @Override
     public void removeAbove(int v) {
-<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (v &lt; value)</span>
-<span class="fc" id="L111">            throw INCONSISTENCY;</span>
-<span class="fc" id="L112">    }</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (v &lt; value)</span>
+<span class="fc" id="L113">            throw INCONSISTENCY;</span>
+<span class="fc" id="L114">    }</span>
 
     @Override
     public int fillDeltaArray(int oldMin, int oldMax, int oldSize, int[] dest) {
-<span class="nc" id="L116">        return 0;</span>
+<span class="nc" id="L118">        return 0;</span>
     }
 
     @Override
     public DeltaCPIntVar delta(CPConstraint c) {
-<span class="nc" id="L121">        return null;</span>
+<span class="fc" id="L123">        return new DeltaCPIntVar() {</span>
+            @Override
+            public CPIntVar variable() {
+<span class="nc" id="L126">                return CPIntVarConstant.this;</span>
+            }
+
+            @Override
+            public int oldMin() {
+<span class="nc" id="L131">                return value;</span>
+            }
+
+            @Override
+            public int oldMax() {
+<span class="nc" id="L136">                return value;</span>
+            }
+
+            @Override
+            public int oldSize() {
+<span class="nc" id="L141">                return 1;</span>
+            }
+
+            @Override
+            public boolean changed() {
+<span class="fc" id="L146">                return false;</span>
+            }
+
+            @Override
+            public int size() {
+<span class="nc" id="L151">                return 0;</span>
+            }
+
+            @Override
+            public boolean minChanged() {
+<span class="nc" id="L156">                return false;</span>
+            }
+
+            @Override
+            public boolean maxChanged() {
+<span class="nc" id="L161">                return false;</span>
+            }
+
+            @Override
+            public Iterator&lt;Integer&gt; iterator() {
+<span class="nc" id="L166">                return Collections.emptyIterator();</span>
+            }
+
+            @Override
+            public int fillArray(int[] values) {
+<span class="nc" id="L171">                return 0;</span>
+            }
+
+            @Override
+            public void update() {
+
+<span class="nc" id="L177">            }</span>
+        };
     }
 
     @Override
     public ModelProxy getModelProxy() {
-<span class="nc" id="L126">        return getSolver().getModelProxy();</span>
+<span class="nc" id="L183">        return getSolver().getModelProxy();</span>
     }
 
     @Override
     public String toString() {
-<span class="nc" id="L131">        return Integer.toString(value);</span>
+<span class="nc" id="L188">        return Integer.toString(value);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
