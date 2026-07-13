@@ -1866,26 +1866,6 @@ public final class CPFactory {
 
     /**
      * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
-     * between the intervals with minimum transition times and links them with position variables.
-     *
-     * <p>The position variables are created internally and can be accessed via
-     * {@link NoOverlapWithPosition#posOfInterval} and {@link NoOverlapWithPosition#intervalInPos}.
-     *
-     * @param intervals      the interval variables to be sequenced (all must be present)
-     * @param minTransition  n×n matrix where {@code minTransition[i][j]} is the minimum transition time
-     *                       from interval i to interval j
-     * @return a NoOverlapWithPosition constraint with transition times
-     */
-    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, int[][] minTransition) {
-        CPSolver cp = intervals[0].getSolver();
-        int n = intervals.length;
-        CPIntVar[] posOfInterval = makeIntVarArray(cp, n, n);
-        CPIntVar[] intervalInPos = makeIntVarArray(cp, n, n);
-        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);
-    }
-
-    /**
-     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
      * between the intervals and links them with the given position variables, with zero transition times.
      *
      * @param intervals        the interval variables to be sequenced (all must be present)
@@ -1914,30 +1894,33 @@ public final class CPFactory {
 
 
     /**
-     * Creates and post a non-overlap constraint on the intervals in vars
-     * and create a sequence variable linked with these intervals representing the order of the intervals
-     * in time. The id of an interval is its index in the array vars.
-     * The intervals cannot overlap.
-     * @param intervals intervals that must be linked with a sequence variable
-     * @return sequence variable linked with the intervals
+     * Creates a no-overlap constraint with transition times on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     * @param minTransition n×n transition time matrix where {@code minTransition[i][j]} is the
+     *                      minimum transition time from interval i to interval j
      */
-    public static CPSeqVar nonOverlapSequence(CPIntervalVar[] intervals) {
-        int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();
-        CPSolver cp = intervals[0].getSolver();
-        cp.post(noOverlap(intervals));
-        // start and end nodes are set as dumy intervals
-        CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);
-        CPIntervalVar dummyStart = makeIntervalVar(cp, false, 0); // dumy start
-        dummyStart.setStart(0);
-        CPIntervalVar dummyEnd = makeIntervalVar(cp, false, 0); // dummy end
-        dummyEnd.setStart(lct);
-        // all intervals for the channeling constraint
-        CPIntervalVar[] intervalsWithDummy = new CPIntervalVar[intervals.length + 2];
-        System.arraycopy(intervals, 0, intervalsWithDummy, 0, intervals.length);
-        intervalsWithDummy[intervals.length] = dummyStart;
-        intervalsWithDummy[intervals.length + 1] = dummyEnd;
-        cp.post(new Duration(seqVar, intervalsWithDummy)); // post the channeling
-        return seqVar;
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals, int[][] minTransition) {
+        return new NoOverlapSequence(seqVar, intervals, minTransition);
+    }
+
+    /**
+     * Creates a no-overlap constraint on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     */
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals) {
+        return new NoOverlapSequence(seqVar, intervals, new int[intervals.length][intervals.length]);
     }
 
     /**

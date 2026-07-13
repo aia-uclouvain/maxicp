@@ -6,7 +6,7 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
-import org.maxicp.cp.engine.constraints.seqvar.Duration;
+import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
@@ -110,32 +110,14 @@ public class JobShop {
     }
 
     /**
-     * Creates a sequence variable linked with interval variables.
-     * The channeling happens through a constraint, hence the fixpoint must be triggered at every change.
+     * Creates a sequence variable linked with interval variables using a no-overlap constraint.
      * @param intervals intervals that must be linked with a sequence variable
      * @return sequence variable linked with the intervals
      */
     public static CPSeqVar machineSeqVar(CPIntervalVar[] intervals) {
-        int largestEnd = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();
-        CPSolver cp = intervals[0].getSolver();
-        // start and end nodes are set as dummy intervals
-        CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);
-        CPIntervalVar dummyStart = new CPIntervalVarImpl(cp); // dummy start
-        dummyStart.setPresent();
-        dummyStart.setStart(0);
-        dummyStart.setEnd(0);
-        dummyStart.setLength(0);
-        CPIntervalVar dummyEnd = new CPIntervalVarImpl(cp); // dummy end
-        dummyEnd.setPresent();
-        dummyEnd.setStart(largestEnd);
-        dummyEnd.setEnd(largestEnd);
-        dummyEnd.setLength(0);
-        // all intervals for the channeling constraint
-        CPIntervalVar[] intervalsWithDummy = new CPIntervalVar[intervals.length + 2];
-        System.arraycopy(intervals, 0, intervalsWithDummy, 0, intervals.length);
-        intervalsWithDummy[intervals.length] = dummyStart;
-        intervalsWithDummy[intervals.length + 1] = dummyEnd;
-        cp.post(new Duration(seqVar, intervalsWithDummy)); // post the channeling
+        int n = intervals.length;
+        CPSeqVar seqVar = makeSeqVar(intervals[0].getSolver(), n + 2, n, n + 1);
+        CPFactory.noOverlap(seqVar, intervals, new int[n][n]);
         return seqVar;
     }
 

@@ -12,6 +12,7 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
 import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -94,8 +95,9 @@ public class JobShop {
 
 
 
-        dfs.onSolution(() -> {
+        dfs.onSolution(s -> {
             System.out.println("=========================>makespan:" + makespan);
+            System.out.println(s);
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);

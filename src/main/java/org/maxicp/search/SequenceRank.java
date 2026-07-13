@@ -7,11 +7,13 @@ import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateSparseSet;
 
+import java.util.Comparator;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
+import static org.maxicp.cp.CPFactory.endBeforeStart;
 import static org.maxicp.cp.CPFactory.insert;
-import static org.maxicp.cp.CPFactory.notBetween;
-import static org.maxicp.search.Searches.*;
+import static org.maxicp.search.Searches.EMPTY;
 
 public class SequenceRank {
 
@@ -37,44 +39,43 @@ public class SequenceRank {
         buffer = new int[n];
     }
 
-    record Priority(int priority1, int priority2, int value) {
+    // A simplified priority class to avoid using records, in case of compatibility issues.
+    private static class Priority {
+        final int priority1;
+        final int priority2;
+        final int value;
 
-        public Priority best(Priority other) {
-            if (other == null)
-                return this;
-            if (this.priority1 < other.priority1) {
-                return this;
-            } else if (this.priority1 > other.priority1) {
-                return other;
-            }
-            if (this.priority2 < other.priority2) {
-                return this;
-            } else {
-                return other;
-            }
+        Priority(int p1, int p2, int v) {
+            this.priority1 = p1;
+            this.priority2 = p2;
+            this.value = v;
+        }
+
+        Priority best(Priority other) {
+            if (other == null) return this;
+            if (this.priority1 < other.priority1) return this;
+            if (this.priority1 > other.priority1) return other;
+            if (this.priority2 < other.priority2) return this;
+            return other;
         }
     }
 
     public Runnable[] alternatives() {
         int current = currentRanker.value();
         if (current == -1 || rankers[current].isRanked()) {
-            // finds the sequence with the fewest insertable nodes remaining
-            // ties are broken by taking the sequence with the smallest slack on the remaining nodes
             int nUnranked = unRanked.fillArray(buffer);
             Priority best = null;
-            for (int i = 0 ; i < nUnranked ; i++) {
+            for (int i = 0; i < nUnranked; i++) {
                 int id = buffer[i];
                 if (rankers[id].isRanked()) {
                     unRanked.remove(id);
                 } else {
-                    int nInsert = rankers[id].sequence.nNode(SeqStatus.INSERTABLE);
                     int slack = rankers[id].slack();
-                    Priority candidate = new Priority(nInsert, slack, id);
+                    Priority candidate = new Priority(slack, 0, id);
                     best = candidate.best(best);
                 }
             }
             if (best == null) {
-                // all sequences are fixed
                 return EMPTY;
             }
             current = best.value;
@@ -85,16 +86,16 @@ public class SequenceRank {
 
     static class Ranker {
 
-        private CPSolver cp;
-        private CPSeqVar sequence;
-        private CPIntervalVar[] intervals;
-        private int[] buffer;
+        private final CPSolver cp;
+        private final CPSeqVar sequence;
+        private final CPIntervalVar[] intervals;
+        private final int[] buffer;
 
         Ranker(CPIntervalVar[] intervals, CPSeqVar seqVar) {
             cp = seqVar.getSolver();
             this.intervals = intervals;
             this.sequence = seqVar;
-            buffer = new int[seqVar.nNode()];
+            this.buffer = new int[seqVar.nNode()];
         }
 
         public int slack() {
@@ -102,7 +103,7 @@ public class SequenceRank {
             int maxLct = Integer.MIN_VALUE;
             int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);
             int duration = 0;
-            for (int i = 0 ; i < nUnranked ; i++) {
+            for (int i = 0; i < nUnranked; i++) {
                 int node = buffer[i];
                 CPIntervalVar interval = intervals[node];
                 duration += interval.lengthMin();
@@ -112,66 +113,38 @@ public class SequenceRank {
             return maxLct - minEst - duration;
         }
 
-        public int slack(int pred, int node, int succ) {
-            int tSucc = (succ >= intervals.length ? intervals[pred].endMax() : intervals[succ].endMax());
-            int tPred = (pred >= intervals.length ? 0 : intervals[pred].startMin());
-            int slackBefore = intervals[node].endMax() - tPred;
-            int slackAfter = tSucc - intervals[node].startMin();
-            return (slackAfter + slackBefore);
-        }
-
-        public int startMax(int node) {
-            return node >= intervals.length ? 0 : intervals[node].startMax();
-        }
-
-        public int startMin(int node) {
-            return node >= intervals.length ? 0 : intervals[node].startMin();
-        }
-
-        public int endMax(int node) {
-            return node >= intervals.length ? 0 : intervals[node].endMax();
-        }
-
-        public int endMin(int node) {
-            return node >= intervals.length ? 0 : intervals[node].endMin();
-        }
-
         public boolean isRanked() {
             return sequence.isFixed();
         }
 
         public Runnable[] alternatives() {
             assert (!isRanked());
-            // select the node to branch on
-            int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);
-            Priority best = null;
-            for (int i = 0 ; i < nUnranked ; i++) {
-                // pick the node with the fewest insertions. Break ties by startMin value
-                int node = buffer[i];
-                int nInsert = sequence.nInsert(node);
-                int startMin = intervals[node].startMin();
-                Priority candidate = new Priority(nInsert, startMin, node);
-                best = candidate.best(best);
+
+            int nInsertable = sequence.fillNode(buffer, SeqStatus.INSERTABLE);
+            if (nInsertable == 0) {
+                return EMPTY;
             }
-            int node = best.value;
-            // select the best insertion for the node
-            int nInsert = sequence.fillInsert(node, buffer);
-            best = null;
-            for (int i = 0; i < nInsert ; i++) {
-                // pick the predecessor leading to the largest slack.
-                // Break ties by selecting the predecessor with the largest number of successors remaining
-                int pred = buffer[i];
-                int succ = sequence.memberAfter(pred);
-                int slack = - slack(pred, node, succ);
-                int nSucc = - sequence.nSucc(pred);
-                Priority candidate = new Priority(slack, nSucc, pred);
-                best = candidate.best(best);
-            }
-            int pred = best.value;
-            int succ = sequence.memberAfter(pred);
-            return branch(() -> cp.post(insert(sequence, pred, node)), () -> cp.post(notBetween(sequence, pred, node, succ)));
+
+            // Create a stable copy of the insertable nodes for use in the lambda
+            final int[] insertableNodes = new int[nInsertable];
+            System.arraycopy(buffer, 0, insertableNodes, 0, nInsertable);
+
+            int pred = sequence.memberBefore(sequence.end());
+
+            return IntStream.range(0, nInsertable)
+                    .mapToObj(i -> insertableNodes[i])
+                    .sorted(Comparator.comparingInt(i -> intervals[i].startMin()))
+                    .map(nodeToInsert -> (Runnable) () -> {
+                        // Insert the node into the sequence structure.
+                        cp.post(insert(sequence, pred, nodeToInsert));
+                        // Add explicit precedence constraints, like Rank does, to strengthen guidance.
+                        for (int otherNode : insertableNodes) {
+                            if (otherNode != nodeToInsert) {
+                                cp.post(endBeforeStart(intervals[nodeToInsert], intervals[otherNode]));
+                            }
+                        }
+                    })
+                    .toArray(Runnable[]::new);
         }
-
     }
-
 }
