@@ -84,11 +84,11 @@ import java.util.Random;
      * @return the maximum value in a
      */
     public static int max(int [][] a) {
-<span class="nc" id="L87">        int v = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">        for (int i = 0; i &lt; a.length; i++) {</span>
-<span class="nc" id="L89">            v = Math.max(v, max(a[i]));</span>
+<span class="fc" id="L87">        int v = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (int i = 0; i &lt; a.length; i++) {</span>
+<span class="fc" id="L89">            v = Math.max(v, max(a[i]));</span>
         }
-<span class="nc" id="L91">        return v;</span>
+<span class="fc" id="L91">        return v;</span>
     }
 
     /**

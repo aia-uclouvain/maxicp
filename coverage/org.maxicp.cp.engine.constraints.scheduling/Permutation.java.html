@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Permutation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.scheduling</a> &gt; <span class="el_source">Permutation.java</span></div><h1>Permutation.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.scheduling;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.InversePerm;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPBoolVar;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.modeling.IntVar;
+import org.maxicp.util.Arrays;
+import org.maxicp.util.algo.DistanceMatrix;
+
+import java.util.ArrayList;
+
+import static org.maxicp.cp.CPFactory.*;
+import static org.maxicp.cp.CPFactory.eq;
+
+/**
+ * A constraint that enforces a permutation (ordering) of interval variables,
+ * typically used for routing/scheduling problems such as TSP or job sequencing.
+ *
+ * &lt;p&gt;This constraint models a sequence of visits where:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Each interval represents a visit/task to be scheduled&lt;/li&gt;
+ *   &lt;li&gt;{@code posOfInterval[i]} gives the position of interval i in the sequence&lt;/li&gt;
+ *   &lt;li&gt;{@code intervalInPos[p]} gives the interval at position p in the sequence&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;The constraint enforces:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Inverse permutation relationship between posOfInterval and intervalInPos&lt;/li&gt;
+ *   &lt;li&gt;No overlap between intervals&lt;/li&gt;
+ *   &lt;li&gt;Minimum transition times between consecutive intervals (if specified)&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @see InversePerm
+ * @see NoOverlapBinaryWithTransitionTime
+ */
+<span class="fc" id="L45">public class Permutation extends AbstractCPConstraint {</span>
+
+    /**
+     * Number of intervals
+     */
+    public final int n;
+    /**
+     * Intervals
+     */
+    public final CPIntervalVar[] intervals;
+    /**
+     * posOfInterval[i] is the position of node i in the tour
+     */
+    public final CPIntVar[] posOfInterval;
+    /**
+     * intervalInPos[i] is the node at position i in the tour
+     */
+    public final CPIntVar [] intervalInPos;
+
+    private int [][] minTransitions;
+
+    /**
+     * Creates a permutation constraint with zero transition times.
+     *
+     * @param intervals the interval variables to be sequenced (all intervals must belong to the same solver)
+     */
+    public Permutation(CPIntervalVar[] intervals) {
+<span class="fc" id="L72">        this(intervals,new int[intervals.length][intervals.length]);</span>
+<span class="fc" id="L73">    }</span>
+
+    /**
+     * Creates a permutation constraint with minimum transition times between intervals.
+     *
+     * &lt;p&gt;The transition time matrix must satisfy the triangular inequality property,
+     * i.e., for all i, j, k: {@code minTransition[i][j] &lt;= minTransition[i][k] + minTransition[k][j]}.
+     *
+     * @param intervals the interval variables to be sequenced (all intervals must belong to the same solver)
+     * @param minTransition a square matrix where {@code minTransition[i][j]} is the minimum transition time
+     *                      from interval i to interval j. Must have dimensions n×n where n is the number of intervals.
+     * @throws AssertionError if the matrix dimensions don't match the number of intervals
+     * @throws AssertionError if the triangular inequality is violated
+     */
+    public Permutation(CPIntervalVar[] intervals, int [][] minTransition) {
+<span class="fc" id="L88">        super(intervals[0].getSolver());</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        assert minTransition.length == intervals.length;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        assert minTransition[0].length == intervals.length;</span>
+<span class="fc" id="L91">        DistanceMatrix.checkTriangularInequality(minTransition);</span>
+<span class="fc" id="L92">        this.intervals = intervals;</span>
+<span class="fc" id="L93">        this.n = intervals.length;</span>
+        // verify that all the intervals are mandatory
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            assert intervals[i].isPresent();</span>
+        }
+<span class="fc" id="L98">        posOfInterval = CPFactory.makeIntVarArray(getSolver(), n,n);</span>
+<span class="fc" id="L99">        intervalInPos = CPFactory.makeIntVarArray(getSolver(), n,n);</span>
+<span class="fc" id="L100">        this.minTransitions = minTransition;</span>
+<span class="fc" id="L101">    }</span>
+
+
+
+    @Override
+    public void post() {
+        // channeling between positionOfNode and taskInPosition positionOfNode[i] = p &lt;=&gt; taskInPosition[p] = i
+<span class="fc" id="L108">        getSolver().post(new InversePerm(posOfInterval, intervalInPos));</span>
+        // no overlap between visits
+<span class="fc" id="L110">        getSolver().post(noOverlap(intervals));</span>
+        // noOverlap with transition times
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (int j = i+1; j &lt; n; j++) {</span>
+                // order = 1 &lt;=&gt; positionOfNode[i] &lt; positionOfNode[j]
+                // order = 0 &lt;=&gt; positionOfNode[j] &lt; positionOfNode[i]
+<span class="fc" id="L116">                CPBoolVar order = CPFactory.strictOrder(posOfInterval[i], posOfInterval[j]);</span>
+                // if order = 1 then visits[i] before visits[j] with transition time instance.distMatrix[i][j]
+                // if order = 0 then visits[j] before visits[i] with transition time instance
+<span class="fc" id="L119">                getSolver().post(new NoOverlapBinaryWithTransitionTime(order, intervals[i], intervals[j], minTransitions[i][j], minTransitions[j][i]));</span>
+            }
+        }
+<span class="fc" id="L122">    }</span>
+
+    /**
+     * Creates and returns a variable representing the total transition cost of the sequence.
+     *
+     * &lt;p&gt;The transition cost is computed as the sum of transition times between consecutive
+     * intervals in the sequence: {@code sum(transitionCost[intervalInPos[i]][intervalInPos[i+1]])}
+     * for i from 0 to n-2.
+     *
+     * &lt;p&gt;The transition cost matrix must satisfy the triangular inequality property.
+     *
+     * @param transitionCost a square matrix where {@code transitionCost[i][j]} is the cost
+     *                       of transitioning from interval i to interval j. Must have dimensions n×n.
+     * @return a CPIntVar representing the total transition cost of the permutation
+     * @throws AssertionError if the matrix is null or dimensions don't match
+     * @throws AssertionError if the triangular inequality is violated
+     */
+    public CPIntVar transitionCost(int [][] transitionCost) {
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        assert(transitionCost != null);</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        assert(transitionCost.length == n);</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        assert(transitionCost[0].length == n);</span>
+<span class="fc" id="L143">        DistanceMatrix.checkTriangularInequality(transitionCost);</span>
+<span class="fc" id="L144">        int maxTransition = Arrays.max(transitionCost);</span>
+        // transition times and objective
+<span class="fc" id="L146">        CPIntVar[] transitionTimes = makeIntVarArray(getSolver(), n-1, 0, maxTransition);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">        for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc" id="L148">            getSolver().post(eq(transitionTimes[i],</span>
+<span class="fc" id="L149">                    CPFactory.element(transitionCost, intervalInPos[i], intervalInPos[i+1])));</span>
+        }
+<span class="fc" id="L151">        CPIntVar totTransition = CPFactory.sum(transitionTimes);</span>
+<span class="fc" id="L152">        return totTransition;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

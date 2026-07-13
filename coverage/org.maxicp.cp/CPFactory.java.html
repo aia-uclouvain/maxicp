@@ -957,7 +957,7 @@ public final class CPFactory {
      * {@code x &lt; y}, false otherwise
      */
     public static CPConstraint isLt(CPBoolVar b, CPIntVar x, CPIntVar y) {
-<span class="nc" id="L960">        return new IsLessOrEqualVar(b, x, minus(y, 1));</span>
+<span class="fc" id="L960">        return new IsLessOrEqualVar(b, x, minus(y, 1));</span>
     }
 
     /**
@@ -972,10 +972,10 @@ public final class CPFactory {
      * @return a Boolean variable representing the strict order between x and y
      */
     public static CPBoolVar strictOrder(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L975">        CPBoolVar b = makeBoolVar(x.getSolver());</span>
-<span class="nc" id="L976">        x.getSolver().post(isLt(b, x, y));</span>
-<span class="nc" id="L977">        x.getSolver().post(isLt(not(b), y, x));</span>
-<span class="nc" id="L978">        return b;</span>
+<span class="fc" id="L975">        CPBoolVar b = makeBoolVar(x.getSolver());</span>
+<span class="fc" id="L976">        x.getSolver().post(isLt(b, x, y));</span>
+<span class="fc" id="L977">        x.getSolver().post(isLt(not(b), y, x));</span>
+<span class="fc" id="L978">        return b;</span>
     }
 
 
