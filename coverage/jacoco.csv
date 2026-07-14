@@ -40,7 +40,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartBefore,0,57,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,EndBefore,0,57,1,7,0,15,1,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,ThetaLambdaTree,40,310,0,14,11,61,2,16,2,9
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeSweepMin.Event,38,0,0,0,11,0,6,0,6,0
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraint,9,1480,12,145,1,185,12,81,0,13
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraint,9,1480,12,145,1,209,12,81,0,13
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPStepAtStartCumulFunction,44,81,6,6,3,19,7,5,2,4
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPStepAtEndCumulFunction,114,0,10,0,20,0,11,0,6,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraintBaseLine,1452,0,151,0,183,0,90,0,13,0
@@ -107,7 +107,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,109,405,4,44,13,67,7,25,3,5
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -186,7 +186,7 @@ org.maxicp:maxicp,org.maxicp.modeling,DecisionVarCollector,33,88,9,11,4,19,7,5,0
 org.maxicp:maxicp,org.maxicp.modeling,SeqVar,31,0,4,0,5,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.modeling,ModelProxy,20,106,2,3,4,24,4,10,2,9
 org.maxicp:maxicp,org.maxicp.modeling,ModelProxyInstantiator,22,68,0,0,7,12,3,9,3,9
-org.maxicp:maxicp,org.maxicp.modeling,Factory,378,315,3,1,51,46,52,45,50,45
+org.maxicp:maxicp,org.maxicp.modeling,Factory,389,315,3,1,56,46,53,45,51,45
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
@@ -344,8 +344,10 @@ org.maxicp:maxicp,org.maxicp.search,SequenceRank,0,147,0,14,0,31,0,10,0,3
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
 org.maxicp:maxicp,org.maxicp.search,DFSearch,16,247,0,8,5,73,1,21,1,17
 org.maxicp:maxicp,org.maxicp.search,DFSTreeRecorder,88,0,0,0,22,0,10,0,10,0
+org.maxicp:maxicp,org.maxicp.search,RankModeling.Ranker.new Record() {...},12,0,0,0,1,0,1,0,1,0
 org.maxicp:maxicp,org.maxicp.search,DFSearch.new DFSListener() {...},0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,SetTimes,370,0,42,0,81,0,35,0,14,0
+org.maxicp:maxicp,org.maxicp.search,RankModeling,174,0,14,0,32,0,11,0,4,0
 org.maxicp:maxicp,org.maxicp.search,RunnableSearchMethod,0,5,0,0,0,2,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,LimitedDepthBranching,65,0,6,0,17,0,6,0,3,0
 org.maxicp:maxicp,org.maxicp.search,FDSModeling,132,902,24,96,19,153,24,58,2,20
@@ -358,6 +360,7 @@ org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod.IntRef,0,3,0,0,0,1,0,1,
 org.maxicp:maxicp,org.maxicp.search,Sequencer,0,29,0,4,0,8,0,4,0,2
 org.maxicp:maxicp,org.maxicp.search,RestoreStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,Rank,78,163,8,14,19,30,6,10,2,3
+org.maxicp:maxicp,org.maxicp.search,RankModeling.Ranker,207,0,10,0,37,0,14,0,9,0
 org.maxicp:maxicp,org.maxicp.search,DFSLinearizer,0,57,0,0,0,12,0,7,0,7
 org.maxicp:maxicp,org.maxicp.search,SearchStatistics,81,62,14,0,6,21,10,11,3,11
 org.maxicp:maxicp,org.maxicp.search,StopSearchException,0,3,0,0,0,1,0,1,0,1
