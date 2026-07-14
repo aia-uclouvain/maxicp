@@ -97,14 +97,7 @@ public class JobShopSeqVar {
                 ));
 
 
-        /*
-        // TODO: fix this earch
-        DFSearch dfs = CPFactory.makeDfs(cp,
-                and(SequenceRank.sequenceRank(toRank, seqToRank),
-                        () -> makespan.isFixed() ? EMPTY: branch(() -> cp.post(le(makespan, makespan.min())))
-                ));
 
-         */
 
 
 

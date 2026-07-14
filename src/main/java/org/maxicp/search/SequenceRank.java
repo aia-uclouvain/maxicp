@@ -1,3 +1,9 @@
+/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
 package org.maxicp.search;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -7,14 +13,21 @@ import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateSparseSet;
 
-import java.util.Comparator;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
-import static org.maxicp.cp.CPFactory.endBeforeStart;
 import static org.maxicp.cp.CPFactory.insert;
 import static org.maxicp.search.Searches.EMPTY;
 
+/**
+ * Sequence-based ranking search inspired by {@link Rank}.
+ *
+ * <p>As long as the selected sequence (the one with the smallest slack) is not fully ranked,
+ * a standard first-fail insertion search is applied to fix that sequence.
+ * The node selected for insertion is the insertable one whose interval has the smallest earliest start time.
+ * Branching tries every possible insertion position for the selected node.
+ *
+ * @author Pierre Schaus
+ */
 public class SequenceRank {
 
     private final StateInt currentRanker;
@@ -39,46 +52,28 @@ public class SequenceRank {
         buffer = new int[n];
     }
 
-    // A simplified priority class to avoid using records, in case of compatibility issues.
-    private static class Priority {
-        final int priority1;
-        final int priority2;
-        final int value;
-
-        Priority(int p1, int p2, int v) {
-            this.priority1 = p1;
-            this.priority2 = p2;
-            this.value = v;
-        }
-
-        Priority best(Priority other) {
-            if (other == null) return this;
-            if (this.priority1 < other.priority1) return this;
-            if (this.priority1 > other.priority1) return other;
-            if (this.priority2 < other.priority2) return this;
-            return other;
-        }
-    }
-
     public Runnable[] alternatives() {
         int current = currentRanker.value();
         if (current == -1 || rankers[current].isRanked()) {
             int nUnranked = unRanked.fillArray(buffer);
-            Priority best = null;
+            int bestRankerId = -1;
+            int bestSlack = Integer.MAX_VALUE;
             for (int i = 0; i < nUnranked; i++) {
                 int id = buffer[i];
                 if (rankers[id].isRanked()) {
                     unRanked.remove(id);
-                } else {
-                    int slack = rankers[id].slack();
-                    Priority candidate = new Priority(slack, 0, id);
-                    best = candidate.best(best);
+                    continue;
+                }
+                int slack = rankers[id].slack();
+                if (slack < bestSlack) {
+                    bestSlack = slack;
+                    bestRankerId = id;
                 }
             }
-            if (best == null) {
+            if (bestRankerId == -1) {
                 return EMPTY;
             }
-            current = best.value;
+            current = bestRankerId;
             currentRanker.setValue(current);
         }
         return rankers[current].alternatives();
@@ -89,26 +84,28 @@ public class SequenceRank {
         private final CPSolver cp;
         private final CPSeqVar sequence;
         private final CPIntervalVar[] intervals;
-        private final int[] buffer;
+        private final int[] nodeBuffer;
+        private final int[] insertBuffer;
 
         Ranker(CPIntervalVar[] intervals, CPSeqVar seqVar) {
-            cp = seqVar.getSolver();
+            this.cp = seqVar.getSolver();
             this.intervals = intervals;
             this.sequence = seqVar;
-            this.buffer = new int[seqVar.nNode()];
+            this.nodeBuffer = new int[seqVar.nNode()];
+            this.insertBuffer = new int[seqVar.nNode()];
         }
 
         public int slack() {
             int minEst = Integer.MAX_VALUE;
             int maxLct = Integer.MIN_VALUE;
-            int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);
+            int nInsertable = sequence.fillNode(nodeBuffer, SeqStatus.INSERTABLE);
             int duration = 0;
-            for (int i = 0; i < nUnranked; i++) {
-                int node = buffer[i];
+            for (int i = 0; i < nInsertable; i++) {
+                int node = nodeBuffer[i];
                 CPIntervalVar interval = intervals[node];
                 duration += interval.lengthMin();
-                minEst = Integer.min(minEst, interval.startMin());
-                maxLct = Integer.max(maxLct, interval.endMax());
+                minEst = Math.min(minEst, interval.startMin());
+                maxLct = Math.max(maxLct, interval.endMax());
             }
             return maxLct - minEst - duration;
         }
@@ -120,31 +117,33 @@ public class SequenceRank {
         public Runnable[] alternatives() {
             assert (!isRanked());
 
-            int nInsertable = sequence.fillNode(buffer, SeqStatus.INSERTABLE);
+            int nInsertable = sequence.fillNode(nodeBuffer, SeqStatus.INSERTABLE);
             if (nInsertable == 0) {
                 return EMPTY;
             }
 
-            // Create a stable copy of the insertable nodes for use in the lambda
-            final int[] insertableNodes = new int[nInsertable];
-            System.arraycopy(buffer, 0, insertableNodes, 0, nInsertable);
+            // select the insertable node with the smallest earliest start time
+            int selected = -1;
+            int bestStartMin = Integer.MAX_VALUE;
+            for (int i = 0; i < nInsertable; i++) {
+                int node = nodeBuffer[i];
+                int startMin = intervals[node].startMin();
+                if (startMin < bestStartMin) {
+                    bestStartMin = startMin;
+                    selected = node;
+                }
+            }
 
-            int pred = sequence.memberBefore(sequence.end());
+            final int node = selected;
+            int nInsert = sequence.fillInsert(node, insertBuffer);
 
-            return IntStream.range(0, nInsertable)
-                    .mapToObj(i -> insertableNodes[i])
-                    .sorted(Comparator.comparingInt(i -> intervals[i].startMin()))
-                    .map(nodeToInsert -> (Runnable) () -> {
-                        // Insert the node into the sequence structure.
-                        cp.post(insert(sequence, pred, nodeToInsert));
-                        // Add explicit precedence constraints, like Rank does, to strengthen guidance.
-                        for (int otherNode : insertableNodes) {
-                            if (otherNode != nodeToInsert) {
-                                cp.post(endBeforeStart(intervals[nodeToInsert], intervals[otherNode]));
-                            }
-                        }
-                    })
-                    .toArray(Runnable[]::new);
+            // n-ary branching: one branch per possible insertion position
+            Runnable[] branches = new Runnable[nInsert];
+            for (int i = 0; i < nInsert; i++) {
+                final int pred = insertBuffer[i];
+                branches[i] = () -> cp.post(insert(sequence, pred, node));
+            }
+            return branches;
         }
     }
 }
