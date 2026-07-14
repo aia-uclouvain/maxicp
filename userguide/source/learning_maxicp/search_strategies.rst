@@ -197,7 +197,7 @@ retracting all temporary fixing constraints.
 solution found so far.
 
 Full example:
-`QAPLNS.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAPLNS.java>`__
+`QAP.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAP.java>`__
 
 Variable Objective LNS (VOLNS)
 ================================

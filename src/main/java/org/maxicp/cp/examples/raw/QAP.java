@@ -30,7 +30,7 @@ import static org.maxicp.search.Searches.firstFailBinary;
  * by the corresponding flows.
  * <a href="https://en.wikipedia.org/wiki/Quadratic_assignment_problem">Wikipedia</a>.
  */
-public class QAPLNS {
+public class QAP {
 
     public static void main(String[] args) {
 

@@ -65,6 +65,7 @@ For XCSP3 mini bundle packaging:
 - Keep comments short and only for non-obvious logic.
 - Update or add tests for behavior changes in solver/modeling code.
 - Do not introduce new dependencies unless required by the task.
+- When adding, moving, or removing example models in `src/main/java/org/maxicp/cp/examples/`, always update the list in `userguide/source/learning_maxicp/allmodels.rst` and run `python3 userguide/check_source_links.py` to ensure no links are broken.
 
 ## Files and paths to treat as generated/artifacts
 

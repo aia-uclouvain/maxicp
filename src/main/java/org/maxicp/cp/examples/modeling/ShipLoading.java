@@ -27,24 +27,27 @@ import static org.maxicp.search.Searches.firstFailBinary;
 import static org.maxicp.modeling.Factory.*;
 
 /**
- * !!! This model does not work correctly, there is a bug with heightAtStart in the modeling  !!!
+ * !!! This model does not work correctly, there is a bug with heightAtStart in
+ * the modeling !!!
  * Ship Loading Problem.
  *
  * The problem is to find a schedule that minimizes the time to unload and
- * to load a ship. The work contains a set of 34 elementary tasks. Each task has to be handled by
- * a given number of people and during a given period of time. For each task, only
- * the associated surface is known (i.e., the product of the task duration by the needed amount of
+ * to load a ship. The work contains a set of 34 elementary tasks. Each task has
+ * to be handled by
+ * a given number of people and during a given period of time. For each task,
+ * only
+ * the associated surface is known (i.e., the product of the task duration by
+ * the needed amount of
  * resource).
  *
  * This problem was described in the paper:
- * Aggoun, A., & Beldiceanu, N. (1993). Extending CHIP in order to solve complex scheduling and placement problems.
+ * Aggoun, A., & Beldiceanu, N. (1993). Extending CHIP in order to solve complex
+ * scheduling and placement problems.
  * Mathematical and computer modelling, 17(7), 57-73.
  *
  * @author Roger Kameugne, Pierre Schaus
  */
 public class ShipLoading {
-
-
 
     public ShipLoading(ShipLoadingInstance data) throws Exception {
 
@@ -59,8 +62,6 @@ public class ShipLoading {
         CumulFunction resource = flat();
 
         for (int i = 0; i < data.nbTasks; i++) {
-            // intervalVar(int startMin, int endMax, int duration, boolean isPresent)
-            // TODO: min lenght is 1
             IntervalVar interval = model.intervalVar(0, data.horizon, 0, data.horizon, 1, data.sizes[i], true);
             starts[i] = start(interval);
             ends[i] = end(interval);
@@ -72,7 +73,6 @@ public class ShipLoading {
 
         }
 
-
         for (int i = 0; i < data.nbTasks; i++) {
 
             // Precedence constraints:
@@ -81,9 +81,9 @@ public class ShipLoading {
             }
 
             // Size constraints:
-            //for (int k : data.successors[i]) {
-                model.add(eq(mul(length[i], height[i]),data.sizes[i]));
-            //}
+            // for (int k : data.successors[i]) {
+            model.add(eq(mul(length[i], height[i]), data.sizes[i]));
+            // }
         }
 
         // Resource constraint:
@@ -98,7 +98,6 @@ public class ShipLoading {
 
         ConcreteCPModel cp = model.cpInstantiate();
 
-
         // Search:
         DFSearch dfs = cp.dfSearch(and(Searches.firstFailBinary(starts), Searches.firstFailBinary(ends)));
 
@@ -110,29 +109,29 @@ public class ShipLoading {
                 int e = ends[i].max();
                 int l = length[i].min();
                 int h = height[i].min();
-                int surface = l*h;
-                System.out.println("task " + i + ": start=" + s + ", end=" + e + ", length=" + l + ", height=" + h + ", surface=" + surface+ ", size=" + data.sizes[i]);
-                assert(surface == data.sizes[i]);
+                int surface = l * h;
+                System.out.println("task " + i + ": start=" + s + ", end=" + e + ", length=" + l + ", height=" + h
+                        + ", surface=" + surface + ", size=" + data.sizes[i]);
+                assert (surface == data.sizes[i]);
             }
             System.out.println("solution:");
-            System.out.println("heights:"+Arrays.toString(height));
-            System.out.println("starts:"+Arrays.toString(Arrays.stream(starts).map(x -> x.min()).toArray()));
-            System.out.println("ends:"+Arrays.toString(Arrays.stream(ends).map(x -> x.min()).toArray()));
+            System.out.println("heights:" + Arrays.toString(height));
+            System.out.println("starts:" + Arrays.toString(Arrays.stream(starts).map(x -> x.min()).toArray()));
+            System.out.println("ends:" + Arrays.toString(Arrays.stream(ends).map(x -> x.min()).toArray()));
 
             // System.out.println("lengths:"+Arrays.toString(length));
             System.out.println("makespan: " + makespan);
         });
 
-        //Launching search:
+        // Launching search:
         long begin = System.currentTimeMillis();
         SearchStatistics stats = dfs.optimize(obj);
         System.out.println(stats);
-        long time = (System.currentTimeMillis() - begin)/1000;
+        long time = (System.currentTimeMillis() - begin) / 1000;
         System.out.println("time(s):" + time);
     }
 
-
-    public static void main(String[] args) throws Exception{
+    public static void main(String[] args) throws Exception {
         ShipLoadingInstance data = new ShipLoadingInstance("data/SHIP_LOADING/shipLoading1.txt");
         ShipLoading sl = new ShipLoading(data);
     }
@@ -153,9 +152,10 @@ class ShipLoadingInstance {
     public String name;
     int sumSizes;
 
-    public ShipLoadingInstance (String fileName) throws Exception {
+    public ShipLoadingInstance(String fileName) throws Exception {
         Scanner s = new Scanner(new File(fileName)).useDelimiter("\\s+");
-        while (!s.hasNextInt()) s.nextLine();
+        while (!s.hasNextInt())
+            s.nextLine();
         nbTasks = s.nextInt();
         nbResources = s.nextInt();
         resourceCapacity = s.nextInt();
