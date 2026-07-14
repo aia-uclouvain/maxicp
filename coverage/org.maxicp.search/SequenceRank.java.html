@@ -1,4 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SequenceRank.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">SequenceRank.java</span></div><h1>SequenceRank.java</h1><pre class="source lang-java linenums">package org.maxicp.search;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SequenceRank.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">SequenceRank.java</span></div><h1>SequenceRank.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.search;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
@@ -7,14 +13,21 @@ import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateSparseSet;
 
-import java.util.Comparator;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
-import static org.maxicp.cp.CPFactory.endBeforeStart;
 import static org.maxicp.cp.CPFactory.insert;
 import static org.maxicp.search.Searches.EMPTY;
 
+/**
+ * Sequence-based ranking search inspired by {@link Rank}.
+ *
+ * &lt;p&gt;As long as the selected sequence (the one with the smallest slack) is not fully ranked,
+ * a standard first-fail insertion search is applied to fix that sequence.
+ * The node selected for insertion is the insertable one whose interval has the smallest earliest start time.
+ * Branching tries every possible insertion position for the selected node.
+ *
+ * @author Pierre Schaus
+ */
 public class SequenceRank {
 
     private final StateInt currentRanker;
@@ -23,128 +36,114 @@ public class SequenceRank {
     private final int[] buffer;
 
     public static Supplier&lt;Runnable[]&gt; sequenceRank(CPIntervalVar[][] intervals, CPSeqVar[] seqVars) {
-<span class="nc" id="L26">        SequenceRank sequenceRank = new SequenceRank(intervals, seqVars);</span>
-<span class="nc" id="L27">        return sequenceRank::alternatives;</span>
+<span class="fc" id="L39">        SequenceRank sequenceRank = new SequenceRank(intervals, seqVars);</span>
+<span class="fc" id="L40">        return sequenceRank::alternatives;</span>
     }
 
-<span class="nc" id="L30">    public SequenceRank(CPIntervalVar[][] intervals, CPSeqVar[] seqVars) {</span>
-<span class="nc" id="L31">        CPSolver cp = seqVars[0].getSolver();</span>
-<span class="nc" id="L32">        int n = seqVars.length;</span>
-<span class="nc" id="L33">        unRanked = new StateSparseSet(cp.getStateManager(), n, 0);</span>
-<span class="nc" id="L34">        this.currentRanker = cp.getStateManager().makeStateInt(-1);</span>
-<span class="nc" id="L35">        this.rankers = new Ranker[n];</span>
-<span class="nc bnc" id="L36" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="nc" id="L37">            rankers[i] = new Ranker(intervals[i], seqVars[i]);</span>
+<span class="fc" id="L43">    public SequenceRank(CPIntervalVar[][] intervals, CPSeqVar[] seqVars) {</span>
+<span class="fc" id="L44">        CPSolver cp = seqVars[0].getSolver();</span>
+<span class="fc" id="L45">        int n = seqVars.length;</span>
+<span class="fc" id="L46">        unRanked = new StateSparseSet(cp.getStateManager(), n, 0);</span>
+<span class="fc" id="L47">        this.currentRanker = cp.getStateManager().makeStateInt(-1);</span>
+<span class="fc" id="L48">        this.rankers = new Ranker[n];</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L50">            rankers[i] = new Ranker(intervals[i], seqVars[i]);</span>
         }
-<span class="nc" id="L39">        buffer = new int[n];</span>
-<span class="nc" id="L40">    }</span>
-
-    // A simplified priority class to avoid using records, in case of compatibility issues.
-    private static class Priority {
-        final int priority1;
-        final int priority2;
-        final int value;
-
-<span class="nc" id="L48">        Priority(int p1, int p2, int v) {</span>
-<span class="nc" id="L49">            this.priority1 = p1;</span>
-<span class="nc" id="L50">            this.priority2 = p2;</span>
-<span class="nc" id="L51">            this.value = v;</span>
-<span class="nc" id="L52">        }</span>
-
-        Priority best(Priority other) {
-<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (other == null) return this;</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">            if (this.priority1 &lt; other.priority1) return this;</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (this.priority1 &gt; other.priority1) return other;</span>
-<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (this.priority2 &lt; other.priority2) return this;</span>
-<span class="nc" id="L59">            return other;</span>
-        }
-    }
+<span class="fc" id="L52">        buffer = new int[n];</span>
+<span class="fc" id="L53">    }</span>
 
     public Runnable[] alternatives() {
-<span class="nc" id="L64">        int current = currentRanker.value();</span>
-<span class="nc bnc" id="L65" title="All 4 branches missed.">        if (current == -1 || rankers[current].isRanked()) {</span>
-<span class="nc" id="L66">            int nUnranked = unRanked.fillArray(buffer);</span>
-<span class="nc" id="L67">            Priority best = null;</span>
-<span class="nc bnc" id="L68" title="All 2 branches missed.">            for (int i = 0; i &lt; nUnranked; i++) {</span>
-<span class="nc" id="L69">                int id = buffer[i];</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">                if (rankers[id].isRanked()) {</span>
-<span class="nc" id="L71">                    unRanked.remove(id);</span>
-                } else {
-<span class="nc" id="L73">                    int slack = rankers[id].slack();</span>
-<span class="nc" id="L74">                    Priority candidate = new Priority(slack, 0, id);</span>
-<span class="nc" id="L75">                    best = candidate.best(best);</span>
+<span class="fc" id="L56">        int current = currentRanker.value();</span>
+<span class="fc bfc" id="L57" title="All 4 branches covered.">        if (current == -1 || rankers[current].isRanked()) {</span>
+<span class="fc" id="L58">            int nUnranked = unRanked.fillArray(buffer);</span>
+<span class="fc" id="L59">            int bestRankerId = -1;</span>
+<span class="fc" id="L60">            int bestSlack = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (int i = 0; i &lt; nUnranked; i++) {</span>
+<span class="fc" id="L62">                int id = buffer[i];</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                if (rankers[id].isRanked()) {</span>
+<span class="fc" id="L64">                    unRanked.remove(id);</span>
+<span class="fc" id="L65">                    continue;</span>
+                }
+<span class="fc" id="L67">                int slack = rankers[id].slack();</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">                if (slack &lt; bestSlack) {</span>
+<span class="fc" id="L69">                    bestSlack = slack;</span>
+<span class="fc" id="L70">                    bestRankerId = id;</span>
                 }
             }
-<span class="nc bnc" id="L78" title="All 2 branches missed.">            if (best == null) {</span>
-<span class="nc" id="L79">                return EMPTY;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (bestRankerId == -1) {</span>
+<span class="fc" id="L74">                return EMPTY;</span>
             }
-<span class="nc" id="L81">            current = best.value;</span>
-<span class="nc" id="L82">            currentRanker.setValue(current);</span>
+<span class="fc" id="L76">            current = bestRankerId;</span>
+<span class="fc" id="L77">            currentRanker.setValue(current);</span>
         }
-<span class="nc" id="L84">        return rankers[current].alternatives();</span>
+<span class="fc" id="L79">        return rankers[current].alternatives();</span>
     }
 
-<span class="nc" id="L87">    static class Ranker {</span>
+<span class="fc" id="L82">    static class Ranker {</span>
 
         private final CPSolver cp;
         private final CPSeqVar sequence;
         private final CPIntervalVar[] intervals;
-        private final int[] buffer;
+        private final int[] nodeBuffer;
+        private final int[] insertBuffer;
 
-<span class="nc" id="L94">        Ranker(CPIntervalVar[] intervals, CPSeqVar seqVar) {</span>
-<span class="nc" id="L95">            cp = seqVar.getSolver();</span>
-<span class="nc" id="L96">            this.intervals = intervals;</span>
-<span class="nc" id="L97">            this.sequence = seqVar;</span>
-<span class="nc" id="L98">            this.buffer = new int[seqVar.nNode()];</span>
-<span class="nc" id="L99">        }</span>
+<span class="fc" id="L90">        Ranker(CPIntervalVar[] intervals, CPSeqVar seqVar) {</span>
+<span class="fc" id="L91">            this.cp = seqVar.getSolver();</span>
+<span class="fc" id="L92">            this.intervals = intervals;</span>
+<span class="fc" id="L93">            this.sequence = seqVar;</span>
+<span class="fc" id="L94">            this.nodeBuffer = new int[seqVar.nNode()];</span>
+<span class="fc" id="L95">            this.insertBuffer = new int[seqVar.nNode()];</span>
+<span class="fc" id="L96">        }</span>
 
         public int slack() {
-<span class="nc" id="L102">            int minEst = Integer.MAX_VALUE;</span>
-<span class="nc" id="L103">            int maxLct = Integer.MIN_VALUE;</span>
-<span class="nc" id="L104">            int nUnranked = sequence.fillNode(buffer, SeqStatus.INSERTABLE);</span>
-<span class="nc" id="L105">            int duration = 0;</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">            for (int i = 0; i &lt; nUnranked; i++) {</span>
-<span class="nc" id="L107">                int node = buffer[i];</span>
-<span class="nc" id="L108">                CPIntervalVar interval = intervals[node];</span>
-<span class="nc" id="L109">                duration += interval.lengthMin();</span>
-<span class="nc" id="L110">                minEst = Integer.min(minEst, interval.startMin());</span>
-<span class="nc" id="L111">                maxLct = Integer.max(maxLct, interval.endMax());</span>
+<span class="fc" id="L99">            int minEst = Integer.MAX_VALUE;</span>
+<span class="fc" id="L100">            int maxLct = Integer.MIN_VALUE;</span>
+<span class="fc" id="L101">            int nInsertable = sequence.fillNode(nodeBuffer, SeqStatus.INSERTABLE);</span>
+<span class="fc" id="L102">            int duration = 0;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            for (int i = 0; i &lt; nInsertable; i++) {</span>
+<span class="fc" id="L104">                int node = nodeBuffer[i];</span>
+<span class="fc" id="L105">                CPIntervalVar interval = intervals[node];</span>
+<span class="fc" id="L106">                duration += interval.lengthMin();</span>
+<span class="fc" id="L107">                minEst = Math.min(minEst, interval.startMin());</span>
+<span class="fc" id="L108">                maxLct = Math.max(maxLct, interval.endMax());</span>
             }
-<span class="nc" id="L113">            return maxLct - minEst - duration;</span>
+<span class="fc" id="L110">            return maxLct - minEst - duration;</span>
         }
 
         public boolean isRanked() {
-<span class="nc" id="L117">            return sequence.isFixed();</span>
+<span class="fc" id="L114">            return sequence.isFixed();</span>
         }
 
         public Runnable[] alternatives() {
-<span class="nc bnc" id="L121" title="All 2 branches missed.">            assert (!isRanked());</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            assert (!isRanked());</span>
 
-<span class="nc" id="L123">            int nInsertable = sequence.fillNode(buffer, SeqStatus.INSERTABLE);</span>
-<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (nInsertable == 0) {</span>
-<span class="nc" id="L125">                return EMPTY;</span>
+<span class="fc" id="L120">            int nInsertable = sequence.fillNode(nodeBuffer, SeqStatus.INSERTABLE);</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">            if (nInsertable == 0) {</span>
+<span class="nc" id="L122">                return EMPTY;</span>
             }
 
-            // Create a stable copy of the insertable nodes for use in the lambda
-<span class="nc" id="L129">            final int[] insertableNodes = new int[nInsertable];</span>
-<span class="nc" id="L130">            System.arraycopy(buffer, 0, insertableNodes, 0, nInsertable);</span>
+            // select the insertable node with the smallest earliest start time
+<span class="fc" id="L126">            int selected = -1;</span>
+<span class="fc" id="L127">            int bestStartMin = Integer.MAX_VALUE;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            for (int i = 0; i &lt; nInsertable; i++) {</span>
+<span class="fc" id="L129">                int node = nodeBuffer[i];</span>
+<span class="fc" id="L130">                int startMin = intervals[node].startMin();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                if (startMin &lt; bestStartMin) {</span>
+<span class="fc" id="L132">                    bestStartMin = startMin;</span>
+<span class="fc" id="L133">                    selected = node;</span>
+                }
+            }
 
-<span class="nc" id="L132">            int pred = sequence.memberBefore(sequence.end());</span>
+<span class="fc" id="L137">            final int node = selected;</span>
+<span class="fc" id="L138">            int nInsert = sequence.fillInsert(node, insertBuffer);</span>
 
-<span class="nc" id="L134">            return IntStream.range(0, nInsertable)</span>
-<span class="nc" id="L135">                    .mapToObj(i -&gt; insertableNodes[i])</span>
-<span class="nc" id="L136">                    .sorted(Comparator.comparingInt(i -&gt; intervals[i].startMin()))</span>
-<span class="nc" id="L137">                    .map(nodeToInsert -&gt; (Runnable) () -&gt; {</span>
-                        // Insert the node into the sequence structure.
-<span class="nc" id="L139">                        cp.post(insert(sequence, pred, nodeToInsert));</span>
-                        // Add explicit precedence constraints, like Rank does, to strengthen guidance.
-<span class="nc bnc" id="L141" title="All 2 branches missed.">                        for (int otherNode : insertableNodes) {</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">                            if (otherNode != nodeToInsert) {</span>
-<span class="nc" id="L143">                                cp.post(endBeforeStart(intervals[nodeToInsert], intervals[otherNode]));</span>
-                            }
-                        }
-<span class="nc" id="L146">                    })</span>
-<span class="nc" id="L147">                    .toArray(Runnable[]::new);</span>
+            // n-ary branching: one branch per possible insertion position
+<span class="fc" id="L141">            Runnable[] branches = new Runnable[nInsert];</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            for (int i = 0; i &lt; nInsert; i++) {</span>
+<span class="fc" id="L143">                final int pred = insertBuffer[i];</span>
+<span class="fc" id="L144">                branches[i] = () -&gt; cp.post(insert(sequence, pred, node));</span>
+            }
+<span class="fc" id="L146">            return branches;</span>
         }
     }
 }

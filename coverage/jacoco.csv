@@ -107,7 +107,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,109,405,4,44,13,67,7,25,3,5
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -190,7 +190,7 @@ org.maxicp:maxicp,org.maxicp.modeling,Factory,378,315,3,1,51,46,52,45,50,45
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.cp,CPFactory,661,1152,22,38,129,202,78,108,62,94
+org.maxicp:maxicp,org.maxicp.cp,CPFactory,650,1163,22,38,128,203,77,109,61,95
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
@@ -330,7 +330,7 @@ org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,CstOffset,82,0,2,0,13,0,11
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Mul,133,13,5,1,21,4,11,2,8,2
 org.maxicp:maxicp,org.maxicp.modeling.algebra.integer,Element1DVar,304,0,20,0,54,0,24,0,14,0
 org.maxicp:maxicp,org.maxicp.search,FDS.ChoiceType,0,21,0,0,0,2,0,1,0,1
-org.maxicp:maxicp,org.maxicp.search,Rank.Ranker,206,0,10,0,37,0,14,0,9,0
+org.maxicp:maxicp,org.maxicp.search,Rank.Ranker,4,202,1,9,0,37,1,13,0,9
 org.maxicp:maxicp,org.maxicp.search,FDS.Choice,75,82,26,10,15,22,20,8,1,6
 org.maxicp:maxicp,org.maxicp.search,SetTimesModeling,30,356,7,41,7,77,8,30,1,13
 org.maxicp:maxicp,org.maxicp.search,ConcurrentDFSearch.SymbolicModelToRun,6,0,0,0,1,0,1,0,1,0
@@ -340,12 +340,11 @@ org.maxicp:maxicp,org.maxicp.search,SaveStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StealMessage,12,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,483,3,23,10,119,8,46,5,36
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod,138,0,10,0,35,0,11,0,6,0
-org.maxicp:maxicp,org.maxicp.search,SequenceRank,149,0,12,0,28,0,9,0,3,0
+org.maxicp:maxicp,org.maxicp.search,SequenceRank,0,147,0,14,0,31,0,10,0,3
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
 org.maxicp:maxicp,org.maxicp.search,DFSearch,16,247,0,8,5,73,1,21,1,17
 org.maxicp:maxicp,org.maxicp.search,DFSTreeRecorder,88,0,0,0,22,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.search,DFSearch.new DFSListener() {...},0,3,0,0,0,1,0,1,0,1
-org.maxicp:maxicp,org.maxicp.search,SequenceRank.Priority,39,0,8,0,10,0,6,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SetTimes,370,0,42,0,81,0,35,0,14,0
 org.maxicp:maxicp,org.maxicp.search,RunnableSearchMethod,0,5,0,0,0,2,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,LimitedDepthBranching,65,0,6,0,17,0,6,0,3,0
@@ -354,16 +353,16 @@ org.maxicp:maxicp,org.maxicp.search,FDSModeling.Choice,105,83,31,10,20,20,25,8,1
 org.maxicp:maxicp,org.maxicp.search,LimitedDiscrepancyBranching,5,66,1,5,0,17,1,5,0,3
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch,149,0,8,0,35,0,9,0,5,0
 org.maxicp:maxicp,org.maxicp.search,Searches,757,664,82,62,133,138,82,71,38,43
-org.maxicp:maxicp,org.maxicp.search,Rank.Ranker.new Record() {...},12,0,0,0,1,0,1,0,1,0
+org.maxicp:maxicp,org.maxicp.search,Rank.Ranker.new Record() {...},0,12,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod.IntRef,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,Sequencer,0,29,0,4,0,8,0,4,0,2
 org.maxicp:maxicp,org.maxicp.search,RestoreStateAction,0,10,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.search,Rank,241,0,22,0,49,0,16,0,5,0
+org.maxicp:maxicp,org.maxicp.search,Rank,78,163,8,14,19,30,6,10,2,3
 org.maxicp:maxicp,org.maxicp.search,DFSLinearizer,0,57,0,0,0,12,0,7,0,7
 org.maxicp:maxicp,org.maxicp.search,SearchStatistics,81,62,14,0,6,21,10,11,3,11
 org.maxicp:maxicp,org.maxicp.search,StopSearchException,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,BranchingAction,0,10,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.search,SequenceRank.Ranker,193,0,10,0,36,0,15,0,10,0
+org.maxicp:maxicp,org.maxicp.search,SequenceRank.Ranker,6,163,2,10,1,38,2,10,0,6
 org.maxicp:maxicp,org.maxicp.search,FDS,61,626,15,53,7,116,15,35,0,16
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch.PQEntry,15,0,0,0,2,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SymbolicSearchMethod,5,0,0,0,2,0,1,0,1,0
