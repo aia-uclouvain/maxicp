@@ -136,5 +136,15 @@ jobs:
           git add coverage/
           git commit -m "Add/Update badge and coverage report" || echo "No changes to commit"
           
-          # Force push to avoid conflicts with other workflows updating gh-pages
-          git push --force origin gh-pages
+          # Try to push, if failed, fetch, rebase and push again
+          for i in {1..5}; do
+            git pull --rebase origin gh-pages || true
+            if git push origin gh-pages; then
+              echo "Push successful"
+              exit 0
+            fi
+            echo "Push failed, retrying..."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push to gh-pages after multiple attempts."
+          exit 1

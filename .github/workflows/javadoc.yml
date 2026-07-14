@@ -64,4 +64,14 @@ jobs:
 
       - name: Push changes to gh-pages branch
         run: |
-          git push --force origin gh-pages
+          for i in {1..5}; do
+            git pull --rebase origin gh-pages || true
+            if git push origin gh-pages; then
+              echo "Push successful"
+              exit 0
+            fi
+            echo "Push failed, retrying..."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push to gh-pages after multiple attempts."
+          exit 1

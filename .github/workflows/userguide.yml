@@ -50,7 +50,15 @@ jobs:
           git add -A
           git commit -m "update userguide" || echo "No changes to commit"
       - name: Step6 - Push changes to gh-page branch
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in {1..5}; do
+            git pull --rebase origin gh-pages || true
+            if git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:gh-pages; then
+              echo "Push successful"
+              exit 0
+            fi
+            echo "Push failed, retrying..."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push to gh-pages after multiple attempts."
+          exit 1
