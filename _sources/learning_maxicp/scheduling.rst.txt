@@ -64,7 +64,7 @@ Constraints: (i) *precedence* — within each job, operations execute in order;
 Objective: minimize makespan.
 
 Full source:
-`JobShop.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java>`_
+`JobShop.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/JobShop.java>`_
 
 .. code-block:: java
 

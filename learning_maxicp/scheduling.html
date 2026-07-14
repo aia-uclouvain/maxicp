@@ -117,7 +117,7 @@ each comprising a sequence of operations that must be processed on specific mach
 (ii) <em>no-overlap</em> — no two operations on the same machine can overlap.
 Objective: minimize makespan.</p>
 <p>Full source:
-<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/jobshop/JobShop.java">JobShop.java (raw)</a></p>
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/JobShop.java">JobShop.java (raw)</a></p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">CPSolver</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">makeSolver</span><span class="p">();</span>
 
 <span class="n">CPIntervalVar</span><span class="o">[][]</span><span class="w"> </span><span class="n">activities</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">CPIntervalVar</span><span class="o">[</span><span class="n">nJobs</span><span class="o">][</span><span class="n">nMachines</span><span class="o">]</span><span class="p">;</span>
