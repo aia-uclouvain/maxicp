@@ -4,7 +4,7 @@
  *
  */
 
-package org.maxicp.cp.examples.raw.jobshop;
+package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
 
@@ -12,7 +12,6 @@ import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
 import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
