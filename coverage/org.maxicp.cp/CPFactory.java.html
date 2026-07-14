@@ -1866,26 +1866,6 @@ public final class CPFactory {
 
     /**
      * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
-     * between the intervals with minimum transition times and links them with position variables.
-     *
-     * &lt;p&gt;The position variables are created internally and can be accessed via
-     * {@link NoOverlapWithPosition#posOfInterval} and {@link NoOverlapWithPosition#intervalInPos}.
-     *
-     * @param intervals      the interval variables to be sequenced (all must be present)
-     * @param minTransition  n×n matrix where {@code minTransition[i][j]} is the minimum transition time
-     *                       from interval i to interval j
-     * @return a NoOverlapWithPosition constraint with transition times
-     */
-    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, int[][] minTransition) {
-<span class="nc" id="L1880">        CPSolver cp = intervals[0].getSolver();</span>
-<span class="nc" id="L1881">        int n = intervals.length;</span>
-<span class="nc" id="L1882">        CPIntVar[] posOfInterval = makeIntVarArray(cp, n, n);</span>
-<span class="nc" id="L1883">        CPIntVar[] intervalInPos = makeIntVarArray(cp, n, n);</span>
-<span class="nc" id="L1884">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
-    }
-
-    /**
-     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
      * between the intervals and links them with the given position variables, with zero transition times.
      *
      * @param intervals        the interval variables to be sequenced (all must be present)
@@ -1894,7 +1874,7 @@ public final class CPFactory {
      * @return a NoOverlapWithPosition constraint
      */
     public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
-<span class="nc" id="L1897">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);</span>
+<span class="nc" id="L1877">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);</span>
     }
 
     /**
@@ -1909,35 +1889,38 @@ public final class CPFactory {
      * @return a NoOverlapWithPosition constraint with transition times
      */
     public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
-<span class="nc" id="L1912">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
+<span class="nc" id="L1892">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
     }
 
 
     /**
-     * Creates and post a non-overlap constraint on the intervals in vars
-     * and create a sequence variable linked with these intervals representing the order of the intervals
-     * in time. The id of an interval is its index in the array vars.
-     * The intervals cannot overlap.
-     * @param intervals intervals that must be linked with a sequence variable
-     * @return sequence variable linked with the intervals
+     * Creates a no-overlap constraint with transition times on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     * @param minTransition n×n transition time matrix where {@code minTransition[i][j]} is the
+     *                      minimum transition time from interval i to interval j
      */
-    public static CPSeqVar nonOverlapSequence(CPIntervalVar[] intervals) {
-<span class="nc" id="L1925">        int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();</span>
-<span class="nc" id="L1926">        CPSolver cp = intervals[0].getSolver();</span>
-<span class="nc" id="L1927">        cp.post(noOverlap(intervals));</span>
-        // start and end nodes are set as dumy intervals
-<span class="nc" id="L1929">        CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);</span>
-<span class="nc" id="L1930">        CPIntervalVar dummyStart = makeIntervalVar(cp, false, 0); // dumy start</span>
-<span class="nc" id="L1931">        dummyStart.setStart(0);</span>
-<span class="nc" id="L1932">        CPIntervalVar dummyEnd = makeIntervalVar(cp, false, 0); // dummy end</span>
-<span class="nc" id="L1933">        dummyEnd.setStart(lct);</span>
-        // all intervals for the channeling constraint
-<span class="nc" id="L1935">        CPIntervalVar[] intervalsWithDummy = new CPIntervalVar[intervals.length + 2];</span>
-<span class="nc" id="L1936">        System.arraycopy(intervals, 0, intervalsWithDummy, 0, intervals.length);</span>
-<span class="nc" id="L1937">        intervalsWithDummy[intervals.length] = dummyStart;</span>
-<span class="nc" id="L1938">        intervalsWithDummy[intervals.length + 1] = dummyEnd;</span>
-<span class="nc" id="L1939">        cp.post(new Duration(seqVar, intervalsWithDummy)); // post the channeling</span>
-<span class="nc" id="L1940">        return seqVar;</span>
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals, int[][] minTransition) {
+<span class="fc" id="L1909">        return new NoOverlapSequence(seqVar, intervals, minTransition);</span>
+    }
+
+    /**
+     * Creates a no-overlap constraint on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     */
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals) {
+<span class="nc" id="L1923">        return new NoOverlapSequence(seqVar, intervals, new int[intervals.length][intervals.length]);</span>
     }
 
     /**
@@ -1952,8 +1935,8 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives, CPIntVar cardinality) {
-<span class="fc" id="L1955">        CPSolver cp = interval.getSolver();</span>
-<span class="fc" id="L1956">        return new Alternative(interval, alternatives, cardinality);</span>
+<span class="fc" id="L1938">        CPSolver cp = interval.getSolver();</span>
+<span class="fc" id="L1939">        return new Alternative(interval, alternatives, cardinality);</span>
     }
 
     /**
@@ -1968,7 +1951,7 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives, int cardinality) {
-<span class="fc" id="L1971">        return alternative(interval, alternatives, CPFactory.makeIntVar(interval.getSolver(), cardinality, cardinality));</span>
+<span class="fc" id="L1954">        return alternative(interval, alternatives, CPFactory.makeIntVar(interval.getSolver(), cardinality, cardinality));</span>
     }
 
     /**
@@ -1982,7 +1965,7 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives) {
-<span class="nc" id="L1985">        return alternative(interval, alternatives, 1);</span>
+<span class="nc" id="L1968">        return alternative(interval, alternatives, 1);</span>
     }
 
     /**
@@ -1996,7 +1979,7 @@ public final class CPFactory {
      * @return a {@link Span} constraint
      */
     public static CPConstraint span(CPIntervalVar interval, CPIntervalVar[] alternatives) {
-<span class="fc" id="L1999">        return new Span(interval, alternatives);</span>
+<span class="fc" id="L1982">        return new Span(interval, alternatives);</span>
     }
 
     // ********************
@@ -2009,7 +1992,7 @@ public final class CPFactory {
      * @return a cumulative function that is flat
      */
     public static CPCumulFunction flat() {
-<span class="nc" id="L2012">        return new CPFlatCumulFunction();</span>
+<span class="nc" id="L1995">        return new CPFlatCumulFunction();</span>
     }
 
     /**
@@ -2021,7 +2004,7 @@ public final class CPFactory {
      * @return a cumulative function that is a pulse of height h when var is present
      */
     public static CPCumulFunction pulse(CPIntervalVar var, int h) {
-<span class="fc" id="L2024">        return new CPPulseCumulFunction(var, h, h);</span>
+<span class="fc" id="L2007">        return new CPPulseCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2034,7 +2017,7 @@ public final class CPFactory {
      * @return a cumulative function that is a pulse of height {@code [hMin, hMax]} when var is present
      */
     public static CPCumulFunction pulse(CPIntervalVar var, int hMin, int hMax) {
-<span class="fc" id="L2037">        return new CPPulseCumulFunction(var, hMin, hMax);</span>
+<span class="fc" id="L2020">        return new CPPulseCumulFunction(var, hMin, hMax);</span>
     }
 
     /**
@@ -2046,7 +2029,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at the start of var if it is present
      */
     public static CPCumulFunction stepAtStart(CPIntervalVar var, int h) {
-<span class="fc" id="L2049">        return new CPStepAtStartCumulFunction(var, h, h);</span>
+<span class="fc" id="L2032">        return new CPStepAtStartCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2060,7 +2043,7 @@ public final class CPFactory {
      * present
      */
     public static CPCumulFunction stepAtStart(CPIntervalVar var, int hMin, int hMax) {
-<span class="nc" id="L2063">        return new CPStepAtStartCumulFunction(var, hMin, hMax);</span>
+<span class="nc" id="L2046">        return new CPStepAtStartCumulFunction(var, hMin, hMax);</span>
     }
 
     /**
@@ -2072,7 +2055,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at the end of var if it is present
      */
     public static CPCumulFunction stepAtEnd(CPIntervalVar var, int h) {
-<span class="nc" id="L2075">        return new CPStepAtEndCumulFunction(var, h, h);</span>
+<span class="nc" id="L2058">        return new CPStepAtEndCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2086,7 +2069,7 @@ public final class CPFactory {
      * present
      */
     public static CPCumulFunction stepAtEnd(CPIntervalVar var, int hMin, int hMax) {
-<span class="nc" id="L2089">        return new CPStepAtEndCumulFunction(var, hMin, hMax);</span>
+<span class="nc" id="L2072">        return new CPStepAtEndCumulFunction(var, hMin, hMax);</span>
     }
 
     /**
@@ -2097,13 +2080,13 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction step(CPSolver cp, int from, int h) {
-<span class="nc" id="L2100">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
-<span class="nc" id="L2101">        dummy.setStartMin(from);</span>
-<span class="nc" id="L2102">        dummy.setStartMax(from);</span>
-<span class="nc" id="L2103">        dummy.setEndMin(Constants.HORIZON);</span>
-<span class="nc" id="L2104">        dummy.setEndMax(Constants.HORIZON);</span>
-<span class="nc" id="L2105">        dummy.setPresent();</span>
-<span class="nc" id="L2106">        return pulse(dummy, h);</span>
+<span class="nc" id="L2083">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
+<span class="nc" id="L2084">        dummy.setStartMin(from);</span>
+<span class="nc" id="L2085">        dummy.setStartMax(from);</span>
+<span class="nc" id="L2086">        dummy.setEndMin(Constants.HORIZON);</span>
+<span class="nc" id="L2087">        dummy.setEndMax(Constants.HORIZON);</span>
+<span class="nc" id="L2088">        dummy.setPresent();</span>
+<span class="nc" id="L2089">        return pulse(dummy, h);</span>
     }
 
     /**
@@ -2114,13 +2097,13 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction pulse(CPSolver cp, int from, int to, int h) {
-<span class="nc" id="L2117">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
-<span class="nc" id="L2118">        dummy.setStartMin(from);</span>
-<span class="nc" id="L2119">        dummy.setStartMax(from);</span>
-<span class="nc" id="L2120">        dummy.setEndMin(to);</span>
-<span class="nc" id="L2121">        dummy.setEndMax(to);</span>
-<span class="nc" id="L2122">        dummy.setPresent();</span>
-<span class="nc" id="L2123">        return pulse(dummy, h);</span>
+<span class="nc" id="L2100">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
+<span class="nc" id="L2101">        dummy.setStartMin(from);</span>
+<span class="nc" id="L2102">        dummy.setStartMax(from);</span>
+<span class="nc" id="L2103">        dummy.setEndMin(to);</span>
+<span class="nc" id="L2104">        dummy.setEndMax(to);</span>
+<span class="nc" id="L2105">        dummy.setPresent();</span>
+<span class="nc" id="L2106">        return pulse(dummy, h);</span>
     }
 
     /**
@@ -2131,7 +2114,7 @@ public final class CPFactory {
      * @return a cumulative function that is the sum of fun1 and fun2
      */
     public static CPCumulFunction plus(CPCumulFunction fun1, CPCumulFunction fun2) {
-<span class="fc" id="L2134">        return new CPPlusCumulFunction(fun1, fun2);</span>
+<span class="fc" id="L2117">        return new CPPlusCumulFunction(fun1, fun2);</span>
     }
 
     /**
@@ -2142,7 +2125,7 @@ public final class CPFactory {
      * @return a cumulative function that is the difference of fun1 and fun2
      */
     public static CPCumulFunction minus(CPCumulFunction fun1, CPCumulFunction fun2) {
-<span class="fc" id="L2145">        return new CPMinusCumulFunction(fun1, fun2);</span>
+<span class="fc" id="L2128">        return new CPMinusCumulFunction(fun1, fun2);</span>
     }
 
     /**
@@ -2152,7 +2135,7 @@ public final class CPFactory {
      * @return a cumulative function that is the sum of the cumulative Functions in fun
      */
     public static CPCumulFunction sum(CPCumulFunction... fun) {
-<span class="nc" id="L2155">        return new CPSumCumulFunction(fun);</span>
+<span class="nc" id="L2138">        return new CPSumCumulFunction(fun);</span>
     }
 
     // *********************************
@@ -2170,44 +2153,44 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2173">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2156">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2175" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
-<span class="nc" id="L2176">            throw new InconsistencyException();</span>
+<span class="pc bpc" id="L2158" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
+<span class="nc" id="L2159">            throw new InconsistencyException();</span>
         }
-<span class="pc bpc" id="L2178" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2179">            return new DoNothingConstraint();</span>
+<span class="pc bpc" id="L2161" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
+<span class="nc" id="L2162">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2182">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2165">        CPSolver cp = activities.get(0).interval().getSolver();</span>
 
-<span class="fc" id="L2184">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2167">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="fc" id="L2187">                int minStart = Constants.HORIZON;</span>
-<span class="fc" id="L2188">                int maxEnd = 0;</span>
-<span class="fc bfc" id="L2189" title="All 2 branches covered.">                for (Activity act : activities) {</span>
-<span class="fc bfc" id="L2190" title="All 2 branches covered.">                    if (act.getStartMin() &lt; minStart) minStart = act.getStartMin();</span>
-<span class="fc bfc" id="L2191" title="All 2 branches covered.">                    if (act.getEndMax() &gt; maxEnd) maxEnd = act.getEndMax();</span>
-<span class="fc" id="L2192">                }</span>
-<span class="fc" id="L2193">                CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);</span>
-<span class="fc" id="L2194">                interval.setStart(minStart);</span>
-<span class="fc" id="L2195">                interval.setEnd(maxEnd);</span>
-<span class="fc" id="L2196">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
-<span class="fc" id="L2197">                activities.add(dummy);</span>
-<span class="pc bpc" id="L2198" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="fc" id="L2170">                int minStart = Constants.HORIZON;</span>
+<span class="fc" id="L2171">                int maxEnd = 0;</span>
+<span class="fc bfc" id="L2172" title="All 2 branches covered.">                for (Activity act : activities) {</span>
+<span class="fc bfc" id="L2173" title="All 2 branches covered.">                    if (act.getStartMin() &lt; minStart) minStart = act.getStartMin();</span>
+<span class="fc bfc" id="L2174" title="All 2 branches covered.">                    if (act.getEndMax() &gt; maxEnd) maxEnd = act.getEndMax();</span>
+<span class="fc" id="L2175">                }</span>
+<span class="fc" id="L2176">                CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);</span>
+<span class="fc" id="L2177">                interval.setStart(minStart);</span>
+<span class="fc" id="L2178">                interval.setEnd(maxEnd);</span>
+<span class="fc" id="L2179">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
+<span class="fc" id="L2180">                activities.add(dummy);</span>
+<span class="pc bpc" id="L2181" title="3 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2200">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
-<span class="nc" id="L2201">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2202">                    }</span>
+<span class="nc" id="L2183">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
+<span class="nc" id="L2184">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="nc" id="L2185">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2204">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
-<span class="fc" id="L2205">                    }</span>
+<span class="fc" id="L2187">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2188">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2207">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="nc" id="L2190">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
                     }
                 }
-<span class="fc" id="L2210">            }</span>
+<span class="fc" id="L2193">            }</span>
         };
     }
 
@@ -2221,7 +2204,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue) {
-<span class="fc" id="L2224">        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2207">        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 
     /**
@@ -2236,39 +2219,39 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2239">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2222">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2241" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
-<span class="nc" id="L2242">            throw new InconsistencyException();</span>
+<span class="pc bpc" id="L2224" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
+<span class="nc" id="L2225">            throw new InconsistencyException();</span>
         }
-<span class="pc bpc" id="L2244" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2245">            return new DoNothingConstraint();</span>
+<span class="pc bpc" id="L2227" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
+<span class="nc" id="L2228">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2248">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2231">        CPSolver cp = activities.get(0).interval().getSolver();</span>
 
-<span class="fc" id="L2250">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2233">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="fc" id="L2253">                CPIntervalVar interval = makeIntervalVar(cp, false, to - from);</span>
-<span class="fc" id="L2254">                interval.setStart(from);</span>
-<span class="fc" id="L2255">                interval.setEnd(to);</span>
-<span class="fc" id="L2256">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
-<span class="fc" id="L2257">                activities.add(dummy);</span>
+<span class="fc" id="L2236">                CPIntervalVar interval = makeIntervalVar(cp, false, to - from);</span>
+<span class="fc" id="L2237">                interval.setStart(from);</span>
+<span class="fc" id="L2238">                interval.setEnd(to);</span>
+<span class="fc" id="L2239">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
+<span class="fc" id="L2240">                activities.add(dummy);</span>
 
-<span class="pc bpc" id="L2259" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="pc bpc" id="L2242" title="3 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2261">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
-<span class="nc" id="L2262">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2263">                    }</span>
+<span class="nc" id="L2244">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
+<span class="nc" id="L2245">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="nc" id="L2246">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2265">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
-<span class="fc" id="L2266">                    }</span>
+<span class="fc" id="L2248">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2249">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2268">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="nc" id="L2251">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
                     }
                 }
-<span class="fc" id="L2271">            }</span>
+<span class="fc" id="L2254">            }</span>
         };
     }
 
@@ -2284,7 +2267,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
-<span class="fc" id="L2287">        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2270">        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 
         /**
@@ -2297,28 +2280,28 @@ public final class CPFactory {
          * @return a constraint which ensures that fun is always lesser or equal to maxVal
          */
     public static CPConstraint le(CPCumulFunction fun, int maxValue, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2300">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2283">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2302" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2303">            return new DoNothingConstraint();</span>
+<span class="pc bpc" id="L2285" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
+<span class="nc" id="L2286">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2306">        CPSolver cp = activities.get(0).interval().getSolver();</span>
-<span class="fc" id="L2307">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2289">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2290">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="pc bpc" id="L2310" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="pc bpc" id="L2293" title="3 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2312">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2313">                    }</span>
+<span class="nc" id="L2295">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="nc" id="L2296">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2315">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="fc" id="L2316">                    }</span>
+<span class="fc" id="L2298">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2299">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2318">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="nc" id="L2301">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), maxValue));</span>
                     }
                 }
-<span class="fc" id="L2321">            }</span>
+<span class="fc" id="L2304">            }</span>
         };
     }
 
@@ -2331,7 +2314,7 @@ public final class CPFactory {
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
     public static CPConstraint le(CPCumulFunction fun, int maxValue) {
-<span class="fc" id="L2334">        return le(fun, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2317">        return le(fun, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

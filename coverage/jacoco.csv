@@ -19,7 +19,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulat
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IntervalVarEnd,5,50,1,1,1,14,1,3,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,ThetaLambdaTree.Node,0,30,0,0,0,12,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlap,3,71,0,4,1,12,1,4,1,2
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapLeftToRight,70,889,14,64,9,133,11,45,1,16
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapLeftToRight,62,897,12,66,8,134,10,46,1,16
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,Profile,174,0,12,0,29,0,12,0,6,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IsStartBefore,114,0,12,0,27,0,9,0,3,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IntervalVarStart,0,47,0,0,0,13,0,3,0,3
@@ -107,7 +107,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,109,405,4,44,13,67,7,25,3,5
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -151,11 +151,10 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Exclude,13,20,0,0,8,7,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Precedence,2,430,2,60,1,75,2,36,0,7
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Require,13,20,0,0,8,7,7,2,7,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,SubSequence,0,297,1,29,0,57,1,19,0,5
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Duration.LeftToRightFiltering,2,510,3,41,0,75,3,27,0,8
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Insert,0,22,0,0,0,7,0,2,0,2
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,NoOverlapSequence,7,725,2,40,1,121,2,29,0,10
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Distance,70,232,2,18,5,44,2,13,0,5
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,TransitionTimes.NodeTimeWindow,13,82,7,9,2,15,6,6,0,4
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Duration,10,646,5,33,2,114,5,23,0,9
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,NotBetween,13,30,0,0,8,9,7,2,7,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,TransitionTimes,102,612,9,43,6,107,9,30,0,13
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.seqvar,Cumulative,27,863,12,90,7,145,12,54,0,15
@@ -191,7 +190,7 @@ org.maxicp:maxicp,org.maxicp.modeling,Factory,378,315,3,1,51,46,52,45,50,45
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,11,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.cp,CPFactory,755,1145,22,38,147,201,79,107,63,93
+org.maxicp:maxicp,org.maxicp.cp,CPFactory,661,1152,22,38,129,202,78,108,62,94
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp,CPFactory.new AbstractCPConstraint() {...},0,16,0,0,0,3,0,2,0,2
@@ -341,7 +340,7 @@ org.maxicp:maxicp,org.maxicp.search,SaveStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StealMessage,12,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,483,3,23,10,119,8,46,5,36
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod,138,0,10,0,35,0,11,0,6,0
-org.maxicp:maxicp,org.maxicp.search,SequenceRank,157,0,12,0,29,0,9,0,3,0
+org.maxicp:maxicp,org.maxicp.search,SequenceRank,149,0,12,0,28,0,9,0,3,0
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
 org.maxicp:maxicp,org.maxicp.search,DFSearch,16,247,0,8,5,73,1,21,1,17
 org.maxicp:maxicp,org.maxicp.search,DFSTreeRecorder,88,0,0,0,22,0,10,0,10,0
@@ -364,7 +363,7 @@ org.maxicp:maxicp,org.maxicp.search,DFSLinearizer,0,57,0,0,0,12,0,7,0,7
 org.maxicp:maxicp,org.maxicp.search,SearchStatistics,81,62,14,0,6,21,10,11,3,11
 org.maxicp:maxicp,org.maxicp.search,StopSearchException,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,BranchingAction,0,10,0,0,0,3,0,2,0,2
-org.maxicp:maxicp,org.maxicp.search,SequenceRank.Ranker,326,0,20,0,50,0,22,0,12,0
+org.maxicp:maxicp,org.maxicp.search,SequenceRank.Ranker,193,0,10,0,36,0,15,0,10,0
 org.maxicp:maxicp,org.maxicp.search,FDS,61,626,15,53,7,116,15,35,0,16
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch.PQEntry,15,0,0,0,2,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SymbolicSearchMethod,5,0,0,0,2,0,1,0,1,0
@@ -423,7 +422,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Sorted,14,274,2,16,0,39,2,12,
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Absolute,58,158,10,12,8,30,7,7,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,DivVar,0,277,1,33,0,70,1,25,0,9
 org.maxicp:maxicp,org.maxicp.cp.engine.core,AbstractCPConstraint,1,70,0,2,1,22,1,11,1,10
-org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl,54,1239,25,143,8,238,26,116,1,49
+org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl,52,1241,23,145,8,238,24,118,1,49
 org.maxicp:maxicp,org.maxicp.cp.engine.core,DeltaCPIntVarImpl,14,115,0,6,3,18,2,13,2,10
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntervalVarImpl.new CPBoolVar() {...},115,122,16,18,34,31,20,20,10,13
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPConstraintClosure,0,12,0,0,0,6,0,3,0,3

@@ -179,7 +179,7 @@ public class NoOverlapLeftToRight {
 <span class="fc" id="L179">                thetaTree.insert(rankEst[j], startMin[j], duration[j]);</span>
 <span class="fc" id="L180">                idxj++;</span>
             }
-<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (inserted[acti]) {</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (inserted[acti]) {</span>
 <span class="fc" id="L183">                thetaTree.remove(rankEst[acti]);</span>
 <span class="fc bfc" id="L184" title="All 2 branches covered.">                if (thetaTree.getEct() &gt; startMax[acti]) {</span>
 <span class="pc bpc" id="L185" title="1 of 2 branches missed.">                    if (startMax[j] &lt; endMax[acti]) {</span>
@@ -190,7 +190,7 @@ public class NoOverlapLeftToRight {
                 }
 <span class="fc" id="L191">                thetaTree.insert(rankEst[acti], startMin[acti], duration[acti]);</span>
             } else {
-<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (thetaTree.getEct() &gt; startMax[acti]) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">                if (thetaTree.getEct() &gt; startMax[acti]) {</span>
 <span class="nc bnc" id="L194" title="All 2 branches missed.">                    if (startMax[j] &lt; endMax[acti]) {</span>
 <span class="nc" id="L195">                        endMax[acti] = startMax[j];</span>
 <span class="nc" id="L196">                        changed = true;</span>

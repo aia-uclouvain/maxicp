@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NoOverlapSequence.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints.seqvar</a> &gt; <span class="el_source">NoOverlapSequence.java</span></div><h1>NoOverlapSequence.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints.seqvar;
+
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.constraints.Equal;
+import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
+import org.maxicp.cp.engine.constraints.scheduling.NoOverlapLeftToRight;
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.Arrays;
+
+import static org.maxicp.cp.CPFactory.noOverlap;
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
+
+/**
+ * Channels a {@link CPSeqVar} with an array of {@link CPIntervalVar} and enforces
+ * a no-overlap with minimum transition times between consecutive intervals.
+ *
+ * &lt;p&gt;The sequence variable has {@code n+2} nodes: nodes {@code 0..n-1} correspond to
+ * the {@code n} intervals, node {@code n} is the dummy start, and node {@code n+1}
+ * is the dummy end. The dummy start and end are mandatory members of the sequence.
+ * The dummy intervals (length 0, start fixed at 0 / latest end) are created internally
+ * and are not exposed to the user.
+ *
+ * &lt;p&gt;The transition time matrix is {@code n×n} (user-provided). Internally it is extended
+ * to {@code (n+2)×(n+2)} with zero transitions to/from the dummy nodes.
+ *
+ * &lt;p&gt;The constraint combines two filtering approaches:
+ * &lt;ul&gt;
+ *   &lt;li&gt;&lt;b&gt;Sequence-based filtering:&lt;/b&gt; forward/backward time window propagation along
+ *       the member chain, insertion filtering for insertable nodes, and position-based
+ *       reasoning from the sequence structure.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Scheduling-based filtering:&lt;/b&gt; the same overload checking, detectable
+ *       precedences, not-last, and edge-finding algorithms as {@link org.maxicp.cp.engine.constraints.scheduling.NoOverlap},
+ *       via {@link NoOverlapLeftToRight}. This ensures the same filtering strength as
+ *       the standard no-overlap constraint.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @see org.maxicp.cp.engine.constraints.seqvar.TransitionTimes
+ * @see org.maxicp.cp.engine.constraints.scheduling.NoOverlap
+ */
+public class NoOverlapSequence extends AbstractCPConstraint {
+
+    private final int n;          // number of real intervals (excluding dummies)
+    private final int nTotal;     // total number of nodes = n + 2
+    private final CPSeqVar seqVar;
+    private final CPSeqVar flip;
+    private final CPIntervalVar[] intervals; // includes dummies at indices n and n+1
+    private final int[][] trans;             // (n+2)×(n+2) extended matrix
+
+    // NoOverlapLeftToRight filter (same as NoOverlapGlobal)
+    private final NoOverlapLeftToRight globalFilter;
+
+    // Working arrays for sequence-based filtering
+    private int nMember;
+    private final int[] orderingForward;
+    private final int[] insertable;
+    private final int[] inserts;
+
+    // Working arrays for scheduling-based filtering (NoOverlapLeftToRight)
+    private final int[] actNodes;     // node ids of non-excluded activities
+    private final int[] startMinArr;
+    private final int[] endMaxArr;
+    private final int[] durationArr;
+    private final boolean[] isOptionalArr;
+
+    /**
+     * Creates a NoOverlapSequence constraint.
+     *
+     * @param seqVar    sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals the {@code n} interval variables to be sequenced (all must be present)
+     * @param trans     {@code n×n} transition time matrix where {@code trans[i][j]} is the
+     *                  minimum transition time from interval i to interval j
+     */
+    public NoOverlapSequence(CPSeqVar seqVar, CPIntervalVar[] intervals, int[][] trans) {
+<span class="fc" id="L84">        super(seqVar.getSolver());</span>
+<span class="fc" id="L85">        this.seqVar = seqVar;</span>
+<span class="fc" id="L86">        this.flip = CPFactory.flip(seqVar);</span>
+<span class="fc" id="L87">        this.n = intervals.length;</span>
+<span class="fc" id="L88">        this.nTotal = n + 2;</span>
+
+        // Create dummy intervals internally
+<span class="fc" id="L91">        int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();</span>
+<span class="fc" id="L92">        CPIntervalVar dummyStart = CPFactory.makeIntervalVar(seqVar.getSolver(), false, 0);</span>
+<span class="fc" id="L93">        dummyStart.setStart(0);</span>
+<span class="fc" id="L94">        CPIntervalVar dummyEnd = CPFactory.makeIntervalVar(seqVar.getSolver(), false, 0);</span>
+<span class="fc" id="L95">        dummyEnd.setStart(lct);</span>
+
+<span class="fc" id="L97">        this.intervals = new CPIntervalVar[nTotal];</span>
+<span class="fc" id="L98">        System.arraycopy(intervals, 0, this.intervals, 0, n);</span>
+<span class="fc" id="L99">        this.intervals[n] = dummyStart;</span>
+<span class="fc" id="L100">        this.intervals[n + 1] = dummyEnd;</span>
+
+        // Extend transition matrix to (n+2)×(n+2) with zeros for dummy nodes
+<span class="fc" id="L103">        this.trans = new int[nTotal][nTotal];</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            for (int j = 0; j &lt; n; j++) {</span>
+<span class="fc" id="L106">                this.trans[i][j] = trans[i][j];</span>
+            }
+        }
+
+<span class="fc" id="L110">        this.globalFilter = new NoOverlapLeftToRight(nTotal);</span>
+<span class="fc" id="L111">        this.orderingForward = new int[nTotal];</span>
+<span class="fc" id="L112">        this.insertable = new int[nTotal];</span>
+<span class="fc" id="L113">        this.inserts = new int[nTotal];</span>
+<span class="fc" id="L114">        this.actNodes = new int[nTotal];</span>
+<span class="fc" id="L115">        this.startMinArr = new int[nTotal];</span>
+<span class="fc" id="L116">        this.endMaxArr = new int[nTotal];</span>
+<span class="fc" id="L117">        this.durationArr = new int[nTotal];</span>
+<span class="fc" id="L118">        this.isOptionalArr = new boolean[nTotal];</span>
+<span class="fc" id="L119">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc" id="L123">        getSolver().post(new NoOverlap(intervals));</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int node = 0; node &lt; nTotal; node++) {</span>
+<span class="fc" id="L125">            CPIntervalVar interval = intervals[node];</span>
+<span class="fc" id="L126">            getSolver().post(new Equal(interval.status(), seqVar.isNodeRequired(node)), false);</span>
+<span class="fc" id="L127">            interval.propagateOnChange(this);</span>
+        }
+<span class="fc" id="L129">        seqVar.propagateOnInsert(this);</span>
+<span class="fc" id="L130">        seqVar.propagateOnInsertRemoved(this);</span>
+<span class="fc" id="L131">        propagate();</span>
+<span class="fc" id="L132">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="fc" id="L136">        boolean changed = true;</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        while (changed) {</span>
+            // --- Sequence-based filtering ---
+<span class="fc" id="L139">            nMember = seqVar.fillNode(orderingForward, MEMBER_ORDERED);</span>
+<span class="fc" id="L140">            updateTWForward();</span>
+<span class="fc" id="L141">            updateTWBackward();</span>
+<span class="fc" id="L142">            filterInsertsAndPossiblyTW();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            changed = seqVar.nNode(MEMBER) != nMember;</span>
+
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            if (!changed) {</span>
+                // --- Scheduling-based filtering (NoOverlapLeftToRight) ---
+                // Forward pass: filter startMin
+<span class="fc" id="L148">                int nAct = collectActivities();</span>
+<span class="fc" id="L149">                globalFilter.filter(startMinArr, durationArr, endMaxArr, nAct);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                for (int i = 0; i &lt; nAct; i++) {</span>
+<span class="fc" id="L151">                    int node = actNodes[i];</span>
+<span class="fc" id="L152">                    intervals[node].setStartMin(globalFilter.startMin[i]);</span>
+<span class="fc" id="L153">                    intervals[node].setEndMax(globalFilter.endMax[i]);</span>
+                }
+
+                // Backward pass: mirror and filter endMax
+<span class="fc" id="L157">                nAct = collectActivities();</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                for (int i = 0; i &lt; nAct; i++) {</span>
+<span class="fc" id="L159">                    int startMinOld = startMinArr[i];</span>
+<span class="fc" id="L160">                    startMinArr[i] = -endMaxArr[i];</span>
+<span class="fc" id="L161">                    endMaxArr[i] = -startMinOld;</span>
+                }
+<span class="fc" id="L163">                globalFilter.filter(startMinArr, durationArr, endMaxArr, nAct);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">                for (int i = 0; i &lt; nAct; i++) {</span>
+<span class="fc" id="L165">                    int node = actNodes[i];</span>
+<span class="fc" id="L166">                    intervals[node].setEndMax(-globalFilter.startMin[i]);</span>
+<span class="fc" id="L167">                    intervals[node].setStartMin(-globalFilter.endMax[i]);</span>
+                }
+
+                // Check if anything changed by comparing with intervals
+<span class="fc" id="L171">                changed = checkChanged();</span>
+<span class="fc" id="L172">            }</span>
+        }
+<span class="fc" id="L174">    }</span>
+
+    /**
+     * Collect all non-excluded nodes into working arrays for NoOverlapLeftToRight.
+     * @return number of activities
+     */
+    private int collectActivities() {
+<span class="fc" id="L181">        int nAct = seqVar.fillNode(actNodes, NOT_EXCLUDED);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">        for (int i = 0; i &lt; nAct; i++) {</span>
+<span class="fc" id="L183">            int node = actNodes[i];</span>
+<span class="fc" id="L184">            startMinArr[i] = intervals[node].startMin();</span>
+<span class="fc" id="L185">            endMaxArr[i] = intervals[node].endMax();</span>
+<span class="fc" id="L186">            durationArr[i] = intervals[node].lengthMin();</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            isOptionalArr[i] = !intervals[node].isPresent();</span>
+        }
+        // Set endMax of optional activities to infinity (as in NoOverlapGlobal)
+<span class="fc bfc" id="L190" title="All 2 branches covered.">        for (int i = 0; i &lt; nAct; i++) {</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">            if (isOptionalArr[i]) {</span>
+<span class="nc" id="L192">                endMaxArr[i] = 1000000;</span>
+            }
+        }
+<span class="fc" id="L195">        return nAct;</span>
+    }
+
+    /**
+     * Check if any interval bounds were changed by the global filter.
+     */
+    private boolean checkChanged() {
+<span class="fc" id="L202">        int nAct = seqVar.fillNode(actNodes, NOT_EXCLUDED);</span>
+        // Re-run collect to check if bounds match what we set
+        // If the global filter changed bounds, the intervals already have new values
+        // We need to detect if the fixpoint loop should continue
+        // Simple approach: just return false and let the outer loop in propagate handle it
+        // via the next iteration. But we need to detect changes to avoid infinite loops.
+        // Actually, the propagate() is called on every change event, so returning false
+        // is fine — the solver will re-schedule us if another constraint changes something.
+<span class="fc" id="L210">        return false;</span>
+    }
+
+    /**
+     * Forward propagation: for each member interval, set start-min based on
+     * the end-min of its predecessor plus the transition time.
+     */
+    private void updateTWForward() {
+<span class="fc" id="L218">        int pred = orderingForward[0];</span>
+<span class="fc" id="L219">        int endMinPred = intervals[pred].endMin();</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        for (int i = 1; i &lt; nMember; i++) {</span>
+<span class="fc" id="L221">            int current = orderingForward[i];</span>
+<span class="fc" id="L222">            intervals[current].setStartMin(endMinPred + trans[pred][current]);</span>
+<span class="fc" id="L223">            endMinPred = intervals[current].endMin();</span>
+<span class="fc" id="L224">            pred = current;</span>
+        }
+<span class="fc" id="L226">    }</span>
+
+    /**
+     * Backward propagation: for each member interval, set end-max based on
+     * the start-max of its successor minus the transition time.
+     */
+    private void updateTWBackward() {
+<span class="fc" id="L233">        int succ = orderingForward[nMember - 1];</span>
+<span class="fc" id="L234">        int startMaxSucc = intervals[succ].startMax();</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        for (int i = nMember - 2; i &gt;= 0; i--) {</span>
+<span class="fc" id="L236">            int current = orderingForward[i];</span>
+<span class="fc" id="L237">            intervals[current].setEndMax(startMaxSucc - trans[current][succ]);</span>
+<span class="fc" id="L238">            startMaxSucc = intervals[current].startMax();</span>
+<span class="fc" id="L239">            succ = current;</span>
+        }
+<span class="fc" id="L241">    }</span>
+
+    /**
+     * Filter insertions for all insertable nodes and update their time windows.
+     */
+    private void filterInsertsAndPossiblyTW() {
+<span class="fc" id="L247">        int nInsertable = seqVar.fillNode(insertable, INSERTABLE);</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        for (int i = 0; i &lt; nInsertable; i++) {</span>
+<span class="fc" id="L249">            filterInsertsAndPossiblyTW(insertable[i]);</span>
+        }
+<span class="fc" id="L251">    }</span>
+
+    /**
+     * Filter insertions for a single insertable node and update its time window.
+     */
+    private void filterInsertsAndPossiblyTW(int node) {
+<span class="fc" id="L257">        int nPred = seqVar.fillInsert(node, inserts);</span>
+<span class="fc" id="L258">        int newStartMin = Integer.MAX_VALUE;</span>
+<span class="fc" id="L259">        int newEndMax = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        for (int i = 0; i &lt; nPred; i++) {</span>
+<span class="fc" id="L261">            int pred = inserts[i];</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (!filterInsert(pred, node)) {</span>
+<span class="fc" id="L263">                int est = intervals[pred].endMin() + trans[pred][node];</span>
+<span class="fc" id="L264">                newStartMin = Math.min(newStartMin, est);</span>
+<span class="fc" id="L265">                int succ = seqVar.memberAfter(pred);</span>
+<span class="fc" id="L266">                int lct = intervals[succ].startMax() - trans[node][succ];</span>
+<span class="fc" id="L267">                newEndMax = Math.max(newEndMax, lct);</span>
+            }
+        }
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        if (!seqVar.isNode(node, MEMBER)) {</span>
+<span class="fc" id="L271">            intervals[node].setStartMin(newStartMin);</span>
+<span class="fc" id="L272">            intervals[node].setEndMax(newEndMax);</span>
+        }
+<span class="fc" id="L274">    }</span>
+
+    /**
+     * Filter an insertion edge if it would violate time windows or transition times.
+     */
+    private boolean filterInsert(int pred, int node) {
+<span class="fc" id="L280">        int succ = seqVar.memberAfter(pred);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (intervals[pred].endMin() + trans[pred][node] &gt; intervals[node].startMax()) {</span>
+<span class="fc" id="L282">            seqVar.notBetween(pred, node, succ);</span>
+<span class="fc" id="L283">            return true;</span>
+        }
+<span class="fc" id="L285">        int nodeEst = Math.max(intervals[pred].endMin() + trans[pred][node], intervals[node].startMin());</span>
+<span class="fc" id="L286">        int nodeEct = nodeEst + intervals[node].lengthMin();</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">        if (nodeEct + trans[node][succ] &gt; intervals[succ].startMax()) {</span>
+<span class="fc" id="L288">            seqVar.notBetween(pred, node, succ);</span>
+<span class="fc" id="L289">            return true;</span>
+        }
+<span class="fc" id="L291">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
