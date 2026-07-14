@@ -1,4 +1,4 @@
-package org.maxicp.cp.examples.modeling.tsptw;
+package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.Factory;

@@ -216,7 +216,7 @@ class NoOverlapSequenceTest extends CPSolverTest {
         for (int i = 0; i < n; i++) {
             seq.require(i);
         }
-        noOverlap(seq, intervals, trans);
+        cp.post(noOverlap(seq, intervals, trans));
 
         DFSearch dfs = makeDfs(cp, () -> {
             int[] nodes = new int[seq.nNode()];
