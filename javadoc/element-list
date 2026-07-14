@@ -9,9 +9,9 @@ org.maxicp.cp.engine.core
 org.maxicp.cp.examples.modeling
 org.maxicp.cp.examples.modeling.nqueens
 org.maxicp.cp.examples.modeling.tsp
+org.maxicp.cp.examples.modeling.tsptw
 org.maxicp.cp.examples.raw
 org.maxicp.cp.examples.raw.darp
-org.maxicp.cp.examples.raw.jobshop
 org.maxicp.cp.examples.raw.magicsquare
 org.maxicp.cp.examples.raw.nqueens
 org.maxicp.cp.examples.raw.tsp
