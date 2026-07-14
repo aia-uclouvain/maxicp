@@ -42,8 +42,6 @@ custom constraints or search heuristics.
      - Nurse Scheduling.
    * - `PerfectSquare <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/PerfectSquare.java>`__
      - Perfect Square.
-   * - `Pigeonhole <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/Pigeonhole.java>`__
-     - Pigeonhole Problem.
    * - `ProducerConsumer <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/ProducerConsumer.java>`__
      - Producer-consumer scheduling with ``alwaysIn``.
    * - `QAP <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/QAP.java>`__
