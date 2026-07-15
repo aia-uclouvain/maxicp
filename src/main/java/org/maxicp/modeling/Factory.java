@@ -170,7 +170,7 @@ public final class Factory {
     }
 
     static public BoolExpression lt(int a, IntExpression b) {
-        return new LessOrEq(a, Factory.minus(b, 1));
+        return new LessOrEq(a+1, b);
     }
 
     static public BoolExpression lt(IntExpression a, int b) {
@@ -198,7 +198,7 @@ public final class Factory {
     }
 
     static public BoolExpression gt(int a, IntExpression b) {
-        return new GreaterOrEq(a, Factory.plus(b, 1));
+        return new GreaterOrEq(a-1, b);
     }
 
     static public BoolExpression gt(IntExpression a, IntExpression b) {

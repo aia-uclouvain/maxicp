@@ -79,13 +79,6 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     /**
-     * Post to enforce that the variable is true
-     */
-    private void post(CPBoolVar b) {
-        solver.post(b);
-    }
-
-    /**
      * Calls the fixpoint if if is not disabled
      */
     private void fixpoint() {
@@ -558,6 +551,22 @@ public class ConcreteCPModel implements ConcreteModel {
 
     private void instantiateBoolExpression(BoolExpression expr) {
         switch (expr) {
+            // Expressions with constants
+            case Eq(Constant a, IntExpression b) -> post(new org.maxicp.cp.engine.constraints.EqualCst(getCPVar(b), a.v()));
+            case Eq(IntExpression a, Constant b) -> post(new org.maxicp.cp.engine.constraints.EqualCst(getCPVar(a), b.v()));
+            case NotEq(Constant a, IntExpression b) -> post(new org.maxicp.cp.engine.constraints.NotEqualCst(getCPVar(b), a.v()));
+            case NotEq(IntExpression a, Constant b) -> post(new org.maxicp.cp.engine.constraints.NotEqualCst(getCPVar(a), b.v()));
+            case LessOrEq(Constant a, IntExpression x) -> {
+                // a <= x <=> x >= a
+                post(new org.maxicp.cp.engine.constraints.GreaterOrEqualCst(getCPVar(x), a.v()));
+            }
+            case LessOrEq(IntExpression a, Constant b) -> post(new org.maxicp.cp.engine.constraints.LessOrEqualCst(getCPVar(a), b.v()));
+            case GreaterOrEq(Constant a, IntExpression x) -> {
+                // a >= x <=> x <= a
+                post(new org.maxicp.cp.engine.constraints.LessOrEqualCst(getCPVar(x), a.v()));
+            }
+            case GreaterOrEq(IntExpression x, Constant a) -> post(new org.maxicp.cp.engine.constraints.GreaterOrEqualCst(getCPVar(x), a.v()));
+            // More complex expressions
             case Eq e -> {
                 if (firstConstruction)
                     throw new RuntimeException("It should be impossible to post new Equal constraints while building");
@@ -570,7 +579,7 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case Not e -> {
                 CPBoolVar b = getCPVar(e.a());
-                post(CPFactory.not(b));
+                post(CPFactory.eq(b, 0));
             }
             case NotEq e -> post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));
             case LessOrEq e -> post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));

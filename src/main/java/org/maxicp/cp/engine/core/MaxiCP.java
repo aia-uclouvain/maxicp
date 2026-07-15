@@ -17,19 +17,22 @@ import org.maxicp.util.PQueue;
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.*;
-
+import java.util.function.Consumer;
 
 public class MaxiCP implements CPSolver {
 
-    private final PQueue<CPConstraint> propagationQueue = new PQueue<>(Constants.PIORITY_SLOW+1);
+    private final PQueue<CPConstraint> propagationQueue = new PQueue<>(Constants.PIORITY_SLOW + 1);
     private final List<Runnable> fixPointListeners = new LinkedList<>();
+    private final List<Consumer<CPConstraint>> beforeConstraintPostedListeners = new LinkedList<>();
+    private final List<Consumer<CPConstraint>> afterConstraintPostedListeners = new LinkedList<>();
 
     private final StateManager sm;
     private final ModelProxy modelProxy;
+    private boolean fixPointRunning = false;
 
     public MaxiCP(StateManager sm) {
         this.sm = sm;
-        //use a very simple ModelProxy to allow usage of Expression-based searches
+        // use a very simple ModelProxy to allow usage of Expression-based searches
         this.modelProxy = new BasicModelProxy();
         this.modelProxy.setModel(new ConcreteCPModel(this.modelProxy, this, SymbolicModel.emptyModel(this.modelProxy)));
     }
@@ -56,12 +59,23 @@ public class MaxiCP implements CPSolver {
         fixPointListeners.add(listener);
     }
 
+    @Override
+    public void onBeforeConstraintPosted(Consumer<CPConstraint> listener) {
+        beforeConstraintPostedListeners.add(listener);
+    }
+
+    @Override
+    public void onAfterConstraintPosted(Consumer<CPConstraint> listener) {
+        afterConstraintPostedListeners.add(listener);
+    }
+
     private void notifyFixPoint() {
         fixPointListeners.forEach(Runnable::run);
     }
 
     @Override
     public void fixPoint() {
+        fixPointRunning = true;
         try {
             notifyFixPoint();
             while (!propagationQueue.isEmpty()) {
@@ -72,7 +86,14 @@ public class MaxiCP implements CPSolver {
             while (!propagationQueue.isEmpty())
                 propagationQueue.poll().setScheduled(false);
             throw e;
+        } finally {
+            fixPointRunning = false;
         }
+    }
+
+    @Override
+    public boolean isFixPointRunning() {
+        return fixPointRunning;
     }
 
     private void propagate(CPConstraint c) {
@@ -100,14 +121,11 @@ public class MaxiCP implements CPSolver {
 
     @Override
     public void post(CPConstraint c, boolean enforceFixPoint) {
+        beforeConstraintPostedListeners.forEach(l -> l.accept(c));
         c.post();
-        if (enforceFixPoint) fixPoint();
-    }
-
-    @Override
-    public void post(CPBoolVar b) {
-        b.fix(true);
-        fixPoint();
+        afterConstraintPostedListeners.forEach(l -> l.accept(c));
+        if (enforceFixPoint)
+            fixPoint();
     }
 
     @Override

@@ -15,11 +15,11 @@ import java.util.Objects;
  */
 public class SearchStatistics {
 
-    private int nFailures = 0;
-    private int nNodes = 0;
-    private int nSolutions = 0;
-    private boolean completed = false;
-    private long timeInMillis = 0;
+    protected int nFailures = 0;
+    protected int nNodes = 0;
+    protected int nSolutions = 0;
+    protected boolean completed = false;
+    protected long timeInMillis = 0;
 
     public String toString() {
         return "\n\t#choice: " + nNodes
