@@ -1,6 +1,7 @@
 package org.maxicp.cp.examples.modeling;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.examples.utils.FJSInstance;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
@@ -26,24 +27,13 @@ public class FlexibleJobShop {
      * In Proceedings 1999 IEEE International Conference on Robotics and Automation (Cat. No. 99CH36288C) (Vol. 2, pp. 1120-1125). Ieee.}
      */
     public static void main(String[] args) {
-        int nJobs = 2;
-        int nMachines = 3;
-        // for each job, id's of the corresponding tasks
-        int[][] jobs = new int[][] {
-                {0, 1, 2},
-                {3, 4, 5},
-        };
-        int nTasks = Arrays.stream(jobs).map(operation -> operation.length).reduce(0, Integer::sum);
-        // duration[task][machine] == processing time for a task on the given machine
-        // -1 means that the task cannot be processed on this machine
-        int[][] duration = new int[][] {
-                {1, 2, 1},
-                {-1, 1, 1},
-                {4, 3, -1},
-                {5, -1, 2},
-                {-1, 2, -1},
-                {7, 5, 3},
-        };
+        String instance = args.length > 0 ? args[0] : "data/FJOBSHOP/brandimarte/mk01.txt";
+        FJSInstance fjs = new FJSInstance(instance);
+        int nJobs = fjs.nJobs;
+        int nMachines = fjs.nMachines;
+        int[][] jobs = fjs.jobs;
+        int nTasks = fjs.nTasks;
+        int[][] duration = fjs.duration;
 
         ModelDispatcher model = makeModelDispatcher();
         List<IntervalVar>[] tasksOnMachine = new List[nMachines];
@@ -55,11 +45,11 @@ public class FlexibleJobShop {
         List<IntervalVar>[] alternativeTasks = new List[nTasks]; // possible alternative tasks for each task
         List<IntExpression> status = new ArrayList<>(); // presence of the optional tasks
         // create the tasks
-        for (int t = 0 ; t < nTasks ; t++) {
+        for (int t = 0; t < nTasks; t++) {
             alternativeTasks[t] = new ArrayList<>();
-            for (int m = 0 ; m < nMachines ; m++) {
+            for (int m = 0; m < nMachines; m++) {
                 if (duration[t][m] != -1) {
-                    IntervalVar possibleOperation = model.intervalVar(duration[t][m],false);
+                    IntervalVar possibleOperation = model.intervalVar(duration[t][m], false);
                     tasksOnMachine[m].add(possibleOperation);
                     alternativeTasks[t].add(possibleOperation);
                     status.add(possibleOperation.status());
@@ -71,14 +61,14 @@ public class FlexibleJobShop {
             model.add(alternative(tasks[t], alternativeTasks[t].toArray(IntervalVar[]::new)));
         }
         // no overlap on any machine
-        for (int m = 0 ; m < nMachines ; m++) {
+        for (int m = 0; m < nMachines; m++) {
             model.add(noOverlap(tasksOnMachine[m].toArray(IntervalVar[]::new)));
         }
 
         List<IntExpression> jobEndTimes = new ArrayList<>();
         // precedences within tasks in a job
-        for (int j = 0 ; j < nJobs ; j++) {
-            for (int t = 0 ; t < jobs[j].length - 1 ; t++) {
+        for (int j = 0; j < nJobs; j++) {
+            for (int t = 0; t < jobs[j].length - 1; t++) {
                 int taskA = jobs[j][t];
                 int taskB = jobs[j][t + 1];
                 model.add(endBeforeStart(tasks[taskA], tasks[taskB]));
@@ -91,18 +81,32 @@ public class FlexibleJobShop {
         IntExpression makespan = max(jobEndTimes.toArray(IntExpression[]::new));
         Objective minimizeMakespan = minimize(makespan);
 
+        /*
+         * model.runCP((cp) -> {
+         * // first step: assign the presence of the intervals to the machines
+         * Supplier<Runnable[]> assignToMachine =
+         * staticOrderBinary(status.toArray(IntExpression[]::new));
+         * // second step: once the present intervals are chosen, fix the time
+         * Supplier<Runnable[]> setTimes = setTimes(tasks);
+         * // third step: fix the makespan once the times are fixed
+         * Supplier<Runnable[]> fixMakespan = () -> {
+         * if (makespan.isFixed())
+         * return EMPTY;
+         * return branch(() -> model.add(eq(makespan,makespan.min())));
+         * };
+         * DFSearch search = cp.dfSearch(and(assignToMachine, setTimes, fixMakespan));
+         * // print each solution found
+         * search.onSolution(() -> {
+         * System.out.println("makespan: " + makespan);
+         * });
+         * SearchStatistics stats = search.optimize(minimizeMakespan); // actually solve
+         * the problem
+         * System.out.println("stats: \n" + stats);
+         * });
+         */
+
         model.runCP((cp) -> {
-            // first step: assign the presence of the intervals to the machines
-            Supplier<Runnable[]> assignToMachine = staticOrderBinary(status.toArray(IntExpression[]::new));
-            // second step: once the present intervals are chosen, fix the time
-            Supplier<Runnable[]> setTimes = setTimes(tasks);
-            // third step: fix the makespan once the times are fixed
-            Supplier<Runnable[]> fixMakespan = () -> {
-                if (makespan.isFixed())
-                    return EMPTY;
-                return branch(() -> model.add(eq(makespan,makespan.min())));
-            };
-            DFSearch search = cp.dfSearch(and(assignToMachine, setTimes, fixMakespan));
+            DFSearch search = cp.dfSearch(fds(tasks));
             // print each solution found
             search.onSolution(() -> {
                 System.out.println("makespan: " + makespan);
