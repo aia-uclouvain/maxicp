@@ -235,7 +235,7 @@ public class FDS implements Supplier&lt;Runnable[]&gt; {
      * (up to {@link #MAX_INITIAL_CHOICES_PER_VAR} choices), ensuring O(log(domainSize))
      * choices per variable. More choices are generated on demand when needed.
      */
-    private void addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
+    private void    addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
 <span class="pc bpc" id="L239" title="1 of 2 branches missed.">        if (lo &gt;= hi) return;</span>
 <span class="fc" id="L240">        int count = 0;</span>
 <span class="fc" id="L241">        Deque&lt;int[]&gt; queue = new ArrayDeque&lt;&gt;();</span>

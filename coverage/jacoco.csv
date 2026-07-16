@@ -49,8 +49,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IsStartBeforeEnd,1
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartBeforeStart,3,59,4,8,1,15,4,5,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,ThetaTree.Node,0,12,0,0,0,6,0,2,0,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,Activity,45,146,8,14,10,31,12,28,6,23
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPSumCumulFunction,121,35,16,2,18,5,11,3,3,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeSweepMin.EventList,195,0,0,0,28,0,8,0,8,0
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPSumCumulFunction,121,35,16,2,18,5,11,3,3,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,IntervalVarLength,0,47,0,0,0,13,0,3,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartAtStart,0,90,3,9,0,18,3,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,NoOverlapBCLeftToRight.State,0,9,0,0,0,1,0,1,0,1
@@ -107,7 +107,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,109,405,4,44,13,67,7,25,3,5
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -446,8 +446,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,CPNodeVarViewFlip,67,148,0,12,22,32,
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarConstant.new DeltaCPIntVar() {...},24,8,0,0,10,2,10,2,10,2
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarViewOffset,26,195,1,7,6,44,4,23,3,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node,19,435,0,24,5,61,4,50,4,32
-org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarViewFlip,66,268,0,16,24,57,14,36,14,28
+org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSetVarImpl,12,217,1,19,2,48,3,29,2,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,28,74,4,4,5,22,6,8,2,8
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MaxiCP,6,160,0,12,2,44,1,20,1,14
