@@ -11,21 +11,26 @@ import org.maxicp.search.SearchStatistics;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.maxicp.modeling.Factory.*;
 import static org.maxicp.search.Searches.*;
-import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.branch;
 
+/**
+ * The Flexible Job Shop Problem (FJSP) is an extension of the classical Job
+ * Shop Scheduling Problem.
+ * It consists of a set of jobs, each comprising a sequence of operations that
+ * must be executed in a given order.
+ * Unlike the classical job shop where each operation is assigned to a specific
+ * machine, in the FJSP, each operation
+ * can be processed on any machine from a given set of available machines, with
+ * potentially different processing times.
+ * The goal is to assign each operation to a machine and schedule their start
+ * times such that the maximum completion time (makespan) is minimized.
+ * 
+ * @author Pierre Schaus
+ */
 public class FlexibleJobShop {
 
-    /**
-     * Example taken from
-     * {@literal  Chen, H., Ihlow, J., & Lehmann, C. (1999, May).
-     * A genetic algorithm for flexible job-shop scheduling.
-     * In Proceedings 1999 IEEE International Conference on Robotics and Automation (Cat. No. 99CH36288C) (Vol. 2, pp. 1120-1125). Ieee.}
-     */
     public static void main(String[] args) {
         String instance = args.length > 0 ? args[0] : "data/FJOBSHOP/brandimarte/mk01.txt";
         FJSInstance fjs = new FJSInstance(instance);
@@ -68,12 +73,16 @@ public class FlexibleJobShop {
         List<IntExpression> jobEndTimes = new ArrayList<>();
         // precedences within tasks in a job
         for (int j = 0; j < nJobs; j++) {
-            for (int t = 0; t < jobs[j].length - 1; t++) {
-                int taskA = jobs[j][t];
-                int taskB = jobs[j][t + 1];
-                model.add(endBeforeStart(tasks[taskA], tasks[taskB]));
-                if (t == jobs[j].length - 2) {
-                    jobEndTimes.add(endOr(tasks[taskB], 0)); // end of the last task of the job
+            if (jobs[j].length == 1) {
+                jobEndTimes.add(endOr(tasks[jobs[j][0]], 0));
+            } else {
+                for (int t = 0; t < jobs[j].length - 1; t++) {
+                    int taskA = jobs[j][t];
+                    int taskB = jobs[j][t + 1];
+                    model.add(endBeforeStart(tasks[taskA], tasks[taskB]));
+                    if (t == jobs[j].length - 2) {
+                        jobEndTimes.add(endOr(tasks[taskB], 0)); // end of the last task of the job
+                    }
                 }
             }
         }
@@ -81,32 +90,13 @@ public class FlexibleJobShop {
         IntExpression makespan = max(jobEndTimes.toArray(IntExpression[]::new));
         Objective minimizeMakespan = minimize(makespan);
 
-        /*
-         * model.runCP((cp) -> {
-         * // first step: assign the presence of the intervals to the machines
-         * Supplier<Runnable[]> assignToMachine =
-         * staticOrderBinary(status.toArray(IntExpression[]::new));
-         * // second step: once the present intervals are chosen, fix the time
-         * Supplier<Runnable[]> setTimes = setTimes(tasks);
-         * // third step: fix the makespan once the times are fixed
-         * Supplier<Runnable[]> fixMakespan = () -> {
-         * if (makespan.isFixed())
-         * return EMPTY;
-         * return branch(() -> model.add(eq(makespan,makespan.min())));
-         * };
-         * DFSearch search = cp.dfSearch(and(assignToMachine, setTimes, fixMakespan));
-         * // print each solution found
-         * search.onSolution(() -> {
-         * System.out.println("makespan: " + makespan);
-         * });
-         * SearchStatistics stats = search.optimize(minimizeMakespan); // actually solve
-         * the problem
-         * System.out.println("stats: \n" + stats);
-         * });
-         */
-
         model.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(fds(tasks));
+            List<IntervalVar> allIntervals = new ArrayList<>();
+            allIntervals.addAll(Arrays.asList(tasks));
+            for (int m = 0; m < nMachines; m++) {
+                allIntervals.addAll(tasksOnMachine[m]);
+            }
+            DFSearch search = cp.dfSearch(fds(allIntervals.toArray(IntervalVar[]::new)));
             // print each solution found
             search.onSolution(() -> {
                 System.out.println("makespan: " + makespan);
