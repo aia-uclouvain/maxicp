@@ -1,5 +1,7 @@
 package org.maxicp.modeling.algebra.integer;
 
+import org.maxicp.modeling.DecisionVarsProvider;
+import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.NonLeafExpressionNode;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
@@ -8,10 +10,11 @@ import org.maxicp.util.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public record Element1DVar(IntExpression[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode {
+public record Element1DVar(IntExpression[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode, DecisionVarsProvider {
 
 
     private int[] getTempArray() {
@@ -102,6 +105,12 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
                 s.add(temp2[j]);
         }
         return s.size();
+    }
+
+    /** The index variable selects the row; it is the decision variable. */
+    @Override
+    public Collection<IntExpression> decisionVariables() {
+        return (index instanceof IntVar) ? List.of(index) : List.of();
     }
 
     @Override

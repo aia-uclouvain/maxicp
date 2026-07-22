@@ -1,0 +1,67 @@
+<instance format="XCSP3" type="CSP">
+  <variables>
+    <array id="x" note="x[i][j] is the value in the cell of the grid at coordinates (i,j)" size="[4][4]"> 0 1 </array>
+  </variables>
+  <constraints>
+    <group note="ensuring the same number of 0s and 1s in rows">
+      <sum>
+        <list> %... </list>
+        <condition> (eq,2) </condition>
+      </sum>
+      <args> x[0][] </args>
+      <args> x[1][] </args>
+      <args> x[2][] </args>
+      <args> x[3][] </args>
+    </group>
+    <group note="ensuring the same number of 0s and 1s in columns">
+      <sum>
+        <list> %... </list>
+        <condition> (eq,2) </condition>
+      </sum>
+      <args> x[][0] </args>
+      <args> x[][1] </args>
+      <args> x[][2] </args>
+      <args> x[][3] </args>
+    </group>
+    <group note="forbidding sequences of 3 consecutive 0s or 1s in rows">
+      <sum>
+        <list> %0 %1 %2 </list>
+        <condition> (in,1..2) </condition>
+      </sum>
+      <args> x[0][0..2] </args>
+      <args> x[0][1..3] </args>
+      <args> x[1][0..2] </args>
+      <args> x[1][1..3] </args>
+      <args> x[2][0..2] </args>
+      <args> x[2][1..3] </args>
+      <args> x[3][0..2] </args>
+      <args> x[3][1..3] </args>
+    </group>
+    <group note="forbidding sequences of 3 consecutive 0s or 1s in columns">
+      <sum>
+        <list> %0 %1 %2 </list>
+        <condition> (in,1..2) </condition>
+      </sum>
+      <args> x[0..2][0] </args>
+      <args> x[1..3][0] </args>
+      <args> x[0..2][1] </args>
+      <args> x[1..3][1] </args>
+      <args> x[0..2][2] </args>
+      <args> x[1..3][2] </args>
+      <args> x[0..2][3] </args>
+      <args> x[1..3][3] </args>
+    </group>
+    <allDifferent note="forbidding identical rows">
+      <list> x[0][] </list>
+      <list> x[1][] </list>
+      <list> x[2][] </list>
+      <list> x[3][] </list>
+    </allDifferent>
+    <allDifferent note="forbidding identical columns">
+      <list> x[][0] </list>
+      <list> x[][1] </list>
+      <list> x[][2] </list>
+      <list> x[][3] </list>
+    </allDifferent>
+  </constraints>
+</instance>

@@ -14,11 +14,12 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 import org.maxicp.util.exception.InconsistencyException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 class AtLeastNValueFWCTest extends CPSolverTest {
 
@@ -30,7 +31,7 @@ class AtLeastNValueFWCTest extends CPSolverTest {
         CPIntVar y = CPFactory.makeIntVar(cp, 2, 2);
         cp.post(new AtLeastNValueFWC(Xs, y));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(Xs));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(Xs));
 
 
         dfs.onSolution(() -> {

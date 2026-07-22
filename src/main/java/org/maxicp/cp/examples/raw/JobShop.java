@@ -11,25 +11,17 @@ import org.maxicp.cp.CPFactory;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.*;
 
-import org.maxicp.cp.engine.constraints.scheduling.NoOverlap;
-import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
-import org.maxicp.modeling.algebra.bool.Eq;
-import org.maxicp.search.DFSearch;
-import org.maxicp.search.Objective;
-import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
-import org.maxicp.util.exception.InconsistencyException;
+import org.maxicp.search.*;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
+import org.maxicp.cp.examples.utils.JobShopInstance;
 
 /**
  * The JobShop Problem.
@@ -44,7 +36,7 @@ public class JobShop {
     }
 
     public static void main(String[] args) {
-        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/jobshop-9-9-0");
+        JobShopInstance instance = new JobShopInstance("data/JOBSHOP/ft10.txt");
 
         int nJobs = instance.nJobs;
         int nMachines = instance.nMachines;
@@ -68,6 +60,8 @@ public class JobShop {
             }
         }
 
+        CPIntervalVar[][] toRank = new CPIntervalVar[nMachines][];
+
         // no overlap between the activities on the same machine
         for (int m = 0; m < nMachines; m++) {
             ArrayList<CPIntervalVar> machineActivities = new ArrayList<>();
@@ -76,11 +70,13 @@ public class JobShop {
                     if (machine[j][i] == m) {
                         machineActivities.add(activities[j][i]);
                     }
-                };
+                }
+                ;
             }
-            cp.post(nonOverlap(machineActivities.toArray(new CPIntervalVar[0])));
+            CPIntervalVar[] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
+            cp.post(noOverlap(onMachine));
+            toRank[m] = onMachine;
         }
-
 
         CPIntervalVar[] lasts = Arrays.stream(activities)
                 .map(job -> job[nMachines - 1])
@@ -91,48 +87,16 @@ public class JobShop {
 
         CPIntervalVar[] allActivities = flatten(activities);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, setTimes(allActivities));
+        DFSearch dfs = CPFactory.makeDfs(cp,
+                and(new Rank(toRank),
+                        () -> makespan.isFixed() ? EMPTY : branch(() -> cp.post(le(makespan, makespan.min())))));
 
-
-        dfs.onSolution(() -> {
-            System.out.println("makespan:" + makespan);
+        dfs.onSolution(s -> {
+            System.out.println("=========================>makespan:" + makespan);
+            System.out.println(s);
         });
         SearchStatistics stats = dfs.optimize(obj);
         System.out.format("Statistics: %s\n", stats);
     }
-
-    private static class JobShopInstance {
-
-        public int nJobs;
-        public int nMachines;
-        public int[][] duration;
-        public int[][] machine;
-
-        public JobShopInstance(String path) {
-            try {
-                FileInputStream istream = new FileInputStream(path);
-                BufferedReader in = new BufferedReader(new InputStreamReader(istream));
-                in.readLine();
-                in.readLine();
-                in.readLine();
-                StringTokenizer tokenizer = new StringTokenizer(in.readLine());
-                nJobs = Integer.parseInt(tokenizer.nextToken());
-                nMachines = Integer.parseInt(tokenizer.nextToken());
-                duration = new int[nJobs][nMachines];
-                machine = new int[nJobs][nMachines];
-                for (int i = 0; i < nJobs; i++) {
-                    tokenizer = new StringTokenizer(in.readLine());
-                    for (int j = 0; j < nMachines; j++) {
-                        machine[i][j] = Integer.parseInt(tokenizer.nextToken());
-                        duration[i][j] = Integer.parseInt(tokenizer.nextToken());
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-        }
-    }
-
 
 }

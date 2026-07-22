@@ -1,5 +1,6 @@
 package org.maxicp.modeling.algebra.integer;
 
+import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 
 public interface SymbolicIntExpression extends IntExpression {
@@ -84,19 +85,24 @@ public interface SymbolicIntExpression extends IntExpression {
     }
 
     default IntExpression plus(int v) {
-        return new CstOffset(this, v);
+        return Factory.plus(this, v);
     }
 
     default IntExpression minus(int v) {
-        return new CstOffset(this, -v);
+        return Factory.minus(this, v);
     }
 
+    default IntExpression mul(int v) {
+        return Factory.mul(this, v);
+    }
+
+
     default IntExpression plus(IntExpression v) {
-        return new Sum(this, v);
+        return Factory.plus(this, v);
     }
 
     default IntExpression minus(IntExpression v) {
-        return new Sum(this, new UnaryMinus(v));
+        return Factory.minus(this, v);
     }
 
     default IntExpression abs() {

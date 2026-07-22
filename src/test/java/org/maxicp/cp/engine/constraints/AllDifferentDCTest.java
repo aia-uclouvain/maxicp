@@ -120,7 +120,7 @@ public class AllDifferentDCTest extends CPSolverTest implements WithSolverCheck 
 
         cp.post(new AllDifferentDC(x));
 
-        SearchStatistics stats = CPFactory.makeDfs(cp, firstFail(x)).solve();
+        SearchStatistics stats = CPFactory.makeDfs(cp, firstFailBinary(x)).solve();
         assertEquals(120, stats.numberOfSolutions());
 
     }

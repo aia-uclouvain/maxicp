@@ -60,7 +60,7 @@ public class AllDifferentFWCTest extends CPSolverTest {
 
         try {
             cp.post(new AllDifferentFWC(x));
-            SearchStatistics stats = makeDfs(cp, firstFail(x)).solve();
+            SearchStatistics stats = makeDfs(cp, firstFailBinary(x)).solve();
             assertEquals(120, stats.numberOfSolutions());
         } catch (InconsistencyException e) {
             fail("should not fail");

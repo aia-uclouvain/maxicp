@@ -8,7 +8,7 @@ import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Searches;
 import org.maxicp.util.Arrays;
-import org.maxicp.util.DistanceMatrix;
+import org.maxicp.util.algo.DistanceMatrix;
 
 import java.util.List;
 import java.util.Random;
@@ -78,7 +78,7 @@ public class PDPSeqVar {
 
         // search
         baseModel.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(Searches.firstFail(routes));
+            DFSearch search = cp.dfSearch(Searches.firstFailBinary(routes));
             // print each solution found
             search.onSolution(() -> {
                 for (int vehicle = 0 ; vehicle < nVehicles ; vehicle++)

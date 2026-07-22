@@ -471,7 +471,7 @@ public class CostCardinalityMaxDCTest extends CPSolverTest implements WithSolver
 
             CPIntVar H = CPFactory.makeIntVar(cp, 0, maxH); // Maximum cost allowed
 
-            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFail(x));
+            DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
             SearchStatistics stats1 = dfs.solveSubjectTo(
                     s -> false,

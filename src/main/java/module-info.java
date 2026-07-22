@@ -1,3 +1,12 @@
+/**
+ * MaxiCP is under MIT License.
+ * It is a Constraint Programming Solver for Scheduling and Vehicle Routing.
+ * It is an extension of MiniCP.
+ * Its main authors are Pierre Schaus, Guillaume Derval, Augustin Delecluse, Laurent Michel, Pascal Van Hentenryck.
+ * although many more people have contributed,
+ * for instance by reporting bugs, suggesting ideas or,
+ *  developing a constraint.
+ */
 module org.maxicp {
     exports org.maxicp;
     exports org.maxicp.util;
@@ -30,9 +39,11 @@ module org.maxicp {
     exports org.maxicp.cp.engine.constraints.scheduling;
     exports org.maxicp.cp.engine.constraints.setvar;
     exports org.maxicp.cp.engine.constraints.seqvar;
+    exports org.maxicp.cp.examples.utils;
 
     requires org.json;
     requires xcsp3.tools;
     requires java.xml;
     requires java.compiler;
+    requires junit;
 }

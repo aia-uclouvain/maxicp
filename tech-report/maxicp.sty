@@ -1,0 +1,60 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{maxicp}[2026/04/07 MaxiCP Paper Macros]
+
+\RequirePackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,calc,fit,backgrounds,decorations.pathreplacing,matrix,patterns,arrows.meta}
+\RequirePackage{bm}
+% amsmath and amssymb are expected to be loaded by the document preamble
+
+% Colors for sequence variables
+\definecolor{member}{RGB}{0,128,0}
+\definecolor{possible}{RGB}{128,128,128}
+\definecolor{required}{RGB}{0,0,255}
+\definecolor{removed}{RGB}{255,0,0}
+
+% Sequence Variable Styles
+\tikzset{
+    member/.style={minimum size=0.5cm, circle, inner sep=1.5pt, fill=member, text=white},
+    possible/.style={minimum size=0.5cm, circle, inner sep=1.5pt, fill=possible!30, draw=possible},
+    required/.style={minimum size=0.5cm, circle, inner sep=1.5pt, fill=required!30, draw=required, thick},
+    excluded/.style={minimum size=0.5cm, circle, inner sep=1.5pt, fill=removed!20, draw=removed, dashed},
+    insertionDirected/.style={densely dashed, gray!80!white, very thick, -{Stealth[gray!80!white]}},
+    insertion/.style={densely dashed, gray!80!white, very thick, {Stealth[gray!80!white]}-{Stealth[gray!80!white]}},
+    successor/.style={very thick, -{Stealth[black]}}
+}
+
+% Code highlighting colors (used by minted/tcolorbox in main document)
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+
+\newcommand{\first}{\alpha}
+\newcommand{\last}{\omega}
+\newcommand{\predecessors}[1]{\mathcal{P}(#1)}
+\newcommand{\successors}[1]{\mathcal{S}(#1)}
+\newcommand{\directPredecessor}[1]{\text{prev}(#1)}
+\newcommand{\directSuccessor}[1]{\text{next}(#1)}
+\newcommand{\seq}[1]{\mathbf{#1}}
+\newcommand{\pick}[1]{\text{pick}(#1)}
+\newcommand{\drop}[1]{\text{drop}(#1)}
+\newcommand{\ubcost}{h}
+\newcommand{\lbSeq}{\underline{C}}
+\newcommand{\extDom}{\mathcal{D}}
+\providecommand{\llbracket}{[\![}
+\providecommand{\rrbracket}{]\!]}
+\newcommand{\nodes}{\mathcal{V}}
+\newcommand{\gcumulative}{\texttt{GeneralizedCumulative}}
+
+\newcommand{\minC}{\underline{C}}
+\newcommand{\maxC}{\overline{C}}
+\newcommand{\minP}{\underline{P}}
+\newcommand{\maxP}{\overline{P}}
+\newcommand{\mins}{\underline{s}}
+\newcommand{\maxs}{\overline{s}}
+\newcommand{\mine}{\underline{e}}
+\newcommand{\maxe}{\overline{e}}
+\newcommand{\mind}{\underline{d}}
+\newcommand{\maxd}{\overline{d}}
+\newcommand{\minc}{\underline{c}}
+\newcommand{\maxc}{\overline{c}}

@@ -9,7 +9,7 @@ import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Searches;
 import org.maxicp.util.Arrays;
-import org.maxicp.util.DistanceMatrix;
+import org.maxicp.util.algo.DistanceMatrix;
 import org.maxicp.util.io.InputReader;
 
 import java.util.List;
@@ -76,7 +76,7 @@ public class VRPTWSeqVar {
         Objective minimizeDistance = minimize(sumDistances);
 
         baseModel.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(Searches.firstFail(routes));
+            DFSearch search = cp.dfSearch(Searches.firstFailBinary(routes));
             // print each solution found
             search.onSolution(() -> {
                 for (int vehicle = 0 ; vehicle < nVehicles ; vehicle++)

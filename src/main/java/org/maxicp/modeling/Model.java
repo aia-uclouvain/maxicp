@@ -5,7 +5,9 @@
 
 package org.maxicp.modeling;
 
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.SymbolicModel;
+import java.util.List;
 
 public interface Model {
 
@@ -14,4 +16,8 @@ public interface Model {
     Iterable<Constraint> getConstraints();
 
     ModelProxy getModelProxy();
+
+    default List<List<IntExpression>> getVariableGroups() {
+        return List.of();
+    }
 }

@@ -14,9 +14,10 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 
 public class IsEqualTest extends CPSolverTest {
@@ -28,7 +29,7 @@ public class IsEqualTest extends CPSolverTest {
 
         CPBoolVar b = CPFactory.isEq(x, -2);
 
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
 
         SearchStatistics stats = search.solve();
 

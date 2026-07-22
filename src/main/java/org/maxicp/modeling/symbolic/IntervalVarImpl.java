@@ -89,7 +89,10 @@ public class IntervalVarImpl implements SymbolicIntervalVar {
 
     @Override
     public String toString() {
+
         if (getModelProxy().isConcrete()) {
+            System.out.println("toString Concrete");
+            System.out.println("concreteVar "+getModelProxy().getConcreteModel().getConcreteVar(this));
             return getModelProxy().getConcreteModel().getConcreteVar(this).toString();
         }
         return show();

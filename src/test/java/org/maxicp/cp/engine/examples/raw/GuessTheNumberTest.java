@@ -46,7 +46,7 @@ public class GuessTheNumberTest extends CPSolverTest {
 
         cp.post(eq(nb1, mul(nb2, 3)));
 
-        DFSearch dfs = makeDfs(cp,Searches.staticOrder(digits));
+        DFSearch dfs = makeDfs(cp,Searches.staticOrderBinary(digits));
 
         dfs.onSolution(() -> {
 

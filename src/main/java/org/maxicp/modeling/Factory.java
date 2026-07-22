@@ -5,7 +5,11 @@
 
 package org.maxicp.modeling;
 
+import org.maxicp.Constants;
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.algebra.bool.*;
 import org.maxicp.modeling.algebra.integer.*;
 import org.maxicp.modeling.algebra.scheduling.CumulFunction;
@@ -15,10 +19,13 @@ import org.maxicp.modeling.constraints.scheduling.LessOrEqual;
 import org.maxicp.modeling.constraints.seqvar.*;
 import org.maxicp.modeling.symbolic.*;
 
+import static org.maxicp.cp.CPFactory.makeIntervalVar;
+
 import java.util.Optional;
 
 public final class Factory {
-    private Factory() {}
+    private Factory() {
+    }
 
     // -------------- instantiation of the model -----------------------
 
@@ -29,7 +36,8 @@ public final class Factory {
     // -------------- objectives -----------------------
 
     public static Objective minimize(IntExpression x, boolean shared) {
-        if (shared) return new SharedMinimization(x);
+        if (shared)
+            return new SharedMinimization(x);
         return new Minimization(x);
     }
 
@@ -38,7 +46,8 @@ public final class Factory {
     }
 
     public static Objective maximize(IntExpression x, boolean shared) {
-        if (shared) return new SharedMaximization(x);
+        if (shared)
+            return new SharedMaximization(x);
         return new Maximization(x);
     }
 
@@ -80,12 +89,16 @@ public final class Factory {
         return new CstMul(a, b);
     }
 
+    static public IntExpression div(IntExpression a, int b) {
+        return div(a, new Constant(a.getModelProxy(), b));
+    }
+
     static public IntExpression mul(int b, IntExpression a) {
         return new CstMul(a, b);
     }
 
     static public IntExpression mul(IntExpression x, BoolExpression b) {
-        return new MulBinary(x,b);
+        return new MulBinary(x, b);
     }
 
     static public IntExpression mul(IntExpression... x) {
@@ -96,6 +109,10 @@ public final class Factory {
         return new Abs(x);
     }
 
+    public static IntExpression div(IntExpression x, IntExpression y) {
+        return new Div(x, y);
+    }
+
     // ********************
     // Arithmetic constraints (sum, min, max)
     // ********************
@@ -104,16 +121,20 @@ public final class Factory {
         return new Sum(x);
     }
 
-    public static IntExpression max(IntExpression... x) { return new Max(x); }
+    public static IntExpression max(IntExpression... x) {
+        return new Max(x);
+    }
 
-    public static IntExpression min(IntExpression... x) { return new Min(x); }
+    public static IntExpression min(IntExpression... x) {
+        return new Min(x);
+    }
 
     // ********************
     // Comon constraints (=, !=, <=, <, >=, >)
     // ********************
 
     static public BoolExpression eq(IntExpression a, int b) {
-        return new Eq(a, new Constant(a.getModelProxy(),b));
+        return new Eq(a, new Constant(a.getModelProxy(), b));
     }
 
     static public BoolExpression eq(int a, IntExpression b) {
@@ -123,7 +144,6 @@ public final class Factory {
     static public BoolExpression eq(IntExpression a, IntExpression b) {
         return new Eq(a, b);
     }
-
 
     static public BoolExpression neq(IntExpression a, int b) {
         return new NotEq(a, new Constant(a.getModelProxy(), b));
@@ -137,9 +157,8 @@ public final class Factory {
         return new NotEq(a, b);
     }
 
-
     static public BoolExpression le(IntExpression a, int b) {
-        return new LessOrEq(a, new Constant(a.getModelProxy(),b));
+        return new LessOrEq(a, new Constant(a.getModelProxy(), b));
     }
 
     static public BoolExpression le(int a, IntExpression b) {
@@ -150,22 +169,20 @@ public final class Factory {
         return new LessOrEq(a, b);
     }
 
-
     static public BoolExpression lt(int a, IntExpression b) {
         return new LessOrEq(a, Factory.minus(b, 1));
     }
 
     static public BoolExpression lt(IntExpression a, int b) {
-        return new LessOrEq(a, new Constant(a.getModelProxy(),b-1));
+        return new LessOrEq(a, new Constant(a.getModelProxy(), b - 1));
     }
 
     static public BoolExpression lt(IntExpression a, IntExpression b) {
         return new LessOrEq(a, Factory.minus(b, 1));
     }
 
-
     static public BoolExpression ge(IntExpression a, int b) {
-        return new GreaterOrEq(a, new Constant(a.getModelProxy(),b));
+        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b));
     }
 
     static public BoolExpression ge(int a, IntExpression b) {
@@ -176,9 +193,8 @@ public final class Factory {
         return new GreaterOrEq(a, b);
     }
 
-
     static public BoolExpression gt(IntExpression a, int b) {
-        return new GreaterOrEq(a, new Constant(a.getModelProxy(),b+1));
+        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b + 1));
     }
 
     static public BoolExpression gt(int a, IntExpression b) {
@@ -213,6 +229,7 @@ public final class Factory {
 
     /**
      * Returns the logical implication of a and b
+     * 
      * @param a a boolean expression
      * @param b a boolean expression
      * @return a => b
@@ -220,7 +237,6 @@ public final class Factory {
     public static BoolExpression implies(BoolExpression a, BoolExpression b) {
         return or(not(a), b);
     }
-
 
     public static BoolExpression endBeforeStart(IntervalVar a, IntervalVar b) {
         return new EndBeforeStart(a, b);
@@ -230,7 +246,7 @@ public final class Factory {
     // Element constraints
     // ********************
 
-    public static IntExpression get(int [] T, IntExpression y) {
+    public static IntExpression get(int[] T, IntExpression y) {
         return new Element1D(T, y);
     }
 
@@ -238,23 +254,24 @@ public final class Factory {
         return new Element1DVar(T, y);
     }
 
-    public static IntExpression get(int [][] T, IntVar x, IntVar y) {
+    public static IntExpression get(int[][] T, IntVar x, IntVar y) {
         return new Element2D(T, x, y);
     }
 
-    public static IntExpression get(IntExpression [][] T, IntVar x, IntVar y) {
+    public static IntExpression get(IntExpression[][] T, IntVar x, IntVar y) {
         return new Element2DVar(T, x, y);
     }
 
     // ********************
-    // AllDifferent constraints (and constraints regarding the number of different values)
+    // AllDifferent constraints (and constraints regarding the number of different
+    // values)
     // ********************
 
     public static Constraint allDifferent(IntExpression... x) {
         return new AllDifferent(x);
     }
 
-    public static Constraint binPacking(IntExpression [] x, int [] weights, IntExpression [] loads) {
+    public static Constraint binPacking(IntExpression[] x, int[] weights, IntExpression[] loads) {
         return new BinPacking(x, weights, loads);
     }
 
@@ -332,22 +349,53 @@ public final class Factory {
         return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);
     }
 
+    /**
+     * Creates a noOverlap constraint with position variables and zero transition
+     * times.
+     *
+     * @param intervals     the interval variables
+     * @param posOfInterval position of each interval
+     * @param intervalInPos interval at each position
+     * @return a NoOverlapWithPosition constraint
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval,
+            IntExpression[] intervalInPos) {
+        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,
+                intervalInPos, null);
+    }
+
+    /**
+     * Creates a noOverlap constraint with position variables and minimum transition
+     * times.
+     *
+     * @param intervals     the interval variables
+     * @param posOfInterval position of each interval
+     * @param intervalInPos interval at each position
+     * @param minTransition n×n transition time matrix
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval,
+            IntExpression[] intervalInPos, int[][] minTransition) {
+        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,
+                intervalInPos, minTransition);
+    }
+
     public static Constraint alternative(IntervalVar real, IntervalVar... alternatives) {
-        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);
+        return new org.maxicp.modeling.constraints.scheduling.Alternative(real,
+                new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);
     }
 
     public static Constraint alternative(IntervalVar real, IntExpression n, IntervalVar... alternatives) {
         return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);
     }
 
-
     public static Constraint length(IntervalVar var, int length) {
         return new org.maxicp.modeling.constraints.scheduling.Length(var, length);
     }
 
-    //public static Constraint present(IntervalVar var) {
-    //    return new org.maxicp.modeling.constraints.scheduling.Present(var);
-    //}
+    // public static Constraint present(IntervalVar var) {
+    // return new org.maxicp.modeling.constraints.scheduling.Present(var);
+    // }
 
     public static BoolExpression present(IntervalVar var) {
         return new org.maxicp.modeling.algebra.bool.Present(var);
@@ -358,10 +406,10 @@ public final class Factory {
     }
 
     /*
-    public static Constraint startAfter(IntervalVar var, int start) {
-        return new org.maxicp.modeling.constraints.scheduling.StartAfter(var, start);
-    }
-
+     * public static Constraint startAfter(IntervalVar var, int start) {
+     * return new org.maxicp.modeling.constraints.scheduling.StartAfter(var, start);
+     * }
+     * 
      */
 
     public static IntExpression startOr(IntervalVar interval, int v) {
@@ -387,7 +435,6 @@ public final class Factory {
     public static IntExpression lengthOr(IntervalVar interval, int v) {
         return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);
     }
-
 
     public static BoolExpression endBefore(IntervalVar intervalVar, IntExpression value) {
         return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);
@@ -429,7 +476,7 @@ public final class Factory {
         return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);
     }
 
-    public static CumulFunction sum(CumulFunction ... functions) {
+    public static CumulFunction sum(CumulFunction... functions) {
         return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);
     }
 
@@ -443,6 +490,11 @@ public final class Factory {
 
     public static CumulFunction stepAtEnd(IntervalVar interval, int height) {
         return stepAtEnd(interval, height, height);
+    }
+
+    public static CumulFunction step(ModelDispatcher m, int from, int h) {
+        IntervalVar dummy = m.intervalVar(from, Constants.HORIZON, Constants.HORIZON, true);
+        return pulse(dummy, h);
     }
 
     public static CumulFunction stepAtStart(IntervalVar interval, int hMin, int hMax) {

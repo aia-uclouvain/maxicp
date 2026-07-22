@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class CumulativeTest extends CPSolverTest {
 
@@ -350,7 +350,7 @@ public class CumulativeTest extends CPSolverTest {
         for (int i = 0; i < 6 ; ++i)
             seqVar.require(i);
         cp.post(new Cumulative(seqVar, p, d, capacity, 3));
-        DFSearch search = makeDfs(cp, firstFail(seqVar));
+        DFSearch search = makeDfs(cp, firstFailBinary(seqVar));
         SearchStatistics stats = search.solve();
         assertEquals(6, stats.numberOfSolutions());
     }
@@ -363,7 +363,7 @@ public class CumulativeTest extends CPSolverTest {
         int[] d = new int[] {3, 4, 5};
         CPSeqVar seqVar = CPFactory.makeSeqVar(cp, 8, 6, 7);
         cp.post(new Cumulative(seqVar, p, d, capacity, 1));
-        DFSearch search = makeDfs(cp, firstFail(seqVar));
+        DFSearch search = makeDfs(cp, firstFailBinary(seqVar));
         SearchStatistics stats = search.solve();
         assertEquals(16, stats.numberOfSolutions());
     }
@@ -378,7 +378,7 @@ public class CumulativeTest extends CPSolverTest {
         for (int i = 0; i < 8 ; ++i)
             seqVar.require(i);
         cp.post(new Cumulative(seqVar, p, d, capacity, 3));
-        DFSearch search = makeDfs(cp, firstFail(seqVar));
+        DFSearch search = makeDfs(cp, firstFailBinary(seqVar));
         int[] nodes = new int[seqVar.nNode()];
         search.onSolution(() -> {
             int n = seqVar.fillNode(nodes, MEMBER_ORDERED);

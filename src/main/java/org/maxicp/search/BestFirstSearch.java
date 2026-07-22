@@ -57,7 +57,7 @@ public class BestFirstSearch<T extends Comparable<T>> extends RunnableSearchMeth
 
             if (alts.length == 0) {
                 statistics.incrSolutions();
-                notifySolution();
+                notifySolution(statistics);
             } else {
                 for (Runnable b : alts) {
                     sm.saveState();
@@ -67,7 +67,7 @@ public class BestFirstSearch<T extends Comparable<T>> extends RunnableSearchMeth
                         pq.add(new PQEntry<>(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));
                     } catch (InconsistencyException e) {
                         statistics.incrFailures();
-                        notifyFailure();
+                        notifyFailure(statistics);
                     }
                     sm.restoreState();
                 }

@@ -2,6 +2,8 @@ package org.maxicp.cp.engine.core;
 
 import org.maxicp.modeling.ModelProxy;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.function.Consumer;
 
 import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
@@ -118,7 +120,62 @@ public class CPIntVarConstant implements CPIntVar{
 
     @Override
     public DeltaCPIntVar delta(CPConstraint c) {
-        return null;
+        return new DeltaCPIntVar() {
+            @Override
+            public CPIntVar variable() {
+                return CPIntVarConstant.this;
+            }
+
+            @Override
+            public int oldMin() {
+                return value;
+            }
+
+            @Override
+            public int oldMax() {
+                return value;
+            }
+
+            @Override
+            public int oldSize() {
+                return 1;
+            }
+
+            @Override
+            public boolean changed() {
+                return false;
+            }
+
+            @Override
+            public int size() {
+                return 0;
+            }
+
+            @Override
+            public boolean minChanged() {
+                return false;
+            }
+
+            @Override
+            public boolean maxChanged() {
+                return false;
+            }
+
+            @Override
+            public Iterator<Integer> iterator() {
+                return Collections.emptyIterator();
+            }
+
+            @Override
+            public int fillArray(int[] values) {
+                return 0;
+            }
+
+            @Override
+            public void update() {
+
+            }
+        };
     }
 
     @Override

@@ -1,0 +1,408 @@
+<instance format="XCSP3" type="CSP">
+  <variables>
+    <array id="r" note="r[i][w] is the visitor for the ith visitee at week w" size="[24][4]"> 0..23 </array>
+    <array id="e" note="e[i][w] is the visitee for the ith visitor at week w" size="[24][4]"> 0..23 </array>
+    <array id="rg" note="rg[i][w] is the visitor group for the ith visitee at week w" size="[24][4]"> 0..3 </array>
+    <array id="eg" note="eg[i][w] is the visitee group for the ith visitor at week w" size="[24][4]"> 0..4 </array>
+  </variables>
+  <constraints>
+    <group note="each week, all visitors must be different">
+      <allDifferent> %... </allDifferent>
+      <args> r[][0] </args>
+      <args> r[][1] </args>
+      <args> r[][2] </args>
+      <args> r[][3] </args>
+    </group>
+    <group note="each week, all visitees must be different">
+      <allDifferent> %... </allDifferent>
+      <args> e[][0] </args>
+      <args> e[][1] </args>
+      <args> e[][2] </args>
+      <args> e[][3] </args>
+    </group>
+    <group note="the visitor groups must be different for each visitee">
+      <allDifferent> %... </allDifferent>
+      <args> rg[0][] </args>
+      <args> rg[1][] </args>
+      <args> rg[2][] </args>
+      <args> rg[3][] </args>
+      <args> rg[4][] </args>
+      <args> rg[5][] </args>
+      <args> rg[6][] </args>
+      <args> rg[7][] </args>
+      <args> rg[8][] </args>
+      <args> rg[9][] </args>
+      <args> rg[10][] </args>
+      <args> rg[11][] </args>
+      <args> rg[12][] </args>
+      <args> rg[13][] </args>
+      <args> rg[14][] </args>
+      <args> rg[15][] </args>
+      <args> rg[16][] </args>
+      <args> rg[17][] </args>
+      <args> rg[18][] </args>
+      <args> rg[19][] </args>
+      <args> rg[20][] </args>
+      <args> rg[21][] </args>
+      <args> rg[22][] </args>
+      <args> rg[23][] </args>
+    </group>
+    <group note="the visitee groups must be different for each visitor">
+      <allDifferent> %... </allDifferent>
+      <args> eg[0][] </args>
+      <args> eg[1][] </args>
+      <args> eg[2][] </args>
+      <args> eg[3][] </args>
+      <args> eg[4][] </args>
+      <args> eg[5][] </args>
+      <args> eg[6][] </args>
+      <args> eg[7][] </args>
+      <args> eg[8][] </args>
+      <args> eg[9][] </args>
+      <args> eg[10][] </args>
+      <args> eg[11][] </args>
+      <args> eg[12][] </args>
+      <args> eg[13][] </args>
+      <args> eg[14][] </args>
+      <args> eg[15][] </args>
+      <args> eg[16][] </args>
+      <args> eg[17][] </args>
+      <args> eg[18][] </args>
+      <args> eg[19][] </args>
+      <args> eg[20][] </args>
+      <args> eg[21][] </args>
+      <args> eg[22][] </args>
+      <args> eg[23][] </args>
+    </group>
+    <block note="channeling arrays vr and ve, each week">
+      <group>
+        <element>
+          <list> r[][0] </list>
+          <index> %0 </index>
+          <value> %1 </value>
+        </element>
+        <args> e[0][0] 0 </args>
+        <args> e[1][0] 1 </args>
+        <args> e[2][0] 2 </args>
+        <args> e[3][0] 3 </args>
+        <args> e[4][0] 4 </args>
+        <args> e[5][0] 5 </args>
+        <args> e[6][0] 6 </args>
+        <args> e[7][0] 7 </args>
+        <args> e[8][0] 8 </args>
+        <args> e[9][0] 9 </args>
+        <args> e[10][0] 10 </args>
+        <args> e[11][0] 11 </args>
+        <args> e[12][0] 12 </args>
+        <args> e[13][0] 13 </args>
+        <args> e[14][0] 14 </args>
+        <args> e[15][0] 15 </args>
+        <args> e[16][0] 16 </args>
+        <args> e[17][0] 17 </args>
+        <args> e[18][0] 18 </args>
+        <args> e[19][0] 19 </args>
+        <args> e[20][0] 20 </args>
+        <args> e[21][0] 21 </args>
+        <args> e[22][0] 22 </args>
+        <args> e[23][0] 23 </args>
+      </group>
+      <group>
+        <element>
+          <list> r[][1] </list>
+          <index> %0 </index>
+          <value> %1 </value>
+        </element>
+        <args> e[0][1] 0 </args>
+        <args> e[1][1] 1 </args>
+        <args> e[2][1] 2 </args>
+        <args> e[3][1] 3 </args>
+        <args> e[4][1] 4 </args>
+        <args> e[5][1] 5 </args>
+        <args> e[6][1] 6 </args>
+        <args> e[7][1] 7 </args>
+        <args> e[8][1] 8 </args>
+        <args> e[9][1] 9 </args>
+        <args> e[10][1] 10 </args>
+        <args> e[11][1] 11 </args>
+        <args> e[12][1] 12 </args>
+        <args> e[13][1] 13 </args>
+        <args> e[14][1] 14 </args>
+        <args> e[15][1] 15 </args>
+        <args> e[16][1] 16 </args>
+        <args> e[17][1] 17 </args>
+        <args> e[18][1] 18 </args>
+        <args> e[19][1] 19 </args>
+        <args> e[20][1] 20 </args>
+        <args> e[21][1] 21 </args>
+        <args> e[22][1] 22 </args>
+        <args> e[23][1] 23 </args>
+      </group>
+      <group>
+        <element>
+          <list> r[][2] </list>
+          <index> %0 </index>
+          <value> %1 </value>
+        </element>
+        <args> e[0][2] 0 </args>
+        <args> e[1][2] 1 </args>
+        <args> e[2][2] 2 </args>
+        <args> e[3][2] 3 </args>
+        <args> e[4][2] 4 </args>
+        <args> e[5][2] 5 </args>
+        <args> e[6][2] 6 </args>
+        <args> e[7][2] 7 </args>
+        <args> e[8][2] 8 </args>
+        <args> e[9][2] 9 </args>
+        <args> e[10][2] 10 </args>
+        <args> e[11][2] 11 </args>
+        <args> e[12][2] 12 </args>
+        <args> e[13][2] 13 </args>
+        <args> e[14][2] 14 </args>
+        <args> e[15][2] 15 </args>
+        <args> e[16][2] 16 </args>
+        <args> e[17][2] 17 </args>
+        <args> e[18][2] 18 </args>
+        <args> e[19][2] 19 </args>
+        <args> e[20][2] 20 </args>
+        <args> e[21][2] 21 </args>
+        <args> e[22][2] 22 </args>
+        <args> e[23][2] 23 </args>
+      </group>
+      <group>
+        <element>
+          <list> r[][3] </list>
+          <index> %0 </index>
+          <value> %1 </value>
+        </element>
+        <args> e[0][3] 0 </args>
+        <args> e[1][3] 1 </args>
+        <args> e[2][3] 2 </args>
+        <args> e[3][3] 3 </args>
+        <args> e[4][3] 4 </args>
+        <args> e[5][3] 5 </args>
+        <args> e[6][3] 6 </args>
+        <args> e[7][3] 7 </args>
+        <args> e[8][3] 8 </args>
+        <args> e[9][3] 9 </args>
+        <args> e[10][3] 10 </args>
+        <args> e[11][3] 11 </args>
+        <args> e[12][3] 12 </args>
+        <args> e[13][3] 13 </args>
+        <args> e[14][3] 14 </args>
+        <args> e[15][3] 15 </args>
+        <args> e[16][3] 16 </args>
+        <args> e[17][3] 17 </args>
+        <args> e[18][3] 18 </args>
+        <args> e[19][3] 19 </args>
+        <args> e[20][3] 20 </args>
+        <args> e[21][3] 21 </args>
+        <args> e[22][3] 22 </args>
+        <args> e[23][3] 23 </args>
+      </group>
+    </block>
+    <group note="linking a visitor with its group">
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,0)(0,1)(0,2)(0,3)(0,4)(0,5)(1,6)(1,7)(1,8)(1,9)(1,10)(1,11)(2,12)(2,13)(2,14)(2,15)(2,16)(2,17)(3,18)(3,19)(3,20)(3,21)(3,22)(3,23) </supports>
+      </extension>
+      <args> rg[0][0] r[0][0] </args>
+      <args> rg[0][1] r[0][1] </args>
+      <args> rg[0][2] r[0][2] </args>
+      <args> rg[0][3] r[0][3] </args>
+      <args> rg[1][0] r[1][0] </args>
+      <args> rg[1][1] r[1][1] </args>
+      <args> rg[1][2] r[1][2] </args>
+      <args> rg[1][3] r[1][3] </args>
+      <args> rg[2][0] r[2][0] </args>
+      <args> rg[2][1] r[2][1] </args>
+      <args> rg[2][2] r[2][2] </args>
+      <args> rg[2][3] r[2][3] </args>
+      <args> rg[3][0] r[3][0] </args>
+      <args> rg[3][1] r[3][1] </args>
+      <args> rg[3][2] r[3][2] </args>
+      <args> rg[3][3] r[3][3] </args>
+      <args> rg[4][0] r[4][0] </args>
+      <args> rg[4][1] r[4][1] </args>
+      <args> rg[4][2] r[4][2] </args>
+      <args> rg[4][3] r[4][3] </args>
+      <args> rg[5][0] r[5][0] </args>
+      <args> rg[5][1] r[5][1] </args>
+      <args> rg[5][2] r[5][2] </args>
+      <args> rg[5][3] r[5][3] </args>
+      <args> rg[6][0] r[6][0] </args>
+      <args> rg[6][1] r[6][1] </args>
+      <args> rg[6][2] r[6][2] </args>
+      <args> rg[6][3] r[6][3] </args>
+      <args> rg[7][0] r[7][0] </args>
+      <args> rg[7][1] r[7][1] </args>
+      <args> rg[7][2] r[7][2] </args>
+      <args> rg[7][3] r[7][3] </args>
+      <args> rg[8][0] r[8][0] </args>
+      <args> rg[8][1] r[8][1] </args>
+      <args> rg[8][2] r[8][2] </args>
+      <args> rg[8][3] r[8][3] </args>
+      <args> rg[9][0] r[9][0] </args>
+      <args> rg[9][1] r[9][1] </args>
+      <args> rg[9][2] r[9][2] </args>
+      <args> rg[9][3] r[9][3] </args>
+      <args> rg[10][0] r[10][0] </args>
+      <args> rg[10][1] r[10][1] </args>
+      <args> rg[10][2] r[10][2] </args>
+      <args> rg[10][3] r[10][3] </args>
+      <args> rg[11][0] r[11][0] </args>
+      <args> rg[11][1] r[11][1] </args>
+      <args> rg[11][2] r[11][2] </args>
+      <args> rg[11][3] r[11][3] </args>
+      <args> rg[12][0] r[12][0] </args>
+      <args> rg[12][1] r[12][1] </args>
+      <args> rg[12][2] r[12][2] </args>
+      <args> rg[12][3] r[12][3] </args>
+      <args> rg[13][0] r[13][0] </args>
+      <args> rg[13][1] r[13][1] </args>
+      <args> rg[13][2] r[13][2] </args>
+      <args> rg[13][3] r[13][3] </args>
+      <args> rg[14][0] r[14][0] </args>
+      <args> rg[14][1] r[14][1] </args>
+      <args> rg[14][2] r[14][2] </args>
+      <args> rg[14][3] r[14][3] </args>
+      <args> rg[15][0] r[15][0] </args>
+      <args> rg[15][1] r[15][1] </args>
+      <args> rg[15][2] r[15][2] </args>
+      <args> rg[15][3] r[15][3] </args>
+      <args> rg[16][0] r[16][0] </args>
+      <args> rg[16][1] r[16][1] </args>
+      <args> rg[16][2] r[16][2] </args>
+      <args> rg[16][3] r[16][3] </args>
+      <args> rg[17][0] r[17][0] </args>
+      <args> rg[17][1] r[17][1] </args>
+      <args> rg[17][2] r[17][2] </args>
+      <args> rg[17][3] r[17][3] </args>
+      <args> rg[18][0] r[18][0] </args>
+      <args> rg[18][1] r[18][1] </args>
+      <args> rg[18][2] r[18][2] </args>
+      <args> rg[18][3] r[18][3] </args>
+      <args> rg[19][0] r[19][0] </args>
+      <args> rg[19][1] r[19][1] </args>
+      <args> rg[19][2] r[19][2] </args>
+      <args> rg[19][3] r[19][3] </args>
+      <args> rg[20][0] r[20][0] </args>
+      <args> rg[20][1] r[20][1] </args>
+      <args> rg[20][2] r[20][2] </args>
+      <args> rg[20][3] r[20][3] </args>
+      <args> rg[21][0] r[21][0] </args>
+      <args> rg[21][1] r[21][1] </args>
+      <args> rg[21][2] r[21][2] </args>
+      <args> rg[21][3] r[21][3] </args>
+      <args> rg[22][0] r[22][0] </args>
+      <args> rg[22][1] r[22][1] </args>
+      <args> rg[22][2] r[22][2] </args>
+      <args> rg[22][3] r[22][3] </args>
+      <args> rg[23][0] r[23][0] </args>
+      <args> rg[23][1] r[23][1] </args>
+      <args> rg[23][2] r[23][2] </args>
+      <args> rg[23][3] r[23][3] </args>
+    </group>
+    <group note="linking a visitee with its group">
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,0)(0,1)(0,2)(0,3)(0,4)(1,5)(1,6)(1,7)(1,8)(1,9)(1,10)(2,11)(2,12)(2,13)(2,14)(2,15)(3,16)(3,17)(4,18)(4,19)(4,20)(4,21)(4,22)(4,23) </supports>
+      </extension>
+      <args> eg[0][0] e[0][0] </args>
+      <args> eg[0][1] e[0][1] </args>
+      <args> eg[0][2] e[0][2] </args>
+      <args> eg[0][3] e[0][3] </args>
+      <args> eg[1][0] e[1][0] </args>
+      <args> eg[1][1] e[1][1] </args>
+      <args> eg[1][2] e[1][2] </args>
+      <args> eg[1][3] e[1][3] </args>
+      <args> eg[2][0] e[2][0] </args>
+      <args> eg[2][1] e[2][1] </args>
+      <args> eg[2][2] e[2][2] </args>
+      <args> eg[2][3] e[2][3] </args>
+      <args> eg[3][0] e[3][0] </args>
+      <args> eg[3][1] e[3][1] </args>
+      <args> eg[3][2] e[3][2] </args>
+      <args> eg[3][3] e[3][3] </args>
+      <args> eg[4][0] e[4][0] </args>
+      <args> eg[4][1] e[4][1] </args>
+      <args> eg[4][2] e[4][2] </args>
+      <args> eg[4][3] e[4][3] </args>
+      <args> eg[5][0] e[5][0] </args>
+      <args> eg[5][1] e[5][1] </args>
+      <args> eg[5][2] e[5][2] </args>
+      <args> eg[5][3] e[5][3] </args>
+      <args> eg[6][0] e[6][0] </args>
+      <args> eg[6][1] e[6][1] </args>
+      <args> eg[6][2] e[6][2] </args>
+      <args> eg[6][3] e[6][3] </args>
+      <args> eg[7][0] e[7][0] </args>
+      <args> eg[7][1] e[7][1] </args>
+      <args> eg[7][2] e[7][2] </args>
+      <args> eg[7][3] e[7][3] </args>
+      <args> eg[8][0] e[8][0] </args>
+      <args> eg[8][1] e[8][1] </args>
+      <args> eg[8][2] e[8][2] </args>
+      <args> eg[8][3] e[8][3] </args>
+      <args> eg[9][0] e[9][0] </args>
+      <args> eg[9][1] e[9][1] </args>
+      <args> eg[9][2] e[9][2] </args>
+      <args> eg[9][3] e[9][3] </args>
+      <args> eg[10][0] e[10][0] </args>
+      <args> eg[10][1] e[10][1] </args>
+      <args> eg[10][2] e[10][2] </args>
+      <args> eg[10][3] e[10][3] </args>
+      <args> eg[11][0] e[11][0] </args>
+      <args> eg[11][1] e[11][1] </args>
+      <args> eg[11][2] e[11][2] </args>
+      <args> eg[11][3] e[11][3] </args>
+      <args> eg[12][0] e[12][0] </args>
+      <args> eg[12][1] e[12][1] </args>
+      <args> eg[12][2] e[12][2] </args>
+      <args> eg[12][3] e[12][3] </args>
+      <args> eg[13][0] e[13][0] </args>
+      <args> eg[13][1] e[13][1] </args>
+      <args> eg[13][2] e[13][2] </args>
+      <args> eg[13][3] e[13][3] </args>
+      <args> eg[14][0] e[14][0] </args>
+      <args> eg[14][1] e[14][1] </args>
+      <args> eg[14][2] e[14][2] </args>
+      <args> eg[14][3] e[14][3] </args>
+      <args> eg[15][0] e[15][0] </args>
+      <args> eg[15][1] e[15][1] </args>
+      <args> eg[15][2] e[15][2] </args>
+      <args> eg[15][3] e[15][3] </args>
+      <args> eg[16][0] e[16][0] </args>
+      <args> eg[16][1] e[16][1] </args>
+      <args> eg[16][2] e[16][2] </args>
+      <args> eg[16][3] e[16][3] </args>
+      <args> eg[17][0] e[17][0] </args>
+      <args> eg[17][1] e[17][1] </args>
+      <args> eg[17][2] e[17][2] </args>
+      <args> eg[17][3] e[17][3] </args>
+      <args> eg[18][0] e[18][0] </args>
+      <args> eg[18][1] e[18][1] </args>
+      <args> eg[18][2] e[18][2] </args>
+      <args> eg[18][3] e[18][3] </args>
+      <args> eg[19][0] e[19][0] </args>
+      <args> eg[19][1] e[19][1] </args>
+      <args> eg[19][2] e[19][2] </args>
+      <args> eg[19][3] e[19][3] </args>
+      <args> eg[20][0] e[20][0] </args>
+      <args> eg[20][1] e[20][1] </args>
+      <args> eg[20][2] e[20][2] </args>
+      <args> eg[20][3] e[20][3] </args>
+      <args> eg[21][0] e[21][0] </args>
+      <args> eg[21][1] e[21][1] </args>
+      <args> eg[21][2] e[21][2] </args>
+      <args> eg[21][3] e[21][3] </args>
+      <args> eg[22][0] e[22][0] </args>
+      <args> eg[22][1] e[22][1] </args>
+      <args> eg[22][2] e[22][2] </args>
+      <args> eg[22][3] e[22][3] </args>
+      <args> eg[23][0] e[23][0] </args>
+      <args> eg[23][1] e[23][1] </args>
+      <args> eg[23][2] e[23][2] </args>
+      <args> eg[23][3] e[23][3] </args>
+    </group>
+  </constraints>
+</instance>

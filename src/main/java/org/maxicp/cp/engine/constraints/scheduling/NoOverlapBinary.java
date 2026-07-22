@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
-class NoOverlapBinary extends AbstractCPConstraint {
+public class NoOverlapBinary extends AbstractCPConstraint {
     final CPBoolVar before;
     final CPBoolVar after;
     final CPIntervalVar A, B;

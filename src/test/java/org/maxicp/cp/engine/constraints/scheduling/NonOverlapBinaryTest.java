@@ -100,7 +100,7 @@ class NonOverlapBinaryTest extends CPSolverTest {
             cp.post(CPFactory.eq(makespan, makespan.min()));
         }};
 
-        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(precedences.toArray(new CPBoolVar[0])), fixMakespan));
+        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFailBinary(precedences.toArray(new CPBoolVar[0])), fixMakespan));
 
         SearchStatistics stats = dfs.solve();
 

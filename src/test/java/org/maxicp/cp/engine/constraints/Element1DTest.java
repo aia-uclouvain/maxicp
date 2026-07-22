@@ -13,10 +13,11 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class Element1DTest extends CPSolverTest {
 
@@ -59,7 +60,7 @@ public class Element1DTest extends CPSolverTest {
 
         cp.post(new Element1D(T, y, z));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, firstFail(y, z));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(y, z));
         dfs.onSolution(() ->
                 assertEquals(T[y.min()], z.min())
         );
