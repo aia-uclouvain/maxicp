@@ -73,7 +73,7 @@ public class PDispersion {
 
         Objective obj = cp.maximize(objectiveVar);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
 
         dfs.onSolution(() -> {;
             System.out.println("Objective: " + objectiveVar.min());

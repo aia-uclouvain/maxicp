@@ -1225,7 +1225,8 @@ public final class CPFactory {
             }
         }
         CPIntVar z = makeIntVar(x.getSolver(), min, max);
-        x.getSolver().post(new Element2D(matrix, x, y, z), false);
+        //x.getSolver().post(new Element2D(matrix, x, y, z), false);
+        x.getSolver().post(new Element2DNew(matrix, x, y, z), false);
         return z;
     }
 
