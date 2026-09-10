@@ -231,7 +231,7 @@ public final class Searches {
                 ModelProxy model = xs.getModelProxy();
                 // create one branch for each value in increasing order
                 ArrayList<Runnable> branches  = new ArrayList<>();
-                for (int v = xs.min(); v < xs.max(); v++) {
+                for (int v = xs.min(); v <= xs.max(); v++) {
                     if (xs.contains(v)) {
                         int value = v;
                         branches.add(() -> model.add(new Eq(xs, value)));
@@ -270,7 +270,7 @@ public final class Searches {
                 ArrayList<Runnable> branches  = new ArrayList<>();
                 for (int v : boxed) {
                     int value = v;
-                    branches.add(() -> model.add(new Eq(xs, v)));
+                    branches.add(() -> model.add(new Eq(xs, value)));
                 }
                 return branch(branches.toArray(new Runnable[0]));
             }
