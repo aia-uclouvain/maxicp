@@ -223,21 +223,21 @@ public final class Searches {
      *          value ordering (increasing order).
      */
     public static Supplier&lt;Runnable[]&gt; heuristicNary(Supplier&lt;IntExpression&gt; variableSelector) {
-<span class="nc" id="L226">        return () -&gt; {</span>
-<span class="nc" id="L227">            IntExpression xs = variableSelector.get();</span>
-<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (xs == null)</span>
-<span class="nc" id="L229">                return EMPTY;</span>
+<span class="fc" id="L226">        return () -&gt; {</span>
+<span class="fc" id="L227">            IntExpression xs = variableSelector.get();</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">            if (xs == null)</span>
+<span class="fc" id="L229">                return EMPTY;</span>
             else {
-<span class="nc" id="L231">                ModelProxy model = xs.getModelProxy();</span>
+<span class="fc" id="L231">                ModelProxy model = xs.getModelProxy();</span>
                 // create one branch for each value in increasing order
-<span class="nc" id="L233">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">                for (int v = xs.min(); v &lt; xs.max(); v++) {</span>
-<span class="nc bnc" id="L235" title="All 2 branches missed.">                    if (xs.contains(v)) {</span>
-<span class="nc" id="L236">                        int value = v;</span>
-<span class="nc" id="L237">                        branches.add(() -&gt; model.add(new Eq(xs, value)));</span>
+<span class="fc" id="L233">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                for (int v = xs.min(); v &lt;= xs.max(); v++) {</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">                    if (xs.contains(v)) {</span>
+<span class="fc" id="L236">                        int value = v;</span>
+<span class="fc" id="L237">                        branches.add(() -&gt; model.add(new Eq(xs, value)));</span>
                     }
                 }
-<span class="nc" id="L240">                return branch(branches.toArray(new Runnable[0]));</span>
+<span class="fc" id="L240">                return branch(branches.toArray(new Runnable[0]));</span>
             }
         };
     }
@@ -254,25 +254,25 @@ public final class Searches {
      */
     public static Supplier&lt;Runnable[]&gt; heuristicNary(Supplier&lt;IntExpression&gt; variableSelector,
                                                      Function&lt;Integer, Integer&gt; valueHeuristic) {
-<span class="nc" id="L257">        return () -&gt; {</span>
-<span class="nc" id="L258">            IntExpression xs = variableSelector.get();</span>
-<span class="nc bnc" id="L259" title="All 2 branches missed.">            if (xs == null)</span>
-<span class="nc" id="L260">                return EMPTY;</span>
+<span class="fc" id="L257">        return () -&gt; {</span>
+<span class="fc" id="L258">            IntExpression xs = variableSelector.get();</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            if (xs == null)</span>
+<span class="fc" id="L260">                return EMPTY;</span>
             else {
-<span class="nc" id="L262">                ModelProxy model = xs.getModelProxy();</span>
+<span class="fc" id="L262">                ModelProxy model = xs.getModelProxy();</span>
                 // create one branch for each value sorted by the valueHeuristic
-<span class="nc" id="L264">                int[] values = new int[xs.size()];</span>
-<span class="nc" id="L265">                xs.fillArray(values);</span>
-<span class="nc" id="L266">                Integer[] boxed = Arrays.stream(values)</span>
-<span class="nc" id="L267">                        .boxed()</span>
-<span class="nc" id="L268">                        .toArray(Integer[]::new);</span>
-<span class="nc" id="L269">                Arrays.sort(boxed, Comparator.comparingInt(valueHeuristic::apply));</span>
-<span class="nc" id="L270">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L271" title="All 2 branches missed.">                for (int v : boxed) {</span>
-<span class="nc" id="L272">                    int value = v;</span>
-<span class="nc" id="L273">                    branches.add(() -&gt; model.add(new Eq(xs, v)));</span>
+<span class="fc" id="L264">                int[] values = new int[xs.size()];</span>
+<span class="fc" id="L265">                xs.fillArray(values);</span>
+<span class="fc" id="L266">                Integer[] boxed = Arrays.stream(values)</span>
+<span class="fc" id="L267">                        .boxed()</span>
+<span class="fc" id="L268">                        .toArray(Integer[]::new);</span>
+<span class="fc" id="L269">                Arrays.sort(boxed, Comparator.comparingInt(valueHeuristic::apply));</span>
+<span class="fc" id="L270">                ArrayList&lt;Runnable&gt; branches  = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">                for (int v : boxed) {</span>
+<span class="fc" id="L272">                    int value = v;</span>
+<span class="fc" id="L273">                    branches.add(() -&gt; model.add(new Eq(xs, value)));</span>
                 }
-<span class="nc" id="L275">                return branch(branches.toArray(new Runnable[0]));</span>
+<span class="fc" id="L275">                return branch(branches.toArray(new Runnable[0]));</span>
             }
         };
     }
@@ -285,7 +285,7 @@ public final class Searches {
      *             natural value ordering (increasing order).
      */
     public static Supplier&lt;Runnable[]&gt; staticOrderNary(IntExpression... xs) {
-<span class="nc" id="L288">        return heuristicNary(staticOrderVariableSelector(xs));</span>
+<span class="fc" id="L288">        return heuristicNary(staticOrderVariableSelector(xs));</span>
     }
 
 
