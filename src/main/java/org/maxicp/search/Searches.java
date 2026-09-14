@@ -408,13 +408,10 @@ public final class Searches {
     public static Supplier<Runnable[]> lastConflict(Supplier<IntExpression> variableSelector, Function<IntExpression, Integer> valueSelector) {
         AtomicReference<IntExpression> lastConflictVariable = new AtomicReference<>(null);
         return () -> {
-            IntExpression xs;
-            if (lastConflictVariable.get() == null) {
-                xs = variableSelector.get();
-            } else {
-                xs = lastConflictVariable.get();
-                lastConflictVariable.set(null);
-            }
+            // the last conflict variable is only selected while it is not fixed: branching on a fixed variable gives
+            // a child equal to its parent and a failing one
+            IntExpression last = lastConflictVariable.getAndSet(null);
+            IntExpression xs = last == null || last.isFixed() ? variableSelector.get() : last;
             if (xs == null)
                 return EMPTY;
             else {
