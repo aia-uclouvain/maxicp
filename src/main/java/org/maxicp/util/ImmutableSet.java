@@ -29,7 +29,9 @@ public class ImmutableSet<E> implements Set<E> {
     private record TrustMeBro<E>(Set<E> delegate) {}
 
     public ImmutableSet(E[] elems) {
-        this.delegate = Set.of(elems);
+        // we do not use Set.of here as it expects
+        // an array without duplicates.
+        this.delegate = Set.copyOf(Arrays.asList(elems));
     }
 
     public static <X> ImmutableSet<X> of(X... x) {
