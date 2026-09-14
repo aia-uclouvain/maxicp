@@ -77,4 +77,21 @@ public class RestarterEdgeCasesTest extends CPSolverTest {
         assertTrue(stats.isCompleted());
         assertEquals(0, stats.numberOfSolutions());
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void repeatedCallsDoNotAccumulateConstraintListeners(CPSolver cp) throws Exception {
+        CPIntVar[] q = CPFactory.makeIntVarArray(cp, 6, 6);
+        DFSearch search = makeQueensSearch(cp, q);
+
+        Restarter restarter = new Restarter(cp);
+        restarter.setRunLimit(new Restarter.LubyRestart(10));
+
+        restarter.solve(search);
+        int afterOneCall = nBeforeConstraintPostedListeners(cp);
+        restarter.solve(search);
+        restarter.solve(search);
+
+        assertEquals(afterOneCall, nBeforeConstraintPostedListeners(cp));
+    }
 }

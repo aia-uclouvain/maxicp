@@ -17,6 +17,8 @@ public class Restarter {
     protected CPSolver solver;
     protected BiPredicate<RestartSearchStatistics, SearchStatistics> shouldRestart;
     protected Predicate<RestartSearchStatistics> shouldStop;
+    // a generator stays registered on the solver, so a single one is created and reused by every call
+    private NoGoodGenerator maker = null;
 
     public class RestartSearchStatistics extends SearchStatistics {
         public int nRestarts = 0;
@@ -122,10 +124,12 @@ public class Restarter {
         RestartSearchStatistics stats = new RestartSearchStatistics();
         solver.getStateManager().withNewState(() -> {
             EnforceNogood enforcer = withNogoods ? new EnforceNogood(solver) : null;
-            NoGoodGenerator maker = withNogoods ? new NoGoodGenerator(solver) : null;
-            if (withNogoods)
+            if (withNogoods) {
+                if (maker == null)
+                    maker = new NoGoodGenerator(solver);
                 for (DFSearch search : searches)
                     maker.registerSearch(search);
+            }
 
             int currentSearch = 0;
             while (!shouldStop.test(stats)) {
