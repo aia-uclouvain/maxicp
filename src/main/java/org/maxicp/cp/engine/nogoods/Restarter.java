@@ -1,6 +1,7 @@
 package org.maxicp.cp.engine.nogoods;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -109,7 +110,14 @@ public class Restarter {
         }
     }
 
-    public RestartSearchStatistics solve(DFSearch[] searches, boolean withNogoods) {
+    /**
+     * Runs the searches in turn, each run stopped by the run limit, until a run completes or the restart limit is
+     * reached.
+     *
+     * @param runOne runs a search under the given limit
+     */
+    private RestartSearchStatistics run(DFSearch[] searches, boolean withNogoods,
+            BiFunction<DFSearch, Predicate<SearchStatistics>, SearchStatistics> runOne) {
         RestartSearchStatistics stats = new RestartSearchStatistics();
         solver.getStateManager().withNewState(() -> {
             EnforceNogood enforcer = withNogoods ? new EnforceNogood(solver) : null;
@@ -121,7 +129,7 @@ public class Restarter {
             int currentSearch = 0;
             while (!shouldStop.test(stats)) {
                 maker.clear();
-                SearchStatistics runStats = searches[currentSearch].solve(s -> this.shouldRestart.test(stats, s));
+                SearchStatistics runStats = runOne.apply(searches[currentSearch], s -> this.shouldRestart.test(stats, s));
                 stats.increaseRun(runStats);
                 if (runStats.isCompleted())
                     break;
@@ -131,6 +139,10 @@ public class Restarter {
             }
         });
         return stats;
+    }
+
+    public RestartSearchStatistics solve(DFSearch[] searches, boolean withNogoods) {
+        return run(searches, withNogoods, (search, limit) -> search.solve(limit));
     }
 
     public RestartSearchStatistics solve(DFSearch[] searches) {
@@ -165,28 +177,7 @@ public class Restarter {
     }
 
     public RestartSearchStatistics optimize(Objective obj, DFSearch[] searches, boolean withNogoods) {
-        RestartSearchStatistics stats = new RestartSearchStatistics();
-        solver.getStateManager().withNewState(() -> {
-            EnforceNogood enforcer = withNogoods ? new EnforceNogood(solver) : null;
-            NoGoodGenerator maker = withNogoods ? new NoGoodGenerator(solver) : null;
-            if (withNogoods)
-                for (DFSearch search : searches)
-                    maker.registerSearch(search);
-
-            int currentSearch = 0;
-            while (!shouldStop.test(stats)) {
-                maker.clear();
-                SearchStatistics runStats = searches[currentSearch].optimize(obj,
-                        s -> this.shouldRestart.test(stats, s));
-                stats.increaseRun(runStats);
-                if (runStats.isCompleted())
-                    break;
-                if (withNogoods)
-                    enforcer.addNogood(maker.getNoGood());
-                currentSearch = (currentSearch + 1) % searches.length;
-            }
-        });
-        return stats;
+        return run(searches, withNogoods, (search, limit) -> search.optimize(obj, limit));
     }
 
     public RestartSearchStatistics optimize(Objective obj, DFSearch[] searches) {
