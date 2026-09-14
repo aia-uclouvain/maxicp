@@ -47,4 +47,20 @@ public class RestarterTest extends CPSolverTest {
         assertEquals(92, stats.numberOfSolutions());
         assertTrue(stats.nRestarts > 1);
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void restarterWithoutNogoodsCompletes(CPSolver cp) {
+        int n = 8;
+        CPIntVar[] q = CPFactory.makeIntVarArray(cp, n, n);
+        DFSearch search = makeQueensSearch(cp, q);
+
+        Restarter restarter = new Restarter(cp);
+        restarter.setRunLimit(new Restarter.LubyRestart(10));
+
+        Restarter.RestartSearchStatistics stats = restarter.solve(search, false);
+
+        assertTrue(stats.isCompleted());
+        assertTrue(stats.nRestarts > 1);
+    }
 }

@@ -128,7 +128,8 @@ public class Restarter {
 
             int currentSearch = 0;
             while (!shouldStop.test(stats)) {
-                maker.clear();
+                if (withNogoods)
+                    maker.clear();
                 SearchStatistics runStats = runOne.apply(searches[currentSearch], s -> this.shouldRestart.test(stats, s));
                 stats.increaseRun(runStats);
                 if (runStats.isCompleted())
