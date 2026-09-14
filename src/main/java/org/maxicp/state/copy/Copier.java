@@ -81,32 +81,40 @@ public class Copier implements StateManager {
             restoreState();
     }
 
+    /**
+     * Adds a new element to the store. An element created after a save is not in that save's copy, so restoring the
+     * level only dropped it from the store and it kept the value it was given at that level. Its initial value is
+     * added to the copy of the current level, so that restoring the level restores it too.
+     * 
+     * Real life use case: a constraint creates dynamically a Trail during a fixpoint, that will be use *above* 
+     * the current search tree node. It is then propagated again in the same fixpoint. If the initial value 
+     * is not always preserved, then when backtracking the constraint will have an incoherent state and no way to recover.
+     */
+    private <S extends Storage> S register(S s) {
+        store.add(s);
+        if (!prior.isEmpty())
+            prior.peek().add(s.save());
+        return s;
+    }
+
     @Override
     public <T> State<T> makeStateRef(T initValue) {
-        Copy r = new Copy(initValue);
-        store.add(r);
-        return r;
+        return register(new Copy<>(initValue));
     }
 
     @Override
     public StateInt makeStateInt(int initValue) {
-        CopyInt s = new CopyInt(initValue);
-        store.add(s);
-        return s;
+        return register(new CopyInt(initValue));
     }
 
     @Override
     public StateLong makeStateLong(long initValue) {
-        CopyLong s = new CopyLong(initValue);
-        store.add(s);
-        return s;
+        return register(new CopyLong(initValue));
     }
 
     @Override
     public <K,V> StateMap<K,V> makeStateMap() {
-        CopyMap<K, V> s = new CopyMap<>();
-        store.add(s);
-        return s;
+        return register(new CopyMap<K, V>());
     }
 
     @Override
