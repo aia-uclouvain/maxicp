@@ -489,17 +489,10 @@ public class FDSModeling implements Supplier<Runnable[]> {
         // Determine which branch to explore first (better rating = lower value → heads into conflict)
         boolean positiveFirst = chosen.ratingPos <= chosen.ratingNeg;
 
-        if (positiveFirst) {
-            return branch(
-                    makeBranch(chosen, true),
-                    makeBranch(chosen, false)
-            );
-        } else {
-            return branch(
-                    makeBranch(chosen, false),
-                    makeBranch(chosen, true)
-            );
-        }
+        return branch(
+            makeBranch(chosen, positiveFirst),
+            makeBranch(chosen, !positiveFirst)
+        );
     }
 
     /**

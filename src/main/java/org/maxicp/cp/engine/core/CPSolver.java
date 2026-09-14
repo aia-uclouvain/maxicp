@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.core;
 
+import java.util.function.Consumer;
+
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.IntObjective;
@@ -54,6 +56,23 @@ public interface CPSolver extends StateManaged {
     void onFixPoint(Runnable listener);
 
     /**
+     * @return true if the fix-point is currently running, false otherwise
+     */
+    boolean isFixPointRunning();
+
+    /**
+     * Adds a listener called whenever a new constraint is posted. Is it called before the constraint is posted.
+     * @param listener the listener that is called whenever a new constraint is posted
+     */
+    void onBeforeConstraintPosted(Consumer<CPConstraint> listener);
+
+    /**
+     * Adds a listener called whenever a new constraint is posted. Is it called after the constraint is posted, before the fix-point is computed (if it is even computed).
+     * @param listener the listener that is called whenever a new constraint is posted
+     */
+    void onAfterConstraintPosted(Consumer<CPConstraint> listener);
+
+    /**
      * Creates a minimization objective on the given variable.
      *
      * @param x the variable to minimize
@@ -70,14 +89,6 @@ public interface CPSolver extends StateManaged {
      * @see DFSearch#optimize(Objective)
      */
     IntObjective maximize(CPIntVar x);
-
-    /**
-     * Forces the boolean variable to be true and then
-     * computes the fix-point.
-     *
-     * @param b the variable that must be set to true
-     */
-    void post(CPBoolVar b);
 
     /**
      * Gives the ModelProxy associated with this CPSolver, if any
