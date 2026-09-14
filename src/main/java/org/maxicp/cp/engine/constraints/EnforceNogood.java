@@ -290,11 +290,30 @@ public class EnforceNogood {
                         solver.post(new ReducedNoGood(reducedNoGood));
                     }
                 }
+                // The ongoing decision can only be dropped when the refutation of its single sibling implies it
+                // (binary branching, x = v refuted then x != v). With n-ary branching, x = v3 is not implied by
+                // the refutation of x = v1 and x = v2, so it stays in the context of the deeper nogoods.
+                CPConstraint[] ongoing = decisions[decisions.length - 1];
+                if (ongoing != null && !(decisions.length == 2 && isContrapose(decisions[0][0], ongoing[0])))
+                    currentPosDecisions.add(ongoing[0]);
             }
         }
 
         return true;
 
+    }
+
+    /**
+     * @return true if b is exactly the negation of a
+     */
+    private static boolean isContrapose(CPConstraint a, CPConstraint b) {
+        return switch (a) {
+            case EqualCst eq -> b instanceof NotEqualCst neq && neq.getX() == eq.getX() && neq.getV() == eq.getV();
+            case NotEqualCst neq -> b instanceof EqualCst eq && eq.getX() == neq.getX() && eq.getV() == neq.getV();
+            case LessOrEqualCst le -> b instanceof GreaterOrEqualCst ge && ge.getX() == le.getX() && ge.getV() == le.getV() + 1;
+            case GreaterOrEqualCst ge -> b instanceof LessOrEqualCst le && le.getX() == ge.getX() && le.getV() == ge.getV() - 1;
+            default -> false;
+        };
     }
 
     /**

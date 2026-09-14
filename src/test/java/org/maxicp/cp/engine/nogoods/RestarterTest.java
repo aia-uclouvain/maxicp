@@ -63,4 +63,23 @@ public class RestarterTest extends CPSolverTest {
         assertTrue(stats.isCompleted());
         assertTrue(stats.nRestarts > 1);
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void nQueensWithNaryBranchingAndRestarterEventuallyExploreAllSolutions(CPSolver cp) {
+        int n = 8;
+        CPIntVar[] q = CPFactory.makeIntVarArray(cp, n, n);
+        makeQueensSearch(cp, q);
+        // n-ary: the ongoing branch x = v of a node whose siblings x = v' were refuted is not implied by them
+        DFSearch search = CPFactory.makeDfs(cp, Searches.heuristicNary(Searches.minDomVariableSelector(q), v -> v));
+
+        Restarter restarter = new Restarter(cp);
+        restarter.setRunLimit((global, run) -> run.numberOfNodes() >= 20);
+
+        Restarter.RestartSearchStatistics stats = restarter.solve(search);
+
+        assertTrue(stats.isCompleted());
+        assertEquals(92, stats.numberOfSolutions());
+        assertTrue(stats.nRestarts > 1);
+    }
 }
