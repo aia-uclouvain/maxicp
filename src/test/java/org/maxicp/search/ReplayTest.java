@@ -230,6 +230,25 @@ public class ReplayTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
+    public void replayWithAnObjectiveDoesNotKeepTighteningIt(CPSolver cp) {
+        CPIntVar[] x = makeIntVarArray(cp, 2, 2);
+        IntObjective obj = cp.minimize(sum(x));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(x));
+
+        DFSLinearizer linearizer = new DFSLinearizer();
+        dfs.optimize(obj, linearizer);
+        obj.relax();
+        dfs.replaySubjectTo(linearizer, x, () -> {}, obj);
+        obj.relax();
+
+        // a plain enumeration afterwards must leave the objective alone
+        SearchStatistics stats = dfs.solve();
+        assertEquals(4, stats.numberOfSolutions());
+        assertEquals(Integer.MAX_VALUE - 1, obj.getBound());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
     public void basicOptimize2(CPSolver cp) {
 
         int n = 2;
