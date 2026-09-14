@@ -139,7 +139,7 @@ public class NoGoodGenerator {
         }
 
         if (nodeStatuses.size() == 0)
-            throw new IllegalStateException("No node status available, cannot extract no-good");
+            return new CPConstraint[0][][]; // stopped before taking any decision: nothing was refuted
 
         boolean lastIsSolution = nodeStatuses.getLast().isSolution();
 

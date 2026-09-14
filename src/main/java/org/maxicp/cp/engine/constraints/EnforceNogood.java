@@ -343,6 +343,8 @@ public class EnforceNogood {
      * @param nogood
      */
     public void addNogood(CPConstraint[][][] nogood) {
+        if (nogood.length == 0)
+            return; // no decision was taken, so nothing was refuted
         if (!isNoGoodSimple(nogood)) {
             throw new IllegalArgumentException("The nogood is not simple, cannot be added to this constraint");
         }
