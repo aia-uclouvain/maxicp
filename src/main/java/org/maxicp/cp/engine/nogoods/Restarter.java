@@ -11,6 +11,7 @@ import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.util.exception.InconsistencyException;
 
 public class Restarter {
     protected CPSolver solver;
@@ -134,8 +135,15 @@ public class Restarter {
                 stats.increaseRun(runStats);
                 if (runStats.isCompleted())
                     break;
-                if (withNogoods)
-                    enforcer.addNogood(maker.getNoGood());
+                if (withNogoods) {
+                    try {
+                        enforcer.addNogood(maker.getNoGood());
+                    } catch (InconsistencyException e) {
+                        // the nogoods refute all that is left of the search space
+                        stats.setCompleted();
+                        break;
+                    }
+                }
                 currentSearch = (currentSearch + 1) % searches.length;
             }
         });

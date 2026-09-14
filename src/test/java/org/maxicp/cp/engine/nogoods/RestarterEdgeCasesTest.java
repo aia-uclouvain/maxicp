@@ -58,4 +58,23 @@ public class RestarterEdgeCasesTest extends CPSolverTest {
         assertTrue(stats.isCompleted());
         assertEquals(92, stats.numberOfSolutions());
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void nogoodsThatCloseTheProblemMeanCompletion(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 3, 2);
+        // unsatisfiable, but forward checking only notices it once the variables get fixed
+        cp.post(new AllDifferentFWC(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
+
+        Restarter restarter = new Restarter(cp);
+        // x0 = 0 and x0 != 0 both fail, and the run is stopped before the search notices it is done:
+        // the recorded nogood x0 != 0 then fails at the root
+        restarter.setRunLimit((global, run) -> run.numberOfNodes() >= 2);
+
+        Restarter.RestartSearchStatistics stats = restarter.solve(search);
+
+        assertTrue(stats.isCompleted());
+        assertEquals(0, stats.numberOfSolutions());
+    }
 }
