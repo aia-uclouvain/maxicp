@@ -102,6 +102,12 @@ public class NoGoodGenerator {
         while (nodeStatuses.size() != 0 && nodeStatuses.getLast().nodeId != pId)
             nodeStatuses.removeLast();
 
+        // A branch that failed before its decision was posted (e.g. on the objective bound, which is filtered when
+        // the node is visited) refutes no decision: it is not recorded. This only weakens the nogoods: the previous
+        // branch of the node, if any, is then considered ongoing.
+        if (!ongoing && branchingConstraints.isEmpty())
+            return;
+
         // Add a new node if needed (if the stack is empty)
         if (nodeStatuses.size() == 0)
             nodeStatuses.addLast(new NodeStatus(pId, new ArrayList<>(), false));

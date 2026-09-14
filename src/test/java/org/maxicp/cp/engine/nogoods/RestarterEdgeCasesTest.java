@@ -94,4 +94,24 @@ public class RestarterEdgeCasesTest extends CPSolverTest {
 
         assertEquals(afterOneCall, nBeforeConstraintPostedListeners(cp));
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void branchFailingOnTheObjectiveBoundBeforeItsDecision(CPSolver cp) {
+        CPIntVar x = CPFactory.makeIntVarArray(cp, 1, 2)[0];
+        CPIntVar z = CPFactory.makeIntVarArray(cp, 1, 2)[0];
+        CPIntVar y = CPFactory.sum(x, z);
+        var objective = cp.minimize(y);
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x, z));
+
+        Restarter restarter = new Restarter(cp);
+        // x = 0, z = 0 is a solution (bound -1); then z != 0 fails when the objective is filtered, before the
+        // decision z != 0 is posted, and the run is stopped right after
+        restarter.setRunLimit((global, run) -> run.numberOfNodes() >= 3);
+
+        Restarter.RestartSearchStatistics stats = restarter.optimize(objective, search);
+
+        assertTrue(stats.isCompleted());
+        assertEquals(1, stats.numberOfSolutions());
+    }
 }
