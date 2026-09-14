@@ -114,4 +114,21 @@ public class RestarterEdgeCasesTest extends CPSolverTest {
         assertTrue(stats.isCompleted());
         assertEquals(1, stats.numberOfSolutions());
     }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void solutionAtTheRootOfARun(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 1, 2);
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
+
+        Restarter restarter = new Restarter(cp);
+        // the first run is stopped right after its solution x = 0: the nogood x != 0 then fixes x = 1 at the root
+        // of the second run, which is a solution without any decision
+        restarter.setRunLimit((global, run) -> run.numberOfNodes() >= 1);
+
+        Restarter.RestartSearchStatistics stats = restarter.solve(search);
+
+        assertTrue(stats.isCompleted());
+        assertEquals(2, stats.numberOfSolutions());
+    }
 }

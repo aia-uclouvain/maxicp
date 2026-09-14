@@ -120,7 +120,10 @@ public class NoGoodGenerator {
     protected void nodeIsSolution(int id, int pId) {
         while (nodeStatuses.size() != 0 && nodeStatuses.getLast().nodeId != pId)
             nodeStatuses.removeLast();
-        assert nodeStatuses.size() != 0;
+        // A solution at the root of a run (e.g. when the nogoods of the previous runs fix every variable) involves no
+        // decision: nothing to record, and the run completes right after.
+        if (nodeStatuses.size() == 0)
+            return;
         NodeStatus last = nodeStatuses.removeLast();
         nodeStatuses.addLast(new NodeStatus(last.nodeId, last.branchingConstraints, true));
     }
