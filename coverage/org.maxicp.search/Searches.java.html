@@ -337,7 +337,7 @@ public final class Searches {
      * @return a first-fail n-ary branching strategy
      */
     public static Supplier&lt;Runnable[]&gt; firstFailNary(IntExpression... x) {
-<span class="nc" id="L340">        return heuristicNary(minDomVariableSelector());</span>
+<span class="fc" id="L340">        return heuristicNary(minDomVariableSelector(x));</span>
     }
 
     /**
