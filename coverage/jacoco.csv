@@ -2,7 +2,7 @@ GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_
 org.maxicp:maxicp,org.maxicp.util,PQueue,38,69,5,9,8,14,5,8,2,4
 org.maxicp:maxicp,org.maxicp.util,TriFunction,15,0,0,0,2,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.util,GraphUtil.new GraphUtil.Graph() {...},9,11,0,0,2,2,2,2,2,2
-org.maxicp:maxicp,org.maxicp.util,ImmutableSet,105,31,2,0,20,10,17,6,16,6
+org.maxicp:maxicp,org.maxicp.util,ImmutableSet,67,70,1,1,12,18,12,11,11,11
 org.maxicp:maxicp,org.maxicp.util,GraphUtil,3,196,0,24,1,45,1,19,1,7
 org.maxicp:maxicp,org.maxicp.util,HashMultimap,0,79,1,5,0,18,1,9,0,7
 org.maxicp:maxicp,org.maxicp.util,ImmutableSet.Builder,7,37,0,0,2,10,1,4,1,4

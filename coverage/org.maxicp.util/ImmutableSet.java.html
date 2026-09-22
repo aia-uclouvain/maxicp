@@ -8,12 +8,12 @@ import java.util.stream.Collector;
 public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
     private final Set&lt;E&gt; delegate;
 
-<span class="nc" id="L11">    public ImmutableSet(Collection&lt;E&gt; delegate) {</span>
-<span class="nc bnc" id="L12" title="All 2 branches missed.">        this.delegate = switch (delegate) {</span>
+<span class="fc" id="L11">    public ImmutableSet(Collection&lt;E&gt; delegate) {</span>
+<span class="pc bpc" id="L12" title="1 of 2 branches missed.">        this.delegate = switch (delegate) {</span>
 <span class="nc" id="L13">            case ImmutableSet&lt;E&gt; immutableSet -&gt; immutableSet.delegate;</span>
-<span class="nc" id="L14">            case Collection&lt;E&gt; d -&gt; Set.copyOf(d);</span>
+<span class="fc" id="L14">            case Collection&lt;E&gt; d -&gt; Set.copyOf(d);</span>
         };
-<span class="nc" id="L16">    }</span>
+<span class="fc" id="L16">    }</span>
 
     public static ImmutableSet&lt;Integer&gt; of(int... ints) {
 <span class="nc" id="L19">        return new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(Ints.asSet(ints)));</span>
@@ -29,87 +29,89 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 <span class="fc" id="L29">    private record TrustMeBro&lt;E&gt;(Set&lt;E&gt; delegate) {}</span>
 
 <span class="fc" id="L31">    public ImmutableSet(E[] elems) {</span>
-<span class="fc" id="L32">        this.delegate = Set.of(elems);</span>
-<span class="fc" id="L33">    }</span>
+        // we do not use Set.of here as it expects
+        // an array without duplicates.
+<span class="fc" id="L34">        this.delegate = Set.copyOf(Arrays.asList(elems));</span>
+<span class="fc" id="L35">    }</span>
 
     public static &lt;X&gt; ImmutableSet&lt;X&gt; of(X... x) {
-<span class="fc" id="L36">        return new ImmutableSet&lt;&gt;(x);</span>
+<span class="fc" id="L38">        return new ImmutableSet&lt;&gt;(x);</span>
     }
 
     public static &lt;X&gt; ImmutableSet&lt;X&gt; of(Collection&lt;X&gt; x) {
-<span class="nc" id="L40">        return new ImmutableSet&lt;&gt;(x);</span>
+<span class="fc" id="L42">        return new ImmutableSet&lt;&gt;(x);</span>
     }
 
     @Override
     public int size() {
-<span class="fc" id="L45">        return delegate.size();</span>
+<span class="fc" id="L47">        return delegate.size();</span>
     }
 
     @Override
     public boolean isEmpty() {
-<span class="nc" id="L50">        return delegate.isEmpty();</span>
+<span class="fc" id="L52">        return delegate.isEmpty();</span>
     }
 
     @Override
     public boolean contains(Object o) {
-<span class="nc" id="L55">        return delegate.contains(o);</span>
+<span class="fc" id="L57">        return delegate.contains(o);</span>
     }
 
     @Override
     public Iterator&lt;E&gt; iterator() {
-<span class="fc" id="L60">        return delegate.iterator();</span>
+<span class="fc" id="L62">        return delegate.iterator();</span>
     }
 
     @Override
     public Object[] toArray() {
-<span class="nc" id="L65">        return delegate.toArray();</span>
+<span class="nc" id="L67">        return delegate.toArray();</span>
     }
 
     @Override
     public &lt;T&gt; T[] toArray(T[] a) {
-<span class="nc" id="L70">        return delegate.toArray(a);</span>
+<span class="nc" id="L72">        return delegate.toArray(a);</span>
     }
 
     @Override
     public boolean add(E e) {
-<span class="nc" id="L75">        throw new UnsupportedOperationException();</span>
+<span class="fc" id="L77">        throw new UnsupportedOperationException();</span>
     }
 
     @Override
     public boolean remove(Object o) {
-<span class="nc" id="L80">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L82">        throw new UnsupportedOperationException();</span>
     }
 
     @Override
     public boolean containsAll(Collection&lt;?&gt; c) {
-<span class="nc" id="L85">        return delegate.containsAll(c);</span>
+<span class="nc" id="L87">        return delegate.containsAll(c);</span>
     }
 
     @Override
     public boolean addAll(Collection&lt;? extends E&gt; c) {
-<span class="nc" id="L90">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L92">        throw new UnsupportedOperationException();</span>
     }
 
     @Override
     public boolean retainAll(Collection&lt;?&gt; c) {
-<span class="nc" id="L95">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L97">        throw new UnsupportedOperationException();</span>
     }
 
     @Override
     public boolean removeAll(Collection&lt;?&gt; c) {
-<span class="nc" id="L100">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L102">        throw new UnsupportedOperationException();</span>
     }
 
     @Override
     public void clear() {
-<span class="nc" id="L105">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L107">        throw new UnsupportedOperationException();</span>
     }
 
     public static &lt;E&gt; Collector&lt;E,?,ImmutableSet&lt;E&gt;&gt; toImmutableSet() {
-<span class="nc" id="L109">        return Collector.of(</span>
+<span class="nc" id="L111">        return Collector.of(</span>
             (Supplier&lt;Set&lt;E&gt;&gt;) HashSet::new,
             Set::add,
-<span class="nc" id="L112">            (left, right) -&gt; { left.addAll(right); return left; },</span>
+<span class="nc" id="L114">            (left, right) -&gt; { left.addAll(right); return left; },</span>
             ImmutableSet::new,
             Collector.Characteristics.UNORDERED
         );
@@ -117,34 +119,34 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 
     public static class Builder&lt;E&gt; {
         private Set&lt;E&gt; delegate;
-<span class="fc" id="L120">        public Builder() {</span>
-<span class="fc" id="L121">            delegate = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L122">        }</span>
+<span class="fc" id="L122">        public Builder() {</span>
+<span class="fc" id="L123">            delegate = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L124">        }</span>
 
         public ImmutableSet&lt;E&gt; build() {
-<span class="fc" id="L125">            ImmutableSet&lt;E&gt; out = new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(delegate));</span>
-<span class="fc" id="L126">            delegate = null;</span>
-<span class="fc" id="L127">            return out;</span>
+<span class="fc" id="L127">            ImmutableSet&lt;E&gt; out = new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(delegate));</span>
+<span class="fc" id="L128">            delegate = null;</span>
+<span class="fc" id="L129">            return out;</span>
         }
 
         public Builder&lt;E&gt; add(E e) {
-<span class="nc" id="L131">            delegate.add(e);</span>
-<span class="nc" id="L132">            return this;</span>
+<span class="nc" id="L133">            delegate.add(e);</span>
+<span class="nc" id="L134">            return this;</span>
         }
 
         public Builder&lt;E&gt; add(E... es) {
-<span class="fc" id="L136">            delegate.addAll(Arrays.asList(es));</span>
-<span class="fc" id="L137">            return this;</span>
+<span class="fc" id="L138">            delegate.addAll(Arrays.asList(es));</span>
+<span class="fc" id="L139">            return this;</span>
         }
 
         public Builder&lt;E&gt; addAll(Collection&lt;? extends E&gt; c) {
-<span class="fc" id="L141">            delegate.addAll(c);</span>
-<span class="fc" id="L142">            return this;</span>
+<span class="fc" id="L143">            delegate.addAll(c);</span>
+<span class="fc" id="L144">            return this;</span>
         }
     }
 
     public static &lt;E&gt; Builder&lt;E&gt; builder() {
-<span class="fc" id="L147">        return new Builder&lt;E&gt;();</span>
+<span class="fc" id="L149">        return new Builder&lt;E&gt;();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
