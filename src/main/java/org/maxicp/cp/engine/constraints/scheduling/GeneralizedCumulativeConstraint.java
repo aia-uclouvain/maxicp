@@ -251,7 +251,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
         for (int i = 0; i < n; i++) {
             int actIdx = active[i];
             Activity act = activities[actIdx];
-            if (!act.isFixed()) {
+            if (!act.isFixed() && act.interval().lengthMax() > 0) {
 
                 //Forward check until fixed part or end min of activity:
                 int tpForward = actToStartMinTp[actIdx];
@@ -285,19 +285,27 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
 
                 if (!simpleCumulative) {
                     if (act.hasFixedPart()) {
+                        int cmax = act.getHeightMax(); int cmin = act.getHeightMin();
                         //Checking fixed part of activity:
                         while (!act.isAbsent() && time[tpForward] < act.getEndMin()) {
-                            if (mandatoryActive)
-                                checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
-                            // Adjusting height:
-                            // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                            adjustHeightOnFixedPart(actIdx, tpForward);
+                            if (mandatoryActive) {
+                                if (act.isOptional())
+                                    checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
+                                // Adjusting height:
+                                // (Necessary even if height is fixed as height adjustment will remove task if not possible)
+                                else
+                                    adjustHeightOnFixedPart(actIdx, tpForward, cmin, cmax);
+                            }
                             tpForward++;
                         }
                     } else {
-                        //Checking max and min height at previous timePoint (start of MOI):
-                        long maxH = tpForward > 0 ? maxCapacity - ((long) profileMin[tpForward-1] - Math.min(act.getHeightMin(), 0L)) : Long.MIN_VALUE;
-                        long minH = tpForward > 0 ? minCapacity - ((long) profileMax[tpForward-1] - Math.max(act.getHeightMax(), 0L)) : Long.MAX_VALUE;
+                        long maxH = Long.MIN_VALUE; //Current maximum available height
+                        long minH = Long.MAX_VALUE; //Current minimum available height
+                        if (act.getLengthMin() >= 1) {
+                            //Checking max and min height at previous timePoint (start of MOI):
+                            maxH = tpForward > 0 ? maxCapacity - ((long) profileMin[tpForward - 1] - Math.min(act.getHeightMin(), 0L)) : Long.MIN_VALUE;
+                            minH = tpForward > 0 ? minCapacity - ((long) profileMax[tpForward - 1] - Math.max(act.getHeightMax(), 0L)) : Long.MAX_VALUE;
+                        }
 
                         // Last time at which the act can start and span until now without obstruction:
                         // (used to compute max length)
@@ -313,22 +321,26 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                             ) currentStart = getEnd(tpForward);
                             else if (mandatoryActive)
                                 checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
-                            //Updating min & max available heights:
-                            maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));
-                            minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
+                            if (act.getLengthMin() >= 1) {
+                                //Updating min & max available heights:
+                                maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));
+                                minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
+                            }
                             tpForward++;
                         }
 
                         //Updating min & max available heights at next timepoint if necessary:
-                        if(time[tpForward] == act.getStartMax()) {
+                        if(time[tpForward] == act.getStartMax() && act.getLengthMin() >= 1) {
                             maxH = Math.max(maxH, maxCapacity - ((long) profileMin[tpForward] - Math.min(act.getHeightMin(), 0L)));
                             minH = Math.min(minH, minCapacity - ((long) profileMax[tpForward] - Math.max(act.getHeightMax(), 0L)));
                         }
 
-                        // Adjusting height:
-                        // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                        act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
-                        act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
+                        if (act.getLengthMin() >= 1) {
+                            // Adjusting height:
+                            // (Necessary even if height is fixed as height adjustment will remove task if not possible)
+                            act.setHeightMax((int) Math.min(act.getHeightMax(), maxH));
+                            act.setHeightMin((int) Math.max(act.getHeightMin(), minH));
+                        }
 
                         //Adjusting maximum length:
                         maxL = Math.max(maxL, act.getEndMax() - currentStart);
@@ -344,8 +356,11 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
     // then the task is forced to span the time point
     protected void checkIfMandatory(int actIdx, int tp) {
         Activity act = activities[actIdx];
-        long minCapaDeficit = minCapacity - ((long) profileMax[tp] - Math.max(act.getHeightMax(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.min(act.getHeightMax(), 0L) : 0L));
-        long maxCapaOverload = maxCapacity - ((long) profileMin[tp] - Math.min(act.getHeightMin(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.max(act.getHeightMin(), 0L) : 0L));
+        long minCapaDeficit = minCapacity - ((long) profileMax[tp] - Math.max(act.getHeightMax(), 0L));
+        long maxCapaOverload = maxCapacity - ((long) profileMin[tp] - Math.min(act.getHeightMin(), 0L));
+
+
+
 
         // If the task is detected mandatory:
         if (nOverlap[tp] > 0 && (minCapaDeficit > 0 || maxCapaOverload < 0)) {
@@ -363,11 +378,13 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
 
     // if profileMax > maxCapacity and we are on a fixed-part of the task, we can reduce its height
     // perform computation on longs to avoid overflow
-    protected void adjustHeightOnFixedPart(int actIdx, int tp) {
+    protected void adjustHeightOnFixedPart(int actIdx, int tp, int cmin, int cmax) {
         Activity act = activities[actIdx];
         if (act.hasFixedPartAt(time[tp])) {
-            long minH = minCapacity - ((long) profileMax[tp] - Math.max(act.getHeightMax(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.min(act.getHeightMax(), 0L) : 0L));
-            long maxH = maxCapacity - ((long) profileMin[tp] - Math.min(act.getHeightMin(), 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.max(act.getHeightMin(), 0L) : 0L));
+            long minH = minCapacity - ((long) profileMax[tp] - cmax);
+            long maxH = maxCapacity - ((long) profileMin[tp] - cmin);
+
+
             act.setHeightMin((int) Math.max(minH, act.getHeightMin()));
             act.setHeightMax((int) Math.min(maxH, act.getHeightMax()));
         }
