@@ -258,7 +258,7 @@ org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.Phase,5,23,2,2,1,3,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,ImpactBasedFragmentSelector,311,15,34,0,57,5,25,1,8,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,FragmentSelector.FragmentSelectionFeedback,0,21,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox,0,121,0,0,0,16,0,8,0,8
-org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,179,895,45,86,32,166,40,48,3,19
+org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,179,895,43,88,32,166,38,50,3,19
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.SolveConfig,10,39,0,0,4,14,2,4,2,4
 org.maxicp:maxicp,org.maxicp.search.blackbox,SearchStatus,0,39,0,0,0,7,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,GroupCoherentFragmentSelector,274,0,32,0,51,0,22,0,6,0
@@ -338,7 +338,7 @@ org.maxicp:maxicp,org.maxicp.search,CartesianSpaceEvaluator,30,0,2,0,5,0,3,0,2,0
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StopMessage,12,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SaveStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StealMessage,12,0,0,0,3,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,483,3,23,10,119,8,46,5,36
+org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,483,3,23,10,119,8,47,5,37
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod,138,0,10,0,35,0,11,0,6,0
 org.maxicp:maxicp,org.maxicp.search,SequenceRank,0,147,0,14,0,31,0,10,0,3
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
