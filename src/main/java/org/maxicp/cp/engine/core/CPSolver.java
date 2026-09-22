@@ -36,7 +36,8 @@ public interface CPSolver extends StateManaged {
      * and optionally computes the fix-point.
      * A {@link InconsistencyException} is thrown
      * if by posting the constraint it is proven that there is no solution.
-     * @param c the constraint to be posted
+     * 
+     * @param c               the constraint to be posted
      * @param enforceFixPoint is one wants to compute the fix-point after
      */
     void post(CPConstraint c, boolean enforceFixPoint);
@@ -80,8 +81,15 @@ public interface CPSolver extends StateManaged {
     void post(CPBoolVar b);
 
     /**
+     * Forces the boolean variable to be true and then
+     * optionally computes the fix-point.
+     *
+     * @param b the variable that must be set to true
+     */
+    void post(CPBoolVar b, boolean enforceFixPoint);
+
+    /**
      * Gives the ModelProxy associated with this CPSolver, if any
      */
     ModelProxy getModelProxy();
 }
-

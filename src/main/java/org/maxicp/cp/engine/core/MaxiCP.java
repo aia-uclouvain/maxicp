@@ -106,8 +106,13 @@ public class MaxiCP implements CPSolver {
 
     @Override
     public void post(CPBoolVar b) {
+        post(b, true);
+    }
+
+    @Override
+    public void post(CPBoolVar b, boolean enforceFixPoint) {
         b.fix(true);
-        fixPoint();
+        if (enforceFixPoint) fixPoint();
     }
 
     @Override
