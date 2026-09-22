@@ -106,18 +106,23 @@ public class MaxiCP implements CPSolver {
 
     @Override
     public void post(CPBoolVar b) {
-<span class="fc" id="L109">        b.fix(true);</span>
-<span class="fc" id="L110">        fixPoint();</span>
-<span class="fc" id="L111">    }</span>
+<span class="nc" id="L109">        post(b, true);</span>
+<span class="nc" id="L110">    }</span>
+
+    @Override
+    public void post(CPBoolVar b, boolean enforceFixPoint) {
+<span class="fc" id="L114">        b.fix(true);</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        if (enforceFixPoint) fixPoint();</span>
+<span class="fc" id="L116">    }</span>
 
     @Override
     public ModelProxy getModelProxy() {
-<span class="fc" id="L115">        return modelProxy;</span>
+<span class="fc" id="L120">        return modelProxy;</span>
     }
 
     @Override
     public String toString() {
-<span class="fc" id="L120">        return String.format(&quot;MaxiCP(%s)&quot;, sm);</span>
+<span class="fc" id="L125">        return String.format(&quot;MaxiCP(%s)&quot;, sm);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
