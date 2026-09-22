@@ -143,7 +143,7 @@ public class LNSRunnableSearch extends RunnableSearch {
 <span class="fc" id="L143">                    lastStats = dfs.optimizeSubjectTo(objective,</span>
                             stats -&gt; {
 <span class="fc" id="L145">                                long elapsed = System.currentTimeMillis() - t0;</span>
-<span class="fc bfc" id="L146" title="All 4 branches covered.">                                return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
+<span class="pc bpc" id="L146" title="1 of 4 branches missed.">                                return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
                             }, () -&gt; {
 <span class="fc" id="L148">                                blackBoxSearch.postIncumbentCut();</span>
                                 // Only freeze decision variables
@@ -178,7 +178,7 @@ public class LNSRunnableSearch extends RunnableSearch {
                             adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP);
 <span class="fc" id="L179">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d reached failure limit, freezing more vars (freezeRate=%d)&quot;</span>
 <span class="fc" id="L180">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
-<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                } else if (lastStats != null &amp;&amp; restartImproved) {</span>
+<span class="pc bpc" id="L181" title="2 of 4 branches missed.">                } else if (lastStats != null &amp;&amp; restartImproved) {</span>
 <span class="fc" id="L182">                    adaptiveFreezeRatePercent = Math.min(clampFreezeRatePercent(freezeRatePercent),</span>
                             adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP / 2);
                 }

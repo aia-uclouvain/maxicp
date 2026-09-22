@@ -258,7 +258,7 @@ org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.Phase,5,23,2,2,1,3,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,ImpactBasedFragmentSelector,311,15,34,0,57,5,25,1,8,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,FragmentSelector.FragmentSelectionFeedback,0,21,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox,0,121,0,0,0,16,0,8,0,8
-org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,179,895,43,88,32,166,38,50,3,19
+org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,179,895,45,86,32,166,40,48,3,19
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.SolveConfig,10,39,0,0,4,14,2,4,2,4
 org.maxicp:maxicp,org.maxicp.search.blackbox,SearchStatus,0,39,0,0,0,7,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,GroupCoherentFragmentSelector,274,0,32,0,51,0,22,0,6,0
@@ -354,7 +354,7 @@ org.maxicp:maxicp,org.maxicp.search,FDSModeling,132,902,24,96,19,153,24,58,2,20
 org.maxicp:maxicp,org.maxicp.search,FDSModeling.Choice,105,83,31,10,20,20,25,8,1,6
 org.maxicp:maxicp,org.maxicp.search,LimitedDiscrepancyBranching,5,66,1,5,0,17,1,5,0,3
 org.maxicp:maxicp,org.maxicp.search,BestFirstSearch,149,0,8,0,35,0,9,0,5,0
-org.maxicp:maxicp,org.maxicp.search,Searches,607,813,72,72,104,167,68,85,29,52
+org.maxicp:maxicp,org.maxicp.search,Searches,605,816,71,75,103,166,67,87,29,52
 org.maxicp:maxicp,org.maxicp.search,Rank.Ranker.new Record() {...},0,12,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod.IntRef,0,3,0,0,0,1,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,Sequencer,0,29,0,4,0,8,0,4,0,2

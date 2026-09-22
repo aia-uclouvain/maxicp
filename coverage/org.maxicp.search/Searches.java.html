@@ -408,34 +408,31 @@ public final class Searches {
     public static Supplier&lt;Runnable[]&gt; lastConflict(Supplier&lt;IntExpression&gt; variableSelector, Function&lt;IntExpression, Integer&gt; valueSelector) {
 <span class="fc" id="L409">        AtomicReference&lt;IntExpression&gt; lastConflictVariable = new AtomicReference&lt;&gt;(null);</span>
 <span class="fc" id="L410">        return () -&gt; {</span>
-            IntExpression xs;
-<span class="fc bfc" id="L412" title="All 2 branches covered.">            if (lastConflictVariable.get() == null) {</span>
-<span class="fc" id="L413">                xs = variableSelector.get();</span>
-            } else {
-<span class="fc" id="L415">                xs = lastConflictVariable.get();</span>
-<span class="fc" id="L416">                lastConflictVariable.set(null);</span>
-            }
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">            if (xs == null)</span>
-<span class="nc" id="L419">                return EMPTY;</span>
+            // the last conflict variable is only selected while it is not fixed: branching on a fixed variable gives
+            // a child equal to its parent and a failing one
+<span class="fc" id="L413">            IntExpression last = lastConflictVariable.getAndSet(null);</span>
+<span class="fc bfc" id="L414" title="All 4 branches covered.">            IntExpression xs = last == null || last.isFixed() ? variableSelector.get() : last;</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            if (xs == null)</span>
+<span class="fc" id="L416">                return EMPTY;</span>
             else {
-<span class="fc" id="L421">                int v = valueSelector.apply(xs);</span>
-<span class="fc" id="L422">                Runnable a = () -&gt; {</span>
+<span class="fc" id="L418">                int v = valueSelector.apply(xs);</span>
+<span class="fc" id="L419">                Runnable a = () -&gt; {</span>
                     try {
-<span class="fc" id="L424">                        xs.getModelProxy().add(Factory.eq(xs, v));</span>
-<span class="fc" id="L425">                    } catch (InconsistencyException e) {</span>
-<span class="fc" id="L426">                        lastConflictVariable.set(xs);</span>
-<span class="fc" id="L427">                        throw e;</span>
-<span class="fc" id="L428">                    }</span>
-<span class="fc" id="L429">                };</span>
-<span class="fc" id="L430">                Runnable b = () -&gt; {</span>
+<span class="fc" id="L421">                        xs.getModelProxy().add(Factory.eq(xs, v));</span>
+<span class="fc" id="L422">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L423">                        lastConflictVariable.set(xs);</span>
+<span class="fc" id="L424">                        throw e;</span>
+<span class="fc" id="L425">                    }</span>
+<span class="fc" id="L426">                };</span>
+<span class="fc" id="L427">                Runnable b = () -&gt; {</span>
                     try {
-<span class="fc" id="L432">                        xs.getModelProxy().add(Factory.neq(xs, v));</span>
-<span class="fc" id="L433">                    } catch (InconsistencyException e) {</span>
-<span class="fc" id="L434">                        lastConflictVariable.set(xs);</span>
-<span class="fc" id="L435">                        throw e;</span>
-<span class="fc" id="L436">                    }</span>
-<span class="fc" id="L437">                };</span>
-<span class="fc" id="L438">                return branch(a, b);</span>
+<span class="fc" id="L429">                        xs.getModelProxy().add(Factory.neq(xs, v));</span>
+<span class="fc" id="L430">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L431">                        lastConflictVariable.set(xs);</span>
+<span class="fc" id="L432">                        throw e;</span>
+<span class="fc" id="L433">                    }</span>
+<span class="fc" id="L434">                };</span>
+<span class="fc" id="L435">                return branch(a, b);</span>
             }
         };
     }
@@ -453,35 +450,35 @@ public final class Searches {
      *                         it must be assigned on the left branch (and excluded on the right)
      */
     public static Supplier&lt;Runnable[]&gt; conflictOrderingSearch(Supplier&lt;IntExpression&gt; variableSelector, Function&lt;IntExpression, Integer&gt; valueSelector) {
-<span class="fc" id="L456">        HashMap&lt;IntExpression, Integer&gt; stamp = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L457">        return () -&gt; {</span>
-<span class="fc" id="L458">            int maxvalue = Integer.MIN_VALUE;</span>
-<span class="fc" id="L459">            IntExpression maxIntVar = null;</span>
-<span class="fc bfc" id="L460" title="All 2 branches covered.">            for (Map.Entry&lt;IntExpression, Integer&gt; e : stamp.entrySet()) {</span>
-<span class="fc bfc" id="L461" title="All 4 branches covered.">                if (e.getValue() &gt; maxvalue &amp;&amp; !e.getKey().isFixed()) {</span>
-<span class="fc" id="L462">                    maxvalue = e.getValue();</span>
-<span class="fc" id="L463">                    maxIntVar = e.getKey();</span>
+<span class="fc" id="L453">        HashMap&lt;IntExpression, Integer&gt; stamp = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L454">        return () -&gt; {</span>
+<span class="fc" id="L455">            int maxvalue = Integer.MIN_VALUE;</span>
+<span class="fc" id="L456">            IntExpression maxIntVar = null;</span>
+<span class="fc bfc" id="L457" title="All 2 branches covered.">            for (Map.Entry&lt;IntExpression, Integer&gt; e : stamp.entrySet()) {</span>
+<span class="fc bfc" id="L458" title="All 4 branches covered.">                if (e.getValue() &gt; maxvalue &amp;&amp; !e.getKey().isFixed()) {</span>
+<span class="fc" id="L459">                    maxvalue = e.getValue();</span>
+<span class="fc" id="L460">                    maxIntVar = e.getKey();</span>
                 }
-<span class="fc" id="L465">            }</span>
+<span class="fc" id="L462">            }</span>
             IntExpression xs;
-<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (maxIntVar == null) {</span>
-<span class="fc" id="L468">                xs = variableSelector.get();</span>
-<span class="pc bpc" id="L469" title="1 of 2 branches missed.">                if (xs != null) stamp.put(xs, 0);</span>
+<span class="fc bfc" id="L464" title="All 2 branches covered.">            if (maxIntVar == null) {</span>
+<span class="fc" id="L465">                xs = variableSelector.get();</span>
+<span class="pc bpc" id="L466" title="1 of 2 branches missed.">                if (xs != null) stamp.put(xs, 0);</span>
             } else {
-<span class="fc" id="L471">                xs = maxIntVar;</span>
-<span class="fc" id="L472">                stamp.put(xs, stamp.get(xs) + 1);</span>
+<span class="fc" id="L468">                xs = maxIntVar;</span>
+<span class="fc" id="L469">                stamp.put(xs, stamp.get(xs) + 1);</span>
             }
-<span class="pc bpc" id="L474" title="1 of 2 branches missed.">            if (xs == null)</span>
-<span class="nc" id="L475">                return EMPTY;</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">            if (xs == null)</span>
+<span class="nc" id="L472">                return EMPTY;</span>
             else {
-<span class="fc" id="L477">                int v = valueSelector.apply(xs);</span>
-<span class="fc" id="L478">                Runnable a = () -&gt; {</span>
-<span class="fc" id="L479">                    xs.getModelProxy().add(Factory.eq(xs, v));</span>
+<span class="fc" id="L474">                int v = valueSelector.apply(xs);</span>
+<span class="fc" id="L475">                Runnable a = () -&gt; {</span>
+<span class="fc" id="L476">                    xs.getModelProxy().add(Factory.eq(xs, v));</span>
+<span class="fc" id="L477">                };</span>
+<span class="fc" id="L478">                Runnable b = () -&gt; {</span>
+<span class="fc" id="L479">                    xs.getModelProxy().add(Factory.neq(xs, v));</span>
 <span class="fc" id="L480">                };</span>
-<span class="fc" id="L481">                Runnable b = () -&gt; {</span>
-<span class="fc" id="L482">                    xs.getModelProxy().add(Factory.neq(xs, v));</span>
-<span class="fc" id="L483">                };</span>
-<span class="fc" id="L484">                return branch(a, b);</span>
+<span class="fc" id="L481">                return branch(a, b);</span>
             }
         };
     }
@@ -497,43 +494,43 @@ public final class Searches {
      *
      */
     public static Supplier&lt;Runnable[]&gt; conflictOrderingSearch(IntExpression... xs) {
-<span class="nc" id="L500">        return conflictOrderingSearch(</span>
-<span class="nc" id="L501">                minDomVariableSelector(xs),</span>
-<span class="nc" id="L502">                xi -&gt; xi.min()</span>
+<span class="nc" id="L497">        return conflictOrderingSearch(</span>
+<span class="nc" id="L498">                minDomVariableSelector(xs),</span>
+<span class="nc" id="L499">                xi -&gt; xi.min()</span>
         );
     }
 
 
     public static Supplier&lt;Runnable[]&gt; firstFailBinary(SeqVar... seqVars) {
-<span class="fc" id="L508">        int nNodes = Arrays.stream(seqVars).map(SeqVar::nNode).max(Integer::compareTo).get();</span>
-<span class="fc" id="L509">        int[] nodes = new int[nNodes];</span>
-<span class="fc" id="L510">        return () -&gt; {</span>
-<span class="pc bfc" id="L511" title="All 2 branches covered.">            SeqVar seqVar = selectMin(seqVars, s -&gt; !s.isFixed(), s -&gt; s.nNode(MEMBER));</span>
-<span class="fc bfc" id="L512" title="All 2 branches covered.">            if (seqVar == null)</span>
-<span class="fc" id="L513">                return EMPTY;</span>
-<span class="fc" id="L514">            int nInsertable = seqVar.fillNode(nodes, INSERTABLE);</span>
-<span class="fc" id="L515">            int branchingNode = nodes[0];</span>
-<span class="fc" id="L516">            int minInsert = seqVar.nInsert(branchingNode);</span>
-<span class="fc bfc" id="L517" title="All 2 branches covered.">            for (int i = 1; i &lt; nInsertable; i++) {</span>
-<span class="fc" id="L518">                int node = nodes[i];</span>
-<span class="fc" id="L519">                int nInsert = seqVar.nInsert(node);</span>
-<span class="pc bpc" id="L520" title="5 of 8 branches missed.">                if (nInsert &lt; minInsert &amp;&amp; (nInsert &gt; 0 || (nInsert == 0 &amp;&amp; !seqVar.isNode(node, REQUIRED)))) {</span>
-<span class="fc" id="L521">                    minInsert = nInsert;</span>
-<span class="fc" id="L522">                    branchingNode = node;</span>
+<span class="fc" id="L505">        int nNodes = Arrays.stream(seqVars).map(SeqVar::nNode).max(Integer::compareTo).get();</span>
+<span class="fc" id="L506">        int[] nodes = new int[nNodes];</span>
+<span class="fc" id="L507">        return () -&gt; {</span>
+<span class="pc bfc" id="L508" title="All 2 branches covered.">            SeqVar seqVar = selectMin(seqVars, s -&gt; !s.isFixed(), s -&gt; s.nNode(MEMBER));</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">            if (seqVar == null)</span>
+<span class="fc" id="L510">                return EMPTY;</span>
+<span class="fc" id="L511">            int nInsertable = seqVar.fillNode(nodes, INSERTABLE);</span>
+<span class="fc" id="L512">            int branchingNode = nodes[0];</span>
+<span class="fc" id="L513">            int minInsert = seqVar.nInsert(branchingNode);</span>
+<span class="fc bfc" id="L514" title="All 2 branches covered.">            for (int i = 1; i &lt; nInsertable; i++) {</span>
+<span class="fc" id="L515">                int node = nodes[i];</span>
+<span class="fc" id="L516">                int nInsert = seqVar.nInsert(node);</span>
+<span class="pc bpc" id="L517" title="5 of 8 branches missed.">                if (nInsert &lt; minInsert &amp;&amp; (nInsert &gt; 0 || (nInsert == 0 &amp;&amp; !seqVar.isNode(node, REQUIRED)))) {</span>
+<span class="fc" id="L518">                    minInsert = nInsert;</span>
+<span class="fc" id="L519">                    branchingNode = node;</span>
                 }
             }
-<span class="fc" id="L525">            int branchingNodeFinal = branchingNode;</span>
-<span class="fc" id="L526">            boolean isRequired = seqVar.isNode(branchingNodeFinal, REQUIRED);</span>
-<span class="fc" id="L527">            int nPred = seqVar.fillInsert(branchingNodeFinal, nodes);</span>
-<span class="fc bfc" id="L528" title="All 2 branches covered.">            Runnable[] branching = new Runnable[nPred + (isRequired ? 0 : 1)];</span>
-<span class="fc bfc" id="L529" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred; i++) {</span>
-<span class="fc" id="L530">                int pred = nodes[i];</span>
-<span class="fc" id="L531">                branching[i] = () -&gt; seqVar.getModelProxy().add(insert(seqVar, pred, branchingNodeFinal));</span>
+<span class="fc" id="L522">            int branchingNodeFinal = branchingNode;</span>
+<span class="fc" id="L523">            boolean isRequired = seqVar.isNode(branchingNodeFinal, REQUIRED);</span>
+<span class="fc" id="L524">            int nPred = seqVar.fillInsert(branchingNodeFinal, nodes);</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">            Runnable[] branching = new Runnable[nPred + (isRequired ? 0 : 1)];</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">            for (int i = 0; i &lt; nPred; i++) {</span>
+<span class="fc" id="L527">                int pred = nodes[i];</span>
+<span class="fc" id="L528">                branching[i] = () -&gt; seqVar.getModelProxy().add(insert(seqVar, pred, branchingNodeFinal));</span>
             }
-<span class="fc bfc" id="L533" title="All 2 branches covered.">            if (!isRequired) {</span>
-<span class="fc" id="L534">                branching[nPred] = () -&gt; seqVar.getModelProxy().add(exclude(seqVar, branchingNodeFinal));</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">            if (!isRequired) {</span>
+<span class="fc" id="L531">                branching[nPred] = () -&gt; seqVar.getModelProxy().add(exclude(seqVar, branchingNodeFinal));</span>
             }
-<span class="fc" id="L536">            return branching;</span>
+<span class="fc" id="L533">            return branching;</span>
         };
     }
 
@@ -552,7 +549,7 @@ public final class Searches {
      * @return node with the minimum cost, summed over all sequence variables
      */
     public static OptionalInt nodeSelector(SeqVar[] seqVars, int[] nodes, BiFunction&lt;SeqVar, Integer, Integer&gt; nodeCost) {
-<span class="nc" id="L555">        return nodeSelector(seqVars, nodes, nodeCost, Integer::sum);</span>
+<span class="nc" id="L552">        return nodeSelector(seqVars, nodes, nodeCost, Integer::sum);</span>
     }
 
     /**
@@ -571,25 +568,25 @@ public final class Searches {
      * @return node with the minimum cost, summed over all sequence variables
      */
     public static OptionalInt nodeSelector(SeqVar[] seqVars, int[] nodes, BiFunction&lt;SeqVar, Integer, Integer&gt; nodeCost, BiFunction&lt;Integer, Integer, Integer&gt; nodeCostAggr) {
-<span class="nc" id="L574">        OptionalInt bestNode = OptionalInt.empty();</span>
-<span class="nc" id="L575">        int bestCost = 0;</span>
-<span class="nc bnc" id="L576" title="All 2 branches missed.">        for (int node : nodes) {</span>
-<span class="nc" id="L577">            int cost = 0;</span>
-<span class="nc" id="L578">            boolean skip = true; // consider only nodes that are insertable: the remaining ones are already decided</span>
-<span class="nc bnc" id="L579" title="All 2 branches missed.">            for (SeqVar seqVar : seqVars) {</span>
-<span class="nc bnc" id="L580" title="All 2 branches missed.">                if (seqVar.isNode(node, INSERTABLE)) {</span>
-<span class="nc" id="L581">                    skip = false;</span>
-<span class="nc" id="L582">                    cost = nodeCostAggr.apply(cost, nodeCost.apply(seqVar, node));</span>
+<span class="nc" id="L571">        OptionalInt bestNode = OptionalInt.empty();</span>
+<span class="nc" id="L572">        int bestCost = 0;</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">        for (int node : nodes) {</span>
+<span class="nc" id="L574">            int cost = 0;</span>
+<span class="nc" id="L575">            boolean skip = true; // consider only nodes that are insertable: the remaining ones are already decided</span>
+<span class="nc bnc" id="L576" title="All 2 branches missed.">            for (SeqVar seqVar : seqVars) {</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">                if (seqVar.isNode(node, INSERTABLE)) {</span>
+<span class="nc" id="L578">                    skip = false;</span>
+<span class="nc" id="L579">                    cost = nodeCostAggr.apply(cost, nodeCost.apply(seqVar, node));</span>
                 }
             }
-<span class="nc bnc" id="L585" title="All 2 branches missed.">            if (!skip) {</span>
-<span class="nc bnc" id="L586" title="All 4 branches missed.">                if (cost &lt; bestCost || bestNode.isEmpty()) {</span>
-<span class="nc" id="L587">                    bestCost = cost;</span>
-<span class="nc" id="L588">                    bestNode = OptionalInt.of(node);</span>
+<span class="nc bnc" id="L582" title="All 2 branches missed.">            if (!skip) {</span>
+<span class="nc bnc" id="L583" title="All 4 branches missed.">                if (cost &lt; bestCost || bestNode.isEmpty()) {</span>
+<span class="nc" id="L584">                    bestCost = cost;</span>
+<span class="nc" id="L585">                    bestNode = OptionalInt.of(node);</span>
                 }
             }
         }
-<span class="nc" id="L592">        return bestNode;</span>
+<span class="nc" id="L589">        return bestNode;</span>
     }
 
     /**
@@ -611,34 +608,34 @@ public final class Searches {
      */
     public static Supplier&lt;Function&lt;Integer, Runnable[]&gt;&gt; branchesInsertingNode(SeqVar[] seqVars, TriFunction&lt;Integer, Integer, Integer, Integer&gt; detourCost) {
         // upper bound on the number of branches generated
-<span class="nc" id="L614">        int nBranchesUpperBound = Arrays.stream(seqVars).mapToInt(SeqVar::nNode).sum();</span>
-<span class="nc" id="L615">        int[] insertions = new int[nBranchesUpperBound];</span>
-<span class="nc" id="L616">        Runnable[] branches = new Runnable[nBranchesUpperBound];</span>
-<span class="nc" id="L617">        Integer[] heuristicVal = new Integer[nBranchesUpperBound];</span>
-<span class="nc" id="L618">        Integer[] branchingRange = new Integer[nBranchesUpperBound];</span>
-<span class="nc" id="L619">        return () -&gt; (node) -&gt; {</span>
-<span class="nc" id="L620">            int branch = 0;</span>
-<span class="nc bnc" id="L621" title="All 2 branches missed.">            for (SeqVar route : seqVars) {</span>
-<span class="nc" id="L622">                int nInsert = route.fillInsert(node, insertions);</span>
-<span class="nc bnc" id="L623" title="All 2 branches missed.">                for (int j = 0; j &lt; nInsert; j++) {</span>
-<span class="nc" id="L624">                    int pred = insertions[j]; // predecessor for the node</span>
-<span class="nc" id="L625">                    int succ = route.memberAfter(pred);</span>
-<span class="nc" id="L626">                    branchingRange[branch] = branch;</span>
-<span class="nc" id="L627">                    heuristicVal[branch] = detourCost.apply(pred, node, succ);</span>
-<span class="nc" id="L628">                    branches[branch++] = () -&gt; route.getModelProxy().add(insert(route, pred, node));</span>
+<span class="nc" id="L611">        int nBranchesUpperBound = Arrays.stream(seqVars).mapToInt(SeqVar::nNode).sum();</span>
+<span class="nc" id="L612">        int[] insertions = new int[nBranchesUpperBound];</span>
+<span class="nc" id="L613">        Runnable[] branches = new Runnable[nBranchesUpperBound];</span>
+<span class="nc" id="L614">        Integer[] heuristicVal = new Integer[nBranchesUpperBound];</span>
+<span class="nc" id="L615">        Integer[] branchingRange = new Integer[nBranchesUpperBound];</span>
+<span class="nc" id="L616">        return () -&gt; (node) -&gt; {</span>
+<span class="nc" id="L617">            int branch = 0;</span>
+<span class="nc bnc" id="L618" title="All 2 branches missed.">            for (SeqVar route : seqVars) {</span>
+<span class="nc" id="L619">                int nInsert = route.fillInsert(node, insertions);</span>
+<span class="nc bnc" id="L620" title="All 2 branches missed.">                for (int j = 0; j &lt; nInsert; j++) {</span>
+<span class="nc" id="L621">                    int pred = insertions[j]; // predecessor for the node</span>
+<span class="nc" id="L622">                    int succ = route.memberAfter(pred);</span>
+<span class="nc" id="L623">                    branchingRange[branch] = branch;</span>
+<span class="nc" id="L624">                    heuristicVal[branch] = detourCost.apply(pred, node, succ);</span>
+<span class="nc" id="L625">                    branches[branch++] = () -&gt; route.getModelProxy().add(insert(route, pred, node));</span>
                 }
             }
-<span class="nc" id="L631">            int nBranches = branch;</span>
-<span class="nc" id="L632">            Runnable[] branchesSorted = new Runnable[nBranches];</span>
-<span class="nc" id="L633">            Arrays.sort(branchingRange, 0, nBranches, Comparator.comparing(j -&gt; heuristicVal[j]));</span>
-<span class="nc bnc" id="L634" title="All 2 branches missed.">            for (branch = 0; branch &lt; nBranches; branch++)</span>
-<span class="nc" id="L635">                branchesSorted[branch] = branches[branchingRange[branch]];</span>
-<span class="nc" id="L636">            return branchesSorted;</span>
+<span class="nc" id="L628">            int nBranches = branch;</span>
+<span class="nc" id="L629">            Runnable[] branchesSorted = new Runnable[nBranches];</span>
+<span class="nc" id="L630">            Arrays.sort(branchingRange, 0, nBranches, Comparator.comparing(j -&gt; heuristicVal[j]));</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">            for (branch = 0; branch &lt; nBranches; branch++)</span>
+<span class="nc" id="L632">                branchesSorted[branch] = branches[branchingRange[branch]];</span>
+<span class="nc" id="L633">            return branchesSorted;</span>
         };
     }
 
     public static Supplier&lt;Function&lt;Integer, Runnable[]&gt;&gt; branchesInsertingNode(SeqVar[] seqVars, int[][] distMatrix) {
-<span class="nc" id="L641">        return branchesInsertingNode(seqVars, (pred, node, succ) -&gt; distMatrix[pred][node] + distMatrix[node][succ] - distMatrix[pred][succ]);</span>
+<span class="nc" id="L638">        return branchesInsertingNode(seqVars, (pred, node, succ) -&gt; distMatrix[pred][node] + distMatrix[node][succ] - distMatrix[pred][succ]);</span>
     }
 
     /**
@@ -654,35 +651,35 @@ public final class Searches {
      */
     public static Function&lt;IntExpression, Integer&gt; boundImpactValueSelector(IntExpression objective) {
         // black magic for java, so that the domain can be updated by the function supplied
-<span class="nc" id="L657">        final int[][] domain = {new int[100]};</span>
-<span class="nc" id="L658">        return (IntExpression x) -&gt; {</span>
-<span class="nc bnc" id="L659" title="All 2 branches missed.">            if (x.isFixed())</span>
-<span class="nc" id="L660">                return null;</span>
-<span class="nc" id="L661">            int size = x.size();</span>
-<span class="nc bnc" id="L662" title="All 2 branches missed.">            if (size &gt; domain[0].length)</span>
-<span class="nc" id="L663">                domain[0] = new int[Math.max(domain.length * 2, size)]; // increase the size</span>
-<span class="nc" id="L664">            size = x.fillArray(domain[0]);</span>
-<span class="nc" id="L665">            Integer bestValue = null;</span>
-<span class="nc" id="L666">            int bestBound = Integer.MAX_VALUE;</span>
-<span class="nc bnc" id="L667" title="All 2 branches missed.">            for (int i = 0; i &lt; size; i++) {</span>
-<span class="nc" id="L668">                int value = domain[0][i];</span>
-<span class="nc" id="L669">                x.getModelProxy().getConcreteModel().getStateManager().saveState();</span>
+<span class="nc" id="L654">        final int[][] domain = {new int[100]};</span>
+<span class="nc" id="L655">        return (IntExpression x) -&gt; {</span>
+<span class="nc bnc" id="L656" title="All 2 branches missed.">            if (x.isFixed())</span>
+<span class="nc" id="L657">                return null;</span>
+<span class="nc" id="L658">            int size = x.size();</span>
+<span class="nc bnc" id="L659" title="All 2 branches missed.">            if (size &gt; domain[0].length)</span>
+<span class="nc" id="L660">                domain[0] = new int[Math.max(domain.length * 2, size)]; // increase the size</span>
+<span class="nc" id="L661">            size = x.fillArray(domain[0]);</span>
+<span class="nc" id="L662">            Integer bestValue = null;</span>
+<span class="nc" id="L663">            int bestBound = Integer.MAX_VALUE;</span>
+<span class="nc bnc" id="L664" title="All 2 branches missed.">            for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc" id="L665">                int value = domain[0][i];</span>
+<span class="nc" id="L666">                x.getModelProxy().getConcreteModel().getStateManager().saveState();</span>
                 try {
-<span class="nc" id="L671">                    x.getModelProxy().add(Factory.eq(x, value));</span>
-<span class="nc" id="L672">                    int bound = objective.min();</span>
-<span class="nc bnc" id="L673" title="All 8 branches missed.">                    if (bestValue == null || bound &lt; bestBound || (bound == bestBound &amp;&amp; value &lt; bestValue)) {</span>
-<span class="nc" id="L674">                        bestValue = value;</span>
-<span class="nc" id="L675">                        bestBound = bound;</span>
+<span class="nc" id="L668">                    x.getModelProxy().add(Factory.eq(x, value));</span>
+<span class="nc" id="L669">                    int bound = objective.min();</span>
+<span class="nc bnc" id="L670" title="All 8 branches missed.">                    if (bestValue == null || bound &lt; bestBound || (bound == bestBound &amp;&amp; value &lt; bestValue)) {</span>
+<span class="nc" id="L671">                        bestValue = value;</span>
+<span class="nc" id="L672">                        bestBound = bound;</span>
                     }
-<span class="nc" id="L677">                } catch (InconsistencyException ignored) {</span>
-<span class="nc" id="L678">                }</span>
-<span class="nc" id="L679">                x.getModelProxy().getConcreteModel().getStateManager().restoreState();</span>
+<span class="nc" id="L674">                } catch (InconsistencyException ignored) {</span>
+<span class="nc" id="L675">                }</span>
+<span class="nc" id="L676">                x.getModelProxy().getConcreteModel().getStateManager().restoreState();</span>
             }
-<span class="nc bnc" id="L681" title="All 2 branches missed.">            if (bestValue == null) {</span>
+<span class="nc bnc" id="L678" title="All 2 branches missed.">            if (bestValue == null) {</span>
                 // all values of x appear to be inconsistent
-<span class="nc" id="L683">                throw InconsistencyException.INCONSISTENCY;</span>
+<span class="nc" id="L680">                throw InconsistencyException.INCONSISTENCY;</span>
             }
-<span class="nc" id="L685">            return bestValue;</span>
+<span class="nc" id="L682">            return bestValue;</span>
         };
     }
 
@@ -702,102 +699,102 @@ public final class Searches {
      * @return set time branching
      */
     public static Supplier&lt;Runnable[]&gt; setTimes(IntervalVar[] intervals, IntFunction tieBreaker) {
-<span class="nc" id="L705">        return new SetTimesModeling(intervals, tieBreaker);</span>
+<span class="nc" id="L702">        return new SetTimesModeling(intervals, tieBreaker);</span>
     }
 
     public static Supplier&lt;Runnable[]&gt; setTimes(IntervalVar[] intervals) {
-<span class="fc" id="L709">        return new SetTimesModeling(intervals);</span>
+<span class="fc" id="L706">        return new SetTimesModeling(intervals);</span>
     }
 
     public static Supplier&lt;Runnable[]&gt; fds(CPIntervalVar[] intervals) {
-<span class="fc" id="L713">        return new FDS(intervals);</span>
+<span class="fc" id="L710">        return new FDS(intervals);</span>
     }
 
     public static Supplier&lt;Runnable[]&gt; fds(IntervalVar[] intervals) {
-<span class="fc" id="L717">        return new FDSModeling(intervals);</span>
+<span class="fc" id="L714">        return new FDSModeling(intervals);</span>
     }
 
     public static Supplier&lt;Runnable[]&gt; fds(IntExpression... intExpressions) {
-<span class="fc" id="L721">        return new FDSModeling(intExpressions);</span>
+<span class="fc" id="L718">        return new FDSModeling(intExpressions);</span>
     }
 
     public static Supplier&lt;Runnable[]&gt; fds(IntervalVar[] intervals, IntExpression... intExpressions) {
-<span class="fc" id="L725">        return new FDSModeling(intervals, intExpressions);</span>
+<span class="fc" id="L722">        return new FDSModeling(intervals, intExpressions);</span>
     }
 
     public static Runnable[] branchOnStartMin(IntervalVar var) {
-<span class="fc" id="L729">        int min = var.startMin();</span>
-<span class="fc" id="L730">        Runnable left = () -&gt; {</span>
-<span class="fc" id="L731">            var.getModelProxy().add(start(var, min));</span>
+<span class="fc" id="L726">        int min = var.startMin();</span>
+<span class="fc" id="L727">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L728">            var.getModelProxy().add(start(var, min));</span>
+<span class="fc" id="L729">        };</span>
+<span class="fc" id="L730">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L731">            var.getModelProxy().add(startAfter(var, min + 1));</span>
 <span class="fc" id="L732">        };</span>
-<span class="fc" id="L733">        Runnable right = () -&gt; {</span>
-<span class="fc" id="L734">            var.getModelProxy().add(startAfter(var, min + 1));</span>
-<span class="fc" id="L735">        };</span>
-<span class="fc" id="L736">        return new Runnable[]{left, right};</span>
+<span class="fc" id="L733">        return new Runnable[]{left, right};</span>
     }
 
     public static Runnable[] branchOnStatus(CPIntervalVar var) {
-<span class="pc bpc" id="L740" title="2 of 4 branches missed.">        if (var.isPresent() || var.isAbsent()) return EMPTY;</span>
-<span class="fc" id="L741">        Runnable left = () -&gt; {</span>
-<span class="fc" id="L742">            var.setPresent();</span>
-<span class="fc" id="L743">            var.getSolver().fixPoint();</span>
-<span class="fc" id="L744">        };</span>
-<span class="fc" id="L745">        Runnable right = () -&gt; {</span>
-<span class="fc" id="L746">            var.setAbsent();</span>
-<span class="fc" id="L747">            var.getSolver().fixPoint();</span>
-<span class="fc" id="L748">        };</span>
-<span class="fc" id="L749">        return new Runnable[]{left, right};</span>
+<span class="pc bpc" id="L737" title="2 of 4 branches missed.">        if (var.isPresent() || var.isAbsent()) return EMPTY;</span>
+<span class="fc" id="L738">        Runnable left = () -&gt; {</span>
+<span class="fc" id="L739">            var.setPresent();</span>
+<span class="fc" id="L740">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L741">        };</span>
+<span class="fc" id="L742">        Runnable right = () -&gt; {</span>
+<span class="fc" id="L743">            var.setAbsent();</span>
+<span class="fc" id="L744">            var.getSolver().fixPoint();</span>
+<span class="fc" id="L745">        };</span>
+<span class="fc" id="L746">        return new Runnable[]{left, right};</span>
     }
 
 
     public static Supplier&lt;Runnable[]&gt; branchOnPresentStarts(IntervalVar... vars) {
-<span class="fc" id="L754">        return () -&gt; {</span>
-<span class="fc" id="L755">            IntervalVar notFixed = null;</span>
-<span class="fc bfc" id="L756" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
-<span class="fc bfc" id="L757" title="All 4 branches covered.">                if (var.isPresent() &amp;&amp; var.startMin() != var.startMax()) {</span>
-<span class="fc" id="L758">                    notFixed = var;</span>
-<span class="fc" id="L759">                    break;</span>
+<span class="fc" id="L751">        return () -&gt; {</span>
+<span class="fc" id="L752">            IntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L753" title="All 2 branches covered.">            for (IntervalVar var : vars) {</span>
+<span class="fc bfc" id="L754" title="All 4 branches covered.">                if (var.isPresent() &amp;&amp; var.startMin() != var.startMax()) {</span>
+<span class="fc" id="L755">                    notFixed = var;</span>
+<span class="fc" id="L756">                    break;</span>
                 }
             }
-<span class="fc bfc" id="L762" title="All 2 branches covered.">            if (notFixed == null) {</span>
-<span class="fc" id="L763">                return EMPTY;</span>
+<span class="fc bfc" id="L759" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L760">                return EMPTY;</span>
             } else {
-<span class="fc" id="L765">                return branchOnStartMin(notFixed);</span>
+<span class="fc" id="L762">                return branchOnStartMin(notFixed);</span>
             }
         };
     }
 
     public static Supplier&lt;Runnable[]&gt; branchOnStatus(CPIntervalVar... vars) {
-<span class="fc" id="L771">        return () -&gt; {</span>
-<span class="fc" id="L772">            CPIntervalVar notFixed = null;</span>
-<span class="fc bfc" id="L773" title="All 2 branches covered.">            for (CPIntervalVar var : vars) {</span>
-<span class="fc bfc" id="L774" title="All 4 branches covered.">                if (!var.isAbsent() &amp;&amp; !var.isPresent()) {</span>
-<span class="fc" id="L775">                    notFixed = var;</span>
-<span class="fc" id="L776">                    break;</span>
+<span class="fc" id="L768">        return () -&gt; {</span>
+<span class="fc" id="L769">            CPIntervalVar notFixed = null;</span>
+<span class="fc bfc" id="L770" title="All 2 branches covered.">            for (CPIntervalVar var : vars) {</span>
+<span class="fc bfc" id="L771" title="All 4 branches covered.">                if (!var.isAbsent() &amp;&amp; !var.isPresent()) {</span>
+<span class="fc" id="L772">                    notFixed = var;</span>
+<span class="fc" id="L773">                    break;</span>
                 }
             }
-<span class="fc bfc" id="L779" title="All 2 branches covered.">            if (notFixed == null) {</span>
-<span class="fc" id="L780">                return EMPTY;</span>
+<span class="fc bfc" id="L776" title="All 2 branches covered.">            if (notFixed == null) {</span>
+<span class="fc" id="L777">                return EMPTY;</span>
             } else {
-<span class="fc" id="L782">                return branchOnStatus(notFixed);</span>
+<span class="fc" id="L779">                return branchOnStatus(notFixed);</span>
             }
         };
     }
 
     public static Supplier&lt;Runnable[]&gt; branchOnStatusThenStarts(CPIntervalVar... vars) {
-<span class="nc" id="L788">        return () -&gt; {</span>
-<span class="nc" id="L789">            CPIntervalVar notFixed = null;</span>
-<span class="nc bnc" id="L790" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.length; i++) {</span>
-<span class="nc bnc" id="L791" title="All 2 branches missed.">                if (!vars[i].isFixed()) {</span>
-<span class="nc" id="L792">                    notFixed = vars[i];</span>
-<span class="nc" id="L793">                    break;</span>
+<span class="nc" id="L785">        return () -&gt; {</span>
+<span class="nc" id="L786">            CPIntervalVar notFixed = null;</span>
+<span class="nc bnc" id="L787" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="nc bnc" id="L788" title="All 2 branches missed.">                if (!vars[i].isFixed()) {</span>
+<span class="nc" id="L789">                    notFixed = vars[i];</span>
+<span class="nc" id="L790">                    break;</span>
                 }
             }
-<span class="nc bnc" id="L796" title="All 2 branches missed.">            if (notFixed == null) {</span>
-<span class="nc" id="L797">                return EMPTY;</span>
+<span class="nc bnc" id="L793" title="All 2 branches missed.">            if (notFixed == null) {</span>
+<span class="nc" id="L794">                return EMPTY;</span>
             } else {
-<span class="nc bnc" id="L799" title="All 2 branches missed.">                if (notFixed.isPresent()) return branchOnStartMin(notFixed);</span>
-<span class="nc" id="L800">                else return branchOnStatus(notFixed);</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">                if (notFixed.isPresent()) return branchOnStartMin(notFixed);</span>
+<span class="nc" id="L797">                else return branchOnStatus(notFixed);</span>
             }
         };
     }
