@@ -32,6 +32,84 @@ import static org.maxicp.search.Searches.branch;
 public class GeneralizedCumulativeConstraintTest extends CPSolverTest {
     @ParameterizedTest
     @MethodSource("getSolver")
+    public void testZeroLengthActivityDoesNotConsumeCapacity(CPSolver cp) {
+        Activity activity = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 1, 1));
+        activity.interval().setStart(0);
+        activity.interval().setLength(0);
+        activity.interval().setPresent();
+
+        cp.post(new GeneralizedCumulativeConstraint(new Activity[]{activity}, 0));
+
+        assertTrue(activity.isPresent());
+        assertEquals(0, activity.getLengthMin());
+        assertEquals(0, activity.getLengthMax());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testZeroLengthOptionalActivityCanRemainPresent(CPSolver cp) {
+        Activity activity = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 1, 1));
+        activity.interval().setStart(0);
+        activity.interval().setLength(0);
+
+        cp.post(new GeneralizedCumulativeConstraint(new Activity[]{activity}, 0));
+
+        assertTrue(activity.isOptional());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testUnboundedCapacitySentinel(CPSolver cp) {
+        Activity activity = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 1, 1));
+        activity.interval().setStart(0);
+        activity.interval().setLength(1);
+        activity.interval().setPresent();
+
+        cp.post(new GeneralizedCumulativeConstraint(
+                new Activity[]{activity}, Integer.MIN_VALUE, Integer.MAX_VALUE));
+
+        assertTrue(activity.isPresent());
+    }
+
+    @Test
+    public void testInvalidCapacityRange() {
+        CPSolver cp = makeSolver();
+        Activity activity = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 1, 1));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new GeneralizedCumulativeConstraint(new Activity[]{activity}, 2, 1));
+    }
+
+    @Test
+    public void testNullActivities() {
+        assertThrows(NullPointerException.class,
+                () -> new GeneralizedCumulativeConstraint(null, 1));
+    }
+
+    @Test
+    public void testEmptyActivities() {
+        assertThrows(ArrayIndexOutOfBoundsException.class,
+                () -> new GeneralizedCumulativeConstraint(new Activity[0], 1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testNullActivityComponent(CPSolver cp) {
+        assertThrows(NullPointerException.class,
+                () -> new GeneralizedCumulativeConstraint(new Activity[]{null}, 1));
+
+        assertThrows(NullPointerException.class,
+                () -> new GeneralizedCumulativeConstraint(
+                        new Activity[]{new Activity(null, CPFactory.makeIntVar(cp, 1, 1))}, 1));
+
+        Activity activityWithNullHeight = new Activity(makeIntervalVar(cp), null);
+        assertThrows(NullPointerException.class,
+                () -> cp.post(new GeneralizedCumulativeConstraint(
+                        new Activity[]{activityWithNullHeight}, 1)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
     public void testBasicEst(CPSolver cp) {
         List<Activity> activities = new ArrayList<>(2);
         Activity act1 = new Activity(makeIntervalVar(cp), CPFactory.makeIntVar(cp, 1, 1));
