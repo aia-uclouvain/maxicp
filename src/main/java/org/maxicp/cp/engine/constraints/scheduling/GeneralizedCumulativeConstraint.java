@@ -156,7 +156,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
             int a = active[i];
             if (activeSet.contains(a)) {
                 if (!activities[a].height().isFixed()) allHeightFixed = false;
-                if (!activities[a].isLengthFixed()) allHeightFixed = false;
+                if (!activities[a].isLengthFixed()) allLengthFixed = false;
                 if (activities[a].getHeightMin() < 0) allPositive = false;
                 if (activities[a].getHeightMax() > 0) allNegative = false;
                 isPresentInProfile[a] = activities[a].isPresent();
@@ -252,7 +252,6 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
             int actIdx = active[i];
             Activity act = activities[actIdx];
             if (!act.isFixed() && act.interval().lengthMax() > 0) {
-
                 //Forward check until fixed part or end min of activity:
                 int tpForward = actToStartMinTp[actIdx];
                 while (time[tpForward] < Math.min(act.getStartMax(), act.getEndMin())) {
