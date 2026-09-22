@@ -56,6 +56,16 @@ class NaryBranchingTest {
     }
 
     @Test
+    void firstFailNaryBranchesOnTheGivenVariables() throws Exception {
+        try (ModelDispatcher model = makeModelDispatcher()) {
+            IntVar x = model.intVar(0, 2);
+            IntVar y = model.intVar(0, 1);
+
+            assertEquals(6, solveCount(model, Searches.firstFailNary(x, y)));
+        }
+    }
+
+    @Test
     void naryWithValueHeuristicEnumeratesTheWholeSparseDomain() throws Exception {
         try (ModelDispatcher model = makeModelDispatcher()) {
             IntVar x = model.intVar(Set.of(1, 4, 9));
