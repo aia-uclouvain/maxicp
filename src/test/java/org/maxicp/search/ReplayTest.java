@@ -7,10 +7,10 @@ import org.maxicp.cp.CPSolverTest;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.cp.examples.raw.TSPSeqVar;
+import org.maxicp.cp.examples.raw.tsp.TSPSeqVarCustomSearch;
+import org.maxicp.cp.examples.utils.TSPInstance;
 import org.maxicp.state.StateInt;
 
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +59,7 @@ public class ReplayTest extends CPSolverTest {
 
         DFSLinearizer linearizer = new DFSLinearizer();
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(q));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(q));
 
         SearchStatistics stats = search.solve(linearizer);
 
@@ -118,7 +118,7 @@ public class ReplayTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void tspEnumerateTest(CPSolver cp) {
 
-        TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
+        TSPInstance instance = new TSPInstance("data/TSP/instance_10_0.xml");
         int n = instance.n;
         int[][] distanceMatrix = instance.distanceMatrix;
 
@@ -133,7 +133,7 @@ public class ReplayTest extends CPSolverTest {
         CPIntVar totalDist = sum(distSucc);
         cp.post(le(totalDist, 285));
 
-        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(succ));
 
         SearchStatistics stat0 = dfs.solve();
 
@@ -172,7 +172,7 @@ public class ReplayTest extends CPSolverTest {
     @MethodSource("getSolver")
     public void tspOptimize(CPSolver cp) {
 
-        TSPSeqVar.TSPInstance instance = new TSPSeqVar.TSPInstance("data/TSP/instance_10_0.xml");
+        TSPInstance instance = new TSPInstance("data/TSP/instance_10_0.xml");
         int n = instance.n;
         int[][] distanceMatrix = instance.distanceMatrix;
 
@@ -183,7 +183,7 @@ public class ReplayTest extends CPSolverTest {
         //cp.post(le(totalDist, 299));
         Objective obj = cp.minimize(totalDist);
 
-        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(succ));
 
         DFSLinearizer linearizer = new DFSLinearizer();
         SearchStatistics stat1 = dfs.optimize(obj, linearizer);
@@ -210,7 +210,7 @@ public class ReplayTest extends CPSolverTest {
 
         Objective obj = cp.maximize(objVar);
 
-        DFSearch dfs = makeDfs(cp, staticOrder(x));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(x));
 
         DFSLinearizer linearizer = new DFSLinearizer();
 
@@ -230,6 +230,25 @@ public class ReplayTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
+    public void replayWithAnObjectiveDoesNotKeepTighteningIt(CPSolver cp) {
+        CPIntVar[] x = makeIntVarArray(cp, 2, 2);
+        IntObjective obj = cp.minimize(sum(x));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(x));
+
+        DFSLinearizer linearizer = new DFSLinearizer();
+        dfs.optimize(obj, linearizer);
+        obj.relax();
+        dfs.replaySubjectTo(linearizer, x, () -> {}, obj);
+        obj.relax();
+
+        // a plain enumeration afterwards must leave the objective alone
+        SearchStatistics stats = dfs.solve();
+        assertEquals(4, stats.numberOfSolutions());
+        assertEquals(Integer.MAX_VALUE - 1, obj.getBound());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
     public void basicOptimize2(CPSolver cp) {
 
         int n = 2;
@@ -241,7 +260,7 @@ public class ReplayTest extends CPSolverTest {
         CPIntVar totalDist = sum(makeIntVarArray(n,i -> element(distanceMatrix[i],succ[i])));
         Objective obj = cp.minimize(totalDist);
 
-        DFSearch dfs = makeDfs(cp, staticOrder(succ));
+        DFSearch dfs = makeDfs(cp, staticOrderBinary(succ));
 
         DFSLinearizer linearizer = new DFSLinearizer();
         SearchStatistics stat1 = dfs.optimize(obj, linearizer);

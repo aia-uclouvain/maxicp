@@ -106,7 +106,7 @@ public class SportScheduling {
         });
 
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFail(allGames));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(allGames));
         search.onSolution(() -> {
             System.out.println("---------games---------");
             for (int p = 0; p < nbPeriods; p++) {

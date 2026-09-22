@@ -82,7 +82,6 @@ public class MagicSquare {
         long time = TimeIt.run(() -> {
             model.runCP(() -> {
                 SearchMethod search = model.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(xFlat), var -> var.min()));
-                //DFSearch search = cp.dfSearch(Searches.staticOrder(xFlat));
                 search.onSolution(() -> {
                     for (int i = 0; i < n; i++) {
                         System.out.println(Arrays.toString(x[i]));

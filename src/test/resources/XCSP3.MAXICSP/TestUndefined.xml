@@ -1,0 +1,11 @@
+<instance format="XCSP3" type="CSP">
+  <variables>
+    <array id="x" size="[4]">
+      <domain for="x[0..1]"> 0..2 </domain>
+      <domain for="x[2]"> 3 </domain>
+    </array>
+  </variables>
+  <constraints>
+    <allDifferent> x[0..2] </allDifferent>
+  </constraints>
+</instance>

@@ -30,9 +30,10 @@ public class ShortTableCT extends AbstractCPConstraint {
 
     // contains the current value of the table (i.e., tuples valid given current state)
     private final StateSparseBitSet validTuples;
-    // supports[i][v] is the set of tuples supported by x[i]=v (i.e., tuples with this value for this variable)
+    // supports[i][v] is the set of tuples with exact value v for x[i] (excluding starred tuples)
     private final StateSparseBitSet.SupportBitSet[][] supports;
-    private final StateSparseBitSet.SupportBitSet[][] supportsStar;
+    // starSupports[i] is the set of tuples where x[i] is starred
+    private final StateSparseBitSet.SupportBitSet[] starSupports;
 
     // keep track of the unbounded vars
     private final int[] unbounded;
@@ -73,33 +74,31 @@ public class ShortTableCT extends AbstractCPConstraint {
 
         // Allocate supportedByVarVal
         supports = new StateSparseBitSet.SupportBitSet[this.scpSize][];
-        supportsStar = new StateSparseBitSet.SupportBitSet[this.scpSize][];
+        starSupports = new StateSparseBitSet.SupportBitSet[this.scpSize];
         for (int i = 0; i < this.scpSize; i++) {
             offset[i] = x[i].min();
             this.offx[i] = minus(x[i], offset[i]); // map the variables domain to start at 0
             this.delta[i] = this.offx[i].delta(this);
             maxsize = Math.max(maxsize, this.offx[i].max());
             supports[i] = new StateSparseBitSet.SupportBitSet[this.offx[i].max() + 1];
-            supportsStar[i] = new StateSparseBitSet.SupportBitSet[this.offx[i].max() + 1];
-            for (int j = 0; j < supports[i].length; j++) {
-                supportsStar[i][j] = validTuples.new SupportBitSet();
-            }
         }
 
-        // Set values in supports, which contains all the tuples supported by each var-val pair
+        // Build exact-value supports and one star support per variable.
         for (int j = 0; j < this.scpSize; j++) { //j is the index of the current variable (in x)
             BitSet stars = new BitSet(table.length);
             for (int i = 0; i < table.length; i++) { //i is the index of the tuple (in table)
                 if (table[i][j] == star) {
                     stars.set(i);
                 } else if (x[j].contains(table[i][j])) {
-                    supportsStar[j][table[i][j] - offset[j]].set(i);
+                    int mapped = table[i][j] - offset[j];
+                    if (supports[j][mapped] == null) {
+                        supports[j][mapped] = validTuples.new SupportBitSet();
+                    }
+                    supports[j][mapped].set(i);
                 }
             }
-            for (int k = 0; k < supports[j].length; k++) {
-                supports[j][k] = validTuples.new SupportBitSet(supportsStar[j][k]);
-                supports[j][k].union(stars);
-            }
+            starSupports[j] = validTuples.new SupportBitSet();
+            starSupports[j].union(stars);
         }
 
         this.tempDom = new int[maxsize + 1];
@@ -118,8 +117,12 @@ public class ShortTableCT extends AbstractCPConstraint {
             CPIntVar var = this.offx[idx];
 
             if (var.isFixed()) {
-                // var has been bound, direct intersection with support
-                validTuples.intersect(supports[idx][var.min()]);
+                // var has been bound, intersect with exact supports plus stars
+                collected.clear();
+                collected.union(starSupports[idx]);
+                if (supports[idx][var.min()] != null)
+                    collected.union(supports[idx][var.min()]);
+                validTuples.intersect(collected);
                 if (validTuples.isEmpty())
                     throw InconsistencyException.INCONSISTENCY;
                 // var is bound, removed from unbounded
@@ -129,10 +132,12 @@ public class ShortTableCT extends AbstractCPConstraint {
             } else {
                 // clear temp var collecting
                 collected.clear();
+                collected.union(starSupports[idx]);
                 // less values remaining
                 int n = var.fillArray(tempDom);
                 for (int j = 0; j < n; j++) {
-                    collected.union(supports[idx][tempDom[j]]);
+                    if (supports[idx][tempDom[j]] != null)
+                        collected.union(supports[idx][tempDom[j]]);
                 }
 
                 validTuples.intersect(collected);
@@ -148,7 +153,7 @@ public class ShortTableCT extends AbstractCPConstraint {
         for (int i = nUnboundValue - 1; i >= 0; i--) {
             int idx = this.unbounded[i];
             CPIntVar var = this.offx[idx];
-            this.filterDomain(var, supports[idx]);
+            this.filterDomain(var, supports[idx], starSupports[idx]);
             if (var.isFixed()) {
                 // var is bound, removed from unbounded
                 nUnboundValue--;
@@ -185,8 +190,12 @@ public class ShortTableCT extends AbstractCPConstraint {
                 CPIntVar var = this.offx[idx];
 
                 if (var.isFixed()) {
-                    // var has been bound, direct intersection with support
-                    validTuples.intersect(supports[idx][var.min()]);
+                    // var has been bound, intersect with exact supports plus stars
+                    collected.clear();
+                    collected.union(starSupports[idx]);
+                    if (supports[idx][var.min()] != null)
+                        collected.union(supports[idx][var.min()]);
+                    validTuples.intersect(collected);
                     if (validTuples.isEmpty())
                         throw InconsistencyException.INCONSISTENCY;
                     // var is bound, removed from unbounded
@@ -200,14 +209,17 @@ public class ShortTableCT extends AbstractCPConstraint {
                         // less values removed
                         int n = dvar.fillArray(tempDom);
                         for (int j = 0; j < n; j++) {
-                            collected.union(supportsStar[idx][tempDom[j]]);
+                            if (supports[idx][tempDom[j]] != null)
+                                collected.union(supports[idx][tempDom[j]]);
                         }
                         collected.invert();
                     } else {
                         // less values remaining
+                        collected.union(starSupports[idx]);
                         int n = var.fillArray(tempDom);
                         for (int j = 0; j < n; j++) {
-                            collected.union(supports[idx][tempDom[j]]);
+                            if (supports[idx][tempDom[j]] != null)
+                                collected.union(supports[idx][tempDom[j]]);
                         }
                     }
                     validTuples.intersect(collected);
@@ -225,7 +237,7 @@ public class ShortTableCT extends AbstractCPConstraint {
             CPIntVar var = this.offx[idx];
             if (nChange > 1 || idx != idxChange)
                 // check all unbound left if at least two have changed or this one is not the last one changed
-                this.filterDomain(var, supports[idx]);
+                this.filterDomain(var, supports[idx], starSupports[idx]);
             if (var.isFixed()) {
                 // var is bound, removed from unbounded
                 nUnboundValue--;
@@ -236,10 +248,15 @@ public class ShortTableCT extends AbstractCPConstraint {
         this.nUnbound.setValue(nUnboundValue);
     }
 
-    private void filterDomain(CPIntVar var, StateSparseBitSet.SupportBitSet[] supp) {
+    private void filterDomain(CPIntVar var, StateSparseBitSet.SupportBitSet[] supp,
+                              StateSparseBitSet.SupportBitSet starSupp) {
         int n = var.fillArray(tempDom);
         for (int j = 0; j < n; j++) {
-            if (validTuples.hasEmptyIntersection(supp[tempDom[j]])) {
+            // Any tuple with a star on this variable supports all values.
+            if (!validTuples.hasEmptyIntersection(starSupp))
+                continue;
+            StateSparseBitSet.SupportBitSet exactSupp = supp[tempDom[j]];
+            if (exactSupp == null || validTuples.hasEmptyIntersection(exactSupp)) {
                 var.remove(tempDom[j]);
             }
         }

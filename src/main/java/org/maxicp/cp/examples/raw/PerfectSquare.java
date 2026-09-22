@@ -78,19 +78,7 @@ public class PerfectSquare {
             }
         }
 
-        Supplier<Runnable[]> fixStartX = () -> {
-            IntervalVar square  = selectMin(squareX, s -> !s.isFixed(), IntervalExpression::startMin);
-            if (square == null)
-                return EMPTY;
-            return branchOnStartMin(square);
-        };
-        Supplier<Runnable[]> fixStartY = () -> {
-            IntervalVar square  = selectMin(squareY, s -> !s.isFixed(), IntervalExpression::startMin);
-            if (square == null)
-                return EMPTY;
-            return branchOnStartMin(square);
-        };
-        Supplier<Runnable[]> branching = and(fixStartX, fixStartY);
+        Supplier<Runnable[]> branching = and(fds(squareX), fds(squareY));
         DFSearch search = CPFactory.makeDfs(cp, branching);
         SearchStatistics stats = search.solve();
         System.out.println("stats: \n" + stats);

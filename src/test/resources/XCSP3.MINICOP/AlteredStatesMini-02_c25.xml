@@ -1,0 +1,1469 @@
+<instance format="XCSP3" type="COP">
+  <variables>
+    <array id="x" note="x[ij] is the letter (index) in cell whose index is ij" size="[4]"> 0..25 </array>
+    <array id="y" note="y[k] is 1 if the kth state is present in the matrix" size="[50]"> 0 1 </array>
+    <array id="z" note="z[k][q] is the (flat) cell index in x of the qth letter of the kth state, or 0 if the state is not present" size="[50][13]"> 0..3 </array>
+    <array id="w" size="[50][13]"> 0..25 </array>
+  </variables>
+  <constraints>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[0] z[0][0..6] </args>
+      <args> y[2] z[2][0..6] </args>
+      <args> y[8] z[8][0..6] </args>
+      <args> y[9] z[9][0..6] </args>
+      <args> y[13] z[13][0..6] </args>
+      <args> y[25] z[25][0..6] </args>
+      <args> y[31] z[31][0..6] </args>
+      <args> y[44] z[44][0..6] </args>
+      <args> y[49] z[49][0..6] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0)(1,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[1] z[1][0..5] </args>
+      <args> y[10] z[10][0..5] </args>
+      <args> y[15] z[15][0..5] </args>
+      <args> y[27] z[27][0..5] </args>
+      <args> y[36] z[36][0..5] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[3] z[3][0..7] </args>
+      <args> y[5] z[5][0..7] </args>
+      <args> y[7] z[7][0..7] </args>
+      <args> y[12] z[12][0..7] </args>
+      <args> y[16] z[16][0..7] </args>
+      <args> y[19] z[19][0..7] </args>
+      <args> y[21] z[21][0..7] </args>
+      <args> y[24] z[24][0..7] </args>
+      <args> y[26] z[26][0..7] </args>
+      <args> y[35] z[35][0..7] </args>
+      <args> y[45] z[45][0..7] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[4] z[4][0..9] </args>
+      <args> y[46] z[46][0..9] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[6] z[6][0..10] </args>
+      <args> y[23] z[23][0..10] </args>
+      <args> y[33] z[33][0..10] </args>
+      <args> y[38] z[38][0..10] </args>
+      <args> y[40] z[40][0..10] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0)(1,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[11] z[11][0..4] </args>
+      <args> y[18] z[18][0..4] </args>
+      <args> y[42] z[42][0..4] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0)(1,*,*,*,*) </supports>
+      </extension>
+      <args> y[14] z[14][0..3] </args>
+      <args> y[34] z[34][0..3] </args>
+      <args> y[43] z[43][0..3] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[17] z[17][0..8] </args>
+      <args> y[22] z[22][0..8] </args>
+      <args> y[29] z[29][0..8] </args>
+      <args> y[30] z[30][0..8] </args>
+      <args> y[41] z[41][0..8] </args>
+      <args> y[48] z[48][0..8] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[20] z[20][] </args>
+      <args> y[32] z[32][] </args>
+      <args> y[39] z[39][] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,0,0,0,0,0,0,0,0,0,0,0)(1,*,*,*,*,*,*,*,*,*,*,*,*) </supports>
+      </extension>
+      <args> y[28] z[28][0..11] </args>
+      <args> y[37] z[37][0..11] </args>
+      <args> y[47] z[47][0..11] </args>
+    </group>
+    <group>
+      <element>
+        <list> x[] </list>
+        <index> %0 </index>
+        <value> %1 </value>
+      </element>
+      <args> z[0][0] w[0][0] </args>
+      <args> z[0][1] w[0][1] </args>
+      <args> z[0][2] w[0][2] </args>
+      <args> z[0][3] w[0][3] </args>
+      <args> z[0][4] w[0][4] </args>
+      <args> z[0][5] w[0][5] </args>
+      <args> z[0][6] w[0][6] </args>
+      <args> z[1][0] w[1][0] </args>
+      <args> z[1][1] w[1][1] </args>
+      <args> z[1][2] w[1][2] </args>
+      <args> z[1][3] w[1][3] </args>
+      <args> z[1][4] w[1][4] </args>
+      <args> z[1][5] w[1][5] </args>
+      <args> z[2][0] w[2][0] </args>
+      <args> z[2][1] w[2][1] </args>
+      <args> z[2][2] w[2][2] </args>
+      <args> z[2][3] w[2][3] </args>
+      <args> z[2][4] w[2][4] </args>
+      <args> z[2][5] w[2][5] </args>
+      <args> z[2][6] w[2][6] </args>
+      <args> z[3][0] w[3][0] </args>
+      <args> z[3][1] w[3][1] </args>
+      <args> z[3][2] w[3][2] </args>
+      <args> z[3][3] w[3][3] </args>
+      <args> z[3][4] w[3][4] </args>
+      <args> z[3][5] w[3][5] </args>
+      <args> z[3][6] w[3][6] </args>
+      <args> z[3][7] w[3][7] </args>
+      <args> z[4][0] w[4][0] </args>
+      <args> z[4][1] w[4][1] </args>
+      <args> z[4][2] w[4][2] </args>
+      <args> z[4][3] w[4][3] </args>
+      <args> z[4][4] w[4][4] </args>
+      <args> z[4][5] w[4][5] </args>
+      <args> z[4][6] w[4][6] </args>
+      <args> z[4][7] w[4][7] </args>
+      <args> z[4][8] w[4][8] </args>
+      <args> z[4][9] w[4][9] </args>
+      <args> z[5][0] w[5][0] </args>
+      <args> z[5][1] w[5][1] </args>
+      <args> z[5][2] w[5][2] </args>
+      <args> z[5][3] w[5][3] </args>
+      <args> z[5][4] w[5][4] </args>
+      <args> z[5][5] w[5][5] </args>
+      <args> z[5][6] w[5][6] </args>
+      <args> z[5][7] w[5][7] </args>
+      <args> z[6][0] w[6][0] </args>
+      <args> z[6][1] w[6][1] </args>
+      <args> z[6][2] w[6][2] </args>
+      <args> z[6][3] w[6][3] </args>
+      <args> z[6][4] w[6][4] </args>
+      <args> z[6][5] w[6][5] </args>
+      <args> z[6][6] w[6][6] </args>
+      <args> z[6][7] w[6][7] </args>
+      <args> z[6][8] w[6][8] </args>
+      <args> z[6][9] w[6][9] </args>
+      <args> z[6][10] w[6][10] </args>
+      <args> z[7][0] w[7][0] </args>
+      <args> z[7][1] w[7][1] </args>
+      <args> z[7][2] w[7][2] </args>
+      <args> z[7][3] w[7][3] </args>
+      <args> z[7][4] w[7][4] </args>
+      <args> z[7][5] w[7][5] </args>
+      <args> z[7][6] w[7][6] </args>
+      <args> z[7][7] w[7][7] </args>
+      <args> z[8][0] w[8][0] </args>
+      <args> z[8][1] w[8][1] </args>
+      <args> z[8][2] w[8][2] </args>
+      <args> z[8][3] w[8][3] </args>
+      <args> z[8][4] w[8][4] </args>
+      <args> z[8][5] w[8][5] </args>
+      <args> z[8][6] w[8][6] </args>
+      <args> z[9][0] w[9][0] </args>
+      <args> z[9][1] w[9][1] </args>
+      <args> z[9][2] w[9][2] </args>
+      <args> z[9][3] w[9][3] </args>
+      <args> z[9][4] w[9][4] </args>
+      <args> z[9][5] w[9][5] </args>
+      <args> z[9][6] w[9][6] </args>
+      <args> z[10][0] w[10][0] </args>
+      <args> z[10][1] w[10][1] </args>
+      <args> z[10][2] w[10][2] </args>
+      <args> z[10][3] w[10][3] </args>
+      <args> z[10][4] w[10][4] </args>
+      <args> z[10][5] w[10][5] </args>
+      <args> z[11][0] w[11][0] </args>
+      <args> z[11][1] w[11][1] </args>
+      <args> z[11][2] w[11][2] </args>
+      <args> z[11][3] w[11][3] </args>
+      <args> z[11][4] w[11][4] </args>
+      <args> z[12][0] w[12][0] </args>
+      <args> z[12][1] w[12][1] </args>
+      <args> z[12][2] w[12][2] </args>
+      <args> z[12][3] w[12][3] </args>
+      <args> z[12][4] w[12][4] </args>
+      <args> z[12][5] w[12][5] </args>
+      <args> z[12][6] w[12][6] </args>
+      <args> z[12][7] w[12][7] </args>
+      <args> z[13][0] w[13][0] </args>
+      <args> z[13][1] w[13][1] </args>
+      <args> z[13][2] w[13][2] </args>
+      <args> z[13][3] w[13][3] </args>
+      <args> z[13][4] w[13][4] </args>
+      <args> z[13][5] w[13][5] </args>
+      <args> z[13][6] w[13][6] </args>
+      <args> z[14][0] w[14][0] </args>
+      <args> z[14][1] w[14][1] </args>
+      <args> z[14][2] w[14][2] </args>
+      <args> z[14][3] w[14][3] </args>
+      <args> z[15][0] w[15][0] </args>
+      <args> z[15][1] w[15][1] </args>
+      <args> z[15][2] w[15][2] </args>
+      <args> z[15][3] w[15][3] </args>
+      <args> z[15][4] w[15][4] </args>
+      <args> z[15][5] w[15][5] </args>
+      <args> z[16][0] w[16][0] </args>
+      <args> z[16][1] w[16][1] </args>
+      <args> z[16][2] w[16][2] </args>
+      <args> z[16][3] w[16][3] </args>
+      <args> z[16][4] w[16][4] </args>
+      <args> z[16][5] w[16][5] </args>
+      <args> z[16][6] w[16][6] </args>
+      <args> z[16][7] w[16][7] </args>
+      <args> z[17][0] w[17][0] </args>
+      <args> z[17][1] w[17][1] </args>
+      <args> z[17][2] w[17][2] </args>
+      <args> z[17][3] w[17][3] </args>
+      <args> z[17][4] w[17][4] </args>
+      <args> z[17][5] w[17][5] </args>
+      <args> z[17][6] w[17][6] </args>
+      <args> z[17][7] w[17][7] </args>
+      <args> z[17][8] w[17][8] </args>
+      <args> z[18][0] w[18][0] </args>
+      <args> z[18][1] w[18][1] </args>
+      <args> z[18][2] w[18][2] </args>
+      <args> z[18][3] w[18][3] </args>
+      <args> z[18][4] w[18][4] </args>
+      <args> z[19][0] w[19][0] </args>
+      <args> z[19][1] w[19][1] </args>
+      <args> z[19][2] w[19][2] </args>
+      <args> z[19][3] w[19][3] </args>
+      <args> z[19][4] w[19][4] </args>
+      <args> z[19][5] w[19][5] </args>
+      <args> z[19][6] w[19][6] </args>
+      <args> z[19][7] w[19][7] </args>
+      <args> z[20][0] w[20][0] </args>
+      <args> z[20][1] w[20][1] </args>
+      <args> z[20][2] w[20][2] </args>
+      <args> z[20][3] w[20][3] </args>
+      <args> z[20][4] w[20][4] </args>
+      <args> z[20][5] w[20][5] </args>
+      <args> z[20][6] w[20][6] </args>
+      <args> z[20][7] w[20][7] </args>
+      <args> z[20][8] w[20][8] </args>
+      <args> z[20][9] w[20][9] </args>
+      <args> z[20][10] w[20][10] </args>
+      <args> z[20][11] w[20][11] </args>
+      <args> z[20][12] w[20][12] </args>
+      <args> z[21][0] w[21][0] </args>
+      <args> z[21][1] w[21][1] </args>
+      <args> z[21][2] w[21][2] </args>
+      <args> z[21][3] w[21][3] </args>
+      <args> z[21][4] w[21][4] </args>
+      <args> z[21][5] w[21][5] </args>
+      <args> z[21][6] w[21][6] </args>
+      <args> z[21][7] w[21][7] </args>
+      <args> z[22][0] w[22][0] </args>
+      <args> z[22][1] w[22][1] </args>
+      <args> z[22][2] w[22][2] </args>
+      <args> z[22][3] w[22][3] </args>
+      <args> z[22][4] w[22][4] </args>
+      <args> z[22][5] w[22][5] </args>
+      <args> z[22][6] w[22][6] </args>
+      <args> z[22][7] w[22][7] </args>
+      <args> z[22][8] w[22][8] </args>
+      <args> z[23][0] w[23][0] </args>
+      <args> z[23][1] w[23][1] </args>
+      <args> z[23][2] w[23][2] </args>
+      <args> z[23][3] w[23][3] </args>
+      <args> z[23][4] w[23][4] </args>
+      <args> z[23][5] w[23][5] </args>
+      <args> z[23][6] w[23][6] </args>
+      <args> z[23][7] w[23][7] </args>
+      <args> z[23][8] w[23][8] </args>
+      <args> z[23][9] w[23][9] </args>
+      <args> z[23][10] w[23][10] </args>
+      <args> z[24][0] w[24][0] </args>
+      <args> z[24][1] w[24][1] </args>
+      <args> z[24][2] w[24][2] </args>
+      <args> z[24][3] w[24][3] </args>
+      <args> z[24][4] w[24][4] </args>
+      <args> z[24][5] w[24][5] </args>
+      <args> z[24][6] w[24][6] </args>
+      <args> z[24][7] w[24][7] </args>
+      <args> z[25][0] w[25][0] </args>
+      <args> z[25][1] w[25][1] </args>
+      <args> z[25][2] w[25][2] </args>
+      <args> z[25][3] w[25][3] </args>
+      <args> z[25][4] w[25][4] </args>
+      <args> z[25][5] w[25][5] </args>
+      <args> z[25][6] w[25][6] </args>
+      <args> z[26][0] w[26][0] </args>
+      <args> z[26][1] w[26][1] </args>
+      <args> z[26][2] w[26][2] </args>
+      <args> z[26][3] w[26][3] </args>
+      <args> z[26][4] w[26][4] </args>
+      <args> z[26][5] w[26][5] </args>
+      <args> z[26][6] w[26][6] </args>
+      <args> z[26][7] w[26][7] </args>
+      <args> z[27][0] w[27][0] </args>
+      <args> z[27][1] w[27][1] </args>
+      <args> z[27][2] w[27][2] </args>
+      <args> z[27][3] w[27][3] </args>
+      <args> z[27][4] w[27][4] </args>
+      <args> z[27][5] w[27][5] </args>
+      <args> z[28][0] w[28][0] </args>
+      <args> z[28][1] w[28][1] </args>
+      <args> z[28][2] w[28][2] </args>
+      <args> z[28][3] w[28][3] </args>
+      <args> z[28][4] w[28][4] </args>
+      <args> z[28][5] w[28][5] </args>
+      <args> z[28][6] w[28][6] </args>
+      <args> z[28][7] w[28][7] </args>
+      <args> z[28][8] w[28][8] </args>
+      <args> z[28][9] w[28][9] </args>
+      <args> z[28][10] w[28][10] </args>
+      <args> z[28][11] w[28][11] </args>
+      <args> z[29][0] w[29][0] </args>
+      <args> z[29][1] w[29][1] </args>
+      <args> z[29][2] w[29][2] </args>
+      <args> z[29][3] w[29][3] </args>
+      <args> z[29][4] w[29][4] </args>
+      <args> z[29][5] w[29][5] </args>
+      <args> z[29][6] w[29][6] </args>
+      <args> z[29][7] w[29][7] </args>
+      <args> z[29][8] w[29][8] </args>
+      <args> z[30][0] w[30][0] </args>
+      <args> z[30][1] w[30][1] </args>
+      <args> z[30][2] w[30][2] </args>
+      <args> z[30][3] w[30][3] </args>
+      <args> z[30][4] w[30][4] </args>
+      <args> z[30][5] w[30][5] </args>
+      <args> z[30][6] w[30][6] </args>
+      <args> z[30][7] w[30][7] </args>
+      <args> z[30][8] w[30][8] </args>
+      <args> z[31][0] w[31][0] </args>
+      <args> z[31][1] w[31][1] </args>
+      <args> z[31][2] w[31][2] </args>
+      <args> z[31][3] w[31][3] </args>
+      <args> z[31][4] w[31][4] </args>
+      <args> z[31][5] w[31][5] </args>
+      <args> z[31][6] w[31][6] </args>
+      <args> z[32][0] w[32][0] </args>
+      <args> z[32][1] w[32][1] </args>
+      <args> z[32][2] w[32][2] </args>
+      <args> z[32][3] w[32][3] </args>
+      <args> z[32][4] w[32][4] </args>
+      <args> z[32][5] w[32][5] </args>
+      <args> z[32][6] w[32][6] </args>
+      <args> z[32][7] w[32][7] </args>
+      <args> z[32][8] w[32][8] </args>
+      <args> z[32][9] w[32][9] </args>
+      <args> z[32][10] w[32][10] </args>
+      <args> z[32][11] w[32][11] </args>
+      <args> z[32][12] w[32][12] </args>
+      <args> z[33][0] w[33][0] </args>
+      <args> z[33][1] w[33][1] </args>
+      <args> z[33][2] w[33][2] </args>
+      <args> z[33][3] w[33][3] </args>
+      <args> z[33][4] w[33][4] </args>
+      <args> z[33][5] w[33][5] </args>
+      <args> z[33][6] w[33][6] </args>
+      <args> z[33][7] w[33][7] </args>
+      <args> z[33][8] w[33][8] </args>
+      <args> z[33][9] w[33][9] </args>
+      <args> z[33][10] w[33][10] </args>
+      <args> z[34][0] w[34][0] </args>
+      <args> z[34][1] w[34][1] </args>
+      <args> z[34][2] w[34][2] </args>
+      <args> z[34][3] w[34][3] </args>
+      <args> z[35][0] w[35][0] </args>
+      <args> z[35][1] w[35][1] </args>
+      <args> z[35][2] w[35][2] </args>
+      <args> z[35][3] w[35][3] </args>
+      <args> z[35][4] w[35][4] </args>
+      <args> z[35][5] w[35][5] </args>
+      <args> z[35][6] w[35][6] </args>
+      <args> z[35][7] w[35][7] </args>
+      <args> z[36][0] w[36][0] </args>
+      <args> z[36][1] w[36][1] </args>
+      <args> z[36][2] w[36][2] </args>
+      <args> z[36][3] w[36][3] </args>
+      <args> z[36][4] w[36][4] </args>
+      <args> z[36][5] w[36][5] </args>
+      <args> z[37][0] w[37][0] </args>
+      <args> z[37][1] w[37][1] </args>
+      <args> z[37][2] w[37][2] </args>
+      <args> z[37][3] w[37][3] </args>
+      <args> z[37][4] w[37][4] </args>
+      <args> z[37][5] w[37][5] </args>
+      <args> z[37][6] w[37][6] </args>
+      <args> z[37][7] w[37][7] </args>
+      <args> z[37][8] w[37][8] </args>
+      <args> z[37][9] w[37][9] </args>
+      <args> z[37][10] w[37][10] </args>
+      <args> z[37][11] w[37][11] </args>
+      <args> z[38][0] w[38][0] </args>
+      <args> z[38][1] w[38][1] </args>
+      <args> z[38][2] w[38][2] </args>
+      <args> z[38][3] w[38][3] </args>
+      <args> z[38][4] w[38][4] </args>
+      <args> z[38][5] w[38][5] </args>
+      <args> z[38][6] w[38][6] </args>
+      <args> z[38][7] w[38][7] </args>
+      <args> z[38][8] w[38][8] </args>
+      <args> z[38][9] w[38][9] </args>
+      <args> z[38][10] w[38][10] </args>
+      <args> z[39][0] w[39][0] </args>
+      <args> z[39][1] w[39][1] </args>
+      <args> z[39][2] w[39][2] </args>
+      <args> z[39][3] w[39][3] </args>
+      <args> z[39][4] w[39][4] </args>
+      <args> z[39][5] w[39][5] </args>
+      <args> z[39][6] w[39][6] </args>
+      <args> z[39][7] w[39][7] </args>
+      <args> z[39][8] w[39][8] </args>
+      <args> z[39][9] w[39][9] </args>
+      <args> z[39][10] w[39][10] </args>
+      <args> z[39][11] w[39][11] </args>
+      <args> z[39][12] w[39][12] </args>
+      <args> z[40][0] w[40][0] </args>
+      <args> z[40][1] w[40][1] </args>
+      <args> z[40][2] w[40][2] </args>
+      <args> z[40][3] w[40][3] </args>
+      <args> z[40][4] w[40][4] </args>
+      <args> z[40][5] w[40][5] </args>
+      <args> z[40][6] w[40][6] </args>
+      <args> z[40][7] w[40][7] </args>
+      <args> z[40][8] w[40][8] </args>
+      <args> z[40][9] w[40][9] </args>
+      <args> z[40][10] w[40][10] </args>
+      <args> z[41][0] w[41][0] </args>
+      <args> z[41][1] w[41][1] </args>
+      <args> z[41][2] w[41][2] </args>
+      <args> z[41][3] w[41][3] </args>
+      <args> z[41][4] w[41][4] </args>
+      <args> z[41][5] w[41][5] </args>
+      <args> z[41][6] w[41][6] </args>
+      <args> z[41][7] w[41][7] </args>
+      <args> z[41][8] w[41][8] </args>
+      <args> z[42][0] w[42][0] </args>
+      <args> z[42][1] w[42][1] </args>
+      <args> z[42][2] w[42][2] </args>
+      <args> z[42][3] w[42][3] </args>
+      <args> z[42][4] w[42][4] </args>
+      <args> z[43][0] w[43][0] </args>
+      <args> z[43][1] w[43][1] </args>
+      <args> z[43][2] w[43][2] </args>
+      <args> z[43][3] w[43][3] </args>
+      <args> z[44][0] w[44][0] </args>
+      <args> z[44][1] w[44][1] </args>
+      <args> z[44][2] w[44][2] </args>
+      <args> z[44][3] w[44][3] </args>
+      <args> z[44][4] w[44][4] </args>
+      <args> z[44][5] w[44][5] </args>
+      <args> z[44][6] w[44][6] </args>
+      <args> z[45][0] w[45][0] </args>
+      <args> z[45][1] w[45][1] </args>
+      <args> z[45][2] w[45][2] </args>
+      <args> z[45][3] w[45][3] </args>
+      <args> z[45][4] w[45][4] </args>
+      <args> z[45][5] w[45][5] </args>
+      <args> z[45][6] w[45][6] </args>
+      <args> z[45][7] w[45][7] </args>
+      <args> z[46][0] w[46][0] </args>
+      <args> z[46][1] w[46][1] </args>
+      <args> z[46][2] w[46][2] </args>
+      <args> z[46][3] w[46][3] </args>
+      <args> z[46][4] w[46][4] </args>
+      <args> z[46][5] w[46][5] </args>
+      <args> z[46][6] w[46][6] </args>
+      <args> z[46][7] w[46][7] </args>
+      <args> z[46][8] w[46][8] </args>
+      <args> z[46][9] w[46][9] </args>
+      <args> z[47][0] w[47][0] </args>
+      <args> z[47][1] w[47][1] </args>
+      <args> z[47][2] w[47][2] </args>
+      <args> z[47][3] w[47][3] </args>
+      <args> z[47][4] w[47][4] </args>
+      <args> z[47][5] w[47][5] </args>
+      <args> z[47][6] w[47][6] </args>
+      <args> z[47][7] w[47][7] </args>
+      <args> z[47][8] w[47][8] </args>
+      <args> z[47][9] w[47][9] </args>
+      <args> z[47][10] w[47][10] </args>
+      <args> z[47][11] w[47][11] </args>
+      <args> z[48][0] w[48][0] </args>
+      <args> z[48][1] w[48][1] </args>
+      <args> z[48][2] w[48][2] </args>
+      <args> z[48][3] w[48][3] </args>
+      <args> z[48][4] w[48][4] </args>
+      <args> z[48][5] w[48][5] </args>
+      <args> z[48][6] w[48][6] </args>
+      <args> z[48][7] w[48][7] </args>
+      <args> z[48][8] w[48][8] </args>
+      <args> z[49][0] w[49][0] </args>
+      <args> z[49][1] w[49][1] </args>
+      <args> z[49][2] w[49][2] </args>
+      <args> z[49][3] w[49][3] </args>
+      <args> z[49][4] w[49][4] </args>
+      <args> z[49][5] w[49][5] </args>
+      <args> z[49][6] w[49][6] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,0) </supports>
+      </extension>
+      <args> y[0] w[0][0] </args>
+      <args> y[0] w[0][2] </args>
+      <args> y[0] w[0][4] </args>
+      <args> y[0] w[0][6] </args>
+      <args> y[1] w[1][0] </args>
+      <args> y[1] w[1][2] </args>
+      <args> y[1] w[1][5] </args>
+      <args> y[2] w[2][0] </args>
+      <args> y[2] w[2][6] </args>
+      <args> y[3] w[3][0] </args>
+      <args> y[3] w[3][3] </args>
+      <args> y[3] w[3][6] </args>
+      <args> y[4] w[4][1] </args>
+      <args> y[4] w[4][9] </args>
+      <args> y[5] w[5][5] </args>
+      <args> y[7] w[7][3] </args>
+      <args> y[7] w[7][5] </args>
+      <args> y[8] w[8][6] </args>
+      <args> y[9] w[9][6] </args>
+      <args> y[10] w[10][1] </args>
+      <args> y[10] w[10][3] </args>
+      <args> y[11] w[11][2] </args>
+      <args> y[13] w[13][4] </args>
+      <args> y[13] w[13][6] </args>
+      <args> y[14] w[14][3] </args>
+      <args> y[15] w[15][1] </args>
+      <args> y[15] w[15][4] </args>
+      <args> y[17] w[17][6] </args>
+      <args> y[17] w[17][8] </args>
+      <args> y[18] w[18][1] </args>
+      <args> y[19] w[19][1] </args>
+      <args> y[19] w[19][5] </args>
+      <args> y[20] w[20][1] </args>
+      <args> y[20] w[20][4] </args>
+      <args> y[21] w[21][6] </args>
+      <args> y[22] w[22][8] </args>
+      <args> y[25] w[25][4] </args>
+      <args> y[25] w[25][6] </args>
+      <args> y[26] w[26][4] </args>
+      <args> y[26] w[26][7] </args>
+      <args> y[27] w[27][3] </args>
+      <args> y[27] w[27][5] </args>
+      <args> y[28] w[28][4] </args>
+      <args> y[32] w[32][6] </args>
+      <args> y[32] w[32][12] </args>
+      <args> y[33] w[33][6] </args>
+      <args> y[33] w[33][10] </args>
+      <args> y[35] w[35][3] </args>
+      <args> y[35] w[35][7] </args>
+      <args> y[37] w[37][8] </args>
+      <args> y[37] w[37][11] </args>
+      <args> y[38] w[38][8] </args>
+      <args> y[39] w[39][6] </args>
+      <args> y[39] w[39][12] </args>
+      <args> y[40] w[40][6] </args>
+      <args> y[40] w[40][10] </args>
+      <args> y[42] w[42][3] </args>
+      <args> y[43] w[43][2] </args>
+      <args> y[45] w[45][7] </args>
+      <args> y[46] w[46][1] </args>
+      <args> y[47] w[47][11] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,11) </supports>
+      </extension>
+      <args> y[0] w[0][1] </args>
+      <args> y[1] w[1][1] </args>
+      <args> y[4] w[4][2] </args>
+      <args> y[5] w[5][2] </args>
+      <args> y[7] w[7][2] </args>
+      <args> y[8] w[8][1] </args>
+      <args> y[12] w[12][1] </args>
+      <args> y[12] w[12][2] </args>
+      <args> y[17] w[17][0] </args>
+      <args> y[19] w[19][4] </args>
+      <args> y[32] w[32][9] </args>
+      <args> y[35] w[35][2] </args>
+      <args> y[37] w[37][6] </args>
+      <args> y[38] w[38][7] </args>
+      <args> y[39] w[39][9] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,1) </supports>
+      </extension>
+      <args> y[0] w[0][3] </args>
+      <args> y[26] w[26][2] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,12) </supports>
+      </extension>
+      <args> y[0] w[0][5] </args>
+      <args> y[18] w[18][0] </args>
+      <args> y[19] w[19][0] </args>
+      <args> y[20] w[20][0] </args>
+      <args> y[21] w[21][0] </args>
+      <args> y[22] w[22][0] </args>
+      <args> y[23] w[23][0] </args>
+      <args> y[24] w[24][0] </args>
+      <args> y[25] w[25][0] </args>
+      <args> y[28] w[28][5] </args>
+      <args> y[30] w[30][3] </args>
+      <args> y[35] w[35][6] </args>
+      <args> y[44] w[44][3] </args>
+      <args> y[49] w[49][3] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,18) </supports>
+      </extension>
+      <args> y[1] w[1][3] </args>
+      <args> y[3] w[3][5] </args>
+      <args> y[3] w[3][7] </args>
+      <args> y[12] w[12][7] </args>
+      <args> y[15] w[15][3] </args>
+      <args> y[15] w[15][5] </args>
+      <args> y[17] w[17][4] </args>
+      <args> y[20] w[20][2] </args>
+      <args> y[20] w[20][3] </args>
+      <args> y[20] w[20][8] </args>
+      <args> y[20] w[20][12] </args>
+      <args> y[22] w[22][5] </args>
+      <args> y[23] w[23][2] </args>
+      <args> y[23] w[23][3] </args>
+      <args> y[23] w[23][5] </args>
+      <args> y[23] w[23][6] </args>
+      <args> y[24] w[24][2] </args>
+      <args> y[24] w[24][3] </args>
+      <args> y[26] w[26][5] </args>
+      <args> y[28] w[28][7] </args>
+      <args> y[29] w[29][6] </args>
+      <args> y[37] w[37][4] </args>
+      <args> y[38] w[38][6] </args>
+      <args> y[39] w[39][0] </args>
+      <args> y[40] w[40][0] </args>
+      <args> y[41] w[41][5] </args>
+      <args> y[41] w[41][6] </args>
+      <args> y[42] w[42][4] </args>
+      <args> y[46] w[46][2] </args>
+      <args> y[47] w[47][2] </args>
+      <args> y[48] w[48][2] </args>
+      <args> y[48] w[48][6] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,10) </supports>
+      </extension>
+      <args> y[1] w[1][4] </args>
+      <args> y[3] w[3][2] </args>
+      <args> y[15] w[15][0] </args>
+      <args> y[16] w[16][0] </args>
+      <args> y[16] w[16][6] </args>
+      <args> y[26] w[26][6] </args>
+      <args> y[31] w[31][6] </args>
+      <args> y[33] w[33][7] </args>
+      <args> y[35] w[35][1] </args>
+      <args> y[40] w[40][7] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,17) </supports>
+      </extension>
+      <args> y[2] w[2][1] </args>
+      <args> y[3] w[3][1] </args>
+      <args> y[4] w[4][6] </args>
+      <args> y[5] w[5][4] </args>
+      <args> y[7] w[7][6] </args>
+      <args> y[8] w[8][3] </args>
+      <args> y[9] w[9][3] </args>
+      <args> y[19] w[19][2] </args>
+      <args> y[24] w[24][6] </args>
+      <args> y[26] w[26][3] </args>
+      <args> y[28] w[28][10] </args>
+      <args> y[29] w[29][5] </args>
+      <args> y[31] w[31][5] </args>
+      <args> y[32] w[32][2] </args>
+      <args> y[32] w[32][7] </args>
+      <args> y[33] w[33][2] </args>
+      <args> y[36] w[36][1] </args>
+      <args> y[38] w[38][0] </args>
+      <args> y[39] w[39][7] </args>
+      <args> y[44] w[44][2] </args>
+      <args> y[45] w[45][2] </args>
+      <args> y[47] w[47][6] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,8) </supports>
+      </extension>
+      <args> y[2] w[2][2] </args>
+      <args> y[4] w[4][3] </args>
+      <args> y[4] w[4][8] </args>
+      <args> y[6] w[6][7] </args>
+      <args> y[8] w[8][4] </args>
+      <args> y[9] w[9][5] </args>
+      <args> y[10] w[10][4] </args>
+      <args> y[10] w[10][5] </args>
+      <args> y[11] w[11][0] </args>
+      <args> y[12] w[12][0] </args>
+      <args> y[12] w[12][3] </args>
+      <args> y[12] w[12][6] </args>
+      <args> y[13] w[13][0] </args>
+      <args> y[13] w[13][3] </args>
+      <args> y[14] w[14][0] </args>
+      <args> y[17] w[17][3] </args>
+      <args> y[17] w[17][5] </args>
+      <args> y[18] w[18][2] </args>
+      <args> y[21] w[21][1] </args>
+      <args> y[21] w[21][4] </args>
+      <args> y[22] w[22][1] </args>
+      <args> y[23] w[23][1] </args>
+      <args> y[23] w[23][4] </args>
+      <args> y[23] w[23][7] </args>
+      <args> y[23] w[23][10] </args>
+      <args> y[24] w[24][1] </args>
+      <args> y[24] w[24][7] </args>
+      <args> y[28] w[28][9] </args>
+      <args> y[30] w[30][6] </args>
+      <args> y[32] w[32][10] </args>
+      <args> y[34] w[34][2] </args>
+      <args> y[37] w[37][10] </args>
+      <args> y[38] w[38][5] </args>
+      <args> y[39] w[39][10] </args>
+      <args> y[45] w[45][1] </args>
+      <args> y[45] w[45][4] </args>
+      <args> y[45] w[45][6] </args>
+      <args> y[46] w[46][4] </args>
+      <args> y[47] w[47][5] </args>
+      <args> y[47] w[47][8] </args>
+      <args> y[47] w[47][10] </args>
+      <args> y[48] w[48][1] </args>
+      <args> y[48] w[48][7] </args>
+      <args> y[49] w[49][4] </args>
+    </group>
+    <extension>
+      <list> y[2] w[2][3] </list>
+      <supports> (0,*)(1,25) </supports>
+    </extension>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,14) </supports>
+      </extension>
+      <args> y[2] w[2][4] </args>
+      <args> y[4] w[4][5] </args>
+      <args> y[5] w[5][1] </args>
+      <args> y[5] w[5][3] </args>
+      <args> y[5] w[5][7] </args>
+      <args> y[6] w[6][1] </args>
+      <args> y[8] w[8][2] </args>
+      <args> y[9] w[9][2] </args>
+      <args> y[11] w[11][4] </args>
+      <args> y[12] w[12][5] </args>
+      <args> y[14] w[14][1] </args>
+      <args> y[17] w[17][1] </args>
+      <args> y[22] w[22][6] </args>
+      <args> y[24] w[24][4] </args>
+      <args> y[25] w[25][1] </args>
+      <args> y[30] w[30][8] </args>
+      <args> y[31] w[31][4] </args>
+      <args> y[32] w[32][1] </args>
+      <args> y[32] w[32][8] </args>
+      <args> y[33] w[33][1] </args>
+      <args> y[33] w[33][8] </args>
+      <args> y[34] w[34][0] </args>
+      <args> y[34] w[34][3] </args>
+      <args> y[35] w[35][0] </args>
+      <args> y[35] w[35][5] </args>
+      <args> y[36] w[36][0] </args>
+      <args> y[36] w[36][4] </args>
+      <args> y[38] w[38][2] </args>
+      <args> y[39] w[39][1] </args>
+      <args> y[39] w[39][8] </args>
+      <args> y[40] w[40][1] </args>
+      <args> y[40] w[40][8] </args>
+      <args> y[44] w[44][4] </args>
+      <args> y[46] w[46][8] </args>
+      <args> y[48] w[48][4] </args>
+      <args> y[49] w[49][2] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,13) </supports>
+      </extension>
+      <args> y[2] w[2][5] </args>
+      <args> y[3] w[3][4] </args>
+      <args> y[4] w[4][7] </args>
+      <args> y[6] w[6][2] </args>
+      <args> y[6] w[6][3] </args>
+      <args> y[12] w[12][4] </args>
+      <args> y[13] w[13][1] </args>
+      <args> y[13] w[13][5] </args>
+      <args> y[15] w[15][2] </args>
+      <args> y[16] w[16][2] </args>
+      <args> y[17] w[17][7] </args>
+      <args> y[18] w[18][3] </args>
+      <args> y[19] w[19][6] </args>
+      <args> y[21] w[21][7] </args>
+      <args> y[22] w[22][2] </args>
+      <args> y[22] w[22][3] </args>
+      <args> y[25] w[25][2] </args>
+      <args> y[25] w[25][5] </args>
+      <args> y[26] w[26][0] </args>
+      <args> y[27] w[27][0] </args>
+      <args> y[28] w[28][0] </args>
+      <args> y[29] w[29][0] </args>
+      <args> y[30] w[30][0] </args>
+      <args> y[31] w[31][0] </args>
+      <args> y[32] w[32][0] </args>
+      <args> y[32] w[32][11] </args>
+      <args> y[33] w[33][0] </args>
+      <args> y[36] w[36][5] </args>
+      <args> y[37] w[37][2] </args>
+      <args> y[37] w[37][3] </args>
+      <args> y[37] w[37][9] </args>
+      <args> y[38] w[38][9] </args>
+      <args> y[39] w[39][11] </args>
+      <args> y[41] w[41][2] </args>
+      <args> y[41] w[41][3] </args>
+      <args> y[44] w[44][5] </args>
+      <args> y[45] w[45][5] </args>
+      <args> y[46] w[46][5] </args>
+      <args> y[46] w[46][9] </args>
+      <args> y[47] w[47][9] </args>
+      <args> y[48] w[48][5] </args>
+      <args> y[48] w[48][8] </args>
+      <args> y[49] w[49][5] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,2) </supports>
+      </extension>
+      <args> y[4] w[4][0] </args>
+      <args> y[5] w[5][0] </args>
+      <args> y[6] w[6][0] </args>
+      <args> y[6] w[6][5] </args>
+      <args> y[6] w[6][8] </args>
+      <args> y[16] w[16][5] </args>
+      <args> y[20] w[20][5] </args>
+      <args> y[21] w[21][2] </args>
+      <args> y[30] w[30][7] </args>
+      <args> y[32] w[32][5] </args>
+      <args> y[39] w[39][5] </args>
+      <args> y[48] w[48][3] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,5) </supports>
+      </extension>
+      <args> y[4] w[4][4] </args>
+      <args> y[8] w[8][0] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,3) </supports>
+      </extension>
+      <args> y[5] w[5][6] </args>
+      <args> y[7] w[7][0] </args>
+      <args> y[8] w[8][5] </args>
+      <args> y[11] w[11][1] </args>
+      <args> y[13] w[13][2] </args>
+      <args> y[19] w[19][7] </args>
+      <args> y[27] w[27][4] </args>
+      <args> y[33] w[33][5] </args>
+      <args> y[38] w[38][3] </args>
+      <args> y[38] w[38][10] </args>
+      <args> y[40] w[40][5] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,4) </supports>
+      </extension>
+      <args> y[6] w[6][4] </args>
+      <args> y[7] w[7][1] </args>
+      <args> y[7] w[7][7] </args>
+      <args> y[9] w[9][1] </args>
+      <args> y[16] w[16][1] </args>
+      <args> y[18] w[18][4] </args>
+      <args> y[20] w[20][9] </args>
+      <args> y[22] w[22][4] </args>
+      <args> y[26] w[26][1] </args>
+      <args> y[27] w[27][1] </args>
+      <args> y[28] w[28][1] </args>
+      <args> y[28] w[28][11] </args>
+      <args> y[29] w[29][1] </args>
+      <args> y[29] w[29][4] </args>
+      <args> y[29] w[29][7] </args>
+      <args> y[30] w[30][1] </args>
+      <args> y[30] w[30][4] </args>
+      <args> y[31] w[31][1] </args>
+      <args> y[36] w[36][2] </args>
+      <args> y[37] w[37][1] </args>
+      <args> y[38] w[38][4] </args>
+      <args> y[41] w[41][1] </args>
+      <args> y[41] w[41][4] </args>
+      <args> y[41] w[41][7] </args>
+      <args> y[41] w[41][8] </args>
+      <args> y[42] w[42][1] </args>
+      <args> y[44] w[44][1] </args>
+      <args> y[47] w[47][1] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,19) </supports>
+      </extension>
+      <args> y[6] w[6][6] </args>
+      <args> y[6] w[6][10] </args>
+      <args> y[16] w[16][3] </args>
+      <args> y[20] w[20][10] </args>
+      <args> y[20] w[20][11] </args>
+      <args> y[22] w[22][7] </args>
+      <args> y[25] w[25][3] </args>
+      <args> y[32] w[32][3] </args>
+      <args> y[33] w[33][3] </args>
+      <args> y[33] w[33][9] </args>
+      <args> y[39] w[39][3] </args>
+      <args> y[40] w[40][3] </args>
+      <args> y[40] w[40][9] </args>
+      <args> y[41] w[41][0] </args>
+      <args> y[42] w[42][0] </args>
+      <args> y[43] w[43][1] </args>
+      <args> y[44] w[44][6] </args>
+      <args> y[46] w[46][7] </args>
+      <args> y[47] w[47][3] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,20) </supports>
+      </extension>
+      <args> y[6] w[6][9] </args>
+      <args> y[16] w[16][4] </args>
+      <args> y[17] w[17][2] </args>
+      <args> y[20] w[20][7] </args>
+      <args> y[24] w[24][5] </args>
+      <args> y[39] w[39][2] </args>
+      <args> y[40] w[40][2] </args>
+      <args> y[43] w[43][0] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,22) </supports>
+      </extension>
+      <args> y[7] w[7][4] </args>
+      <args> y[10] w[10][2] </args>
+      <args> y[14] w[14][2] </args>
+      <args> y[28] w[28][2] </args>
+      <args> y[29] w[29][2] </args>
+      <args> y[30] w[30][2] </args>
+      <args> y[31] w[31][2] </args>
+      <args> y[46] w[46][0] </args>
+      <args> y[47] w[47][0] </args>
+      <args> y[48] w[48][0] </args>
+      <args> y[49] w[49][0] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,6) </supports>
+      </extension>
+      <args> y[9] w[9][0] </args>
+      <args> y[9] w[9][4] </args>
+      <args> y[21] w[21][5] </args>
+      <args> y[36] w[36][3] </args>
+      <args> y[45] w[45][3] </args>
+      <args> y[46] w[46][6] </args>
+      <args> y[47] w[47][7] </args>
+      <args> y[49] w[49][6] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,7) </supports>
+      </extension>
+      <args> y[10] w[10][0] </args>
+      <args> y[11] w[11][3] </args>
+      <args> y[20] w[20][6] </args>
+      <args> y[21] w[21][3] </args>
+      <args> y[28] w[28][3] </args>
+      <args> y[28] w[28][8] </args>
+      <args> y[32] w[32][4] </args>
+      <args> y[33] w[33][4] </args>
+      <args> y[34] w[34][1] </args>
+      <args> y[35] w[35][4] </args>
+      <args> y[38] w[38][1] </args>
+      <args> y[39] w[39][4] </args>
+      <args> y[40] w[40][4] </args>
+      <args> y[43] w[43][3] </args>
+      <args> y[46] w[46][3] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,24) </supports>
+      </extension>
+      <args> y[16] w[16][7] </args>
+      <args> y[19] w[19][3] </args>
+      <args> y[29] w[29][8] </args>
+      <args> y[31] w[31][3] </args>
+      <args> y[37] w[37][5] </args>
+      <args> y[49] w[49][1] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,15) </supports>
+      </extension>
+      <args> y[23] w[23][8] </args>
+      <args> y[23] w[23][9] </args>
+      <args> y[28] w[28][6] </args>
+      <args> y[37] w[37][0] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,21) </supports>
+      </extension>
+      <args> y[27] w[27][2] </args>
+      <args> y[37] w[37][7] </args>
+      <args> y[44] w[44][0] </args>
+      <args> y[45] w[45][0] </args>
+      <args> y[47] w[47][4] </args>
+    </group>
+    <extension>
+      <list> y[29] w[29][3] </list>
+      <supports> (0,*)(1,9) </supports>
+    </extension>
+    <group>
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,*)(1,23) </supports>
+      </extension>
+      <args> y[30] w[30][5] </args>
+      <args> y[42] w[42][2] </args>
+    </group>
+    <group>
+      <extension>
+        <list> %0 %1 %2 </list>
+        <supports> (0,*,*)(1,0,1)(1,0,2)(1,0,3)(1,1,0)(1,1,2)(1,1,3)(1,2,0)(1,2,1)(1,2,3)(1,3,0)(1,3,1)(1,3,2) </supports>
+      </extension>
+      <args> y[0] z[0][0] z[0][1] </args>
+      <args> y[0] z[0][1] z[0][2] </args>
+      <args> y[0] z[0][2] z[0][3] </args>
+      <args> y[0] z[0][3] z[0][4] </args>
+      <args> y[0] z[0][4] z[0][5] </args>
+      <args> y[0] z[0][5] z[0][6] </args>
+      <args> y[1] z[1][0] z[1][1] </args>
+      <args> y[1] z[1][1] z[1][2] </args>
+      <args> y[1] z[1][2] z[1][3] </args>
+      <args> y[1] z[1][3] z[1][4] </args>
+      <args> y[1] z[1][4] z[1][5] </args>
+      <args> y[2] z[2][0] z[2][1] </args>
+      <args> y[2] z[2][1] z[2][2] </args>
+      <args> y[2] z[2][2] z[2][3] </args>
+      <args> y[2] z[2][3] z[2][4] </args>
+      <args> y[2] z[2][4] z[2][5] </args>
+      <args> y[2] z[2][5] z[2][6] </args>
+      <args> y[3] z[3][0] z[3][1] </args>
+      <args> y[3] z[3][1] z[3][2] </args>
+      <args> y[3] z[3][2] z[3][3] </args>
+      <args> y[3] z[3][3] z[3][4] </args>
+      <args> y[3] z[3][4] z[3][5] </args>
+      <args> y[3] z[3][5] z[3][6] </args>
+      <args> y[3] z[3][6] z[3][7] </args>
+      <args> y[4] z[4][0] z[4][1] </args>
+      <args> y[4] z[4][1] z[4][2] </args>
+      <args> y[4] z[4][2] z[4][3] </args>
+      <args> y[4] z[4][3] z[4][4] </args>
+      <args> y[4] z[4][4] z[4][5] </args>
+      <args> y[4] z[4][5] z[4][6] </args>
+      <args> y[4] z[4][6] z[4][7] </args>
+      <args> y[4] z[4][7] z[4][8] </args>
+      <args> y[4] z[4][8] z[4][9] </args>
+      <args> y[5] z[5][0] z[5][1] </args>
+      <args> y[5] z[5][1] z[5][2] </args>
+      <args> y[5] z[5][2] z[5][3] </args>
+      <args> y[5] z[5][3] z[5][4] </args>
+      <args> y[5] z[5][4] z[5][5] </args>
+      <args> y[5] z[5][5] z[5][6] </args>
+      <args> y[5] z[5][6] z[5][7] </args>
+      <args> y[6] z[6][0] z[6][1] </args>
+      <args> y[6] z[6][1] z[6][2] </args>
+      <args> y[6] z[6][2] z[6][3] </args>
+      <args> y[6] z[6][3] z[6][4] </args>
+      <args> y[6] z[6][4] z[6][5] </args>
+      <args> y[6] z[6][5] z[6][6] </args>
+      <args> y[6] z[6][6] z[6][7] </args>
+      <args> y[6] z[6][7] z[6][8] </args>
+      <args> y[6] z[6][8] z[6][9] </args>
+      <args> y[6] z[6][9] z[6][10] </args>
+      <args> y[7] z[7][0] z[7][1] </args>
+      <args> y[7] z[7][1] z[7][2] </args>
+      <args> y[7] z[7][2] z[7][3] </args>
+      <args> y[7] z[7][3] z[7][4] </args>
+      <args> y[7] z[7][4] z[7][5] </args>
+      <args> y[7] z[7][5] z[7][6] </args>
+      <args> y[7] z[7][6] z[7][7] </args>
+      <args> y[8] z[8][0] z[8][1] </args>
+      <args> y[8] z[8][1] z[8][2] </args>
+      <args> y[8] z[8][2] z[8][3] </args>
+      <args> y[8] z[8][3] z[8][4] </args>
+      <args> y[8] z[8][4] z[8][5] </args>
+      <args> y[8] z[8][5] z[8][6] </args>
+      <args> y[9] z[9][0] z[9][1] </args>
+      <args> y[9] z[9][1] z[9][2] </args>
+      <args> y[9] z[9][2] z[9][3] </args>
+      <args> y[9] z[9][3] z[9][4] </args>
+      <args> y[9] z[9][4] z[9][5] </args>
+      <args> y[9] z[9][5] z[9][6] </args>
+      <args> y[10] z[10][0] z[10][1] </args>
+      <args> y[10] z[10][1] z[10][2] </args>
+      <args> y[10] z[10][2] z[10][3] </args>
+      <args> y[10] z[10][3] z[10][4] </args>
+      <args> y[10] z[10][4] z[10][5] </args>
+      <args> y[11] z[11][0] z[11][1] </args>
+      <args> y[11] z[11][1] z[11][2] </args>
+      <args> y[11] z[11][2] z[11][3] </args>
+      <args> y[11] z[11][3] z[11][4] </args>
+      <args> y[12] z[12][0] z[12][1] </args>
+      <args> y[12] z[12][1] z[12][2] </args>
+      <args> y[12] z[12][2] z[12][3] </args>
+      <args> y[12] z[12][3] z[12][4] </args>
+      <args> y[12] z[12][4] z[12][5] </args>
+      <args> y[12] z[12][5] z[12][6] </args>
+      <args> y[12] z[12][6] z[12][7] </args>
+      <args> y[13] z[13][0] z[13][1] </args>
+      <args> y[13] z[13][1] z[13][2] </args>
+      <args> y[13] z[13][2] z[13][3] </args>
+      <args> y[13] z[13][3] z[13][4] </args>
+      <args> y[13] z[13][4] z[13][5] </args>
+      <args> y[13] z[13][5] z[13][6] </args>
+      <args> y[14] z[14][0] z[14][1] </args>
+      <args> y[14] z[14][1] z[14][2] </args>
+      <args> y[14] z[14][2] z[14][3] </args>
+      <args> y[15] z[15][0] z[15][1] </args>
+      <args> y[15] z[15][1] z[15][2] </args>
+      <args> y[15] z[15][2] z[15][3] </args>
+      <args> y[15] z[15][3] z[15][4] </args>
+      <args> y[15] z[15][4] z[15][5] </args>
+      <args> y[16] z[16][0] z[16][1] </args>
+      <args> y[16] z[16][1] z[16][2] </args>
+      <args> y[16] z[16][2] z[16][3] </args>
+      <args> y[16] z[16][3] z[16][4] </args>
+      <args> y[16] z[16][4] z[16][5] </args>
+      <args> y[16] z[16][5] z[16][6] </args>
+      <args> y[16] z[16][6] z[16][7] </args>
+      <args> y[17] z[17][0] z[17][1] </args>
+      <args> y[17] z[17][1] z[17][2] </args>
+      <args> y[17] z[17][2] z[17][3] </args>
+      <args> y[17] z[17][3] z[17][4] </args>
+      <args> y[17] z[17][4] z[17][5] </args>
+      <args> y[17] z[17][5] z[17][6] </args>
+      <args> y[17] z[17][6] z[17][7] </args>
+      <args> y[17] z[17][7] z[17][8] </args>
+      <args> y[18] z[18][0] z[18][1] </args>
+      <args> y[18] z[18][1] z[18][2] </args>
+      <args> y[18] z[18][2] z[18][3] </args>
+      <args> y[18] z[18][3] z[18][4] </args>
+      <args> y[19] z[19][0] z[19][1] </args>
+      <args> y[19] z[19][1] z[19][2] </args>
+      <args> y[19] z[19][2] z[19][3] </args>
+      <args> y[19] z[19][3] z[19][4] </args>
+      <args> y[19] z[19][4] z[19][5] </args>
+      <args> y[19] z[19][5] z[19][6] </args>
+      <args> y[19] z[19][6] z[19][7] </args>
+      <args> y[20] z[20][0] z[20][1] </args>
+      <args> y[20] z[20][1] z[20][2] </args>
+      <args> y[20] z[20][2] z[20][3] </args>
+      <args> y[20] z[20][3] z[20][4] </args>
+      <args> y[20] z[20][4] z[20][5] </args>
+      <args> y[20] z[20][5] z[20][6] </args>
+      <args> y[20] z[20][6] z[20][7] </args>
+      <args> y[20] z[20][7] z[20][8] </args>
+      <args> y[20] z[20][8] z[20][9] </args>
+      <args> y[20] z[20][9] z[20][10] </args>
+      <args> y[20] z[20][10] z[20][11] </args>
+      <args> y[20] z[20][11] z[20][12] </args>
+      <args> y[21] z[21][0] z[21][1] </args>
+      <args> y[21] z[21][1] z[21][2] </args>
+      <args> y[21] z[21][2] z[21][3] </args>
+      <args> y[21] z[21][3] z[21][4] </args>
+      <args> y[21] z[21][4] z[21][5] </args>
+      <args> y[21] z[21][5] z[21][6] </args>
+      <args> y[21] z[21][6] z[21][7] </args>
+      <args> y[22] z[22][0] z[22][1] </args>
+      <args> y[22] z[22][1] z[22][2] </args>
+      <args> y[22] z[22][2] z[22][3] </args>
+      <args> y[22] z[22][3] z[22][4] </args>
+      <args> y[22] z[22][4] z[22][5] </args>
+      <args> y[22] z[22][5] z[22][6] </args>
+      <args> y[22] z[22][6] z[22][7] </args>
+      <args> y[22] z[22][7] z[22][8] </args>
+      <args> y[23] z[23][0] z[23][1] </args>
+      <args> y[23] z[23][1] z[23][2] </args>
+      <args> y[23] z[23][2] z[23][3] </args>
+      <args> y[23] z[23][3] z[23][4] </args>
+      <args> y[23] z[23][4] z[23][5] </args>
+      <args> y[23] z[23][5] z[23][6] </args>
+      <args> y[23] z[23][6] z[23][7] </args>
+      <args> y[23] z[23][7] z[23][8] </args>
+      <args> y[23] z[23][8] z[23][9] </args>
+      <args> y[23] z[23][9] z[23][10] </args>
+      <args> y[24] z[24][0] z[24][1] </args>
+      <args> y[24] z[24][1] z[24][2] </args>
+      <args> y[24] z[24][2] z[24][3] </args>
+      <args> y[24] z[24][3] z[24][4] </args>
+      <args> y[24] z[24][4] z[24][5] </args>
+      <args> y[24] z[24][5] z[24][6] </args>
+      <args> y[24] z[24][6] z[24][7] </args>
+      <args> y[25] z[25][0] z[25][1] </args>
+      <args> y[25] z[25][1] z[25][2] </args>
+      <args> y[25] z[25][2] z[25][3] </args>
+      <args> y[25] z[25][3] z[25][4] </args>
+      <args> y[25] z[25][4] z[25][5] </args>
+      <args> y[25] z[25][5] z[25][6] </args>
+      <args> y[26] z[26][0] z[26][1] </args>
+      <args> y[26] z[26][1] z[26][2] </args>
+      <args> y[26] z[26][2] z[26][3] </args>
+      <args> y[26] z[26][3] z[26][4] </args>
+      <args> y[26] z[26][4] z[26][5] </args>
+      <args> y[26] z[26][5] z[26][6] </args>
+      <args> y[26] z[26][6] z[26][7] </args>
+      <args> y[27] z[27][0] z[27][1] </args>
+      <args> y[27] z[27][1] z[27][2] </args>
+      <args> y[27] z[27][2] z[27][3] </args>
+      <args> y[27] z[27][3] z[27][4] </args>
+      <args> y[27] z[27][4] z[27][5] </args>
+      <args> y[28] z[28][0] z[28][1] </args>
+      <args> y[28] z[28][1] z[28][2] </args>
+      <args> y[28] z[28][2] z[28][3] </args>
+      <args> y[28] z[28][3] z[28][4] </args>
+      <args> y[28] z[28][4] z[28][5] </args>
+      <args> y[28] z[28][5] z[28][6] </args>
+      <args> y[28] z[28][6] z[28][7] </args>
+      <args> y[28] z[28][7] z[28][8] </args>
+      <args> y[28] z[28][8] z[28][9] </args>
+      <args> y[28] z[28][9] z[28][10] </args>
+      <args> y[28] z[28][10] z[28][11] </args>
+      <args> y[29] z[29][0] z[29][1] </args>
+      <args> y[29] z[29][1] z[29][2] </args>
+      <args> y[29] z[29][2] z[29][3] </args>
+      <args> y[29] z[29][3] z[29][4] </args>
+      <args> y[29] z[29][4] z[29][5] </args>
+      <args> y[29] z[29][5] z[29][6] </args>
+      <args> y[29] z[29][6] z[29][7] </args>
+      <args> y[29] z[29][7] z[29][8] </args>
+      <args> y[30] z[30][0] z[30][1] </args>
+      <args> y[30] z[30][1] z[30][2] </args>
+      <args> y[30] z[30][2] z[30][3] </args>
+      <args> y[30] z[30][3] z[30][4] </args>
+      <args> y[30] z[30][4] z[30][5] </args>
+      <args> y[30] z[30][5] z[30][6] </args>
+      <args> y[30] z[30][6] z[30][7] </args>
+      <args> y[30] z[30][7] z[30][8] </args>
+      <args> y[31] z[31][0] z[31][1] </args>
+      <args> y[31] z[31][1] z[31][2] </args>
+      <args> y[31] z[31][2] z[31][3] </args>
+      <args> y[31] z[31][3] z[31][4] </args>
+      <args> y[31] z[31][4] z[31][5] </args>
+      <args> y[31] z[31][5] z[31][6] </args>
+      <args> y[32] z[32][0] z[32][1] </args>
+      <args> y[32] z[32][1] z[32][2] </args>
+      <args> y[32] z[32][2] z[32][3] </args>
+      <args> y[32] z[32][3] z[32][4] </args>
+      <args> y[32] z[32][4] z[32][5] </args>
+      <args> y[32] z[32][5] z[32][6] </args>
+      <args> y[32] z[32][6] z[32][7] </args>
+      <args> y[32] z[32][7] z[32][8] </args>
+      <args> y[32] z[32][8] z[32][9] </args>
+      <args> y[32] z[32][9] z[32][10] </args>
+      <args> y[32] z[32][10] z[32][11] </args>
+      <args> y[32] z[32][11] z[32][12] </args>
+      <args> y[33] z[33][0] z[33][1] </args>
+      <args> y[33] z[33][1] z[33][2] </args>
+      <args> y[33] z[33][2] z[33][3] </args>
+      <args> y[33] z[33][3] z[33][4] </args>
+      <args> y[33] z[33][4] z[33][5] </args>
+      <args> y[33] z[33][5] z[33][6] </args>
+      <args> y[33] z[33][6] z[33][7] </args>
+      <args> y[33] z[33][7] z[33][8] </args>
+      <args> y[33] z[33][8] z[33][9] </args>
+      <args> y[33] z[33][9] z[33][10] </args>
+      <args> y[34] z[34][0] z[34][1] </args>
+      <args> y[34] z[34][1] z[34][2] </args>
+      <args> y[34] z[34][2] z[34][3] </args>
+      <args> y[35] z[35][0] z[35][1] </args>
+      <args> y[35] z[35][1] z[35][2] </args>
+      <args> y[35] z[35][2] z[35][3] </args>
+      <args> y[35] z[35][3] z[35][4] </args>
+      <args> y[35] z[35][4] z[35][5] </args>
+      <args> y[35] z[35][5] z[35][6] </args>
+      <args> y[35] z[35][6] z[35][7] </args>
+      <args> y[36] z[36][0] z[36][1] </args>
+      <args> y[36] z[36][1] z[36][2] </args>
+      <args> y[36] z[36][2] z[36][3] </args>
+      <args> y[36] z[36][3] z[36][4] </args>
+      <args> y[36] z[36][4] z[36][5] </args>
+      <args> y[37] z[37][0] z[37][1] </args>
+      <args> y[37] z[37][1] z[37][2] </args>
+      <args> y[37] z[37][2] z[37][3] </args>
+      <args> y[37] z[37][3] z[37][4] </args>
+      <args> y[37] z[37][4] z[37][5] </args>
+      <args> y[37] z[37][5] z[37][6] </args>
+      <args> y[37] z[37][6] z[37][7] </args>
+      <args> y[37] z[37][7] z[37][8] </args>
+      <args> y[37] z[37][8] z[37][9] </args>
+      <args> y[37] z[37][9] z[37][10] </args>
+      <args> y[37] z[37][10] z[37][11] </args>
+      <args> y[38] z[38][0] z[38][1] </args>
+      <args> y[38] z[38][1] z[38][2] </args>
+      <args> y[38] z[38][2] z[38][3] </args>
+      <args> y[38] z[38][3] z[38][4] </args>
+      <args> y[38] z[38][4] z[38][5] </args>
+      <args> y[38] z[38][5] z[38][6] </args>
+      <args> y[38] z[38][6] z[38][7] </args>
+      <args> y[38] z[38][7] z[38][8] </args>
+      <args> y[38] z[38][8] z[38][9] </args>
+      <args> y[38] z[38][9] z[38][10] </args>
+      <args> y[39] z[39][0] z[39][1] </args>
+      <args> y[39] z[39][1] z[39][2] </args>
+      <args> y[39] z[39][2] z[39][3] </args>
+      <args> y[39] z[39][3] z[39][4] </args>
+      <args> y[39] z[39][4] z[39][5] </args>
+      <args> y[39] z[39][5] z[39][6] </args>
+      <args> y[39] z[39][6] z[39][7] </args>
+      <args> y[39] z[39][7] z[39][8] </args>
+      <args> y[39] z[39][8] z[39][9] </args>
+      <args> y[39] z[39][9] z[39][10] </args>
+      <args> y[39] z[39][10] z[39][11] </args>
+      <args> y[39] z[39][11] z[39][12] </args>
+      <args> y[40] z[40][0] z[40][1] </args>
+      <args> y[40] z[40][1] z[40][2] </args>
+      <args> y[40] z[40][2] z[40][3] </args>
+      <args> y[40] z[40][3] z[40][4] </args>
+      <args> y[40] z[40][4] z[40][5] </args>
+      <args> y[40] z[40][5] z[40][6] </args>
+      <args> y[40] z[40][6] z[40][7] </args>
+      <args> y[40] z[40][7] z[40][8] </args>
+      <args> y[40] z[40][8] z[40][9] </args>
+      <args> y[40] z[40][9] z[40][10] </args>
+      <args> y[41] z[41][0] z[41][1] </args>
+      <args> y[41] z[41][1] z[41][2] </args>
+      <args> y[41] z[41][2] z[41][3] </args>
+      <args> y[41] z[41][3] z[41][4] </args>
+      <args> y[41] z[41][4] z[41][5] </args>
+      <args> y[41] z[41][5] z[41][6] </args>
+      <args> y[41] z[41][6] z[41][7] </args>
+      <args> y[41] z[41][7] z[41][8] </args>
+      <args> y[42] z[42][0] z[42][1] </args>
+      <args> y[42] z[42][1] z[42][2] </args>
+      <args> y[42] z[42][2] z[42][3] </args>
+      <args> y[42] z[42][3] z[42][4] </args>
+      <args> y[43] z[43][0] z[43][1] </args>
+      <args> y[43] z[43][1] z[43][2] </args>
+      <args> y[43] z[43][2] z[43][3] </args>
+      <args> y[44] z[44][0] z[44][1] </args>
+      <args> y[44] z[44][1] z[44][2] </args>
+      <args> y[44] z[44][2] z[44][3] </args>
+      <args> y[44] z[44][3] z[44][4] </args>
+      <args> y[44] z[44][4] z[44][5] </args>
+      <args> y[44] z[44][5] z[44][6] </args>
+      <args> y[45] z[45][0] z[45][1] </args>
+      <args> y[45] z[45][1] z[45][2] </args>
+      <args> y[45] z[45][2] z[45][3] </args>
+      <args> y[45] z[45][3] z[45][4] </args>
+      <args> y[45] z[45][4] z[45][5] </args>
+      <args> y[45] z[45][5] z[45][6] </args>
+      <args> y[45] z[45][6] z[45][7] </args>
+      <args> y[46] z[46][0] z[46][1] </args>
+      <args> y[46] z[46][1] z[46][2] </args>
+      <args> y[46] z[46][2] z[46][3] </args>
+      <args> y[46] z[46][3] z[46][4] </args>
+      <args> y[46] z[46][4] z[46][5] </args>
+      <args> y[46] z[46][5] z[46][6] </args>
+      <args> y[46] z[46][6] z[46][7] </args>
+      <args> y[46] z[46][7] z[46][8] </args>
+      <args> y[46] z[46][8] z[46][9] </args>
+      <args> y[47] z[47][0] z[47][1] </args>
+      <args> y[47] z[47][1] z[47][2] </args>
+      <args> y[47] z[47][2] z[47][3] </args>
+      <args> y[47] z[47][3] z[47][4] </args>
+      <args> y[47] z[47][4] z[47][5] </args>
+      <args> y[47] z[47][5] z[47][6] </args>
+      <args> y[47] z[47][6] z[47][7] </args>
+      <args> y[47] z[47][7] z[47][8] </args>
+      <args> y[47] z[47][8] z[47][9] </args>
+      <args> y[47] z[47][9] z[47][10] </args>
+      <args> y[47] z[47][10] z[47][11] </args>
+      <args> y[48] z[48][0] z[48][1] </args>
+      <args> y[48] z[48][1] z[48][2] </args>
+      <args> y[48] z[48][2] z[48][3] </args>
+      <args> y[48] z[48][3] z[48][4] </args>
+      <args> y[48] z[48][4] z[48][5] </args>
+      <args> y[48] z[48][5] z[48][6] </args>
+      <args> y[48] z[48][6] z[48][7] </args>
+      <args> y[48] z[48][7] z[48][8] </args>
+      <args> y[49] z[49][0] z[49][1] </args>
+      <args> y[49] z[49][1] z[49][2] </args>
+      <args> y[49] z[49][2] z[49][3] </args>
+      <args> y[49] z[49][3] z[49][4] </args>
+      <args> y[49] z[49][4] z[49][5] </args>
+      <args> y[49] z[49][5] z[49][6] </args>
+    </group>
+  </constraints>
+  <objectives>
+    <maximize type="sum">
+      <list> y[] </list>
+      <coeffs> 7 6 7 8 10 8 11 8 7 7 6 5 8 7 4 6 8 9 5 8 13 8 9 11 8 7 8 6 12 9 9 7 13 11 4 8 6 12 11 13 11 9 5 4 7 8 10 12 9 7 </coeffs>
+    </maximize>
+  </objectives>
+</instance>

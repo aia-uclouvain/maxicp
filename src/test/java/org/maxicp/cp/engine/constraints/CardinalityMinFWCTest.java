@@ -77,7 +77,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
 
         cp.post(new CardinalityMinFWC(x, minCard));
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats1 = search.solve();
 
         // -----------------------------
@@ -89,7 +89,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
             cp.post(CPFactory.ge(CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEq(x[j], v))), minCard[v]));
         }
 
-        search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats2 = search.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -122,7 +122,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
 
         cp.post(new CardinalityMinFWC(x, minCard));
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats1 = search.solve();
 
         // -----------------------------
@@ -134,7 +134,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
             cp.post(CPFactory.ge(CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEq(x[j], v))), minCard[v]));
         }
 
-        search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats2 = search.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());
@@ -187,7 +187,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
 
             cp.post(new CardinalityMinFWC(x, minCard));
 
-            DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+            DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
             SearchStatistics stats1 = search.solve();
 
             // ------------------- decomposition ----------------
@@ -199,7 +199,7 @@ public class CardinalityMinFWCTest extends CPSolverTest {
                 cp.post(CPFactory.ge(CPFactory.sum(CPFactory.makeIntVarArray(x.length, j -> CPFactory.isEq(x[j], v))), minCard[v]));
             }
 
-            search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+            search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
             SearchStatistics stats2 = search.solve();
 
             // compare number of solutions

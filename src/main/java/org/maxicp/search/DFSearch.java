@@ -62,7 +62,7 @@ public class DFSearch extends RunnableSearchMethod {
         if (alts.length == 0) {
             statistics.incrSolutions();
             notifySolution(currNodeId++, parentId);
-            notifySolution();
+            notifySolution(statistics);
         } else {
             for (int i = alts.length - 1; i >= 0; i--) {
                 int nodeId = currNodeId++;
@@ -107,7 +107,7 @@ public class DFSearch extends RunnableSearchMethod {
                 alternatives.pop().run();
             } catch (InconsistencyException e) {
                 statistics.incrFailures();
-                notifyFailure();
+                notifyFailure(statistics);
             }
         }
     }

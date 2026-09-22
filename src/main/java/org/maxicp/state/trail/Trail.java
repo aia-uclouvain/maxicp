@@ -38,7 +38,7 @@ public class Trail<T> implements State<T> {
     protected Trail(Trailer trail, T initial) {
         this.trail = trail;
         v = initial;
-        lastMagic = trail.getMagic() - 1;
+        lastMagic = trail.getMagic();
     }
 
     private void trail() {

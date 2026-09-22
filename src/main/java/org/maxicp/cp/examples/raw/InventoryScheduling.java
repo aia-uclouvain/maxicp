@@ -1,6 +1,5 @@
 package org.maxicp.cp.examples.raw;
 
-import org.maxicp.Constants;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
 import org.maxicp.cp.engine.constraints.scheduling.CPFlatCumulFunction;
@@ -60,7 +59,7 @@ public class InventoryScheduling {
         // constraint
         cp.post(alwaysIn(cumul, 0, data.capaInventory));
 
-        cp.post(nonOverlap(intervals));
+        cp.post(CPFactory.noOverlap(intervals));
         CPCumulFunction cumulNoOverlap = new CPFlatCumulFunction();
         for (CPIntervalVar interval : intervals) {
             cumulNoOverlap = CPFactory.plus(cumulNoOverlap,CPFactory.pulse(interval, 1));
@@ -71,7 +70,7 @@ public class InventoryScheduling {
         IntExpression makespan = CPFactory.max(ends);
         Objective obj = minimize(makespan);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrder(starts));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrderBinary(starts));
 
         dfs.onSolution(() -> {
             System.out.println("makespan: " + makespan.min());

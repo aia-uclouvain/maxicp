@@ -922,30 +922,6 @@ public class CPSeqVarImpl implements CPSeqVar {
     }
 
     @Override
-    public String membersOrdered() {
-        return membersOrdered(" -> ");
-    }
-
-    @Override
-    public String membersOrdered(String join) {
-        return membersOrdered(join, i -> true);
-    }
-
-    @Override
-    public String membersOrdered(String join, Predicate<Integer> filter) {
-        StringJoiner joiner = new StringJoiner(join);
-        int current = start;
-        while (current != end) {
-            if (filter.test(current))
-                joiner.add(String.valueOf(current));
-            current = memberAfter(current);
-        }
-        if (filter.test(end))
-            joiner.add(String.valueOf(end));
-        return joiner.toString();
-    }
-
-    @Override
     public String toString() {
         return membersOrdered();
     }

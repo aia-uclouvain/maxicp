@@ -14,7 +14,6 @@ import org.maxicp.cp.engine.constraints.seqvar.Exclude;
 import org.maxicp.cp.engine.constraints.seqvar.Insert;
 import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
-import org.maxicp.cp.engine.constraints.setvar.IsIncluded;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
 import org.maxicp.search.DFSearch;
@@ -381,7 +380,7 @@ public final class CPFactory {
      * {@link DFSearch#solve()} or
      * {@link DFSearch#optimize(Objective)}
      * using the given branching scheme
-     * @see org.maxicp.search.Searches#firstFail(org.maxicp.modeling.algebra.integer.IntExpression...)
+     * @see org.maxicp.search.Searches#firstFailBinary(org.maxicp.modeling.algebra.integer.IntExpression...)
      * @see org.maxicp.search.Searches#branch(Runnable...)
      */
     public static DFSearch makeDfs(CPSolver cp, Supplier<Runnable[]> branching) {
@@ -441,6 +440,16 @@ public final class CPFactory {
         } else {
             return new CPIntVarViewMul(x, a);
         }
+    }
+
+    /**
+     * A variable that is a view of {@code seqVar} in reverse order
+     *
+     * @param seqVar a variable
+     * @return a variable that is a view of {@code seqVar} in reverse order
+     */
+    public static CPSeqVar flip(CPSeqVar seqVar) {
+        return new CPSeqVarViewFlip(seqVar);
     }
 
     /**
@@ -705,8 +714,7 @@ public final class CPFactory {
     }
 
     /**
-     * Returns a constraint imposing that the
-     * the first variable differs from the second
+     * Returns a constraint imposing that the first variable differs from the second
      * one minus a constant value.
      *
      * @param x a variable
@@ -912,10 +920,10 @@ public final class CPFactory {
      * This relation is enforced by the {@link IsLessOrEqualVar} constraint
      * posted by calling this method.
      *
-     * @param x left hand side of less or equal operator
-     * @param y right hand side of less or equal operator
-     * @return boolean variable value that will be set to true if
-     * {@code x <= y}, false otherwise
+     * @param x the variable
+     * @param y the variable
+     * @return a boolean variable that is true if and only if
+     * x takes a value less or equal to y
      */
     public static CPBoolVar isLe(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
@@ -923,6 +931,55 @@ public final class CPFactory {
         cp.post(new IsLessOrEqualVar(b, x, y), false);
         return b;
     }
+
+    /**
+     * Returns the reified version of the constraint {@code x <= y},
+     * i.e. the boolean variable that is set to true if and only if {@code x <= y}.
+     *
+     * @param b the boolean variable that will be set to true if and only if {@code x <= y}
+     * @param x left hand side of less or equal operator
+     * @param y right hand side of less or equal operator
+     * @return the reified constraint {@code b <-> x <= y}
+     * {@code x <= y}, false otherwise
+     */
+    public static CPConstraint isLe(CPBoolVar b, CPIntVar x, CPIntVar y) {
+        return new IsLessOrEqualVar(b, x, y);
+    }
+
+    /**
+     * Returns the reified version of the constraint {@code x < y},
+     * i.e. the boolean variable that is set to true if and only if {@code x < y}.
+     *
+     * @param b the boolean variable that will be set to true if and only if {@code x < y}
+     * @param x left hand side of less or equal operator
+     * @param y right hand side of less or equal operator
+     * @return the reified constraint {@code b <-> x < y}
+     * {@code x < y}, false otherwise
+     */
+    public static CPConstraint isLt(CPBoolVar b, CPIntVar x, CPIntVar y) {
+        return new IsLessOrEqualVar(b, x, minus(y, 1));
+    }
+
+    /**
+     * Creates a Boolean variable b encoding the strict ordering between x and y.
+     *
+     * The constraint enforces x ≠ y and links b to the ordering as follows:
+     *   - b = true  if and only if x < y
+     *   - b = false if and only if x > y
+     *
+     * @param x the first integer variable
+     * @param y the second integer variable
+     * @return a Boolean variable representing the strict order between x and y
+     */
+    public static CPBoolVar strictOrder(CPIntVar x, CPIntVar y) {
+        CPBoolVar b = makeBoolVar(x.getSolver());
+        x.getSolver().post(isLt(b, x, y));
+        x.getSolver().post(isLt(not(b), y, x));
+        return b;
+    }
+
+
+
 
     /**
      * Returns a boolean variable representing
@@ -1803,43 +1860,74 @@ public final class CPFactory {
      * @param vars one or more interval variables
      * @return a noOverlap constraint on the elements of vars.
      */
-    public static NoOverlap nonOverlap(CPIntervalVar... vars) {
+    public static NoOverlap noOverlap(CPIntervalVar... vars) {
         return new NoOverlap(vars);
+    }
+
+    /**
+     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
+     * between the intervals and links them with the given position variables, with zero transition times.
+     *
+     * @param intervals        the interval variables to be sequenced (all must be present)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
+     * @return a NoOverlapWithPosition constraint
+     */
+    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
+        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);
+    }
+
+    /**
+     * Creates a {@link NoOverlapWithPosition} constraint that enforces a no-overlap
+     * between the intervals with minimum transition times and links them with the given position variables.
+     *
+     * @param intervals        the interval variables to be sequenced (all must be present)
+     * @param posOfInterval    position variables: {@code posOfInterval[i]} is the position of interval i (domain 0..n-1)
+     * @param intervalInPos    inverse position variables: {@code intervalInPos[p]} is the interval at position p (domain 0..n-1)
+     * @param minTransition    n×n matrix where {@code minTransition[i][j]} is the minimum transition time
+     *                         from interval i to interval j
+     * @return a NoOverlapWithPosition constraint with transition times
+     */
+    public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
+        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);
     }
 
 
     /**
-     * Creates and post a non-overlap constraint on the intervals in vars
-     * and create a sequence variable linked with these intervals representing the order of the intervals
-     * in time. The id of an interval is its index in the array vars.
-     * The intervals cannot overlap.
-     * @param intervals intervals that must be linked with a sequence variable
-     * @return sequence variable linked with the intervals
+     * Creates a no-overlap constraint with transition times on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     * @param minTransition n×n transition time matrix where {@code minTransition[i][j]} is the
+     *                      minimum transition time from interval i to interval j
      */
-    public static CPSeqVar nonOverlapSequence(CPIntervalVar[] intervals) {
-        int lct = Arrays.stream(intervals).mapToInt(CPIntervalVar::endMax).max().getAsInt();
-        CPSolver cp = intervals[0].getSolver();
-        cp.post(nonOverlap(intervals));
-        // start and end nodes are set as dumy intervals
-        CPSeqVar seqVar = makeSeqVar(cp, intervals.length + 2, intervals.length, intervals.length + 1);
-        CPIntervalVar dummyStart = makeIntervalVar(cp, false, 0); // dumy start
-        dummyStart.setStart(0);
-        CPIntervalVar dummyEnd = makeIntervalVar(cp, false, 0); // dummy end
-        dummyEnd.setStart(lct);
-        // all intervals for the channeling constraint
-        CPIntervalVar[] intervalsWithDummy = new CPIntervalVar[intervals.length + 2];
-        System.arraycopy(intervals, 0, intervalsWithDummy, 0, intervals.length);
-        intervalsWithDummy[intervals.length] = dummyStart;
-        intervalsWithDummy[intervals.length + 1] = dummyEnd;
-        cp.post(new Duration(seqVar, intervalsWithDummy)); // post the channeling
-        return seqVar;
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals, int[][] minTransition) {
+        return new NoOverlapSequence(seqVar, intervals, minTransition);
+    }
+
+    /**
+     * Creates a no-overlap constraint on the intervals,
+     * linking them with the given sequence variable that represents their order.
+     * The id of an interval is its index in the array intervals.
+     * The sequence variable must have {@code intervals.length + 2} nodes, with nodes
+     * {@code intervals.length} and {@code intervals.length+1} as start and end nodes.
+     *
+     * @param seqVar       sequence variable with {@code intervals.length + 2} nodes
+     * @param intervals    intervals that must not overlap and be linked with the sequence variable
+     */
+    public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals) {
+        return new NoOverlapSequence(seqVar, intervals, new int[intervals.length][intervals.length]);
     }
 
     /**
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then cardinality intervals from the array alternatives
-     * must be present and synchronized with a.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * must be present and synchronized with interval.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables
@@ -1855,7 +1943,7 @@ public final class CPFactory {
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then cardinality intervals from the array alternatives
      * must be present and synchronized with interval.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables
@@ -1869,8 +1957,8 @@ public final class CPFactory {
     /**
      * Returns an Alternative constraint:
      * Enforces that if the interval variable interval is present, then one of the intervals from the array alternatives
-     * must be present and synchronized with a.
-     * If a is not present, then all the intervals of alternatives must be absent.
+     * must be present and synchronized with interval.
+     * If interval is not present, then all the intervals of alternatives must be absent.
      *
      * @param interval     an interval variable
      * @param alternatives an array of interval variables
@@ -1878,6 +1966,20 @@ public final class CPFactory {
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives) {
         return alternative(interval, alternatives, 1);
+    }
+
+    /**
+     * Returns a Span constraint:
+     * Enforces that if the interval variable interval is present, then it begins with the earliest intervals from the
+     * array alternatives and ends with the latest one.
+     * If the interval is not present, then all the intervals of alternatives are absent.
+     *
+     * @param interval     an interval variable
+     * @param alternatives an array of interval variables
+     * @return a {@link Span} constraint
+     */
+    public static CPConstraint span(CPIntervalVar interval, CPIntervalVar[] alternatives) {
+        return new Span(interval, alternatives);
     }
 
     // ********************

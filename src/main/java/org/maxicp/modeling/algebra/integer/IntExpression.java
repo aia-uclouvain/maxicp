@@ -1,5 +1,6 @@
 package org.maxicp.modeling.algebra.integer;
 
+import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 
@@ -43,6 +44,9 @@ public interface IntExpression extends Expression {
     IntExpression minus(int v);
     IntExpression plus(IntExpression v);
     IntExpression minus(IntExpression v);
+    default IntExpression mul(IntExpression v) {
+        return Factory.mul(this, v);
+    }
     IntExpression abs();
 
     IntExpression mapSubexpressions(Function<Expression, Expression> f);

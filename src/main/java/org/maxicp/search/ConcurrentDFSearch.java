@@ -61,7 +61,7 @@ public class ConcurrentDFSearch extends AbstractConcurrentSearchMethod {
                             expandNode();
                         } catch (InconsistencyException e) {
                             statistics.incrFailures();
-                            notifyFailure();
+                            notifyFailure(statistics);
                         }
                     }
                     else {
@@ -82,7 +82,7 @@ public class ConcurrentDFSearch extends AbstractConcurrentSearchMethod {
         SymbolicModel[] alts = branching.get();
         if (alts.length == 0) {
             statistics.incrSolutions();
-            notifySolution();
+            notifySolution(statistics);
         }
         else {
             boolean first = true;

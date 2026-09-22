@@ -12,7 +12,10 @@ import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.util.exception.InconsistencyException;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * NoOverlap constraint, ensures that a set of interval variables do not overlap in time.
@@ -64,12 +67,12 @@ class NoOverlapGlobal extends AbstractCPConstraint {
     StateSparseSet activities;
     CPIntervalVar[] intervals;
     int[] iterator;
-
+    boolean[] overlaps;
     int[] startMin;
     int[] endMax;
     int[] duration;
     boolean[] isOptional;
-
+    long nCalls = 0;
     int n;
 
     NoOverlapLeftToRight globalFilter;
@@ -79,6 +82,7 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         this.intervals = vars;
         activities = new StateSparseSet(getSolver().getStateManager(), vars.length, 0);
         iterator = new int[vars.length];
+        overlaps = new boolean[vars.length];
         startMin = new int[vars.length];
         endMax = new int[vars.length];
         duration = new int[vars.length];
@@ -98,7 +102,6 @@ class NoOverlapGlobal extends AbstractCPConstraint {
         n = activities.fillArray(iterator);
         for (int iter = 0; iter < n; iter++) {
             int i = iterator[iter];
-            ;
             CPIntervalVar act = intervals[i];
             startMin[iter] = act.startMin();
             endMax[iter] = act.endMax();
@@ -109,8 +112,79 @@ class NoOverlapGlobal extends AbstractCPConstraint {
 
     }
 
+    private static boolean overlaps(CPIntervalVar a, CPIntervalVar b) {
+        return a.startMin() < b.endMax() && b.startMin() < a.endMax();
+    }
+
     private void filter() {
-        // TODO
+        nCalls++;
+        if (nCalls % 100 != 0)  return;
+        int n = activities.fillArray(iterator);
+        if (n <= 1) {
+            for (int i = 0; i < n; i++) {
+                activities.remove(iterator[i]);
+            }
+            return;
+        }
+
+        // Sort by startMin
+        sortByStartMin(iterator, 0, n - 1);
+
+        Arrays.fill(overlaps,0, n, false);
+
+        int activeStartIndex = 0;
+        int currentMaxEnd = intervals[iterator[0]].endMax();
+
+        for (int i = 1; i < n; i++) {
+
+            int currIdx = iterator[i];
+            int currStart = intervals[currIdx].startMin();
+            int currEnd = intervals[currIdx].endMax();
+
+            // If current starts before max end -> overlap
+            if (currStart < currentMaxEnd) {
+
+                overlaps[i] = true;
+                overlaps[i - 1] = true;  // previous active interval overlaps too
+
+                currentMaxEnd = Math.max(currentMaxEnd, currEnd);
+
+            } else {
+                currentMaxEnd = currEnd;
+            }
+        }
+
+        // Remove those with no overlap
+        for (int i = 0; i < n; i++) {
+            if (!overlaps[i]) {
+                activities.remove(iterator[i]);
+            }
+        }
+    }
+
+    private void sortByStartMin(int[] arr, int low, int high) {
+        if (low >= high) return;
+
+        int pivot = arr[(low + high) >>> 1];
+        int pivotVal = intervals[pivot].startMin();
+
+        int i = low, j = high;
+
+        while (i <= j) {
+            while (intervals[arr[i]].startMin() < pivotVal) i++;
+            while (intervals[arr[j]].startMin() > pivotVal) j--;
+
+            if (i <= j) {
+                int tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+                i++;
+                j--;
+            }
+        }
+
+        sortByStartMin(arr, low, j);
+        sortByStartMin(arr, i, high);
     }
 
     @Override

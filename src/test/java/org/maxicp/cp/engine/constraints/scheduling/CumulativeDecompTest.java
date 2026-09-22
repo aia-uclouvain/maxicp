@@ -14,13 +14,14 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 public class CumulativeDecompTest extends CPSolverTest {
 
@@ -35,7 +36,7 @@ public class CumulativeDecompTest extends CPSolverTest {
 
         cp.post(new CumulativeDecomposition(s, d, r, 100));
 
-        SearchStatistics stats = CPFactory.makeDfs(cp, firstFail(s)).solve();
+        SearchStatistics stats = CPFactory.makeDfs(cp, Searches.firstFailBinary(s)).solve();
 
         assertEquals(120, stats.numberOfSolutions(), "cumulative alldiff expect makeIntVarArray permutations");
     }
@@ -78,7 +79,7 @@ public class CumulativeDecompTest extends CPSolverTest {
 
         cp.post(new CumulativeDecomposition(s, d, r, 12));
 
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(s));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.firstFailBinary(s));
 
         search.onSolution(() -> {
             //TODO : remove usage of Profile class in tests

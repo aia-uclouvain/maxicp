@@ -1,5 +1,7 @@
 package org.maxicp.modeling.algebra.integer;
 
+import org.maxicp.modeling.DecisionVarsProvider;
+import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.NonLeafExpressionNode;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-public record Element1D(int[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode {
+public record Element1D(int[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode, DecisionVarsProvider {
 
     private int[] getTempArray() {
         int minIndex = Math.max(index.min(), 0);
@@ -88,6 +90,12 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
         for (int i = 0; i < size; i++)
             s.add(this.array[temp[i]]);
         return s.size();
+    }
+
+    /** The index variable is the decision variable; the array data and result are constant/derived. */
+    @Override
+    public Collection<IntExpression> decisionVariables() {
+        return (index instanceof IntVar) ? List.of(index) : List.of();
     }
 
     @Override

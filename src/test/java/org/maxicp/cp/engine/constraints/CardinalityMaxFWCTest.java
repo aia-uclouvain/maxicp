@@ -78,7 +78,7 @@ public class CardinalityMaxFWCTest extends CPSolverTest {
         cp.post(new CardinalityMaxFWC(x, maxCard));
 
 
-        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        DFSearch search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats1 = search.solve();
 
 
@@ -92,7 +92,7 @@ public class CardinalityMaxFWCTest extends CPSolverTest {
             cp.post(CPFactory.le(count[i], maxCard[v]));
         }
 
-        search = CPFactory.makeDfs(cp, Searches.staticOrder(x));
+        search = CPFactory.makeDfs(cp, Searches.staticOrderBinary(x));
         SearchStatistics stats2 = search.solve();
 
         assertEquals(stats1.numberOfSolutions(), stats2.numberOfSolutions());

@@ -25,7 +25,10 @@ jobs:
           cd userguide
           # python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Step3 - Build user guide
+      - name: Step3 - Check source-code links in RST files
+        run: |
+          python userguide/check_source_links.py
+      - name: Step4 - Build user guide
         run: |
           pwd
           ls -lah
@@ -35,7 +38,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: gh-pages
-      - name: Step4 - add html
+      - name: Step5 - add html
         run: |
           git config --local user.email "github-actions@users.noreply.github.com"
           git config --local user.name "github-actions"
@@ -46,8 +49,16 @@ jobs:
           touch .nojekyll
           git add -A
           git commit -m "update userguide" || echo "No changes to commit"
-      - name: Step5 - Push changes to gh-page branch
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Step6 - Push changes to gh-page branch
+        run: |
+          for i in {1..5}; do
+            git pull --rebase origin gh-pages || true
+            if git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:gh-pages; then
+              echo "Push successful"
+              exit 0
+            fi
+            echo "Push failed, retrying..."
+            sleep $((RANDOM % 10 + 5))
+          done
+          echo "Failed to push to gh-pages after multiple attempts."
+          exit 1

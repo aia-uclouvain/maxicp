@@ -95,7 +95,7 @@ public class StableMarriage {
 
         long time = TimeIt.run(() -> {
             baseModel.runCP(() -> {
-                SearchMethod search = baseModel.dfSearch(and(Searches.firstFail(man), Searches.firstFail(woman)));
+                SearchMethod search = baseModel.dfSearch(and(Searches.fds(man), Searches.fds(woman)));
                 search.onSolution(() -> {
                     System.out.println("-----");
                     System.out.println(Arrays.toString(man));

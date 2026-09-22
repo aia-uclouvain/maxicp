@@ -12,9 +12,11 @@ import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.util.exception.NotImplementedException;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
-public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelProxy modelProxy) implements Model, Iterable<Constraint> {
+public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelProxy modelProxy, List<List<IntExpression>> variableGroups) implements Model, Iterable<Constraint> {
     @Override
     public SymbolicModel symbolicCopy() {
         return this;
@@ -31,7 +33,7 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     }
 
     public static SymbolicModel emptyModel(ModelProxy modelProxy) {
-        return new SymbolicModel(null, null, modelProxy);
+        return new SymbolicModel(null, null, modelProxy, List.of());
     }
 
     public boolean isEmpty() {
@@ -39,7 +41,18 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     }
 
     public SymbolicModel add(Constraint c) {
-        return new SymbolicModel(c, this, modelProxy);
+        return new SymbolicModel(c, this, modelProxy, this.variableGroups);
+    }
+
+    @Override
+    public List<List<IntExpression>> getVariableGroups() {
+        return variableGroups;
+    }
+
+    public SymbolicModel addVariableGroup(List<IntExpression> group) {
+        List<List<IntExpression>> newGroups = new ArrayList<>(this.variableGroups);
+        newGroups.add(group);
+        return new SymbolicModel(this.constraint, this.parent, this.modelProxy, newGroups);
     }
 
     public Objective minimize(Expression expr) {

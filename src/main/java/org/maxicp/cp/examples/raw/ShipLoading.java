@@ -14,6 +14,7 @@ import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,7 +23,7 @@ import java.util.Scanner;
 
 import static org.maxicp.cp.CPFactory.*;
 import static org.maxicp.search.Searches.and;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 /**
  * Ship Loading Problem.
@@ -86,7 +87,7 @@ public class ShipLoading {
         Objective obj = cp.minimize(makespan);
 
         // Search:
-        DFSearch dfs = CPFactory.makeDfs(cp, and(firstFail(starts), firstFail(ends)));
+        DFSearch dfs = CPFactory.makeDfs(cp, and(Searches.firstFailBinary(starts), Searches.firstFailBinary(ends)));
 
         // Solution management:
         dfs.onSolution(() -> {

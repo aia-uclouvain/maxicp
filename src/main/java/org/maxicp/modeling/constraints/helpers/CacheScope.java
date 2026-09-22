@@ -17,7 +17,7 @@ public interface CacheScope extends Constraint {
 
     /**
      * Returns the scope of the constraint, preferably as an immutable, unique collection.
-     * Cached conterpart of computeScope().
+     * Cached counterpart of computeScope().
      *
      * @return the scope of the constraint, i.e. all the Expressions it uses. The collection should be immutable.
      */

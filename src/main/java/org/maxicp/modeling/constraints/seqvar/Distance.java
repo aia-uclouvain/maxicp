@@ -10,7 +10,7 @@ import org.maxicp.modeling.Constraint;
 import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.util.DistanceMatrix;
+import org.maxicp.util.algo.DistanceMatrix;
 
 import java.util.Collection;
 import java.util.List;

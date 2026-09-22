@@ -11,11 +11,13 @@ import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.search.DFSearch;
 import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 import org.maxicp.util.io.InputReader;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -37,10 +39,11 @@ import static org.maxicp.modeling.Factory.*;
 public class QAP {
 
     public static void main(String[] args) {
-        System.out.println(run((baseModel, x) -> baseModel.dfSearch(Searches.firstFail(x)), (baseModel, x) -> baseModel.dfSearch(Searches.firstFail(x))));
+        System.out.println(run(
+                (baseModel, x) -> baseModel.dfSearch(Searches.fds(x))));
     }
 
-    public static SearchStatistics run(BiFunction<ModelDispatcher, IntExpression[], SearchMethod> lnsSearch, BiFunction<ModelDispatcher, IntExpression[], SearchMethod> optiSearch) {
+    public static SearchStatistics run(BiFunction<ModelDispatcher, IntExpression[], SearchMethod> search) {
 
         // ---- read the instance -----
 
@@ -65,12 +68,12 @@ public class QAP {
         // ----- build the model ---
         ModelDispatcher baseModel = Factory.makeModelDispatcher();
 
-        IntVar[] x = baseModel.intVarArray(n,n);
+        IntVar[] x = baseModel.intVarArray(n, n);
 
         baseModel.add(Factory.allDifferent(x));
 
         // build the objective function
-        IntExpression [] weightedDist = new IntExpression[n * n];
+        IntExpression[] weightedDist = new IntExpression[n * n];
         int ind = 0;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
@@ -81,23 +84,25 @@ public class QAP {
         IntExpression totCost = sum(weightedDist);
         Objective minimizeDistance = minimize(totCost, true);
 
-        // Find a good solution with a few LNS iterations
 
-        System.out.println("lns ...");
+        return baseModel.runCP(cp -> {
 
-        int[] xBest = IntStream.range(0, n).toArray();
-        AtomicInteger bestCost = new AtomicInteger(Integer.MAX_VALUE-1);
+            // Find a good solution with a few LNS iterations
 
-        int nRestarts = 100;
-        int failureLimit = 100;
-        Random rand = new java.util.Random(0);
+            System.out.println("lns ...");
 
-        baseModel.runCP(() -> {
-            SearchMethod search = lnsSearch.apply(baseModel, x);
-            //
+            int[] xBest = IntStream.range(0, n).toArray();
+            AtomicInteger bestCost = new AtomicInteger(Integer.MAX_VALUE - 1);
 
-            search.onSolution(() -> {
-                System.out.println("objective:" + totCost.min());
+            int nRestarts = 100;
+            int failureLimit = 100;
+            Random rand = new java.util.Random(0);
+
+
+            DFSearch dfs = baseModel.dfSearch(Searches.firstFailBinary(x));
+
+            dfs.onSolution(() -> {
+                System.out.println("new solution with objective:" + totCost.min() + " " + totCost.max());
                 // Update the current best solution
                 for (int i = 0; i < n; i++) {
                     xBest[i] = x[i].min();
@@ -106,40 +111,29 @@ public class QAP {
             });
 
             for (int i = 0; i < nRestarts; i++) {
-                //System.out.println(minimizeDistance.bound.get());
 
                 if (i % 10 == 0)
                     System.out.println("restart number #" + i);
 
-                search.optimizeSubjectTo(minimizeDistance, statistics -> statistics.numberOfFailures() >= failureLimit, () -> {
+                dfs.optimizeSubjectTo(minimizeDistance, statistics -> statistics.numberOfFailures() >= failureLimit, () -> {
                     // Assign the fragment 5% of the variables randomly chosen
                     for (int j = 0; j < n; j++) {
-                        if (rand.nextInt(100) < 5) {
+                        if (rand.nextInt(100) < 50) {
                             // after the solveSubjectTo those constraints are removed
                             baseModel.add(eq(x[j], xBest[j]));
                         }
                     }
                 });
             }
+
+            System.out.println("now try to prove optimality");
+
+
+            // Now prove optimality without LNS
+            return dfs.optimize(minimizeDistance); // actually solve the problem
+
+
         });
 
-
-
-        // Now prove optimality without LNS
-        System.out.println("proving optimality ...");
-
-        return baseModel.runCP(() -> {
-            SearchMethod search = optiSearch.apply(baseModel, x);
-            // try to prove optimality
-            baseModel.add(lt(totCost, bestCost.get()));
-
-            search.onSolution(() -> {
-                System.out.println("objective:" + totCost.min());
-            });
-
-            SearchStatistics stats = search.optimize(minimizeDistance); // actually solve the problem
-
-            return stats;
-        });
     }
 }

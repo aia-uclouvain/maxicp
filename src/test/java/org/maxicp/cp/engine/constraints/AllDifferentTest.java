@@ -12,9 +12,10 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.cp.CPFactory;
+import org.maxicp.search.Searches;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.maxicp.search.Searches.firstFail;
+import static org.maxicp.search.Searches.firstFailBinary;
 
 
 public class AllDifferentTest extends CPSolverTest {
@@ -41,7 +42,7 @@ public class AllDifferentTest extends CPSolverTest {
 
         cp.post(CPFactory.allDifferent(x));
 
-        SearchStatistics stats = CPFactory.makeDfs(cp, firstFail(x)).solve();
+        SearchStatistics stats = CPFactory.makeDfs(cp, Searches.firstFailBinary(x)).solve();
         assertEquals(120, stats.numberOfSolutions());
 
     }

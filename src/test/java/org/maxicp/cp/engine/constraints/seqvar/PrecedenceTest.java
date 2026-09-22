@@ -555,7 +555,7 @@ public class PrecedenceTest extends CPSolverTest {
     public void testFindOneSol1(CPSeqVar seqVar) {
         CPSolver cp = seqVar.getSolver();
         cp.post(new Precedence(seqVar, 0, 1, 2, 3, 4, 5, 6, 7));
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(seqVar));
+        DFSearch search = CPFactory.makeDfs(cp, firstFailBinary(seqVar));
 
         search.onSolution(() -> {
             if (seqVar.nNode(MEMBER) > 2) {
@@ -577,7 +577,7 @@ public class PrecedenceTest extends CPSolverTest {
     public void testFindOneSol2(CPSeqVar seqVar) {
         CPSolver cp = seqVar.getSolver();
         cp.post(new Precedence(seqVar, 8, 0, 1, 2, 3, 4, 5, 6, 7, 9));
-        DFSearch search = CPFactory.makeDfs(cp, firstFail(seqVar));
+        DFSearch search = CPFactory.makeDfs(cp, firstFailBinary(seqVar));
         SearchStatistics stats = search.solve();
         assertEquals(256, stats.numberOfSolutions());
     }

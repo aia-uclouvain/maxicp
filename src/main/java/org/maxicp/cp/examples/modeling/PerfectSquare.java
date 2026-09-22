@@ -73,20 +73,13 @@ public class PerfectSquare {
         }
         // run with CP
         baseModel.runCP((cp) -> {
-            Supplier<Runnable[]> fixStartX = () -> {
-                IntervalVar square  = selectMin(squareX, s -> !s.isFixed(), IntervalExpression::startMin);
-                if (square == null)
-                    return EMPTY;
-                return branchOnStartMin(square);
-            };
-            Supplier<Runnable[]> fixStartY = () -> {
-                IntervalVar square  = selectMin(squareY, s -> !s.isFixed(), IntervalExpression::startMin);
-                if (square == null)
-                    return EMPTY;
-                return branchOnStartMin(square);
-            };
-            Supplier<Runnable[]> branching = and(fixStartX, fixStartY);
-            DFSearch search = cp.dfSearch(branching);
+
+            IntervalVar[] allSquares = new IntervalVar[2 * nSquares];
+            System.arraycopy(squareX, 0, allSquares, 0, nSquares);
+            System.arraycopy(squareY, 0, allSquares, nSquares, nSquares);
+
+            DFSearch search = cp.dfSearch(and(fds(squareX),fds(squareY)));
+
             search.onSolution(() -> {
                 draw(side, squareX, squareY);
             });

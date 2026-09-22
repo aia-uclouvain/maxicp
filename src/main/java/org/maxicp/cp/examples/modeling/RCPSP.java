@@ -30,7 +30,7 @@ public class RCPSP {
 
     public static void main(String[] args) {
         // Reading the data
-        InputReader reader = new InputReader("data/RCPSP/j30_1_1.rcp");
+        InputReader reader = new InputReader("data/RCPSP/j90_1_1.rcp");
 
         int nActivities = reader.getInt();
         int nResources = reader.getInt();
@@ -91,13 +91,7 @@ public class RCPSP {
 
         model.runCP((cp) -> {
 
-            Supplier<Runnable[]> fixMakespan = () -> {
-                if (makespan.isFixed())
-                    return EMPTY;
-                return branch(() -> model.add(eq(makespan, makespan.min())));
-            };
-
-            Supplier<Runnable[]> branching = and(setTimes(tasks), fixMakespan);
+            Supplier<Runnable[]> branching = and(fds(tasks));
 
             DFSearch search = cp.dfSearch(branching);
             // print each solution found

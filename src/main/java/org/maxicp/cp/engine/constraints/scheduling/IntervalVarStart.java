@@ -21,9 +21,6 @@ public class IntervalVarStart extends AbstractCPConstraint {
 
     public IntervalVarStart(CPIntervalVar var, CPIntVar start) {
         super(var.getSolver());
-        if (!var.isPresent()) {
-            throw new IllegalArgumentException("interval var must be present:" + var);
-        }
         this.var = var;
         this.start = start;
     }

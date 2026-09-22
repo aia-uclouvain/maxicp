@@ -79,6 +79,13 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     /**
+     * Post to enforce that the variable is true
+     */
+    private void post(CPBoolVar b) {
+        solver.post(b, !disableFixPoint);
+    }
+
+    /**
      * Calls the fixpoint if if is not disabled
      */
     private void fixpoint() {
@@ -101,7 +108,8 @@ public class ConcreteCPModel implements ConcreteModel {
         this.cumulFunMapping = solver.getStateManager().makeStateMap();
 
         noFixPoint(() -> {
-            EqHelper.EqSimplified eqSimplified = EqHelper.preprocess(baseNode.getConstraints(), ConcreteCPModel::isViewOf);
+            EqHelper.EqSimplified eqSimplified = EqHelper.preprocess(baseNode.getConstraints(),
+                    ConcreteCPModel::isViewOf);
             for (Constraint c : eqSimplified.newConstraints())
                 instantiateConstraint(c);
 
@@ -166,7 +174,8 @@ public class ConcreteCPModel implements ConcreteModel {
             case GreaterOrEq e -> CPFactory.isGe(getCPVar(e.a()), getCPVar(e.b()));
             case And e -> {
                 CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());
-                post(new org.maxicp.cp.engine.constraints.Sum(e.exprs().stream().map(x -> getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));
+                post(new org.maxicp.cp.engine.constraints.Sum(
+                        e.exprs().stream().map(x -> getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));
                 yield CPFactory.isEq(s, e.exprs().size());
             }
             case Or or -> {
@@ -176,32 +185,37 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case EndBeforeStart is -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
-                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBeforeStart(getCPVar(is.a()), getCPVar(is.b()), b));
+                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBeforeStart(getCPVar(is.a()),
+                        getCPVar(is.b()), b));
                 yield b;
             }
             case EndBefore e -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
-                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBefore(b, getCPVar(e.intervalVar()), getCPVar(e.end())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBefore(b, getCPVar(e.intervalVar()),
+                        getCPVar(e.end())));
                 yield b;
             }
             case EndAfter e -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
-                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndAfter(b, getCPVar(e.interval()), getCPVar(e.value())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndAfter(b, getCPVar(e.interval()),
+                        getCPVar(e.value())));
                 yield b;
             }
             case StartBefore e -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
-                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(b, getCPVar(e.interval()), getCPVar(e.value())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(b, getCPVar(e.interval()),
+                        getCPVar(e.value())));
                 yield b;
             }
             case StartAfter e -> {
                 CPBoolVar b = CPFactory.makeBoolVar(solver);
-                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(CPFactory.not(b), getCPVar(e.interval()), getCPVar(e.value())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(CPFactory.not(b),
+                        getCPVar(e.interval()), getCPVar(e.value())));
                 yield b;
             }
             case org.maxicp.modeling.algebra.bool.Present p -> getCPVar(p.interval()).status();
             default ->
-                    throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
+                throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
         };
         boolExprMapping.put(v, newVar);
         return newVar;
@@ -227,13 +241,16 @@ public class ConcreteCPModel implements ConcreteModel {
             case UnaryMinus iv -> CPFactory.minus(getCPVar(iv.expr()));
             case Sum ie -> CPFactory.sum(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
             case WeightedSum ie ->
-                    CPFactory.sum(IntStream.range(0, ie.subexprs().length).mapToObj(i -> CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i])).toArray(CPIntVar[]::new));
+                CPFactory.sum(IntStream.range(0, ie.subexprs().length)
+                        .mapToObj(i -> CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))
+                        .toArray(CPIntVar[]::new));
             case Constant c -> CPFactory.makeIntVar(solver, c.v(), c.v());
             case Min m -> CPFactory.minimum(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
             case Max m -> CPFactory.max(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));
             case Element1D e -> CPFactory.element(e.array(), getCPVar(e.index()));
             case Element1DVar e ->
-                    CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new), getCPVar(e.index()));
+                CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new),
+                        getCPVar(e.index()));
             case Element2D e -> CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));
             case IntervalEndOrValue i -> CPFactory.endOr(getCPVar(i.interval()), i.value());
             case IntervalEnd i -> CPFactory.end(getCPVar(i.interval()));
@@ -249,7 +266,7 @@ public class ConcreteCPModel implements ConcreteModel {
                     yield CPFactory.mul(getCPVar(ie.x()), getCPVar(ie.b()));
             }
             default ->
-                    throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
+                throw new NotYetImplementedException("Unknown expression type %s in getCPVar".formatted(v.getClass()));
         };
         intExprMapping.put(v, newVar);
         return newVar;
@@ -260,7 +277,8 @@ public class ConcreteCPModel implements ConcreteModel {
      */
     public void enforceEqualityIntExpression(IntExpression expr, CPIntVar v) {
         if ((expr instanceof BoolExpression && boolExprMapping.containsKey(expr)) || intExprMapping.containsKey(expr))
-            throw new RuntimeException("enforceEqualityIntExpression cannot force equality on an already-instantiated expression");
+            throw new RuntimeException(
+                    "enforceEqualityIntExpression cannot force equality on an already-instantiated expression");
         switch (expr) {
             case IntVarSetImpl iv -> {
                 int[] content = new int[v.size()];
@@ -276,11 +294,11 @@ public class ConcreteCPModel implements ConcreteModel {
             case IntVar x -> throw new RuntimeException("Unknown IntVar type %s".formatted(x.getClass()));
             case Constant c -> v.fix(c.v());
             case CstOffset co -> {
-                // co.expr + c == v    <=>    co.expr == v - c
+                // co.expr + c == v <=> co.expr == v - c
                 enforceEqualityIntExpression(co.expr(), CPFactory.minus(v, co.v()));
             }
             case CstMul cm -> {
-                //fallback
+                // fallback
                 post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(cm.expr()), cm.mul()), v));
             }
             case Mul m -> {
@@ -294,49 +312,57 @@ public class ConcreteCPModel implements ConcreteModel {
                 }
             }
             case UnaryMinus um -> {
-                // -um.expr == v   <=>  um.expr == -v
+                // -um.expr == v <=> um.expr == -v
                 enforceEqualityIntExpression(um.expr(), CPFactory.minus(v));
             }
             case Abs abs -> post(new org.maxicp.cp.engine.constraints.Absolute(getCPVar(abs.expr()), v));
             case Sum sum -> post(new org.maxicp.cp.engine.constraints.Sum(getCPVar(sum.subexprs()), v));
             case WeightedSum ie -> post(new org.maxicp.cp.engine.constraints.Sum(
-                    IntStream.range(0, ie.subexprs().length).mapToObj(i -> CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i])).toArray(CPIntVar[]::new),
-                    v
-            ));
+                    IntStream.range(0, ie.subexprs().length)
+                            .mapToObj(i -> CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))
+                            .toArray(CPIntVar[]::new),
+                    v));
             case Min m ->
-                    post(new org.maxicp.cp.engine.constraints.Maximum(Arrays.stream(getCPVar(m.exprs())).map(CPFactory::minus).toArray(CPIntVar[]::new), CPFactory.minus(v)));
+                post(new org.maxicp.cp.engine.constraints.Maximum(
+                        Arrays.stream(getCPVar(m.exprs())).map(CPFactory::minus).toArray(CPIntVar[]::new),
+                        CPFactory.minus(v)));
             case Max m -> post(new org.maxicp.cp.engine.constraints.Maximum(getCPVar(m.exprs()), v));
             case Element1D e -> post(new org.maxicp.cp.engine.constraints.Element1D(e.array(), getCPVar(e.index()), v));
             case Element1DVar e ->
-                    post(new org.maxicp.cp.engine.constraints.Element1DVar(getCPVar(e.array()), getCPVar(e.index()), v));
+                post(new org.maxicp.cp.engine.constraints.Element1DVar(getCPVar(e.array()), getCPVar(e.index()), v));
             case Element2D e ->
-                    post(new org.maxicp.cp.engine.constraints.Element2D(e.array(), getCPVar(e.x()), getCPVar(e.y()), v));
+                post(new org.maxicp.cp.engine.constraints.Element2D(e.array(), getCPVar(e.x()), getCPVar(e.y()), v));
             case Eq e ->
-                    post(new org.maxicp.cp.engine.constraints.IsEqualVar(asBoolVar(v), getCPVar(e.a()), getCPVar(e.b())));
+                post(new org.maxicp.cp.engine.constraints.IsEqualVar(asBoolVar(v), getCPVar(e.a()), getCPVar(e.b())));
             case NotEq e ->
-                    post(new org.maxicp.cp.engine.constraints.IsEqualVar(CPFactory.not(asBoolVar(v)), getCPVar(e.a()), getCPVar(e.b())));
+                post(new org.maxicp.cp.engine.constraints.IsEqualVar(CPFactory.not(asBoolVar(v)), getCPVar(e.a()),
+                        getCPVar(e.b())));
             case LessOrEq e ->
-                    post(new org.maxicp.cp.engine.constraints.IsLessOrEqualVar(asBoolVar(v), getCPVar(e.a()), getCPVar(e.b())));
+                post(new org.maxicp.cp.engine.constraints.IsLessOrEqualVar(asBoolVar(v), getCPVar(e.a()),
+                        getCPVar(e.b())));
             case And e -> {
                 CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());
-                post(new org.maxicp.cp.engine.constraints.Sum(e.exprs().stream().map(x -> getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));
+                post(new org.maxicp.cp.engine.constraints.Sum(
+                        e.exprs().stream().map(x -> getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));
                 post(new org.maxicp.cp.engine.constraints.IsEqual(asBoolVar(v), s, e.exprs().size()));
             }
             case Not e -> {
-                //fallback. Note that we don't use e but expr below, so we put v Equals expr === v Equals Not(e).
+                // fallback. Note that we don't use e but expr below, so we put v Equals expr
+                // === v Equals Not(e).
                 post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(expr), v));
             }
             case IntervalStart ivs -> {
-                post(new Equal(getCPVar(ivs),getCPVar(v)));
+                post(new Equal(getCPVar(ivs), getCPVar(v)));
             }
             case IntervalEnd ive -> {
-                post(new Equal(getCPVar(ive),getCPVar(v)));
+                post(new Equal(getCPVar(ive), getCPVar(v)));
             }
             case IntervalLength ivl -> {
-                post(new Equal(getCPVar(ivl),getCPVar(v)));
+                post(new Equal(getCPVar(ivl), getCPVar(v)));
             }
             default ->
-                    throw new NotYetImplementedException("Unknown expression type %s in enforceEqualityIntExpression".formatted(v.getClass()));
+                throw new NotYetImplementedException(
+                        "Unknown expression type %s in enforceEqualityIntExpression".formatted(v.getClass()));
         }
         intExprMapping.put(expr, v);
     }
@@ -379,22 +405,28 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     public CPIntervalVar getCPVar(IntervalExpression v) {
-        if (v instanceof CPIntervalVar cpv)
+        if (v instanceof CPIntervalVar cpv) {
             return cpv;
-
+        }
         CPIntervalVar cached = intervalExprMapping.get(v);
-        if (cached != null)
+        if (cached != null) {
             return cached;
+        }
+
         CPIntervalVar newVar = switch (v) {
             case IntervalVarImpl iv -> {
-                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.isOptional(), iv.lengthMin(), iv.lengthMax());
-                intervalVar.setStartMin(iv.startMin());
-                intervalVar.setStartMax(iv.startMax());
-                intervalVar.setEndMin(iv.endMin());
-                intervalVar.setEndMax(iv.endMax());
+                iv.defaultLengthMin();
+                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.defaultIsOptional(),
+                        iv.defaultLengthMin(), iv.defaultLengthMax());
+                intervalVar.setStartMin(iv.defaultStartMin());
+                intervalVar.setStartMax(iv.defaultStartMax());
+                intervalVar.setEndMin(iv.defaultEndMin());
+                intervalVar.setEndMax(iv.defaultEndMax());
                 yield intervalVar;
             }
-            default -> throw new NotImplementedException("Unknown var type %s".formatted(v.getClass()));
+            default -> {
+                throw new NotImplementedException("Unknown var type %s".formatted(v.getClass()));
+            }
         };
         intervalExprMapping.put(v, newVar);
         return newVar;
@@ -409,17 +441,18 @@ public class ConcreteCPModel implements ConcreteModel {
         CPCumulFunction c = switch (f) {
             case FlatCumulFunction ignored -> new CPFlatCumulFunction();
             case MinusCumulFunction minus ->
-                    new CPMinusCumulFunction(getCumulFunction(minus.left()), getCumulFunction(minus.right()));
+                new CPMinusCumulFunction(getCumulFunction(minus.left()), getCumulFunction(minus.right()));
             case PlusCumulFunction plus ->
-                    new CPPlusCumulFunction(getCumulFunction(plus.left()), getCumulFunction(plus.right()));
+                new CPPlusCumulFunction(getCumulFunction(plus.left()), getCumulFunction(plus.right()));
             case PulseCumulFunction pulse ->
-                    new CPPulseCumulFunction(getCPVar(pulse.interval), pulse.hMin, pulse.hMax);
+                new CPPulseCumulFunction(getCPVar(pulse.interval), pulse.hMin, pulse.hMax);
             case StepAtEndCumulFunction step ->
-                    new CPStepAtEndCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);
+                new CPStepAtEndCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);
             case StepAtStartCumulFunction step ->
-                    new CPStepAtStartCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);
+                new CPStepAtStartCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);
             case SumCumulFunction sum ->
-                new CPSumCumulFunction(Arrays.stream(sum.functions).map(this::getCumulFunction).toArray(CPCumulFunction[]::new));
+                new CPSumCumulFunction(
+                        Arrays.stream(sum.functions).map(this::getCumulFunction).toArray(CPCumulFunction[]::new));
             default -> throw new NotImplementedException("Unknown cumul expression type %s".formatted(f.getClass()));
         };
         cumulFunMapping.put(f, c);
@@ -475,7 +508,8 @@ public class ConcreteCPModel implements ConcreteModel {
         }
 
         // Now revert the solver until we are at a node below the first common node
-        boolean hasJumped = false; // set to true if the solver has actually jumped (in case jumping to the current location)
+        boolean hasJumped = false; // set to true if the solver has actually jumped (in case jumping to the current
+                                   // location)
         while (!nodeCurrentlyPresent.contains(model.value())) {
             hasJumped = true;
             getStateManager().restoreState();
@@ -530,6 +564,11 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     @Override
+    public java.util.List<java.util.List<IntExpression>> getVariableGroups() {
+        return model.value().getVariableGroups();
+    }
+
+    @Override
     public Iterable<Constraint> getConstraints() {
         return model.value().getConstraints();
     }
@@ -551,12 +590,16 @@ public class ConcreteCPModel implements ConcreteModel {
                     instantiateBoolExpression(e);
                 }
             }
+            case Not e -> {
+                CPBoolVar b = getCPVar(e.a());
+                post(CPFactory.not(b));
+            }
             case NotEq e -> post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));
             case LessOrEq e -> post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));
             case GreaterOrEq e ->
-                    post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.b()), getCPVar(e.a())));
+                post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.b()), getCPVar(e.a())));
             case Or e ->
-                    post(new org.maxicp.cp.engine.constraints.Or(getCPVar(e.exprs().toArray(BoolExpression[]::new))));
+                post(new org.maxicp.cp.engine.constraints.Or(getCPVar(e.exprs().toArray(BoolExpression[]::new))));
             case InSet e -> {
                 CPIntVar v = getCPVar(e.a());
                 int[] values = new int[v.size()];
@@ -570,17 +613,24 @@ public class ConcreteCPModel implements ConcreteModel {
                 post(new org.maxicp.cp.engine.constraints.scheduling.EndBeforeStart(getCPVar(e.a()), getCPVar(e.b())));
             }
             case EndBefore e -> {
-                post(new org.maxicp.cp.engine.constraints.scheduling.EndBefore(getCPVar(e.intervalVar()), getCPVar(e.end())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.EndBefore(getCPVar(e.intervalVar()),
+                        getCPVar(e.end())));
             }
             case StartAfter s -> {
-                post(new org.maxicp.cp.engine.constraints.scheduling.StartAfter(getCPVar(s.interval()), getCPVar(s.value())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.StartAfter(getCPVar(s.interval()),
+                        getCPVar(s.value())));
+            }
+            case StartBefore s -> {
+                post(new org.maxicp.cp.engine.constraints.scheduling.StartBefore(getCPVar(s.interval()),
+                        getCPVar(s.value())));
             }
             case org.maxicp.modeling.algebra.bool.Present p -> {
                 getCPVar(p.interval().status()).fix(true);
                 fixpoint();
             }
             default ->
-                    throw new NotYetImplementedException("Unknown expression type %s in instantiateBoolExpression".formatted(expr.getClass()));
+                throw new NotYetImplementedException(
+                        "Unknown expression type %s in instantiateBoolExpression".formatted(expr.getClass()));
         }
     }
 
@@ -592,13 +642,13 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case CardinalityMin cardMin -> {
                 CPIntVar[] args = Arrays.stream(cardMin.x()).map(this::getCPVar).toArray(CPIntVar[]::new);
-                int [] card = cardMin.array();
-                post(new org.maxicp.cp.engine.constraints.CardinalityMinFWC(args,card));
+                int[] card = cardMin.array();
+                post(new org.maxicp.cp.engine.constraints.CardinalityMinFWC(args, card));
             }
             case CardinalityMax cardMax -> {
                 CPIntVar[] args = Arrays.stream(cardMax.x()).map(this::getCPVar).toArray(CPIntVar[]::new);
-                int [] card = cardMax.array();
-                post(new org.maxicp.cp.engine.constraints.CardinalityMaxFWC(args,card));
+                int[] card = cardMax.array();
+                post(new org.maxicp.cp.engine.constraints.CardinalityMaxFWC(args, card));
             }
             case BinPacking binPacking -> {
                 CPIntVar[] x = Arrays.stream(binPacking.x()).map(this::getCPVar).toArray(CPIntVar[]::new);
@@ -616,45 +666,54 @@ public class ConcreteCPModel implements ConcreteModel {
                 if (t.starred().isEmpty())
                     post(new org.maxicp.cp.engine.constraints.TableCT(getCPVar(t.x()), t.array()));
                 else
-                    post(new org.maxicp.cp.engine.constraints.ShortTableCT(getCPVar(t.x()), t.array(), t.starred().get()));
+                    post(new org.maxicp.cp.engine.constraints.ShortTableCT(getCPVar(t.x()), t.array(),
+                            t.starred().get()));
             }
             case NegTable t -> {
                 if (t.starred().isEmpty())
                     post(new org.maxicp.cp.engine.constraints.NegTableCT(getCPVar(t.x()), t.array()));
                 else
-                    throw new NotYetImplementedException("Negative Table with stars is available in maxicp.cp but not yet implemented");
+                    throw new NotYetImplementedException(
+                            "Negative Table with stars is available in maxicp.cp but not yet implemented");
             }
-            //-----------------------------------------
+            // -----------------------------------------
             case Circuit circuit -> {
                 post(new org.maxicp.cp.engine.constraints.Circuit(getCPVar(circuit.successor())));
             }
             case Require require -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Require(getCPVar(require.seqVar()), require.node()));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Require(getCPVar(require.seqVar()), require.node()));
             }
             case Insert insert -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Insert(getCPVar(insert.seqVar()), insert.prev(), insert.node()));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Insert(getCPVar(insert.seqVar()), insert.prev(),
+                        insert.node()));
             }
             case Exclude exclude -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Exclude(getCPVar(exclude.seqVar()), exclude.node()));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Exclude(getCPVar(exclude.seqVar()),
+                        exclude.node()));
             }
             case Distance distance -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar), distance.distanceMatrix, getCPVar(distance.distance)));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar),
+                        distance.distanceMatrix, getCPVar(distance.distance)));
             }
             case TransitionTimes transitionTimes -> {
                 CPIntVar[] time = Arrays.stream(transitionTimes.time).map(this::getCPVar).toArray(CPIntVar[]::new);
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.TransitionTimes(getCPVar(transitionTimes.seqVar), time, transitionTimes.dist, transitionTimes.serviceTime));
+                post(new org.maxicp.cp.engine.constraints.seqvar.TransitionTimes(
+                        getCPVar(transitionTimes.seqVar), time, transitionTimes.dist, transitionTimes.serviceTime));
             }
             case org.maxicp.modeling.constraints.seqvar.Cumulative cumu -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Cumulative(getCPVar(cumu.seqVar), cumu.starts, cumu.ends, cumu.load, cumu.capacity));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Cumulative(getCPVar(cumu.seqVar), cumu.starts,
+                        cumu.ends, cumu.load, cumu.capacity));
             }
             case Precedence prec -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.Precedence(getCPVar(prec.seqVar()), prec.nodes()));
+                post(new org.maxicp.cp.engine.constraints.seqvar.Precedence(getCPVar(prec.seqVar()), prec.nodes()));
             }
             case org.maxicp.modeling.constraints.seqvar.NotBetween nb -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.NotBetween(getCPVar(nb.seqVar()), nb.prev(), nb.node(), nb.after()));
+                post(new org.maxicp.cp.engine.constraints.seqvar.NotBetween(getCPVar(nb.seqVar()), nb.prev(),
+                        nb.node(), nb.after()));
             }
             case SubSequence ss -> {
-                solver.post(new org.maxicp.cp.engine.constraints.seqvar.SubSequence(getCPVar(ss.main()), getCPVar(ss.sub())));
+                post(new org.maxicp.cp.engine.constraints.seqvar.SubSequence(getCPVar(ss.main()),
+                        getCPVar(ss.sub())));
             }
             case ExpressionIsTrue eit -> instantiateBoolExpression(eit.expr());
             case EqHelper.EqInstantiateAndCache eqic -> getCPVar(eqic.expr());
@@ -665,7 +724,17 @@ public class ConcreteCPModel implements ConcreteModel {
                 }
             }
             case NoOverlap noOverlap -> {
-                solver.post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));
+                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));
+            }
+            case org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition noOverlapPos -> {
+                int[][] trans = noOverlapPos.minTransition();
+                if (trans == null)
+                    trans = new int[noOverlapPos.intervals().length][noOverlapPos.intervals().length];
+                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlapWithPosition(
+                        getCPVar(noOverlapPos.intervals()),
+                        getCPVar(noOverlapPos.posOfInterval()),
+                        getCPVar(noOverlapPos.intervalInPos()),
+                        trans));
             }
             case Length length -> {
                 getCPVar(length.interval()).setLength(length.length());
@@ -685,20 +754,25 @@ public class ConcreteCPModel implements ConcreteModel {
             }
             case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -> {
                 CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());
-                solver.post(CPFactory.le(cpExpression, lessOrEqual.limit()));
+                post(CPFactory.le(cpExpression, lessOrEqual.limit()));
             }
             case org.maxicp.modeling.constraints.scheduling.Alternative alternative -> {
-                solver.post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()), getCPVar(alternative.n())));
+                post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()),
+                        getCPVar(alternative.n())));
             }
             case org.maxicp.modeling.constraints.scheduling.AlwaysIn alwaysIn -> {
                 CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());
-                solver.post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));
+                post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));
+            }
+            case org.maxicp.modeling.constraints.scheduling.Span span -> {
+                post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));
             }
             case CustomConstraint instantiableConstraint -> {
                 Object cpConstraint = instantiableConstraint.instantiate(this);
                 if (!(cpConstraint instanceof CPConstraint constraint))
-                    throw new ClassCastException("The given instantiable constraint cannot be cast to a CPConstraint " + cpConstraint.getClass());
-                solver.post(constraint);
+                    throw new ClassCastException("The given instantiable constraint cannot be cast to a CPConstraint "
+                            + cpConstraint.getClass());
+                post(constraint);
             }
             case NoOpConstraint ignored -> fixpoint();
             default -> throw new NotYetImplementedException("Unexpected value: " + c);

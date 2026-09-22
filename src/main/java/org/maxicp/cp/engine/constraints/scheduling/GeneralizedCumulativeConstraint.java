@@ -29,25 +29,25 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
     protected final long maxCapacity;
     protected final long minCapacity;
 
-    //Propagation structures:
-    protected final StateSparseSet activeSet; //Tracks active activities
-    protected final int[] active; //Indices of the active activities
-    protected final StateInt minStart; //Minimum start of all non-fixed activities
-    protected final StateInt maxEnd; //Maximum end of all non-fixed activities
+    // Propagation structures:
+    protected final StateSparseSet activeSet; // Tracks active activities
+    protected final int[] active; // Indices of the active activities
+    protected final StateInt minStart; // Minimum start of all non-fixed activities
+    protected final StateInt maxEnd; // Maximum end of all non-fixed activities
 
-    //Structures used for timeline initialization:
-    protected final Event[] events; //Events used to build profile
-    public final int[] actToStartMinTp; //Pointers to start min time points
-    public final int[] actToEndMaxTp; //Pointers to end max time points
+    // Structures used for timeline initialization:
+    protected final Event[] events; // Events used to build profile
+    public final int[] actToStartMinTp; // Pointers to start min time points
+    public final int[] actToEndMaxTp; // Pointers to end max time points
 
     // Profile structure implemented as arrays:
-    protected final int[] time; //Time of time points
-    protected final int[] profileMin; //Minimum Profile
-    protected final int[] profileMax; //Maximum Profile
-    protected final int[] nOverlap; //Number of overlapping tasks
-    protected int lastTP; //Index of last time point
+    protected final int[] time; // Time of time points
+    protected final int[] profileMin; // Minimum Profile
+    protected final int[] profileMax; // Maximum Profile
+    protected final int[] nOverlap; // Number of overlapping tasks
+    protected int lastTP; // Index of last time point
 
-    //Structures used to remember profile at start of propagation:
+    // Structures used to remember profile at start of propagation:
     protected final boolean[] isPresentInProfile; // Tracks which tasks are present at start of propagation
     protected final int[] startMaxInProfile; // Tracks start max of tasks at start of propagation
     protected final int[] endMinInProfile; // Tracks end min of tasks at start of propagation
@@ -127,7 +127,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
 
     @Override
     public void propagate() {
-        //Checking active activities:
+        // Checking active activities:
         int nActive = activeSet.fillArray(active);
         int minS = Integer.MAX_VALUE;
         int maxE = Integer.MIN_VALUE;
@@ -155,10 +155,14 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
         for (int i = 0; i < nActive; i++) {
             int a = active[i];
             if (activeSet.contains(a)) {
-                if (!activities[a].height().isFixed()) allHeightFixed = false;
-                if (!activities[a].isLengthFixed()) allLengthFixed = false;
-                if (activities[a].getHeightMin() < 0) allPositive = false;
-                if (activities[a].getHeightMax() > 0) allNegative = false;
+                if (!activities[a].height().isFixed())
+                    allHeightFixed = false;
+                if (!activities[a].isLengthFixed())
+                    allLengthFixed = false;
+                if (activities[a].getHeightMin() < 0)
+                    allPositive = false;
+                if (activities[a].getHeightMax() > 0)
+                    allNegative = false;
                 isPresentInProfile[a] = activities[a].isPresent();
                 startMaxInProfile[a] = activities[a].getStartMax();
                 endMinInProfile[a] = activities[a].getEndMin();
@@ -167,13 +171,13 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
         mandatoryActive = (!allPositive && !allNegative) || hasMinCapa;
         simpleCumulative = !mandatoryActive && allHeightFixed && allLengthFixed;
 
-        //Propagation:
+        // Propagation:
         if (nActive > 0 && (minCapacity > Integer.MIN_VALUE || maxCapacity < Integer.MAX_VALUE)) {
             initializeTimeline(nActive);
             timeTabling(nActive);
         }
 
-        //Removing inactive activities:
+        // Removing inactive activities:
         minStart.setValue(minS);
         maxEnd.setValue(maxE);
         for (int i = 0; i < nActive; i++) {
@@ -183,38 +187,48 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
         }
     }
 
-    //Creates timeline structure:
+    // Creates timeline structure:
     public void initializeTimeline(int n) {
-        //Resetting events:
+        // Resetting events:
         int nEvents = 0;
         for (int i = 0; i < n; i++) {
-            if (events[nEvents] == null) events[nEvents] = new Event(active[i], eventType.START_MIN);
-            else events[nEvents].reset(active[i], eventType.START_MIN);
-            if (events[nEvents + 1] == null) events[nEvents + 1] = new Event(active[i], eventType.END_MAX);
-            else events[nEvents + 1].reset(active[i], eventType.END_MAX);
+            if (events[nEvents] == null)
+                events[nEvents] = new Event(active[i], eventType.START_MIN);
+            else
+                events[nEvents].reset(active[i], eventType.START_MIN);
+            if (events[nEvents + 1] == null)
+                events[nEvents + 1] = new Event(active[i], eventType.END_MAX);
+            else
+                events[nEvents + 1].reset(active[i], eventType.END_MAX);
             nEvents += 2;
             if (activities[active[i]].isPresent() && activities[active[i]].hasFixedPart()) {
-                if (events[nEvents] == null) events[nEvents] = new Event(active[i], eventType.START_MAX);
-                else events[nEvents].reset(active[i], eventType.START_MAX);
-                if (events[nEvents + 1] == null) events[nEvents + 1] = new Event(active[i], eventType.END_MIN);
-                else events[nEvents + 1].reset(active[i], eventType.END_MIN);
+                if (events[nEvents] == null)
+                    events[nEvents] = new Event(active[i], eventType.START_MAX);
+                else
+                    events[nEvents].reset(active[i], eventType.START_MAX);
+                if (events[nEvents + 1] == null)
+                    events[nEvents + 1] = new Event(active[i], eventType.END_MIN);
+                else
+                    events[nEvents + 1].reset(active[i], eventType.END_MIN);
                 nEvents += 2;
             }
         }
-        Arrays.sort(events, 0, nEvents, Comparator.comparing(Event::getTime)); //Sorting events by time
+        Arrays.sort(events, 0, nEvents, Comparator.comparing(Event::getTime)); // Sorting events by time
 
         lastTP = 0;
         resetTP(lastTP, minStart.value(), 0, 0, 0);
 
-        //Iterating over events to create time points:
+        // Iterating over events to create time points:
         for (int i = 0; i < nEvents; i++) {
             Event event = events[i];
             int t = event.getTime();
             Activity act = event.getActivity();
 
-            //If the current time is higher than the last Time Point: moving to new time point:
+            // If the current time is higher than the last Time Point: moving to new time
+            // point:
             if (t > time[lastTP] && t <= maxEnd.value()) {
-                // If the required consumption overloads the maximum capacity and the available production: failure
+                // If the required consumption overloads the maximum capacity and the available
+                // production: failure
                 if (nOverlap[lastTP] > 0 && (maxCapacity < profileMin[lastTP] || profileMax[lastTP] < minCapacity))
                     throw new InconsistencyException();
                 lastTP++;
@@ -246,7 +260,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
         }
     }
 
-    //Timetabling filtering:
+    // Timetabling filtering:
     protected void timeTabling(int n) {
         for (int i = 0; i < n; i++) {
             int actIdx = active[i];
