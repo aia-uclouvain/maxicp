@@ -153,99 +153,101 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
 <span class="fc" id="L153">                solve(statistics, limit, () -&gt; {</span>
 <span class="fc" id="L154">                });</span>
 <span class="fc" id="L155">            } catch (InconsistencyException ignored) {</span>
-<span class="fc" id="L156">            }</span>
-<span class="fc" id="L157">        });</span>
-<span class="fc" id="L158">        return statistics;</span>
+                // subjectTo is inconsistent: the search space is empty, hence exhausted (as in optimizeSubjectTo)
+<span class="fc" id="L157">                statistics.setCompleted();</span>
+<span class="fc" id="L158">            }</span>
+<span class="fc" id="L159">        });</span>
+<span class="fc" id="L160">        return statistics;</span>
     }
 
     public boolean allFixed(CPVar[] vars) {
-<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (CPVar v : vars) {</span>
-<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (!v.isFixed()) {</span>
-<span class="fc" id="L164">                return false;</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (CPVar v : vars) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            if (!v.isFixed()) {</span>
+<span class="fc" id="L166">                return false;</span>
             }
         }
-<span class="fc" id="L167">        return true;</span>
+<span class="fc" id="L169">        return true;</span>
     }
 
-<span class="fc" id="L170">    public static class IntRef {</span>
+<span class="fc" id="L172">    public static class IntRef {</span>
         public int value;
     }
 
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Objective obj) {
         // the very instance registered must be removed (onSolution(Runnable) would register a wrapper of it)
-<span class="fc" id="L176">        Consumer&lt;SearchStatistics&gt; toTighten = s -&gt; obj.tighten();</span>
-<span class="fc" id="L177">        onSolution(toTighten);</span>
-<span class="fc" id="L178">        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, obj::filter);</span>
-<span class="fc" id="L179">        solutionListeners.remove(toTighten);</span>
-<span class="fc" id="L180">        return stats;</span>
+<span class="fc" id="L178">        Consumer&lt;SearchStatistics&gt; toTighten = s -&gt; obj.tighten();</span>
+<span class="fc" id="L179">        onSolution(toTighten);</span>
+<span class="fc" id="L180">        SearchStatistics stats = replaySubjectTo(linearizer, variables, subjectTo, obj::filter);</span>
+<span class="fc" id="L181">        solutionListeners.remove(toTighten);</span>
+<span class="fc" id="L182">        return stats;</span>
     }
 
 
     private long panic(BooleanSupplier stoppingCondition,
                        DFSLinearizer linearizer,
                        IntRef index) {
-<span class="fc" id="L187">        long t0 = System.currentTimeMillis();</span>
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">        if (index.value &gt;= linearizer.size() - 1) return 0;</span>
+<span class="fc" id="L189">        long t0 = System.currentTimeMillis();</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">        if (index.value &gt;= linearizer.size() - 1) return 0;</span>
         do {
-<span class="fc" id="L190">            index.value++;</span>
-<span class="fc" id="L191">            Action next = linearizer.get(index.value);</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">            if (!(next instanceof BranchingAction)) next.run(); // only do push/pop</span>
-<span class="pc bpc" id="L193" title="1 of 4 branches missed.">        } while (!stoppingCondition.getAsBoolean() &amp;&amp; index.value &lt; linearizer.size() - 1);</span>
-<span class="fc" id="L194">        return System.currentTimeMillis() - t0;</span>
+<span class="fc" id="L192">            index.value++;</span>
+<span class="fc" id="L193">            Action next = linearizer.get(index.value);</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (!(next instanceof BranchingAction)) next.run(); // only do push/pop</span>
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">        } while (!stoppingCondition.getAsBoolean() &amp;&amp; index.value &lt; linearizer.size() - 1);</span>
+<span class="fc" id="L196">        return System.currentTimeMillis() - t0;</span>
     }
 
     public SearchStatistics replay(DFSLinearizer linearizer, CPVar[] variables) {
-<span class="fc" id="L198">        return replaySubjectTo(linearizer, variables, () -&gt; {</span>
-<span class="fc" id="L199">        });</span>
+<span class="fc" id="L200">        return replaySubjectTo(linearizer, variables, () -&gt; {</span>
+<span class="fc" id="L201">        });</span>
     }
 
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo) {
-<span class="fc" id="L203">        return replaySubjectTo(linearizer, variables, subjectTo, () -&gt; {});</span>
+<span class="fc" id="L205">        return replaySubjectTo(linearizer, variables, subjectTo, () -&gt; {});</span>
     }
 
     public SearchStatistics replaySubjectTo(DFSLinearizer linearizer, CPVar[] variables, Runnable subjectTo, Runnable onNodeVisit) {
-<span class="fc" id="L207">        SearchStatistics statistics = new SearchStatistics();</span>
+<span class="fc" id="L209">        SearchStatistics statistics = new SearchStatistics();</span>
 
-<span class="fc" id="L209">        sm.withNewState(() -&gt; {</span>
+<span class="fc" id="L211">        sm.withNewState(() -&gt; {</span>
             try {
-<span class="fc" id="L211">                subjectTo.run();</span>
-<span class="fc" id="L212">                State&lt;Boolean&gt; consistentState = sm.makeStateRef(true);</span>
-<span class="fc" id="L213">                IntRef index = new IntRef();</span>
-<span class="fc" id="L214">                index.value = 0;</span>
-<span class="fc" id="L215">                long t0 = System.currentTimeMillis();</span>
-<span class="fc" id="L216">                long panicTime = 0;</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">                while (index.value &lt; linearizer.size()) {</span>
-<span class="fc" id="L218">                    Action action = linearizer.get(index.value);</span>
+<span class="fc" id="L213">                subjectTo.run();</span>
+<span class="fc" id="L214">                State&lt;Boolean&gt; consistentState = sm.makeStateRef(true);</span>
+<span class="fc" id="L215">                IntRef index = new IntRef();</span>
+<span class="fc" id="L216">                index.value = 0;</span>
+<span class="fc" id="L217">                long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L218">                long panicTime = 0;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">                while (index.value &lt; linearizer.size()) {</span>
+<span class="fc" id="L220">                    Action action = linearizer.get(index.value);</span>
                     try {
-<span class="fc bfc" id="L220" title="All 2 branches covered.">                        if (action instanceof BranchingAction) {</span>
-<span class="fc" id="L221">                            statistics.incrNodes();</span>
-<span class="fc" id="L222">                            onNodeVisit.run(); // filter the objective</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                        if (action instanceof BranchingAction) {</span>
+<span class="fc" id="L223">                            statistics.incrNodes();</span>
+<span class="fc" id="L224">                            onNodeVisit.run(); // filter the objective</span>
                         }
-<span class="fc" id="L224">                        action.run();</span>
-<span class="fc" id="L225">                    } catch (InconsistencyException e) {</span>
-<span class="fc" id="L226">                        consistentState.setValue(false);</span>
-<span class="fc" id="L227">                    }</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">                    if (!consistentState.value()) {</span>
+<span class="fc" id="L226">                        action.run();</span>
+<span class="fc" id="L227">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L228">                        consistentState.setValue(false);</span>
+<span class="fc" id="L229">                    }</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">                    if (!consistentState.value()) {</span>
                         // failure =&gt; apply trail operations only until consistency is restored
-<span class="fc" id="L230">                        statistics.incrFailures();</span>
-<span class="fc" id="L231">                        notifyFailure(statistics);</span>
-<span class="fc" id="L232">                        panicTime += panic(consistentState::value, linearizer, index);</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">                    } else if (allFixed(variables)) {</span>
+<span class="fc" id="L232">                        statistics.incrFailures();</span>
+<span class="fc" id="L233">                        notifyFailure(statistics);</span>
+<span class="fc" id="L234">                        panicTime += panic(consistentState::value, linearizer, index);</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">                    } else if (allFixed(variables)) {</span>
                         // all variables are fixed =&gt; apply trail operations only until not all variables are fixed anymore
-<span class="fc" id="L235">                        statistics.incrSolutions();</span>
-<span class="fc" id="L236">                        notifySolution(statistics);</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">                        panicTime += panic(() -&gt; !allFixed(variables), linearizer, index);</span>
+<span class="fc" id="L237">                        statistics.incrSolutions();</span>
+<span class="fc" id="L238">                        notifySolution(statistics);</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">                        panicTime += panic(() -&gt; !allFixed(variables), linearizer, index);</span>
                     }
-<span class="fc" id="L239">                    index.value++;</span>
-<span class="fc" id="L240">                }</span>
-<span class="fc" id="L241">                statistics.setTimeInMillis(System.currentTimeMillis() - t0 - panicTime);</span>
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">                if (index.value == linearizer.size()) {</span>
-<span class="fc" id="L243">                    statistics.setCompleted();</span>
+<span class="fc" id="L241">                    index.value++;</span>
+<span class="fc" id="L242">                }</span>
+<span class="fc" id="L243">                statistics.setTimeInMillis(System.currentTimeMillis() - t0 - panicTime);</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">                if (index.value == linearizer.size()) {</span>
+<span class="fc" id="L245">                    statistics.setCompleted();</span>
                 }
-<span class="nc" id="L245">            } catch (InconsistencyException ignored) {</span>
-<span class="fc" id="L246">            }</span>
-<span class="fc" id="L247">        });</span>
-<span class="fc" id="L248">        return statistics;</span>
+<span class="nc" id="L247">            } catch (InconsistencyException ignored) {</span>
+<span class="fc" id="L248">            }</span>
+<span class="fc" id="L249">        });</span>
+<span class="fc" id="L250">        return statistics;</span>
     }
 
 
@@ -257,19 +259,19 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
      * @return an object with the statistics on the search
      */
     public SearchStatistics optimize(Objective obj) {
-<span class="fc" id="L260">        return optimize(obj, stats -&gt; false);</span>
+<span class="fc" id="L262">        return optimize(obj, stats -&gt; false);</span>
     }
 
 
     public SearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj, Predicate&lt;SearchStatistics&gt; limit) {
-<span class="fc" id="L265">        ConcreteModel model = obj.getModelProxy().getConcreteModel();</span>
-<span class="fc" id="L266">        Objective objective = model.createObjective(obj);</span>
-<span class="fc" id="L267">        return optimize(objective, limit);</span>
+<span class="fc" id="L267">        ConcreteModel model = obj.getModelProxy().getConcreteModel();</span>
+<span class="fc" id="L268">        Objective objective = model.createObjective(obj);</span>
+<span class="fc" id="L269">        return optimize(objective, limit);</span>
     }
 
 
     public SearchStatistics optimize(org.maxicp.modeling.symbolic.Objective obj) {
-<span class="fc" id="L272">        return optimize(obj, stats -&gt; false);</span>
+<span class="fc" id="L274">        return optimize(obj, stats -&gt; false);</span>
     }
 
 
@@ -285,16 +287,16 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
      * @return an object with the statistics on the search
      */
     public SearchStatistics optimize(Objective toTighten, Predicate&lt;SearchStatistics&gt; limit) {
-<span class="fc" id="L288">        SearchStatistics statistics = new SearchStatistics();</span>
-<span class="fc" id="L289">        Consumer&lt;SearchStatistics&gt; tightenLambda = s -&gt; toTighten.tighten();</span>
-<span class="fc" id="L290">        solutionListeners.add(tightenLambda);</span>
+<span class="fc" id="L290">        SearchStatistics statistics = new SearchStatistics();</span>
+<span class="fc" id="L291">        Consumer&lt;SearchStatistics&gt; tightenLambda = s -&gt; toTighten.tighten();</span>
+<span class="fc" id="L292">        solutionListeners.add(tightenLambda);</span>
         try {
-<span class="fc" id="L292">            solve(statistics, limit, toTighten::filter);</span>
-<span class="nc" id="L293">        } catch (InconsistencyException ignored) {</span>
-<span class="nc" id="L294">            ignored.printStackTrace();</span>
-<span class="fc" id="L295">        }</span>
-<span class="fc" id="L296">        solutionListeners.remove(tightenLambda); // make sure we don't keep the objective active</span>
-<span class="fc" id="L297">        return statistics;</span>
+<span class="fc" id="L294">            solve(statistics, limit, toTighten::filter);</span>
+<span class="nc" id="L295">        } catch (InconsistencyException ignored) {</span>
+<span class="nc" id="L296">            ignored.printStackTrace();</span>
+<span class="fc" id="L297">        }</span>
+<span class="fc" id="L298">        solutionListeners.remove(tightenLambda); // make sure we don't keep the objective active</span>
+<span class="fc" id="L299">        return statistics;</span>
     }
 
     /**
@@ -317,30 +319,30 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
      * @return an object with the statistics on the search
      */
     public SearchStatistics optimizeSubjectTo(Objective objToTighten, Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
-<span class="fc" id="L320">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
-<span class="fc" id="L321">        sm.withNewState(() -&gt; {</span>
+<span class="fc" id="L322">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
+<span class="fc" id="L323">        sm.withNewState(() -&gt; {</span>
             try {
-<span class="fc" id="L323">                subjectTo.run();</span>
-<span class="fc" id="L324">                statistics.set(optimize(objToTighten, limit));</span>
-<span class="nc" id="L325">            } catch (InconsistencyException ignored) {</span>
-<span class="nc" id="L326">                statistics.get().setCompleted();</span>
-<span class="fc" id="L327">            }</span>
-<span class="fc" id="L328">        });</span>
-<span class="fc" id="L329">        return statistics.get();</span>
+<span class="fc" id="L325">                subjectTo.run();</span>
+<span class="fc" id="L326">                statistics.set(optimize(objToTighten, limit));</span>
+<span class="nc" id="L327">            } catch (InconsistencyException ignored) {</span>
+<span class="nc" id="L328">                statistics.get().setCompleted();</span>
+<span class="fc" id="L329">            }</span>
+<span class="fc" id="L330">        });</span>
+<span class="fc" id="L331">        return statistics.get();</span>
     }
 
 
     public SearchStatistics optimizeSubjectTo(org.maxicp.modeling.symbolic.Objective objToTighten, Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
-<span class="fc" id="L334">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
-<span class="fc" id="L335">        sm.withNewState(() -&gt; {</span>
+<span class="fc" id="L336">        AtomicReference&lt;SearchStatistics&gt; statistics = new AtomicReference&lt;&gt;(new SearchStatistics());</span>
+<span class="fc" id="L337">        sm.withNewState(() -&gt; {</span>
             try {
-<span class="fc" id="L337">                subjectTo.run();</span>
-<span class="fc" id="L338">                statistics.set(optimize(objToTighten, limit));</span>
-<span class="fc" id="L339">            } catch (InconsistencyException ignored) {</span>
-<span class="fc" id="L340">                statistics.get().setCompleted();</span>
-<span class="fc" id="L341">            }</span>
-<span class="fc" id="L342">        });</span>
-<span class="fc" id="L343">        return statistics.get();</span>
+<span class="fc" id="L339">                subjectTo.run();</span>
+<span class="fc" id="L340">                statistics.set(optimize(objToTighten, limit));</span>
+<span class="fc" id="L341">            } catch (InconsistencyException ignored) {</span>
+<span class="fc" id="L342">                statistics.get().setCompleted();</span>
+<span class="fc" id="L343">            }</span>
+<span class="fc" id="L344">        });</span>
+<span class="fc" id="L345">        return statistics.get();</span>
     }
 
     /**

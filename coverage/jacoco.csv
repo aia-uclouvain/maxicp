@@ -338,7 +338,7 @@ org.maxicp:maxicp,org.maxicp.search,CartesianSpaceEvaluator,30,0,2,0,5,0,3,0,2,0
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StopMessage,12,0,0,0,3,0,2,0,2,0
 org.maxicp:maxicp,org.maxicp.search,SaveStateAction,0,10,0,0,0,3,0,2,0,2
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod.StealMessage,12,0,0,0,3,0,2,0,2,0
-org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,483,3,23,10,119,8,47,5,37
+org.maxicp:maxicp,org.maxicp.search,AbstractSearchMethod,34,485,3,23,10,120,8,47,5,37
 org.maxicp:maxicp,org.maxicp.search,AbstractConcurrentSearchMethod,138,0,10,0,35,0,11,0,6,0
 org.maxicp:maxicp,org.maxicp.search,SequenceRank,0,147,0,14,0,31,0,10,0,3
 org.maxicp:maxicp,org.maxicp.search,DFSListener,1,6,0,0,1,6,1,6,1,6
