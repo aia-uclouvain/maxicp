@@ -153,6 +153,8 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
                 solve(statistics, limit, () -> {
                 });
             } catch (InconsistencyException ignored) {
+                // subjectTo is inconsistent: the search space is empty, hence exhausted (as in optimizeSubjectTo)
+                statistics.setCompleted();
             }
         });
         return statistics;
