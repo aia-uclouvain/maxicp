@@ -40,7 +40,7 @@ org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,StartBefore,0,57,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,EndBefore,0,57,1,7,0,15,1,6,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,ThetaLambdaTree,40,310,0,14,11,61,2,16,2,9
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeSweepMin.Event,38,0,0,0,11,0,6,0,6,0
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraint,27,1429,17,144,1,201,15,80,1,12
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraint,6,1483,11,154,0,202,11,86,0,13
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPStepAtStartCumulFunction,44,81,6,6,3,19,7,5,2,4
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,CPStepAtEndCumulFunction,114,0,10,0,20,0,11,0,6,0
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints.scheduling,GeneralizedCumulativeConstraintBaseLine,1452,0,151,0,183,0,90,0,13,0
