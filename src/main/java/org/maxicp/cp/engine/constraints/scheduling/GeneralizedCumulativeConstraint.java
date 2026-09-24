@@ -304,11 +304,9 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
                             if (mandatoryActive) {
                                 if (act.isOptional())
                                     checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory
-                                // Adjusting height:
-                                // (Necessary even if height is fixed as height adjustment will remove task if not possible)
-                                else
-                                    adjustHeightOnFixedPart(actIdx, tpForward, cmin, cmax);
                             }
+                            // Adjusting height:
+                            adjustHeightOnFixedPart(actIdx, tpForward, cmin, cmax);
                             tpForward++;
                         }
                     } else {
@@ -394,8 +392,8 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
     protected void adjustHeightOnFixedPart(int actIdx, int tp, int cmin, int cmax) {
         Activity act = activities[actIdx];
         if (act.hasFixedPartAt(time[tp])) {
-            long minH = minCapacity - ((long) profileMax[tp] - cmax);
-            long maxH = maxCapacity - ((long) profileMin[tp] - cmin);
+            long minH = minCapacity - ((long) profileMax[tp] - Math.max(cmax, 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.min(cmax, 0L) : 0L));
+            long maxH = maxCapacity - ((long) profileMin[tp] - Math.min(cmin, 0L) - (isIncludedInProfileAt(actIdx, time[tp]) ? Math.max(cmin, 0L) : 0L));
 
 
             act.setHeightMin((int) Math.max(minH, act.getHeightMin()));
