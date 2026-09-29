@@ -92,25 +92,25 @@ public class CPIntVarConstant implements CPIntVar{
     @Override
     public void remove(int v) {
         if (v == value)
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
     }
 
     @Override
     public void fix(int v) {
         if (v != value)
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
     }
 
     @Override
     public void removeBelow(int v) {
         if (v > value)
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
     }
 
     @Override
     public void removeAbove(int v) {
         if (v < value)
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
     }
 
     @Override

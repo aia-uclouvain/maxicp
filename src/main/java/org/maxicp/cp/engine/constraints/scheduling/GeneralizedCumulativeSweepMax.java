@@ -1,5 +1,7 @@
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 
 import org.maxicp.Constants;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
@@ -158,7 +160,7 @@ public class GeneralizedCumulativeSweepMax extends AbstractCPConstraint {
                 if (delta != event.date()) {
                     // Consistency check
                     if (consistencyCheck())
-                        throw new InconsistencyException();
+                        throw INCONSISTENCY();
                     // Pruning (this could reduce the size of stackPrune)
                     prune(delta, event.date() - 1);
                     // Moves the sweep line
@@ -177,7 +179,7 @@ public class GeneralizedCumulativeSweepMax extends AbstractCPConstraint {
         }
         // Checks consistency
         if (consistencyCheck())
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
 
         // Final pruning
         prune(delta, delta);

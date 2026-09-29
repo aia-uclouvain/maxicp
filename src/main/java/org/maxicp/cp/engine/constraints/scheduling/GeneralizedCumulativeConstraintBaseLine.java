@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.Constants;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.state.StateInt;
@@ -216,7 +218,7 @@ public class GeneralizedCumulativeConstraintBaseLine extends AbstractCPConstrain
             if (t > time[lastTP] && t <= maxEnd.value()) {
                 // If the required consumption overloads the maximum capacity and the available production: failure
                 if (nOverlap[lastTP] > 0 && (maxCapacity < profileMin[lastTP] || profileMax[lastTP] < minCapacity))
-                    throw new InconsistencyException();
+                    throw INCONSISTENCY();
                 lastTP++;
                 resetTP(lastTP, t, profileMin[lastTP - 1], profileMax[lastTP - 1], nOverlap[lastTP - 1]);
             }

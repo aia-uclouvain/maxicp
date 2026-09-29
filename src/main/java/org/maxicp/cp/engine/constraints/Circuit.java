@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
@@ -97,7 +99,7 @@ public class Circuit extends AbstractCPConstraint {
         if (!deactivateSCC) {
             int nSCC = findSCCCount();
             if (nSCC > 1) {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
         }
     }

@@ -5,6 +5,8 @@
 
 package org.maxicp.search;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.state.StateInt;
@@ -135,7 +137,7 @@ public class DFSearchTest extends StateManagerTest {
         DFSearch dfs = new DFSearch(sm, () -> {
             if (i.value() >= values.length) {
                 return branch(() -> {
-                    throw new InconsistencyException();
+                    throw INCONSISTENCY();
                 });
             } else return branch(
                     () -> {
@@ -202,7 +204,7 @@ public class DFSearchTest extends StateManagerTest {
                     () -> {
                         values[0] += 1;
                         if(values[0] == 1)
-                            throw new InconsistencyException();
+                            throw INCONSISTENCY();
                         //this should never happen in a left branch!
                         assertNotEquals(2, values[0]);
                     },

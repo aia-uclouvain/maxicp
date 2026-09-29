@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
@@ -84,7 +86,7 @@ public class MulCteRes extends AbstractCPConstraint {
                 }
             }
             else {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
         }
         else { // c != 0

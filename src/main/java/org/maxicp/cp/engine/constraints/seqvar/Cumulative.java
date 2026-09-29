@@ -78,7 +78,7 @@ public class Cumulative extends AbstractCPConstraint {
         public void incrementLoadAtBy(int node, int load) {
             load += loadAt(node);
             if (load < 0 || load > maxCapacity)
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             maxLoad = Math.max(maxLoad, load);
             loadAt[node] = load;
         }
@@ -93,7 +93,7 @@ public class Cumulative extends AbstractCPConstraint {
         public void incrementLoadAfterBy(int node, int load) {
             load += loadAfter(node);
             if (load < 0 || load > maxCapacity)
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             maxLoad = Math.max(maxLoad, load);
             loadAfter[node] = load;
         }
@@ -108,7 +108,7 @@ public class Cumulative extends AbstractCPConstraint {
         public void incrementLoadBeforeBy(int node, int load) {
             load += loadBefore(node);
             if (load < 0 || load > maxCapacity)
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             maxLoad = Math.max(maxLoad, load);
             loadBefore[node] = load;
         }
@@ -224,7 +224,7 @@ public class Cumulative extends AbstractCPConstraint {
             profile.incrementLoadAfterBy(node, load);
             node = seqVar.memberAfter(node);
             if (node == seqVar.start())
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             profile.incrementLoadBeforeBy(node, load);
         }
     }
@@ -236,7 +236,7 @@ public class Cumulative extends AbstractCPConstraint {
             profile.incrementLoadAfterBy(node, load);
             node = seqVar.memberAfter(node);
             if (node == seqVar.start())
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             profile.incrementLoadBeforeBy(node, load);
             profile.incrementLoadAtBy(node, load);
         }
@@ -252,7 +252,7 @@ public class Cumulative extends AbstractCPConstraint {
             profile.incrementLoadBeforeBy(node, load);
             node = seqVar.memberBefore(node);
             if (node == seqVar.end())
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
         }
         closestNodeToCheck[activity] = node;
     }

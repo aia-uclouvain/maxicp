@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints.seqvar;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.maxicp.cp.CPFactory;
@@ -254,7 +256,7 @@ public class TransitionTimesTest extends CPSolverTest {
             @Override
             public void propagate() {
                 if (seqvar.nNode(EXCLUDED) > 1) {
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
             }
         });
@@ -298,7 +300,7 @@ public class TransitionTimesTest extends CPSolverTest {
             @Override
             public void propagate() {
                 if (seqVar.nNode(EXCLUDED) > 2) {
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
             }
         });

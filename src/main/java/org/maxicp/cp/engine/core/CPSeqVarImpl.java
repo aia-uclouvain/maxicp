@@ -330,7 +330,7 @@ public class CPSeqVarImpl implements CPSeqVar {
                     } else if (v == 1) {
                         require(me);
                     } else {
-                        throw INCONSISTENCY;
+                        throw INCONSISTENCY();
                     }
                 }
 
@@ -340,7 +340,7 @@ public class CPSeqVarImpl implements CPSeqVar {
                         if (v == 1) {
                             require(me);
                         } else {
-                            throw INCONSISTENCY;
+                            throw INCONSISTENCY();
                         }
                     }
                 }
@@ -351,7 +351,7 @@ public class CPSeqVarImpl implements CPSeqVar {
                         if (v == 0) {
                             exclude(me);
                         } else {
-                            throw INCONSISTENCY;
+                            throw INCONSISTENCY();
                         }
                     }
                 }
@@ -668,7 +668,7 @@ public class CPSeqVarImpl implements CPSeqVar {
     @Override
     public void exclude(int node) {
         if (domain.isIncluded(node)) {
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
         }
         if (domain.isPossible(node)) {
             domain.exclude(node);
@@ -694,7 +694,7 @@ public class CPSeqVarImpl implements CPSeqVar {
     @Override
     public void require(int node) {
         if (domain.isExcluded(node)) {
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
         }
         if (domain.isPossible(node)) {
             domain.include(node);
@@ -741,7 +741,7 @@ public class CPSeqVarImpl implements CPSeqVar {
                 }
                 return;
             } else {
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
             }
         }
         int after = memberAfter(prev);
@@ -814,7 +814,7 @@ public class CPSeqVarImpl implements CPSeqVar {
                     foundNode = foundNode || current == node;
                 }
                 if (areFollowing && foundNode)
-                    throw INCONSISTENCY;
+                    throw INCONSISTENCY();
             }
             // only performs the notBetween if the member nodes are following each other
             // if the member nodes are not following each other, no such subsequence can happen anyway

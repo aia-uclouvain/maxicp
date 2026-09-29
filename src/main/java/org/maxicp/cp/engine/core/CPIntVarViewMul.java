@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.core;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.util.exception.InconsistencyException;
@@ -138,7 +140,7 @@ public class CPIntVarViewMul implements CPIntVar {
         if (v % a == 0) {
             x.fix(v / a);
         } else {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
     }
 

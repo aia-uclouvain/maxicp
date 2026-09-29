@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
@@ -106,7 +108,7 @@ public class Sum extends AbstractCPConstraint {
         }
         nFrees.setValue(nU);
         if (sumMin > 0 || sumMax < 0) {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
 
         for (int i = nU - 1; i >= 0; i--) {

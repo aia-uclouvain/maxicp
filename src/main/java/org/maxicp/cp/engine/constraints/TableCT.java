@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.DeltaCPIntVar;
@@ -115,7 +117,7 @@ public class TableCT extends AbstractCPConstraint {
                 // var has been bound, direct intersection with support
                 validTuples.intersect(supports[idx][var.min()]);
                 if (validTuples.isEmpty())
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 // var is bound, removed from unbounded
                 nUnboundValue--;
                 this.unbounded[i] = this.unbounded[nUnboundValue];
@@ -131,7 +133,7 @@ public class TableCT extends AbstractCPConstraint {
 
                 validTuples.intersect(collected);
                 if (validTuples.isEmpty()) {
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
 
             }
@@ -182,7 +184,7 @@ public class TableCT extends AbstractCPConstraint {
                     // var has been bound, direct intersection with support
                     validTuples.intersect(supports[idx][var.min()]);
                     if (validTuples.isEmpty())
-                        throw InconsistencyException.INCONSISTENCY;
+                        throw INCONSISTENCY();
                     // var is bound, removed from unbounded
                     nUnboundValue--;
                     this.unbounded[i] = this.unbounded[nUnboundValue];
@@ -206,7 +208,7 @@ public class TableCT extends AbstractCPConstraint {
                     }
                     validTuples.intersect(collected);
                     if (validTuples.isEmpty()) {
-                        throw InconsistencyException.INCONSISTENCY;
+                        throw INCONSISTENCY();
                     }
                 }
             }

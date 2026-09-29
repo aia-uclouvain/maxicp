@@ -118,7 +118,7 @@ public class Precedence extends AbstractCPConstraint {
                 if (idx == nMember) {
                     // all member nodes have been evaluated without encountering the node 'visit'
                     // this means that the order is not respected here
-                    throw INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
                 if (nCommon == order.length) {
                     setActive(false);

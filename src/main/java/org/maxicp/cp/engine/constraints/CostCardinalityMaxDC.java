@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
@@ -178,7 +180,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
 
         minCostAssignment = minCostMaxFlow.getTotalCost();
 
-        if (minCostMaxFlow.getTotalFlow() != nVars) throw InconsistencyException.INCONSISTENCY;
+        if (minCostMaxFlow.getTotalFlow() != nVars) throw INCONSISTENCY();
         H.removeBelow(minCostAssignment);
 
         // fill the assignment
@@ -419,7 +421,7 @@ public class CostCardinalityMaxDC extends AbstractCPConstraint {
                 if (dist[u] != INF && dist[u] + wt < dist[v]) {
                     // V_th relaxation => negative cycle
                     if (i == numNodes - 1) {
-                        throw InconsistencyException.INCONSISTENCY;
+                        throw INCONSISTENCY();
                     }
                     // Update shortest distance to node v
                     dist[v] = dist[u] + wt;

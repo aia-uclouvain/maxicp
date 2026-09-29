@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.core;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.state.datastructures.StateStack;
 import org.maxicp.util.exception.InconsistencyException;
@@ -28,8 +30,8 @@ public class CPIntVarImpl implements CPIntVar {
     private IntDomainListener domListener = new IntDomainListener() {
         @Override
         public void empty() {
-            throw new InconsistencyException();
-            // throw InconsistencyException.INCONSISTENCY; // Integer Vars cannot be empty
+            throw INCONSISTENCY();
+            // throw INCONSISTENCY(); // Integer Vars cannot be empty
         }
 
         @Override

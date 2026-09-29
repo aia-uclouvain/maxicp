@@ -1,5 +1,7 @@
 package org.maxicp.search;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.state.StateInt;
@@ -52,7 +54,7 @@ public class SetTimesModeling implements Supplier<Runnable[]> {
         int task = taskCandidate.getAsInt();
         int est = intervals[task].startMin();
         if (existsPostponedForever(est)) {
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
         } else {
             IntervalVar taskInterval = intervals[task];
             int lct = taskInterval.endMax();
@@ -89,7 +91,7 @@ public class SetTimesModeling implements Supplier<Runnable[]> {
                 failed = isPostponed(task) /*&& durations[taskId].max() != 0*/;
             }
             if (failed) {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
         }
     }

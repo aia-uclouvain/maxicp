@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
@@ -218,14 +220,14 @@ public class NoOverlapLeftToRight {
         int actj = permLct[j];
         while (j < n-1) {
             if (thetaLambdaTree.getThetaEct() > endMax[actj]) {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
             thetaLambdaTree.moveFromThetaToLambda(rankEst[actj]);
             actj = permLct[++j];
             while (thetaLambdaTree.getThetaLambdaEct() > endMax[actj]) {
                 int i = thetaLambdaTree.getResponsibleForThetaLambdaEct();
                 if (i == ThetaLambdaTree.UNDEF) {
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
                 int acti = permEst[i];
                 int oldStartMin = startMin[acti];

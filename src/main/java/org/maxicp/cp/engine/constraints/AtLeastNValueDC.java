@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.util.exception.InconsistencyException;
@@ -85,7 +87,7 @@ public class AtLeastNValueDC extends AbstractCPConstraint {
         nValueVar.removeAbove(sizeMatching);
 
         if (nValueVar.min() > sizeMatching) {
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
         }
 
         allocateSCC();
@@ -136,7 +138,7 @@ public class AtLeastNValueDC extends AbstractCPConstraint {
         int maxMatching = findMaximalMatching();
         nValueVar.removeAbove(maxMatching);
         if (nValueVar.min() > maxMatching) {
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
         }
         else if (nValueVar.min() == maxMatching) {
             prune(maxMatching);

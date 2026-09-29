@@ -6,6 +6,8 @@
 
 package org.maxicp.search;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -54,7 +56,7 @@ public class SetTimes {
             CPIntervalVar start = intervals[taskId];
             int est = start.startMin();
             if (existsPostponedForever(est)) {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             } else {
                 int lct = intervals[taskId].endMax();
                 // select the minimum ect of a task that is not taskId and has an ect greater than lct,
@@ -157,7 +159,7 @@ public class SetTimes {
                 failed = oldEst[taskId].value() >= intervals[taskId].startMin() /*&& durations[taskId].max() != 0*/;
             }
             if (failed) {
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
         }
     }

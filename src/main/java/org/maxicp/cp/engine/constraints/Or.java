@@ -65,7 +65,7 @@ public class Or extends AbstractCPConstraint { // x1 or x2 or ... xn
         wR.setValue(i);
 
         if (wL.value() > wR.value()) {
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
         } else if (wL.value() == wR.value()) { // only one unassigned var
             x[wL.value()].fix(true);
             setActive(false);

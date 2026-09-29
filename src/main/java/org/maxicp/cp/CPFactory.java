@@ -5,6 +5,8 @@
 
 package org.maxicp.cp;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.Constants;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
@@ -2156,7 +2158,7 @@ public final class CPFactory {
         List<Activity> activities = fun.flatten(true);
 
         if (activities.isEmpty() && minValue > 0) {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
         if (activities.isEmpty()) {
             return new DoNothingConstraint();
@@ -2222,7 +2224,7 @@ public final class CPFactory {
         List<Activity> activities = fun.flatten(true);
 
         if (activities.isEmpty() && minValue > 0) {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
         if (activities.isEmpty()) {
             return new DoNothingConstraint();

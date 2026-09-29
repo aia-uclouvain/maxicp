@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -84,7 +86,7 @@ public class GeneralizedCumulativeChecker extends AbstractCPConstraint {
         for (int t = 0; t < covered.length; t++) {
             if (covered[t]) {
                 if (profile[t] > maxCapacity || profile[t] < minCapacity) {
-                    throw new InconsistencyException();
+                    throw INCONSISTENCY();
                 }
             }
         }

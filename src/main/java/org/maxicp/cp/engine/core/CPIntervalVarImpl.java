@@ -151,7 +151,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
                 } else if (v == 1) {
                     setPresent();
                 } else {
-                    throw INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
             }
 
@@ -161,7 +161,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
                     if (v == 1) {
                         setPresent();
                     } else {
-                        throw INCONSISTENCY;
+                        throw INCONSISTENCY();
                     }
                 }
             }
@@ -172,7 +172,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
                     if (v == 0) {
                         setAbsent();
                     } else {
-                        throw INCONSISTENCY;
+                        throw INCONSISTENCY();
                     }
                 }
             }
@@ -379,7 +379,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
     @Override
     public void setPresent() {
         if (isAbsent.value()) {
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
         }
         if (!isPresent.value()) {
             isPresent.setValue(true);
@@ -391,7 +391,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
     @Override
     public void setAbsent() {
         if (isPresent.value()) {
-            throw INCONSISTENCY;
+            throw INCONSISTENCY();
         }
         if (!isAbsent.value()) {
             isPresent.setValue(false);

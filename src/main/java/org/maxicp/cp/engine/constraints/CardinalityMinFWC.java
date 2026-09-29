@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.datastructures.StateSparseSet;
@@ -74,7 +76,7 @@ public class CardinalityMinFWC extends AbstractCPConstraint {
             }
             for (int v = 0; v < nValues; v++) {
                 if (possibleVars[v].size() < lower[v]) {
-                    throw InconsistencyException.INCONSISTENCY;
+                    throw INCONSISTENCY();
                 }
                 if (possibleVars[v].size() == lower[v]) {
                     fixed = !fixPossibles(possibleVars[v],v);

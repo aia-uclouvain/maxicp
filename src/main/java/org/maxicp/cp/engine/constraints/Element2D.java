@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
@@ -102,11 +104,11 @@ public class Element2D extends AbstractCPConstraint {
 
         while (xyz.get(l).z < zMin || !x.contains(xyz.get(l).x) || !y.contains(xyz.get(l).y)) {
             updateSupports(l++);
-            if (l > u) throw new InconsistencyException();
+            if (l > u) throw INCONSISTENCY();
         }
         while (xyz.get(u).z > zMax || !x.contains(xyz.get(u).x) || !y.contains(xyz.get(u).y)) {
             updateSupports(u--);
-            if (l > u) throw new InconsistencyException();
+            if (l > u) throw INCONSISTENCY();
         }
         z.removeBelow(xyz.get(l).z);
         z.removeAbove(xyz.get(u).z);

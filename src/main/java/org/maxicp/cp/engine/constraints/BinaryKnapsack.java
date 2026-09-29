@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
@@ -200,7 +202,7 @@ public class BinaryKnapsack extends AbstractCPConstraint {
         if (nb.value() <= 2)
             return;
         if (noSumPossible(c.min() - rcap.value(), c.max() - rcap.value()))
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
 
         if (pruneMore) {
             int lastsize = -1;

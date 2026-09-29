@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.core;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.setvar.SetCard;
 import org.maxicp.modeling.ModelProxy;
@@ -61,7 +63,7 @@ public class CPSetVarImpl implements CPSetVar {
      */
     public void exclude(int v) {
         if (domain.isIncluded(v)) {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
         if (domain.isPossible(v)) {
             domain.exclude(v);
@@ -86,7 +88,7 @@ public class CPSetVarImpl implements CPSetVar {
      */
     public void include(int v) {
         if (domain.isExcluded(v)) {
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
         if (domain.isPossible(v)) {
             domain.include(v);

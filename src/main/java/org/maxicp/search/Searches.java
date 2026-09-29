@@ -5,6 +5,8 @@
 
 package org.maxicp.search;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -680,7 +682,7 @@ public final class Searches {
             }
             if (bestValue == null) {
                 // all values of x appear to be inconsistent
-                throw InconsistencyException.INCONSISTENCY;
+                throw INCONSISTENCY();
             }
             return bestValue;
         };

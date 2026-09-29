@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.state.StateInt;
@@ -87,7 +89,7 @@ public class CardinalityMaxFWC extends AbstractCPConstraint {
                 if (val >= 0 && val < nValues) {
                     nValuesFixed[val].increment();
                     if (nValuesFixed[val].value() > upper[val]) {
-                        throw new InconsistencyException();
+                        throw INCONSISTENCY();
                     }
                     if (nValuesFixed[val].value() == upper[val]) {
                         // remove the value from the possible values of the unfixed variables

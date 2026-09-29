@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.DeltaCPIntVar;
@@ -84,14 +86,14 @@ public class Element1D extends AbstractCPConstraint {
             y.remove(sortedPerm[l]);
             l++;
             if (l > u) {
-                throw new InconsistencyException();
+                throw INCONSISTENCY();
             }
         }
         while (t[sortedPerm[u]] > zMax || !y.contains(sortedPerm[u])) {
             y.remove(sortedPerm[u]);
             u--;
             if (l > u) {
-                throw new InconsistencyException();
+                throw INCONSISTENCY();
             }
         }
         z.removeBelow(t[sortedPerm[l]]);

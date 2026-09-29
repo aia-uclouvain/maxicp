@@ -83,7 +83,7 @@ public class SubSequence extends AbstractCPConstraint {
                 idx++;
             }
             if (idx == nMemberMain - 1 && node != nodes[nMemberMain-1])
-                throw INCONSISTENCY;
+                throw INCONSISTENCY();
         }
     }
 

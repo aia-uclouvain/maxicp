@@ -6,6 +6,8 @@
 
 package org.maxicp.cp.engine.constraints.scheduling;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
@@ -131,7 +133,7 @@ class NoOverlapBCGlobal extends AbstractCPConstraint {
         }
         NoOverlapBCLeftToRight.Outcome oc = globalFilter.filter(startMin, duration, endMax, n);
         if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
         } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {
             // update startMin and endMax bounds
             for (int i = 0; i < n; i++) {
@@ -158,7 +160,7 @@ class NoOverlapBCGlobal extends AbstractCPConstraint {
         }
         oc = globalFilter.filter(startMin, duration, endMax, n);
         if (oc == NoOverlapBCLeftToRight.Outcome.INCONSISTENCY) {
-            throw InconsistencyException.INCONSISTENCY;
+            throw INCONSISTENCY();
         } else if (oc == NoOverlapBCLeftToRight.Outcome.CHANGE) {
             // update endMax variables
             for (int i = 0; i < n; i++) {

@@ -5,6 +5,8 @@
 
 package org.maxicp.cp.engine.constraints.setvar;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSetVar;
@@ -41,8 +43,8 @@ public class SetCard extends AbstractCPConstraint {
         card.removeBelow(set.nIncluded());
         card.removeAbove(set.nPossible() + set.nIncluded());
 
-        if (card.min() > set.nIncluded() + set.nPossible()) throw new InconsistencyException();
-        if (card.max() < set.nIncluded()) throw new InconsistencyException();
+        if (card.min() > set.nIncluded() + set.nPossible()) throw INCONSISTENCY();
+        if (card.max() < set.nIncluded()) throw INCONSISTENCY();
         if (card.min() == set.nIncluded() + set.nPossible()) {
             set.includeAll();
             card.removeAbove(card.min());

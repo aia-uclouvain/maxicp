@@ -1,5 +1,7 @@
 package org.maxicp.cp.engine.constraints.setvar;
 
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSetVar;
 import org.maxicp.util.exception.InconsistencyException;
@@ -68,7 +70,7 @@ public class NotSubset extends AbstractCPConstraint {
             setActive(false);
 
         } else if (nPossibleExcluded == 0) { // if nothing can prevent set1 to be a subset of set2
-            throw new InconsistencyException();
+            throw INCONSISTENCY();
         }
     }
 
