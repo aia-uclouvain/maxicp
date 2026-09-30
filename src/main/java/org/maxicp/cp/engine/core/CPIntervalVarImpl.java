@@ -7,7 +7,7 @@
 package org.maxicp.cp.engine.core;
 
 import org.maxicp.modeling.ModelProxy;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateStack;
 import org.maxicp.util.exception.InconsistencyException;
@@ -33,7 +33,7 @@ public class CPIntervalVarImpl implements CPIntervalVar {
 
     StateInt startMin, startMax, endMin, endMax, lengthMin, lengthMax;
 
-    State<Boolean> isPresent, isAbsent;
+    StateBoolean isPresent, isAbsent;
 
     CPBoolVar b; // status variable (true if present, false if absent)
 
@@ -46,8 +46,8 @@ public class CPIntervalVarImpl implements CPIntervalVar {
         endMax = cp.getStateManager().makeStateInt(HORIZON);
         lengthMin = cp.getStateManager().makeStateInt(0);
         lengthMax = cp.getStateManager().makeStateInt(HORIZON);
-        isPresent = cp.getStateManager().makeStateRef(Boolean.FALSE);
-        isAbsent = cp.getStateManager().makeStateRef(Boolean.FALSE);
+        isPresent = cp.getStateManager().makeStateBoolean(false);
+        isAbsent = cp.getStateManager().makeStateBoolean(false);
 
         onChange = new StateStack<>(cp.getStateManager());
 

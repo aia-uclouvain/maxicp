@@ -5,8 +5,10 @@
 
 package org.maxicp.state;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.state.trail.Trailer;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,8 +19,8 @@ public class StateBoolTest extends StateManagerTest {
     @MethodSource("getStateManager")
     public void testStateBool(StateManager sm)  {
 
-        State<Boolean> b1 = sm.makeStateRef(true);
-        State<Boolean> b2 = sm.makeStateRef(false);
+        StateBoolean b1 = sm.makeStateBoolean(true);
+        StateBoolean b2 = sm.makeStateBoolean(false);
 
         sm.saveState();
 
@@ -40,7 +42,7 @@ public class StateBoolTest extends StateManagerTest {
     @MethodSource("getStateManager")
     public void bugMagicOnRestore(StateManager sm)  {
 
-        State<Boolean> a = sm.makeStateRef(true);
+        StateBoolean a = sm.makeStateBoolean(true);
         // level 0, a is true
 
         sm.saveState(); // level 1, a is true recorded
@@ -61,5 +63,23 @@ public class StateBoolTest extends StateManagerTest {
 
     }
 
+    @Test
+    public void testTrailBooleanSameValueNotPushed() {
+        boolean[] pushed = new boolean[] { false };
+        Trailer sm = new Trailer() {
+            @Override
+            public void pushState(StateEntry entry) {
+                pushed[0] = true;
+                super.pushState(entry);
+            }
+        };
+
+        StateBoolean a = sm.makeStateBoolean(true);
+        sm.saveState();
+        a.setValue(true);
+        assertFalse(pushed[0], "State should not have been pushed, as true equals to true");
+        a.setValue(false);
+        assertTrue(pushed[0]);
+    }
 
 }

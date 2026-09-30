@@ -9,7 +9,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPVar;
 import org.maxicp.modeling.concrete.ConcreteModel;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -211,7 +211,7 @@ public abstract class AbstractSearchMethod<T> implements SearchMethod {
         sm.withNewState(() -> {
             try {
                 subjectTo.run();
-                State<Boolean> consistentState = sm.makeStateRef(true);
+                StateBoolean consistentState = sm.makeStateBoolean(true);
                 IntRef index = new IntRef();
                 index.value = 0;
                 long t0 = System.currentTimeMillis();

@@ -8,7 +8,7 @@ package org.maxicp.cp.engine.constraints.seqvar;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 
 import java.util.Optional;
 
@@ -27,7 +27,7 @@ public class TransitionTimes extends AbstractCPConstraint {
     private final int[] nodes;                  // used for fill operations over the nodes
     private final int[] preds;                  // used for fill operations over the pred of nodes
 
-    private State<Boolean> masterConstraintPropagating; // set to true whenever the constraint begins to be propagated
+    private StateBoolean masterConstraintPropagating; // set to true whenever the constraint begins to be propagated
 
     /**
      * Links visits of nodes within a {@link CPSeqVar} to given time windows {@link CPIntVar}.
@@ -82,7 +82,7 @@ public class TransitionTimes extends AbstractCPConstraint {
         this.serviceTime = serviceTime;
         this.nodes = new int[seqVar.nNode()];
         this.preds = new int[seqVar.nNode()];
-        masterConstraintPropagating = getSolver().getStateManager().makeStateRef(false);
+        masterConstraintPropagating = getSolver().getStateManager().makeStateBoolean(false);
         checkTriangularInequality(dist);
     }
 

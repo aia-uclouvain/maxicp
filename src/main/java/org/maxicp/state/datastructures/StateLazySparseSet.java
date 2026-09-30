@@ -5,7 +5,7 @@
 
 package org.maxicp.state.datastructures;
 
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 import org.maxicp.state.StateManager;
 
 /**
@@ -22,7 +22,7 @@ public class StateLazySparseSet {
     private StateInterval interval;
 
 
-    private State<Boolean> intervalRep;
+    private StateBoolean intervalRep;
     private boolean switched = false;
 
     private boolean isInterval() {
@@ -41,7 +41,7 @@ public class StateLazySparseSet {
     public StateLazySparseSet(StateManager sm, int n, int ofs) {
         this.sm = sm;
         interval = new StateInterval(sm, ofs, ofs + n - 1);
-        intervalRep = sm.makeStateRef(true);
+        intervalRep = sm.makeStateBoolean(true);
 
         // optimization to avoid trashing with the creation of sparse rep
         sm.onRestore(() -> {

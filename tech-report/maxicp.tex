@@ -68,7 +68,7 @@
     columns=fullflexible,
     keepspaces=true,
     showstringspaces=false,
-    morekeywords=[2]{CPIntVar,CPBoolVar,CPSeqVar,CPIntervalVar,CPSolver,DFSearch,SearchStatistics,Objective,ModelDispatcher,IntVar,IntExpression,ConcreteCPModel,StateManager,StateInt,StateMap,DeltaCPIntVar,AbstractConstraint,AbstractCPConstraint}
+    morekeywords=[2]{CPIntVar,CPBoolVar,CPSeqVar,CPIntervalVar,CPSolver,DFSearch,SearchStatistics,Objective,ModelDispatcher,IntVar,IntExpression,ConcreteCPModel,StateManager,StateInt,StateLong,StateBoolean,StateMap,DeltaCPIntVar,AbstractConstraint,AbstractCPConstraint}
 }
 
 \newtcblisting[auto counter]{codebox}[2][]{%
@@ -362,6 +362,8 @@ public interface StateManager {
     int getLevel();         // Current depth in the tree
 
     StateInt makeStateInt(int initValue);
+    StateLong makeStateLong(long initValue);
+    StateBoolean makeStateBoolean(boolean initValue);
     <T> State<T> makeStateRef(T initValue);
     <K,V> StateMap<K,V> makeStateMap();
 }

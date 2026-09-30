@@ -23,10 +23,15 @@ Source:
         void restoreState();            // Restore to last save point
         int getLevel();                 // Current depth in the search tree
 
-        StateInt    makeStateInt(int initValue);
+        StateInt     makeStateInt(int initValue);
+        StateLong    makeStateLong(long initValue);
+        StateBoolean makeStateBoolean(boolean initValue);
         <T> State<T> makeStateRef(T initValue);
         <K,V> StateMap<K,V> makeStateMap();
     }
+
+``makeStateInt``, ``makeStateLong`` and ``makeStateBoolean`` store their value as a primitive:
+use them rather than ``makeStateRef`` for integers, longs and booleans, which would box the value.
 
 All stateful components of the solver — variable domains, propagation queues, the DFS engine,
 and even the symbolic model reference — are built on top of these primitives.
