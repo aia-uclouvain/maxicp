@@ -24,9 +24,13 @@ import java.util.stream.IntStream;
 <span class="fc" id="L24">    public boolean deactivateSCC = false;</span>
     private final CPIntVar[] x;
 
-    // private final int[] values; // to iterate on domains of x vars
-    private final StateInt[] dest;
-    private final StateInt[] orig;
+    // otherEnd[u] stores the opposite endpoint of the maximal path passing through node u.
+    // For a path s -&gt;* d:
+    //   otherEnd[s] = d (start points to end)
+    //   otherEnd[d] = s (end points to start)
+    // For singletons (path of length 0): otherEnd[u] = u.
+    // Internal nodes in paths are never accessed because in-degree and out-degree are at most 1.
+    private final StateInt[] otherEnd;
     private final StateInt nFixed;
     private int [][] domArray;
 
@@ -45,132 +49,144 @@ import java.util.stream.IntStream;
      *          {@code x[i]} is the city visited after city i
      */
     public Circuit(CPIntVar[] x) {
-<span class="fc" id="L48">        super(x[0].getSolver());</span>
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        assert (x.length &gt; 0);</span>
-<span class="fc" id="L50">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
-<span class="fc" id="L51">        this.x = x;</span>
-<span class="fc" id="L52">        this.n = x.length;</span>
+<span class="fc" id="L52">        super(x[0].getSolver());</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        assert (x.length &gt; 0);</span>
+<span class="fc" id="L54">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L55">        this.x = x;</span>
+<span class="fc" id="L56">        this.n = x.length;</span>
 
-<span class="fc" id="L54">        dest = new StateInt[x.length];</span>
-<span class="fc" id="L55">        orig = new StateInt[x.length];</span>
-<span class="fc" id="L56">        domArray = new int[x.length][];</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L58">            dest[i] = getSolver().getStateManager().makeStateInt(i);</span>
-<span class="fc" id="L59">            orig[i] = getSolver().getStateManager().makeStateInt(i);</span>
-<span class="fc" id="L60">            domArray[i] = new int[x[i].size()];</span>
+<span class="fc" id="L58">        otherEnd = new StateInt[x.length];</span>
+<span class="fc" id="L59">        domArray = new int[x.length][];</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L61">            otherEnd[i] = getSolver().getStateManager().makeStateInt(i);</span>
+<span class="fc" id="L62">            domArray[i] = new int[x[i].size()];</span>
         }
-<span class="fc" id="L62">        stack = new Stack&lt;&gt;();</span>
-<span class="fc" id="L63">        discoveryTime = new int[x.length];</span>
-<span class="fc" id="L64">        low = new int[x.length];</span>
-<span class="fc" id="L65">        isInStack = new boolean[x.length];</span>
-<span class="fc" id="L66">    }</span>
+<span class="fc" id="L64">        stack = new Stack&lt;&gt;();</span>
+<span class="fc" id="L65">        discoveryTime = new int[x.length];</span>
+<span class="fc" id="L66">        low = new int[x.length];</span>
+<span class="fc" id="L67">        isInStack = new boolean[x.length];</span>
+<span class="fc" id="L68">    }</span>
 
 
     @Override
     public void post() {
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (CPIntVar var: x) {</span>
-<span class="fc" id="L72">            var.removeBelow(0);</span>
-<span class="fc" id="L73">            var.removeAbove(x.length - 1);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (CPIntVar var: x) {</span>
+<span class="fc" id="L74">            var.removeBelow(0);</span>
+<span class="fc" id="L75">            var.removeAbove(x.length - 1);</span>
         }
-<span class="fc" id="L75">        getSolver().post(new AllDifferentDC(x));</span>
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">        if (x.length == 1) {</span>
-<span class="nc" id="L77">            x[0].fix(0);</span>
-<span class="nc" id="L78">            return;</span>
+<span class="fc" id="L77">        getSolver().post(new AllDifferentDC(x));</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (x.length == 1) {</span>
+<span class="nc" id="L79">            x[0].fix(0);</span>
+<span class="nc" id="L80">            return;</span>
         }
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L81">            x[i].remove(i);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L83">            x[i].remove(i);</span>
         }
-<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L84">            x[i].propagateOnDomainChange(this);</span>
-<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (!x[i].isFixed()) {</span>
-<span class="fc" id="L86">                int idx = i;</span>
-<span class="fc" id="L87">                x[idx].whenFixed(() -&gt; fixed(idx));</span>
-<span class="fc" id="L88">            } else {</span>
-<span class="fc" id="L89">                fixed(i);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L86">            x[i].propagateOnDomainChange(this);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (!x[i].isFixed()) {</span>
+<span class="fc" id="L88">                int idx = i;</span>
+<span class="fc" id="L89">                x[idx].whenFixed(() -&gt; fixed(idx));</span>
+<span class="fc" id="L90">            } else {</span>
+<span class="fc" id="L91">                fixed(i);</span>
             }
         }
-<span class="fc" id="L92">        propagate();</span>
-<span class="fc" id="L93">    }</span>
+<span class="fc" id="L94">        propagate();</span>
+<span class="fc" id="L95">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (!deactivateSCC) {</span>
-<span class="fc" id="L98">            int nSCC = findSCCCount();</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (nSCC &gt; 1) {</span>
-<span class="fc" id="L100">                throw InconsistencyException.INCONSISTENCY;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (!deactivateSCC) {</span>
+<span class="fc" id="L100">            int nSCC = findSCCCount();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (nSCC &gt; 1) {</span>
+<span class="fc" id="L102">                throw InconsistencyException.INCONSISTENCY;</span>
             }
         }
-<span class="fc" id="L103">    }</span>
+<span class="fc" id="L105">    }</span>
 
+    /**
+     * Called whenever variable x[idx] is fixed to val (adding directed edge idx -&gt; val).
+     * Connects two disjoint paths:
+     *   (orig_i -&gt;* idx) and (val -&gt;* dest_j)
+     * into a single merged path:
+     *   orig_i -&gt;* idx -&gt; val -&gt;* dest_j
+     * and forbids closing a premature subtour by removing orig_i from x[dest_j].
+     *
+     * @param idx source node of the newly fixed edge
+     */
     public void fixed(int idx) {
-<span class="fc" id="L106">        int val = x[idx].min();</span>
-<span class="fc" id="L107">        int orig_i = orig[idx].value();</span>
-<span class="fc" id="L108">        int dest_j = dest[val].value();</span>
-        // orig[i] *-&gt; i -&gt; j *-&gt; dest[j]
-<span class="fc" id="L110">        dest[orig_i].setValue(dest_j);</span>
-<span class="fc" id="L111">        orig[dest_j].setValue(orig_i);</span>
-<span class="fc" id="L112">        nFixed.increment();</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (nFixed.value() &lt; x.length - 1) {</span>
-            // avoid inner loops
-<span class="fc" id="L115">            x[dest_j].remove(orig_i); // avoid inner loops</span>
+<span class="fc" id="L118">        int val = x[idx].min();</span>
+        // idx is the end of the first path; otherEnd[idx] gives its start orig_i
+<span class="fc" id="L120">        int orig_i = otherEnd[idx].value();</span>
+        // val is the start of the second path; otherEnd[val] gives its end dest_j
+<span class="fc" id="L122">        int dest_j = otherEnd[val].value();</span>
+
+        // Connect the two paths: orig_i -&gt;* idx -&gt; val -&gt;* dest_j.
+        // Update the opposite extremities of this newly merged path:
+<span class="fc" id="L126">        otherEnd[orig_i].setValue(dest_j);</span>
+<span class="fc" id="L127">        otherEnd[dest_j].setValue(orig_i);</span>
+<span class="fc" id="L128">        nFixed.increment();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (nFixed.value() &lt; x.length - 1) {</span>
+            // Avoid inner loops: dest_j cannot close the tour to orig_i before all nodes are included
+<span class="fc" id="L131">            x[dest_j].remove(orig_i);</span>
         }
-<span class="fc" id="L117">    }</span>
+<span class="fc" id="L133">    }</span>
 
     // Returns the number of SCCs
     public int findSCCCount() {
 
-<span class="fc" id="L122">        stack.clear();</span>
+<span class="fc" id="L138">        stack.clear();</span>
         // Initialize discovery and low values
-<span class="fc bfc" id="L124" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L125">            discoveryTime[i] = -1;</span>
-<span class="fc" id="L126">            low[i] = -1;</span>
-<span class="fc" id="L127">            isInStack[i] = false;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L141">            discoveryTime[i] = -1;</span>
+<span class="fc" id="L142">            low[i] = -1;</span>
+<span class="fc" id="L143">            isInStack[i] = false;</span>
         }
 
         // Counter for the number of SCCs
-<span class="fc" id="L131">        int sccCount = 0;</span>
-<span class="fc" id="L132">        int time = 0; // Local time variable for each SCC calculation</span>
+<span class="fc" id="L147">        int sccCount = 0;</span>
+<span class="fc" id="L148">        int time = 0; // Local time variable for each SCC calculation</span>
 
         // Call the recursive helper function for each vertex
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">            if (discoveryTime[i] == -1) {</span>
-<span class="fc" id="L137">                sccCount += nSCC(i, discoveryTime, low, isInStack, stack, time);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (discoveryTime[i] == -1) {</span>
+<span class="fc" id="L153">                sccCount += nSCC(i, discoveryTime, low, isInStack, stack, time);</span>
             }
         }
-<span class="fc" id="L140">        return sccCount;</span>
+<span class="fc" id="L156">        return sccCount;</span>
     }
 
     // Recursive function to find strongly connected components
     private int nSCC(int u, int[] discoveryTime, int[] low, boolean[] isInStack, Stack&lt;Integer&gt; stack, int time) {
         // Initialize discovery time and low value for u
-<span class="fc" id="L146">        discoveryTime[u] = low[u] = ++time;</span>
-<span class="fc" id="L147">        stack.push(u);</span>
-<span class="fc" id="L148">        isInStack[u] = true;</span>
+<span class="fc" id="L162">        discoveryTime[u] = low[u] = ++time;</span>
+<span class="fc" id="L163">        stack.push(u);</span>
+<span class="fc" id="L164">        isInStack[u] = true;</span>
 
         // Go through all vertices v adjacent to u
-<span class="fc" id="L151">        int nVal = x[u].fillArray(domArray[u]);</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">        for (int i = 0; i &lt; nVal; i++) {</span>
-<span class="fc" id="L153">            int v = domArray[u][i];</span>
-<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (discoveryTime[v] == -1) { // If v is not visited</span>
-<span class="fc" id="L155">                time = nSCC(v, discoveryTime, low, isInStack, stack, time);</span>
-<span class="fc" id="L156">                low[u] = Math.min(low[u], low[v]);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">            } else if (isInStack[v]) { // If v is in stack, it is part of the current SCC</span>
-<span class="fc" id="L158">                low[u] = Math.min(low[u], discoveryTime[v]);</span>
+<span class="fc" id="L167">        int nVal = x[u].fillArray(domArray[u]);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        for (int i = 0; i &lt; nVal; i++) {</span>
+<span class="fc" id="L169">            int v = domArray[u][i];</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (discoveryTime[v] == -1) { // If v is not visited</span>
+<span class="fc" id="L171">                time = nSCC(v, discoveryTime, low, isInStack, stack, time);</span>
+<span class="fc" id="L172">                low[u] = Math.min(low[u], low[v]);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            } else if (isInStack[v]) { // If v is in stack, it is part of the current SCC</span>
+<span class="fc" id="L174">                low[u] = Math.min(low[u], discoveryTime[v]);</span>
             }
         }
 
         // If u is a root node, pop all vertices in the current SCC
-<span class="fc" id="L163">        int sccRootCount = 0;</span>
-<span class="fc bfc" id="L164" title="All 2 branches covered.">        if (low[u] == discoveryTime[u]) {</span>
-<span class="fc" id="L165">            sccRootCount++;</span>
-<span class="fc bfc" id="L166" title="All 2 branches covered.">            while (stack.peek() != u) {</span>
-<span class="fc" id="L167">                int w = stack.pop();</span>
-<span class="fc" id="L168">                isInStack[w] = false;</span>
-<span class="fc" id="L169">            }</span>
-<span class="fc" id="L170">            stack.pop();</span>
-<span class="fc" id="L171">            isInStack[u] = false;</span>
+<span class="fc" id="L179">        int sccRootCount = 0;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (low[u] == discoveryTime[u]) {</span>
+<span class="fc" id="L181">            sccRootCount++;</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            while (stack.peek() != u) {</span>
+<span class="fc" id="L183">                int w = stack.pop();</span>
+<span class="fc" id="L184">                isInStack[w] = false;</span>
+<span class="fc" id="L185">            }</span>
+<span class="fc" id="L186">            stack.pop();</span>
+<span class="fc" id="L187">            isInStack[u] = false;</span>
         }
-<span class="fc" id="L173">        return sccRootCount;</span>
+<span class="fc" id="L189">        return sccRootCount;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -163,8 +163,8 @@ org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,StartAfter,95,9,20,0,15,1,17,
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,Not,24,6,2,0,4,1,5,1,4,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,EndBefore,101,0,20,0,17,0,18,0,8,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,Or,102,0,18,0,23,0,17,0,8,0
-org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,NotEq,72,29,12,0,14,5,12,3,6,3
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,EndBeforeStart,110,9,28,0,17,1,22,1,8,1
+org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,NotEq,72,29,12,0,14,5,12,3,6,3
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,StartBefore,95,9,20,0,15,1,17,1,7,1
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,And,54,0,4,0,9,0,9,0,7,0
 org.maxicp:maxicp,org.maxicp.modeling.algebra.bool,GreaterOrEq,115,0,18,0,18,0,19,0,10,0
@@ -373,7 +373,7 @@ org.maxicp:maxicp,org.maxicp.search,FDSModeling.ChoiceType,0,27,0,0,0,2,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search,ConcurrentDFSearch,191,0,15,0,55,0,16,0,8,0
 org.maxicp:maxicp,org.maxicp.search,SearchMethod,8,8,0,0,2,2,2,2,2,2
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,IsLessOrEqual,0,109,0,14,0,25,0,11,0,4
-org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Circuit,11,445,2,34,2,81,2,24,0,8
+org.maxicp:maxicp,org.maxicp.cp.engine.constraints,Circuit,11,431,2,34,2,79,2,24,0,8
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,IsEqual,0,80,0,10,0,23,0,8,0,3
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,MaximumMatching,0,383,1,45,0,67,1,28,0,6
 org.maxicp:maxicp,org.maxicp.cp.engine.constraints,LessOrEqual,0,45,0,2,0,13,0,4,0,3
@@ -446,8 +446,8 @@ org.maxicp:maxicp,org.maxicp.cp.engine.core,CPNodeVarViewFlip,67,148,0,12,22,32,
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarConstant.new DeltaCPIntVar() {...},24,8,0,0,10,2,10,2,10,2
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPIntVarViewOffset,26,195,1,7,6,44,4,23,3,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarImpl.Node,19,435,0,24,5,61,4,50,4,32
-org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSeqVarViewFlip,66,268,0,16,24,57,14,36,14,28
+org.maxicp:maxicp,org.maxicp.cp.engine.core,DoNothingConstraint,15,0,0,0,10,0,10,0,10,0
 org.maxicp:maxicp,org.maxicp.cp.engine.core,CPSetVarImpl,12,217,1,19,2,48,3,29,2,20
 org.maxicp:maxicp,org.maxicp.cp.engine.core,Minimize,28,74,4,4,5,22,6,8,2,8
 org.maxicp:maxicp,org.maxicp.cp.engine.core,MaxiCP,13,160,1,13,4,44,3,20,2,14
