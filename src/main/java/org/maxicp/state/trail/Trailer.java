@@ -107,6 +107,11 @@ public class Trailer implements StateManager {
     }
 
     @Override
+    public StateBoolean makeStateBoolean(boolean initValue) {
+        return new TrailBoolean(this,initValue);
+    }
+
+    @Override
     public <K, V> StateMap<K, V> makeStateMap() {
         return new TrailMap<K,V>(this);
     }

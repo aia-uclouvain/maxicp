@@ -10,7 +10,7 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.util.exception.InconsistencyException;
@@ -41,7 +41,7 @@ public class BinaryKnapsack extends AbstractCPConstraint {
     int [] w;
     CPIntVar c;
 
-    State<Boolean>[]  candidate; //index of unfixed items(we don't know if they are packed)
+    StateBoolean[]  candidate; //index of unfixed items(we don't know if they are packed)
     StateInt rcap;      //required cap: sum of weight of required items with x=1 (packed for sure in the knapsack)
     StateInt   pcap;      //possible cap: sum of weight of possible items (candidate + the ones already packed)
     StateInt   nb;        //number of possible items
@@ -119,9 +119,9 @@ public class BinaryKnapsack extends AbstractCPConstraint {
         getSolver().post(new Sum(loadExpr, c));
 
 
-        candidate = new State[x.length];
+        candidate = new StateBoolean[x.length];
         for (int i = 0; i < candidate.length; i++) {
-            candidate[i] = getSolver().getStateManager().makeStateRef(true);
+            candidate[i] = getSolver().getStateManager().makeStateBoolean(true);
         }
         int S = Arrays.stream(w).sum();
         rcap = getSolver().getStateManager().makeStateInt(0);

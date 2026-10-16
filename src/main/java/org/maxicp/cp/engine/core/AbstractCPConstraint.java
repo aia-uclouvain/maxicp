@@ -7,7 +7,7 @@ package org.maxicp.cp.engine.core;
 
 
 import org.maxicp.Constants;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 
 import java.util.ArrayList;
 
@@ -23,13 +23,13 @@ public abstract class AbstractCPConstraint implements CPConstraint {
      */
     private final CPSolver cp;
     private boolean scheduled = false;
-    private final State<Boolean> active;
+    private final StateBoolean active;
 
     private ArrayList<Delta> deltas;
 
     public AbstractCPConstraint(CPSolver cp) {
         this.cp = cp;
-        active = cp.getStateManager().makeStateRef(true);
+        active = cp.getStateManager().makeStateBoolean(true);
         deltas = new ArrayList<>();
     }
 

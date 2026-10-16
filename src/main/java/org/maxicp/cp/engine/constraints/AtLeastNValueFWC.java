@@ -7,7 +7,7 @@ package org.maxicp.cp.engine.constraints;
 
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
-import org.maxicp.state.State;
+import org.maxicp.state.StateBoolean;
 import org.maxicp.state.StateInt;
 
 import java.util.stream.IntStream;
@@ -23,7 +23,7 @@ public class AtLeastNValueFWC extends AbstractCPConstraint {
     private final StateInt startPruneIdx;
 
     private final StateInt nValueLB; //number of value used
-    private final State<Boolean>[] used; // for each value if it is used or not
+    private final StateBoolean[] used; // for each value if it is used or not
 
 
     private int min;
@@ -45,9 +45,9 @@ public class AtLeastNValueFWC extends AbstractCPConstraint {
 
         findValueRange();
         nValueLB = getSolver().getStateManager().makeStateInt(0);
-        used = new State[valSize];
+        used = new StateBoolean[valSize];
         for (int v = 0; v < valSize; v++) {
-            used[v] = getSolver().getStateManager().makeStateRef(false);
+            used[v] = getSolver().getStateManager().makeStateBoolean(false);
         }
         startPruneIdx = getSolver().getStateManager().makeStateInt(0);
     }

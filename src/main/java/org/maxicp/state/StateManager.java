@@ -78,6 +78,14 @@ public interface StateManager {
     StateLong makeStateLong(long initValue);
 
     /**
+     * Creates a Stateful boolean (restorable)
+     *
+     * @param initValue the initial setValue
+     * @return a StateBoolean object wrapping the initValue
+     */
+    StateBoolean makeStateBoolean(boolean initValue);
+
+    /**
      * Creates a Stateful map (restorable)
      *
      * @return a reference to the map.

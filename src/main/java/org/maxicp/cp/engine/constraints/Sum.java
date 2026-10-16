@@ -9,7 +9,7 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.state.State;
+import org.maxicp.state.StateLong;
 import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -23,7 +23,7 @@ public class Sum extends AbstractCPConstraint {
 
     private int[] free;
     private StateInt nFrees;
-    private State<Long> sumFixed;
+    private StateLong sumFixed;
     private CPIntVar[] x;
     private int[] min, max;
     private int n;
@@ -75,7 +75,7 @@ public class Sum extends AbstractCPConstraint {
         min = new int[n];
         max = new int[n];
         nFrees = getSolver().getStateManager().makeStateInt(n);
-        sumFixed = getSolver().getStateManager().makeStateRef(0L);
+        sumFixed = getSolver().getStateManager().makeStateLong(0L);
         free = IntStream.range(0, n).toArray();
     }
 

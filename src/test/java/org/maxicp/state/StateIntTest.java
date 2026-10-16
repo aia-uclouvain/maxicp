@@ -5,10 +5,13 @@
 
 package org.maxicp.state;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.maxicp.state.trail.Trailer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StateIntTest extends StateManagerTest {
@@ -83,6 +86,26 @@ public class StateIntTest extends StateManagerTest {
 
     }
 
+    @Test
+    public void testTrailIntBox() {
+        boolean[] pushed = new boolean[] { false };
+        Trailer sm = new Trailer() {
+            @Override
+            public void pushState(StateEntry entry) {
+                pushed[0] = true;
+                super.pushState(entry);
+            }
+        };
+
+        StateInt worksBecauseCached = sm.makeStateInt(1);
+        StateInt doesnt = sm.makeStateInt(1000);
+        sm.saveState();
+        worksBecauseCached.setValue(1);
+        assertFalse(pushed[0], "State should not have been pushed, as 1 equals to 1");
+        doesnt.setValue(1000);
+        assertFalse(pushed[0], "State should not have been pushed, as 1000 equals to 1000");
+    }
+
     @ParameterizedTest
     @MethodSource("getStateManager")
     public void testPopUntill(StateManager sm) {
@@ -120,11 +143,11 @@ public class StateIntTest extends StateManagerTest {
 
         sm.restoreStateUntil(0);
 
-        //assertEquals(0,sm.getLevel());
+        // assertEquals(0,sm.getLevel());
 
         sm.saveState(); // level 1
 
-        //assertEquals(1,sm.getLevel());
+        // assertEquals(1,sm.getLevel());
         assertEquals(Integer.valueOf(5), a.value());
         assertEquals(Integer.valueOf(10), b.value());
         assertEquals(Integer.valueOf(5), c.value());
@@ -136,11 +159,10 @@ public class StateIntTest extends StateManagerTest {
 
         sm.restoreStateUntil(0);
 
-        //assertEquals(0,sm.getLevel());
+        // assertEquals(0,sm.getLevel());
         assertEquals(Integer.valueOf(5), a.value());
         assertEquals(Integer.valueOf(10), b.value());
         assertEquals(Integer.valueOf(5), c.value());
-
 
     }
 
@@ -156,7 +178,6 @@ public class StateIntTest extends StateManagerTest {
         sm.saveState(); // level 0
 
         a.setValue(6);
-
 
         sm.saveState(); // level 1
 
@@ -174,16 +195,14 @@ public class StateIntTest extends StateManagerTest {
 
         sm.saveState(); // level 1
 
-        //assertEquals(1,sm.getLevel());
+        // assertEquals(1,sm.getLevel());
         assertEquals(Integer.valueOf(6), a.value());
-
 
         a.setValue(8);
 
         sm.restoreStateUntil(0);
 
         assertEquals(Integer.valueOf(6), a.value());
-
 
     }
 
@@ -200,8 +219,5 @@ public class StateIntTest extends StateManagerTest {
         sm.restoreState(); // back to level 0: a = 0
         assertEquals(0, a.value());
     }
-
-
-
 
 }

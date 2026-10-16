@@ -7,7 +7,7 @@
 package org.maxicp.state.datastructures;
 
 
-import org.maxicp.state.State;
+import org.maxicp.state.StateLong;
 import org.maxicp.state.StateInt;
 import org.maxicp.state.StateManager;
 
@@ -22,7 +22,7 @@ public class StateSparseBitSet {
 
     /* Variables used to store value of the bitset */
     private int nWords;
-    private State<Long>[] words;
+    private StateLong[] words;
 
     /* Variables used to make set sparse */
     private int[] nonZeroIdx;
@@ -94,7 +94,7 @@ public class StateSparseBitSet {
      */
     public StateSparseBitSet(StateManager sm, int n) {
         nWords = (n + 63) >>> 6; // divided by 64
-        words = new State[nWords];
+        words = new StateLong[nWords];
         mask = ~0L >>> (64 - (n % 64));
         Arrays.setAll(words, i ->
                 i == nWords - 1 ?

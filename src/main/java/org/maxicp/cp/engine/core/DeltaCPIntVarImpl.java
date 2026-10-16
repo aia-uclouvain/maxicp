@@ -96,7 +96,11 @@ public class DeltaCPIntVarImpl implements DeltaCPIntVar {
     @Override
     public void update() {
         iteratorTimeStamp++;
-        deltaState.setValue(new DeltaState(x.size(),x.min(),x.max()));
+        DeltaState ds = deltaState.value();
+        int size = x.size(), min = x.min(), max = x.max();
+        // only store a new state if the domain changed: trailing an equal state would be useless
+        if (ds == null || ds.oldSize() != size || ds.oldMin() != min || ds.oldMax() != max)
+            deltaState.setValue(new DeltaState(size, min, max));
     }
 }
 

@@ -103,6 +103,13 @@ public class Copier implements StateManager {
     }
 
     @Override
+    public StateBoolean makeStateBoolean(boolean initValue) {
+        CopyBoolean s = new CopyBoolean(initValue);
+        store.add(s);
+        return s;
+    }
+
+    @Override
     public <K,V> StateMap<K,V> makeStateMap() {
         CopyMap<K, V> s = new CopyMap<>();
         store.add(s);
