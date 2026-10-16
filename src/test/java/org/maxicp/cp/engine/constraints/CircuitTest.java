@@ -106,6 +106,59 @@ public class CircuitTest extends CPSolverTest {
 
     @ParameterizedTest
     @MethodSource("getSolver")
+    public void testAllSolutions6(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 6, 6);
+        cp.post(new Circuit(x));
+        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(x));
+
+        dfs.onSolution(() -> {
+            int[] sol = new int[x.length];
+            for (int i = 0; i < x.length; i++) {
+                sol[i] = x[i].min();
+            }
+            assertTrue(checkHamiltonian(sol), "Solution is not an hamiltonian Circuit");
+        });
+        SearchStatistics stats = dfs.solve();
+        assertEquals(120, stats.numberOfSolutions());
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
+    public void testChainMergingSubtourPrevention(CPSolver cp) {
+        CPIntVar[] x = CPFactory.makeIntVarArray(cp, 6, 6);
+        cp.post(new Circuit(x));
+        // Chain 1: 0 -> 1
+        x[0].fix(1);
+        cp.fixPoint();
+        // Chain 2: 2 -> 3
+        x[2].fix(3);
+        cp.fixPoint();
+        // 1 cannot point to 0, 3 cannot point to 2
+        assertFalse(x[1].contains(0));
+        assertFalse(x[3].contains(2));
+        // Merge: 1 -> 2
+        x[1].fix(2);
+        cp.fixPoint();
+        // Now chain is 0 -> 1 -> 2 -> 3
+        // 3 cannot point to 0
+        assertFalse(x[3].contains(0));
+        // Chain 3: 4 -> 5
+        x[4].fix(5);
+        cp.fixPoint();
+        assertFalse(x[5].contains(4));
+        // Merge: 3 -> 4
+        x[3].fix(4);
+        cp.fixPoint();
+        // Now chain is 0 -> 1 -> 2 -> 3 -> 4 -> 5
+        // 5 cannot point to 0 until the last edge
+        // But nFixed is now 5 (which is 6-1), so 5 MUST point to 0
+        x[5].fix(0);
+        cp.fixPoint();
+        assertTrue(checkHamiltonian(new int[]{1, 2, 3, 4, 5, 0}));
+    }
+
+    @ParameterizedTest
+    @MethodSource("getSolver")
     public void testCircuit(CPSolver cp) {
         CPIntVar[] x = CPFactory.makeIntVarArray(cp, 6, 6);
         x[0].fix(2);

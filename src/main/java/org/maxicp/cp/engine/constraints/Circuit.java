@@ -24,9 +24,13 @@ public class Circuit extends AbstractCPConstraint {
     public boolean deactivateSCC = false;
     private final CPIntVar[] x;
 
-    // private final int[] values; // to iterate on domains of x vars
-    private final StateInt[] dest;
-    private final StateInt[] orig;
+    // otherEnd[u] stores the opposite endpoint of the maximal path passing through node u.
+    // For a path s ->* d:
+    //   otherEnd[s] = d (start points to end)
+    //   otherEnd[d] = s (end points to start)
+    // For singletons (path of length 0): otherEnd[u] = u.
+    // Internal nodes in paths are never accessed because in-degree and out-degree are at most 1.
+    private final StateInt[] otherEnd;
     private final StateInt nFixed;
     private int [][] domArray;
 
@@ -51,12 +55,10 @@ public class Circuit extends AbstractCPConstraint {
         this.x = x;
         this.n = x.length;
 
-        dest = new StateInt[x.length];
-        orig = new StateInt[x.length];
+        otherEnd = new StateInt[x.length];
         domArray = new int[x.length][];
         for (int i = 0; i < x.length; i++) {
-            dest[i] = getSolver().getStateManager().makeStateInt(i);
-            orig[i] = getSolver().getStateManager().makeStateInt(i);
+            otherEnd[i] = getSolver().getStateManager().makeStateInt(i);
             domArray[i] = new int[x[i].size()];
         }
         stack = new Stack<>();
@@ -102,17 +104,31 @@ public class Circuit extends AbstractCPConstraint {
         }
     }
 
+    /**
+     * Called whenever variable x[idx] is fixed to val (adding directed edge idx -> val).
+     * Connects two disjoint paths:
+     *   (orig_i ->* idx) and (val ->* dest_j)
+     * into a single merged path:
+     *   orig_i ->* idx -> val ->* dest_j
+     * and forbids closing a premature subtour by removing orig_i from x[dest_j].
+     *
+     * @param idx source node of the newly fixed edge
+     */
     public void fixed(int idx) {
         int val = x[idx].min();
-        int orig_i = orig[idx].value();
-        int dest_j = dest[val].value();
-        // orig[i] *-> i -> j *-> dest[j]
-        dest[orig_i].setValue(dest_j);
-        orig[dest_j].setValue(orig_i);
+        // idx is the end of the first path; otherEnd[idx] gives its start orig_i
+        int orig_i = otherEnd[idx].value();
+        // val is the start of the second path; otherEnd[val] gives its end dest_j
+        int dest_j = otherEnd[val].value();
+
+        // Connect the two paths: orig_i ->* idx -> val ->* dest_j.
+        // Update the opposite extremities of this newly merged path:
+        otherEnd[orig_i].setValue(dest_j);
+        otherEnd[dest_j].setValue(orig_i);
         nFixed.increment();
         if (nFixed.value() < x.length - 1) {
-            // avoid inner loops
-            x[dest_j].remove(orig_i); // avoid inner loops
+            // Avoid inner loops: dest_j cannot close the tour to orig_i before all nodes are included
+            x[dest_j].remove(orig_i);
         }
     }
 
