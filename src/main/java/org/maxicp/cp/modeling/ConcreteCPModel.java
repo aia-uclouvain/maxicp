@@ -484,7 +484,9 @@ public class ConcreteCPModel implements ConcreteModel {
     @Override
     public void jumpTo(SymbolicModel node, boolean enforceFixPoint) {
         // Find the first node in common
-        HashSet<SymbolicModel> nodeCurrentlyPresent = new HashSet<>();
+        // Nodes are compared by identity. SymbolicModel is a record, whose hashCode/equals walk the whole chain of
+        // parents and constraints for each node: quadratic in the size of the model, and a stack overflow on long ones.
+        Set<SymbolicModel> nodeCurrentlyPresent = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
 
         SymbolicModel cur = model.value();
         while (cur != concretizedNode) {
