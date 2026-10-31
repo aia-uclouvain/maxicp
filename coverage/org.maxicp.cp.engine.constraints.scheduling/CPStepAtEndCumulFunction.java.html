@@ -26,47 +26,60 @@ public class CPStepAtEndCumulFunction implements CPCumulFunction {
     private final CPIntervalVar dummy;
     public CPIntVar height;
 
-<span class="nc" id="L29">    public CPStepAtEndCumulFunction(CPIntervalVar var, int hMin, int hMax) {</span>
-<span class="nc bnc" id="L30" title="All 2 branches missed.">        if (hMin &gt; hMax) throw new IllegalArgumentException(&quot;hMin &gt; hMax: &quot; + hMin + &quot; &gt; &quot; + hMax);</span>
-<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (hMin &lt;= 0) throw new IllegalArgumentException(&quot;hMin &lt;= 0: &quot; + hMin);</span>
+    /**
+     * Creates a step-at-end cumulative function for an interval variable with step height in {@code [hMin, hMax]}.
+     *
+     * @param var  the interval variable at the end of which the step occurs
+     * @param hMin the minimum step height (must be {@code &gt; 0})
+     * @param hMax the maximum step height (must be {@code &gt;= hMin})
+     */
+<span class="fc" id="L36">    public CPStepAtEndCumulFunction(CPIntervalVar var, int hMin, int hMax) {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (hMin &gt; hMax) throw new IllegalArgumentException(&quot;hMin &gt; hMax: &quot; + hMin + &quot; &gt; &quot; + hMax);</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (hMin &lt;= 0) throw new IllegalArgumentException(&quot;hMin &lt;= 0: &quot; + hMin);</span>
 
-<span class="nc" id="L33">        CPSolver cp = var.getSolver();</span>
-<span class="nc" id="L34">        dummy = makeIntervalVar(cp);</span>
-<span class="nc" id="L35">        dummy.setEndMin(Constants.HORIZON);</span>
-<span class="nc" id="L36">        dummy.setEndMax(Constants.HORIZON);</span>
-<span class="nc" id="L37">        cp.post(eq(var.status(), dummy.status()));</span>
+<span class="fc" id="L40">        CPSolver cp = var.getSolver();</span>
+<span class="fc" id="L41">        dummy = makeIntervalVar(cp);</span>
+<span class="fc" id="L42">        dummy.setEndMin(Constants.HORIZON);</span>
+<span class="fc" id="L43">        dummy.setEndMax(Constants.HORIZON);</span>
+<span class="fc" id="L44">        cp.post(eq(var.status(), dummy.status()));</span>
 
 
-<span class="nc" id="L40">        cp.post(startAtEnd(dummy, var));</span>
+<span class="fc" id="L47">        cp.post(startAtEnd(dummy, var));</span>
 
-<span class="nc" id="L42">        this.var = var;</span>
-<span class="nc" id="L43">        height = makeIntVar(var.getSolver(), hMin, hMax);</span>
-<span class="nc" id="L44">    }</span>
+<span class="fc" id="L49">        this.var = var;</span>
+<span class="fc" id="L50">        height = makeIntVar(var.getSolver(), hMin, hMax);</span>
+<span class="fc" id="L51">    }</span>
 
+    /**
+     * Creates a step-at-end cumulative function for an interval variable with fixed step height {@code h}.
+     *
+     * @param var the interval variable at the end of which the step occurs
+     * @param h   the fixed step height (must be {@code &gt; 0})
+     */
     public CPStepAtEndCumulFunction(CPIntervalVar var, int h) {
-<span class="nc" id="L47">        this(var, h, h);</span>
-<span class="nc" id="L48">    }</span>
+<span class="nc" id="L60">        this(var, h, h);</span>
+<span class="nc" id="L61">    }</span>
 
     @Override
     public List&lt;Activity&gt; flatten(boolean positive) {
-<span class="nc bnc" id="L52" title="All 2 branches missed.">        return List.of(new Activity(dummy, positive ? height : minus(height)));</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        return List.of(new Activity(dummy, positive ? height : minus(height)));</span>
     }
 
     @Override
     public boolean inScope(IntervalVar interval) {
-<span class="nc bnc" id="L57" title="All 2 branches missed.">        return var == interval;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">        return var == interval;</span>
     }
 
     @Override
     public CPIntVar heightAtStart(IntervalVar interval) {
-<span class="nc" id="L62">        return makeIntVar(var.getSolver(), 0, 0);</span>
+<span class="nc" id="L75">        return makeIntVar(var.getSolver(), 0, 0);</span>
     }
 
     @Override
     public CPIntVar heightAtEnd(IntervalVar interval) {
-<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
-<span class="nc" id="L68">        CPIntVar y = mul(height, ((CPIntervalVar) interval).status());</span>
-<span class="nc" id="L69">        return y;</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="nc" id="L81">        CPIntVar y = mul(height, ((CPIntervalVar) interval).status());</span>
+<span class="nc" id="L82">        return y;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

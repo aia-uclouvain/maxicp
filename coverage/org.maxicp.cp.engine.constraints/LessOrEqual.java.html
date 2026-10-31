@@ -16,25 +16,31 @@ public class LessOrEqual extends AbstractCPConstraint { // x &lt;= y
     private final CPIntVar x;
     private final CPIntVar y;
 
+    /**
+     * Creates a constraint enforcing {@code x &lt;= y}.
+     *
+     * @param x the left-hand side variable
+     * @param y the right-hand side variable
+     */
     public LessOrEqual(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L20">        super(x.getSolver());</span>
-<span class="fc" id="L21">        this.x = x;</span>
-<span class="fc" id="L22">        this.y = y;</span>
-<span class="fc" id="L23">    }</span>
+<span class="fc" id="L26">        super(x.getSolver());</span>
+<span class="fc" id="L27">        this.x = x;</span>
+<span class="fc" id="L28">        this.y = y;</span>
+<span class="fc" id="L29">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L27">        x.propagateOnBoundChange(this);</span>
-<span class="fc" id="L28">        y.propagateOnBoundChange(this);</span>
-<span class="fc" id="L29">        propagate();</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L33">        x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L34">        y.propagateOnBoundChange(this);</span>
+<span class="fc" id="L35">        propagate();</span>
+<span class="fc" id="L36">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc" id="L34">        x.removeAbove(y.max());</span>
-<span class="fc" id="L35">        y.removeBelow(x.min());</span>
-<span class="fc bfc" id="L36" title="All 2 branches covered.">        if (x.max() &lt;= y.min())</span>
-<span class="fc" id="L37">            setActive(false);</span>
-<span class="fc" id="L38">    }</span>
+<span class="fc" id="L40">        x.removeAbove(y.max());</span>
+<span class="fc" id="L41">        y.removeBelow(x.min());</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (x.max() &lt;= y.min())</span>
+<span class="fc" id="L43">            setActive(false);</span>
+<span class="fc" id="L44">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

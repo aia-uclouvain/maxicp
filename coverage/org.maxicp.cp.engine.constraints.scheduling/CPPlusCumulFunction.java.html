@@ -14,55 +14,57 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * CP implementation of a Plus Cumulative Function
+ * CP implementation of a Plus Cumulative Function ({@code left + right}).
  *
+ * @param left  the first cumulative function
+ * @param right the second cumulative function
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
-<span class="fc" id="L21">public record CPPlusCumulFunction(CPCumulFunction left, CPCumulFunction right) implements CPCumulFunction {</span>
+<span class="fc" id="L23">public record CPPlusCumulFunction(CPCumulFunction left, CPCumulFunction right) implements CPCumulFunction {</span>
 
     @Override
     public List&lt;Activity&gt; flatten(boolean positive) {
-<span class="fc" id="L25">        List&lt;Activity&gt; res = new LinkedList&lt;&gt;();</span>
-<span class="fc" id="L26">        res.addAll(left.flatten(positive));</span>
-<span class="fc" id="L27">        res.addAll(right.flatten(positive));</span>
-<span class="fc" id="L28">        return res;</span>
+<span class="fc" id="L27">        List&lt;Activity&gt; res = new LinkedList&lt;&gt;();</span>
+<span class="fc" id="L28">        res.addAll(left.flatten(positive));</span>
+<span class="fc" id="L29">        res.addAll(right.flatten(positive));</span>
+<span class="fc" id="L30">        return res;</span>
     }
 
     @Override
     public boolean inScope(IntervalVar interval) {
-<span class="fc bfc" id="L33" title="All 4 branches covered.">        return left.inScope(interval) || right.inScope(interval);</span>
+<span class="fc bfc" id="L35" title="All 4 branches covered.">        return left.inScope(interval) || right.inScope(interval);</span>
     }
 
     @Override
     public CPIntVar heightAtStart(IntervalVar interval) {
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (!inScope(interval)) {</span>
-<span class="nc" id="L39">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (!inScope(interval)) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
         } else {
-<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (!left.inScope(interval)) {</span>
-<span class="fc" id="L42">                return right.heightAtStart(interval);</span>
-<span class="fc bfc" id="L43" title="All 2 branches covered.">            } else if (!right.inScope(interval)) {</span>
-<span class="fc" id="L44">                return left.heightAtStart(interval);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            if (!left.inScope(interval)) {</span>
+<span class="fc" id="L44">                return right.heightAtStart(interval);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            } else if (!right.inScope(interval)) {</span>
+<span class="fc" id="L46">                return left.heightAtStart(interval);</span>
             } else {
-<span class="fc" id="L46">                CPIntVar leftHeight = left.heightAtStart(interval);</span>
-<span class="fc" id="L47">                CPIntVar rightHeight = right.heightAtStart(interval);</span>
-<span class="fc" id="L48">                return CPFactory.sum(leftHeight, rightHeight);</span>
+<span class="fc" id="L48">                CPIntVar leftHeight = left.heightAtStart(interval);</span>
+<span class="fc" id="L49">                CPIntVar rightHeight = right.heightAtStart(interval);</span>
+<span class="fc" id="L50">                return CPFactory.sum(leftHeight, rightHeight);</span>
             }
         }
     }
 
     @Override
     public CPIntVar heightAtEnd(IntervalVar interval) {
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">        if (!inScope(interval)) {</span>
-<span class="nc" id="L56">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (!inScope(interval)) {</span>
+<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
         } else {
-<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (!left.inScope(interval)) {</span>
-<span class="fc" id="L59">                return right.heightAtEnd(interval);</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">            } else if (!right.inScope(interval)) {</span>
-<span class="fc" id="L61">                return left.heightAtEnd(interval);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (!left.inScope(interval)) {</span>
+<span class="fc" id="L61">                return right.heightAtEnd(interval);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            } else if (!right.inScope(interval)) {</span>
+<span class="fc" id="L63">                return left.heightAtEnd(interval);</span>
             } else {
-<span class="fc" id="L63">                CPIntVar leftHeight = left.heightAtEnd(interval);</span>
-<span class="fc" id="L64">                CPIntVar rightHeight = right.heightAtEnd(interval);</span>
-<span class="fc" id="L65">                return CPFactory.sum(leftHeight, rightHeight);</span>
+<span class="fc" id="L65">                CPIntVar leftHeight = left.heightAtEnd(interval);</span>
+<span class="fc" id="L66">                CPIntVar rightHeight = right.heightAtEnd(interval);</span>
+<span class="fc" id="L67">                return CPFactory.sum(leftHeight, rightHeight);</span>
             }
         }
     }

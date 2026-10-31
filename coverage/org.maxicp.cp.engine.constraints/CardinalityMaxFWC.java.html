@@ -14,6 +14,12 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 
+/**
+ * Forward Checking Cardinality (Upper Bound) Constraint.
+ * &lt;p&gt;
+ * Constrains the maximum number of occurrences of each value {@code v} in {@code 0..upper.length - 1}
+ * among the variables in {@code x} to be at most {@code upper[v]}.
+ */
 public class CardinalityMaxFWC extends AbstractCPConstraint {
 
     private final CPIntVar [] x;
@@ -39,67 +45,65 @@ public class CardinalityMaxFWC extends AbstractCPConstraint {
      * @param x The variables to constraint (at least one)
      * @param upper The upper cardinality bounds,
      *              upper[i] is the maximum number of occurrences of value i in X
-     *
-     * @author Pierre Schaus
      */
     public CardinalityMaxFWC(CPIntVar [] x, int upper []) {
-<span class="fc" id="L46">        super(x[0].getSolver());</span>
-<span class="fc" id="L47">        nVars = x.length;</span>
-<span class="fc" id="L48">        this.x = new CPIntVar[x.length];</span>
-<span class="fc" id="L49">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
-<span class="fc" id="L50">        fixed = new int[nVars];</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L52">            this.x[i] = x[i];</span>
-<span class="fc" id="L53">            fixed[i] = i;</span>
+<span class="fc" id="L50">        super(x[0].getSolver());</span>
+<span class="fc" id="L51">        nVars = x.length;</span>
+<span class="fc" id="L52">        this.x = new CPIntVar[x.length];</span>
+<span class="fc" id="L53">        nFixed = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L54">        fixed = new int[nVars];</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L56">            this.x[i] = x[i];</span>
+<span class="fc" id="L57">            fixed[i] = i;</span>
         }
 
-<span class="fc" id="L56">        this.nValues = upper.length;</span>
-<span class="fc" id="L57">        nValuesFixed = new StateInt[nValues];</span>
-<span class="fc" id="L58">        this.upper = new int[upper.length];</span>
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; upper.length; i++) {</span>
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            if (upper[i] &lt; 0) throw new IllegalArgumentException(&quot;upper bounds must be non negative&quot; + upper[i]);</span>
-<span class="fc" id="L61">            this.upper[i] = upper[i];</span>
-<span class="fc" id="L62">            nValuesFixed[i] = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L60">        this.nValues = upper.length;</span>
+<span class="fc" id="L61">        nValuesFixed = new StateInt[nValues];</span>
+<span class="fc" id="L62">        this.upper = new int[upper.length];</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (int i = 0; i &lt; upper.length; i++) {</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if (upper[i] &lt; 0) throw new IllegalArgumentException(&quot;upper bounds must be non negative&quot; + upper[i]);</span>
+<span class="fc" id="L65">            this.upper[i] = upper[i];</span>
+<span class="fc" id="L66">            nValuesFixed[i] = getSolver().getStateManager().makeStateInt(0);</span>
         }
-<span class="fc" id="L64">    }</span>
+<span class="fc" id="L68">    }</span>
 
     @Override
     public void post() {
-<span class="fc bfc" id="L68" title="All 2 branches covered.">        for (CPIntVar var : x) {</span>
-<span class="fc bfc" id="L69" title="All 2 branches covered.">            if (!var.isFixed())</span>
-<span class="fc" id="L70">                var.propagateOnFix(this);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (CPIntVar var : x) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (!var.isFixed())</span>
+<span class="fc" id="L74">                var.propagateOnFix(this);</span>
         }
-<span class="fc" id="L72">        propagate();</span>
-<span class="fc" id="L73">    }</span>
+<span class="fc" id="L76">        propagate();</span>
+<span class="fc" id="L77">    }</span>
 
 
     @Override
     public void propagate() {
-<span class="fc" id="L78">        int nF = nFixed.value();</span>
+<span class="fc" id="L82">        int nF = nFixed.value();</span>
         // iterate over non fixed variables
-<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (int i = nF; i &lt; x.length; i++) {</span>
-<span class="fc" id="L81">            int idx = fixed[i];</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (x[idx].isFixed()) {</span>
-<span class="fc" id="L83">                int val = x[fixed[i]].min(); // value to remove from unfixed</span>
-<span class="fc" id="L84">                fixed[i] = fixed[nF]; // Swap the variables</span>
-<span class="fc" id="L85">                fixed[nF] = idx;</span>
-<span class="fc" id="L86">                nF++;</span>
-<span class="pc bpc" id="L87" title="1 of 4 branches missed.">                if (val &gt;= 0 &amp;&amp; val &lt; nValues) {</span>
-<span class="fc" id="L88">                    nValuesFixed[val].increment();</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">                    if (nValuesFixed[val].value() &gt; upper[val]) {</span>
-<span class="fc" id="L90">                        throw new InconsistencyException();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = nF; i &lt; x.length; i++) {</span>
+<span class="fc" id="L85">            int idx = fixed[i];</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">            if (x[idx].isFixed()) {</span>
+<span class="fc" id="L87">                int val = x[fixed[i]].min(); // value to remove from unfixed</span>
+<span class="fc" id="L88">                fixed[i] = fixed[nF]; // Swap the variables</span>
+<span class="fc" id="L89">                fixed[nF] = idx;</span>
+<span class="fc" id="L90">                nF++;</span>
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">                if (val &gt;= 0 &amp;&amp; val &lt; nValues) {</span>
+<span class="fc" id="L92">                    nValuesFixed[val].increment();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                    if (nValuesFixed[val].value() &gt; upper[val]) {</span>
+<span class="fc" id="L94">                        throw new InconsistencyException();</span>
                     }
-<span class="fc bfc" id="L92" title="All 2 branches covered.">                    if (nValuesFixed[val].value() == upper[val]) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                    if (nValuesFixed[val].value() == upper[val]) {</span>
                         // remove the value from the possible values of the unfixed variables
-<span class="fc bfc" id="L94" title="All 2 branches covered.">                        for (int j = nF; j &lt; x.length; j++) {</span>
-<span class="fc" id="L95">                            x[fixed[j]].remove(val);</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                        for (int j = nF; j &lt; x.length; j++) {</span>
+<span class="fc" id="L99">                            x[fixed[j]].remove(val);</span>
                         }
                     }
                 }
             }
         }
-<span class="fc" id="L101">        nFixed.setValue(nF);</span>
-<span class="fc" id="L102">    }</span>
+<span class="fc" id="L105">        nFixed.setValue(nF);</span>
+<span class="fc" id="L106">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

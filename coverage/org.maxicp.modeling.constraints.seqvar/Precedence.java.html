@@ -3,6 +3,13 @@
 import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="nc" id="L6">public record Precedence(SeqVar seqVar, int... nodes) implements ConstraintFromRecord {</span>
+/**
+ * Precedence constraint on a sequence variable ({@link SeqVar}), ensuring that the given {@code nodes}
+ * appear in the specified relative order if visited in the sequence.
+ *
+ * @param seqVar the sequence variable
+ * @param nodes  the nodes that must respect the given relative ordering
+ */
+<span class="fc" id="L13">public record Precedence(SeqVar seqVar, int... nodes) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

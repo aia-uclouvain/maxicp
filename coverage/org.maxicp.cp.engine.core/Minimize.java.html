@@ -29,48 +29,56 @@ public class Minimize implements IntObjective {
 <span class="fc" id="L29">        this(x, new AtomicInteger(Integer.MAX_VALUE - 1));</span>
 <span class="fc" id="L30">    }</span>
 
+    public CPIntVar getVar() {
+<span class="fc" id="L33">        return x;</span>
+    }
+
     @Override
     public void setFilter(boolean activate) {
-<span class="nc" id="L34">        this.filter = activate;</span>
-<span class="nc" id="L35">    }</span>
+<span class="fc" id="L38">        this.filter = activate;</span>
+<span class="fc" id="L39">    }</span>
 
     @Override
     public void setDelta(int delta) {
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (delta &lt; 0) throw new IllegalArgumentException(&quot;delta should be &gt;= 0&quot;);</span>
-<span class="fc" id="L40">        this.delta = delta;</span>
-<span class="fc" id="L41">    }</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (delta &lt; 0) throw new IllegalArgumentException(&quot;delta should be &gt;= 0&quot;);</span>
+<span class="fc" id="L44">        this.delta = delta;</span>
+<span class="fc" id="L45">    }</span>
 
     @Override
     public void tighten() {
-<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (!x.isFixed()) {</span>
-<span class="nc" id="L46">            System.out.printf(&quot;objective:&quot;+x);</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (!x.isFixed()) {</span>
+<span class="nc" id="L50">            System.out.printf(&quot;objective:&quot;+x);</span>
         }
 
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (!x.isFixed()) throw new RuntimeException(&quot;objective not bound&quot;);</span>
-<span class="fc" id="L50">        int newValue = x.max() - delta;</span>
-<span class="fc" id="L51">        bound.getAndUpdate((value) -&gt; Math.min(newValue, value));</span>
-<span class="fc" id="L52">    }</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        if (!x.isFixed()) throw new RuntimeException(&quot;objective not bound&quot;);</span>
+<span class="fc" id="L54">        int newValue = x.max() - delta;</span>
+<span class="fc" id="L55">        bound.getAndUpdate((value) -&gt; Math.min(newValue, value));</span>
+<span class="fc" id="L56">    }</span>
 
     @Override
     public void relax() {
-<span class="fc" id="L56">        bound.set(Integer.MAX_VALUE - 1);</span>
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L60">        bound.set(Integer.MAX_VALUE - 1);</span>
+<span class="fc" id="L61">    }</span>
 
     @Override
     public void setBound(int newBound) {
-<span class="nc" id="L61">        bound.set(newBound);</span>
-<span class="nc" id="L62">    }</span>
+<span class="nc" id="L65">        bound.set(newBound);</span>
+<span class="nc" id="L66">    }</span>
 
     @Override
     public int getBound() {
-<span class="fc" id="L66">        return bound.get();</span>
+<span class="fc" id="L70">        return bound.get();</span>
     }
 
     @Override
     public void filter() {
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        if (filter) {</span>
-<span class="fc" id="L72">            x.removeAbove(bound.get());</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (filter) {</span>
+<span class="fc" id="L76">            int b = bound.get();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (b &lt; x.max()) {</span>
+<span class="fc" id="L78">                x.removeAbove(b);</span>
+<span class="fc" id="L79">                x.getSolver().fixPoint();</span>
+            }
         }
-<span class="fc" id="L74">    }</span>
+<span class="fc" id="L82">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

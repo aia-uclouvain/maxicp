@@ -3,6 +3,12 @@
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="nc" id="L6">public record StartAfter(IntervalVar var, int start) implements ConstraintFromRecord {</span>
+/**
+ * Constraint enforcing that an interval variable starts at or after a given time {@code start}.
+ *
+ * @param var   the interval variable
+ * @param start the minimum start time
+ */
+<span class="nc" id="L12">public record StartAfter(IntervalVar var, int start) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

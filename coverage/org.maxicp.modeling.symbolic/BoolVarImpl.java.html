@@ -9,8 +9,8 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
     private final ModelProxy modelProxy;
 
     public BoolVarImpl(ModelProxy modelProxy) {
-<span class="nc" id="L12">        this(modelProxy, true, true);</span>
-<span class="nc" id="L13">    }</span>
+<span class="fc" id="L12">        this(modelProxy, true, true);</span>
+<span class="fc" id="L13">    }</span>
 
 <span class="fc" id="L15">    public BoolVarImpl(ModelProxy modelProxy, boolean containsFalse, boolean containsTrue) {</span>
 <span class="pc bpc" id="L16" title="1 of 4 branches missed.">        assert containsFalse || containsTrue;</span>
@@ -21,17 +21,17 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
 
     @Override
     public int defaultMin() {
-<span class="pc bpc" id="L24" title="1 of 2 branches missed.">        return containsFalse ? 0 : 1;</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        return containsFalse ? 0 : 1;</span>
     }
 
     @Override
     public int defaultMax() {
-<span class="nc bnc" id="L29" title="All 2 branches missed.">        return containsTrue ? 1 : 0;</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        return containsTrue ? 1 : 0;</span>
     }
 
     @Override
     public int defaultSize() {
-<span class="nc bnc" id="L34" title="All 4 branches missed.">        return containsFalse &amp;&amp; containsTrue ? 2 : 1;</span>
+<span class="pc bpc" id="L34" title="2 of 4 branches missed.">        return containsFalse &amp;&amp; containsTrue ? 2 : 1;</span>
     }
 
     @Override

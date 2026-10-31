@@ -11,7 +11,8 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the end time of an interval variable {@code var} to an integer variable {@code end}
+ * when {@code var} is present, or fixing {@code end} to a default {@code value} when {@code var} is absent.
  *
  * @author Charles Thomas
  */
@@ -20,31 +21,39 @@ public class IntervalVarEndOrValue extends AbstractCPConstraint {
     CPIntVar end;
     int value;
 
+    /**
+     * Creates a constraint enforcing {@code end == end(var)} if {@code var} is present,
+     * and {@code end == value} if {@code var} is absent.
+     *
+     * @param var   the interval variable
+     * @param end   the integer variable representing the end of {@code var} or {@code value}
+     * @param value the fallback value assigned to {@code end} when {@code var} is absent
+     */
     public IntervalVarEndOrValue(CPIntervalVar var, CPIntVar end, int value) {
-<span class="fc" id="L24">        super(var.getSolver());</span>
-<span class="fc" id="L25">        this.var = var;</span>
-<span class="fc" id="L26">        this.end = end;</span>
-<span class="fc" id="L27">        this.value = value;</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L33">        super(var.getSolver());</span>
+<span class="fc" id="L34">        this.var = var;</span>
+<span class="fc" id="L35">        this.end = end;</span>
+<span class="fc" id="L36">        this.value = value;</span>
+<span class="fc" id="L37">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L32">        var.propagateOnChange(this);</span>
-<span class="fc" id="L33">        end.propagateOnBoundChange(this);</span>
-<span class="fc" id="L34">        propagate();</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L41">        var.propagateOnChange(this);</span>
+<span class="fc" id="L42">        end.propagateOnBoundChange(this);</span>
+<span class="fc" id="L43">        propagate();</span>
+<span class="fc" id="L44">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (var.isPresent()) {</span>
-<span class="fc" id="L40">            end.removeBelow(var.endMin());</span>
-<span class="fc" id="L41">            end.removeAbove(var.endMax());</span>
-<span class="fc" id="L42">            var.setEndMin(end.min());</span>
-<span class="fc" id="L43">            var.setEndMax(end.max());</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">        } else if (var.isAbsent()) {</span>
-<span class="fc" id="L45">            end.fix(value);</span>
-<span class="fc" id="L46">            setActive(false);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (var.isPresent()) {</span>
+<span class="fc" id="L49">            end.removeBelow(var.endMin());</span>
+<span class="fc" id="L50">            end.removeAbove(var.endMax());</span>
+<span class="fc" id="L51">            var.setEndMin(end.min());</span>
+<span class="fc" id="L52">            var.setEndMax(end.max());</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        } else if (var.isAbsent()) {</span>
+<span class="fc" id="L54">            end.fix(value);</span>
+<span class="fc" id="L55">            setActive(false);</span>
         }
-<span class="fc" id="L48">    }</span>
+<span class="fc" id="L57">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

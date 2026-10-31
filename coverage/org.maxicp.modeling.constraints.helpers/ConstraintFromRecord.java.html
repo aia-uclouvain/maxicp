@@ -2,6 +2,14 @@
 
 import org.maxicp.modeling.Constraint;
 import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.scheduling.CumulFunction;
+import org.maxicp.modeling.algebra.scheduling.FlatCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.MinusCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.PlusCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.PulseCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.SumCumulFunction;
 import org.maxicp.util.ImmutableSet;
 
 import java.lang.annotation.ElementType;
@@ -35,113 +43,167 @@ public interface ConstraintFromRecord extends Constraint, CacheScope {
 
     @Override
     default Collection&lt;? extends Expression&gt; computeScope() {
-<span class="fc" id="L38">        return ConstraintFromRecordHelper.computeScope(this);</span>
+<span class="fc" id="L46">        return ConstraintFromRecordHelper.computeScope(this);</span>
     }
 }
 
-<span class="nc" id="L42">class ConstraintFromRecordHelper {</span>
+<span class="nc" id="L50">class ConstraintFromRecordHelper {</span>
     static Collection&lt;? extends Expression&gt; computeScope(ConstraintFromRecord record) {
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (!record.getClass().isRecord())</span>
-<span class="nc" id="L45">            throw new ClassCastException(&quot;A class implementing ConstraintFromRecord must be a record&quot;);</span>
-<span class="fc" id="L46">        ImmutableSet.Builder&lt;Expression&gt; fset = new ImmutableSet.Builder&lt;&gt;();</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (RecordComponent rc : record.getClass().getRecordComponents()) {</span>
-<span class="fc" id="L48">            rc.getAccessor().setAccessible(true);</span>
-<span class="fc" id="L49">            findTypeAndExtract(fset, record, rc);</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (!record.getClass().isRecord())</span>
+<span class="nc" id="L53">            throw new ClassCastException(&quot;A class implementing ConstraintFromRecord must be a record&quot;);</span>
+<span class="fc" id="L54">        ImmutableSet.Builder&lt;Expression&gt; fset = new ImmutableSet.Builder&lt;&gt;();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (RecordComponent rc : record.getClass().getRecordComponents()) {</span>
+<span class="fc" id="L56">            rc.getAccessor().setAccessible(true);</span>
+<span class="fc" id="L57">            findTypeAndExtract(fset, record, rc);</span>
         }
-<span class="fc" id="L51">        return fset.build();</span>
+<span class="fc" id="L59">        return fset.build();</span>
     }
 
-<span class="fc" id="L54">    static ImmutableSet&lt;Type&gt; ignored = ImmutableSet.&lt;Type&gt;builder().add(</span>
-            int.class, long.class, float.class, double.class, char.class, short.class,
-            Integer.class, Long.class, Float.class, Double.class, Character.class, Short.class, String.class,
-            int[].class, long[].class, float[].class, double[].class, char[].class, short[].class, String[].class,
-            int[][].class, long[][].class, float[][].class, double[][].class, char[][].class, short[][].class, String[][].class
-<span class="fc" id="L59">    ).build();</span>
+<span class="fc" id="L62">    static ImmutableSet&lt;Type&gt; ignored = ImmutableSet.&lt;Type&gt;builder().add(</span>
+            boolean.class, int.class, long.class, float.class, double.class, char.class, short.class,
+            Boolean.class, Integer.class, Long.class, Float.class, Double.class, Character.class, Short.class, String.class,
+            boolean[].class, int[].class, long[].class, float[].class, double[].class, char[].class, short[].class, String[].class,
+            boolean[][].class, int[][].class, long[][].class, float[][].class, double[][].class, char[][].class, short[][].class, String[][].class
+<span class="fc" id="L67">    ).build();</span>
 
     static void findTypeAndExtract(ImmutableSet.Builder&lt;Expression&gt; fset, ConstraintFromRecord record, RecordComponent rc) {
         try {
-<span class="fc" id="L63">            Type type = rc.getGenericType();</span>
+<span class="fc" id="L71">            Type type = rc.getGenericType();</span>
 
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">            if (rc.isAnnotationPresent(ConstraintFromRecord.IgnoreScope.class))</span>
-<span class="nc" id="L66">                return;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">            if (rc.isAnnotationPresent(ConstraintFromRecord.IgnoreScope.class))</span>
+<span class="fc" id="L74">                return;</span>
 
-<span class="pc bpc" id="L68" title="1 of 3 branches missed.">            switch (type) {</span>
-<span class="fc" id="L69">                case ParameterizedType pt -&gt; {</span>
-<span class="fc" id="L70">                    Type rawType = pt.getRawType();</span>
+<span class="pc bpc" id="L76" title="1 of 3 branches missed.">            switch (type) {</span>
+<span class="fc" id="L77">                case ParameterizedType pt -&gt; {</span>
+<span class="fc" id="L78">                    Type rawType = pt.getRawType();</span>
                     // Ignore Optional&lt;*&gt; types (no Expression content)
-<span class="pc bpc" id="L72" title="2 of 4 branches missed.">                    if (rawType instanceof Class&lt;?&gt; &amp;&amp; Optional.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
-<span class="nc" id="L73">                        return;</span>
+<span class="pc bpc" id="L80" title="1 of 4 branches missed.">                    if (rawType instanceof Class&lt;?&gt; &amp;&amp; Optional.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
+<span class="fc" id="L81">                        return;</span>
                     }
-<span class="pc bpc" id="L75" title="2 of 4 branches missed.">                    if (rawType instanceof Class&lt;?&gt; &amp;&amp; Collection.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
-<span class="fc" id="L76">                        processCollection(fset, record, rc);</span>
-<span class="fc" id="L77">                        return;</span>
+<span class="pc bpc" id="L83" title="2 of 4 branches missed.">                    if (rawType instanceof Class&lt;?&gt; &amp;&amp; Collection.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
+<span class="fc" id="L84">                        processCollection(fset, record, rc);</span>
+<span class="fc" id="L85">                        return;</span>
                     }
-<span class="nc" id="L79">                }</span>
-<span class="fc" id="L80">                case Class&lt;?&gt; cls -&gt; {</span>
-<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                    if (Expression.class.isAssignableFrom(cls)) {</span>
-<span class="nc" id="L82">                        fset.add((Expression) rc.getAccessor().invoke(record));</span>
-<span class="nc" id="L83">                        return;</span>
-                    }
-
-<span class="pc bpc" id="L86" title="1 of 2 branches missed.">                    if (Expression[].class.isAssignableFrom(cls)) {</span>
-<span class="fc" id="L87">                        fset.add((Expression[]) rc.getAccessor().invoke(record));</span>
-<span class="fc" id="L88">                        return;</span>
+<span class="nc" id="L87">                }</span>
+<span class="fc" id="L88">                case Class&lt;?&gt; cls -&gt; {</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">                    if (Expression.class.isAssignableFrom(cls)) {</span>
+<span class="fc" id="L90">                        Expression e = (Expression) rc.getAccessor().invoke(record);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                        if (e != null) fset.add(e);</span>
+<span class="fc" id="L92">                        return;</span>
                     }
 
-<span class="nc bnc" id="L91" title="All 2 branches missed.">                    if (Expression[][].class.isAssignableFrom(cls)) {</span>
-<span class="nc" id="L92">                        Expression[][] t = (Expression[][]) rc.getAccessor().invoke(record);</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">                        for (Expression[] tt : t)</span>
-<span class="nc" id="L94">                            fset.add(tt);</span>
-<span class="nc" id="L95">                        return;</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                    if (Expression[].class.isAssignableFrom(cls)) {</span>
+<span class="fc" id="L96">                        Expression[] arr = (Expression[]) rc.getAccessor().invoke(record);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">                        if (arr != null) fset.add(arr);</span>
+<span class="fc" id="L98">                        return;</span>
                     }
 
-<span class="nc bnc" id="L98" title="All 2 branches missed.">                    if (ignored.contains(cls))</span>
-<span class="nc" id="L99">                        return;</span>
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">                    if (Expression[][].class.isAssignableFrom(cls)) {</span>
+<span class="nc" id="L102">                        Expression[][] t = (Expression[][]) rc.getAccessor().invoke(record);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                        if (t != null) {</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                            for (Expression[] tt : t)</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                                if (tt != null) fset.add(tt);</span>
+                        }
+<span class="nc" id="L107">                        return;</span>
+                    }
+
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                    if (CumulFunction.class.isAssignableFrom(cls)) {</span>
+<span class="fc" id="L111">                        CumulFunction cf = (CumulFunction) rc.getAccessor().invoke(record);</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">                        if (cf != null) extractCumulFunction(fset, cf);</span>
+<span class="fc" id="L113">                        return;</span>
+                    }
+
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">                    if (CumulFunction[].class.isAssignableFrom(cls)) {</span>
+<span class="nc" id="L117">                        CumulFunction[] arr = (CumulFunction[]) rc.getAccessor().invoke(record);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                        if (arr != null) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                            for (CumulFunction cf : arr) {</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">                                if (cf != null) extractCumulFunction(fset, cf);</span>
+                            }
+                        }
+<span class="nc" id="L123">                        return;</span>
+                    }
+
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                    if (ignored.contains(cls))</span>
+<span class="fc" id="L127">                        return;</span>
                 }
                 default -&gt; {
                     //ignore
                 }
             }
-<span class="nc" id="L105">            throw new IllegalArgumentException(&quot;Unknown argument type &quot; + type);</span>
-<span class="nc" id="L106">        } catch (IllegalAccessException | InvocationTargetException ex) {</span>
-<span class="nc" id="L107">            throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
+<span class="nc" id="L133">            throw new IllegalArgumentException(&quot;Unknown argument type &quot; + type);</span>
+<span class="nc" id="L134">        } catch (IllegalAccessException | InvocationTargetException ex) {</span>
+<span class="nc" id="L135">            throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
         }
     }
 
     static void processCollection(ImmutableSet.Builder&lt;Expression&gt; fset, ConstraintFromRecord record, RecordComponent rc) throws InvocationTargetException, IllegalAccessException {
-<span class="fc" id="L112">        ParameterizedType type = (ParameterizedType) rc.getGenericType();</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        assert Collection.class.isAssignableFrom((Class&lt;?&gt;) type.getRawType());</span>
-<span class="fc" id="L114">        Type[] ta = type.getActualTypeArguments();</span>
+<span class="fc" id="L140">        ParameterizedType type = (ParameterizedType) rc.getGenericType();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">        assert Collection.class.isAssignableFrom((Class&lt;?&gt;) type.getRawType());</span>
+<span class="fc" id="L142">        Type[] ta = type.getActualTypeArguments();</span>
         //For now we support only basic collections
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (ta.length != 1)</span>
-<span class="nc" id="L117">            throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (ta.length != 1)</span>
+<span class="nc" id="L145">            throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
 
-<span class="pc bpc" id="L119" title="2 of 3 branches missed.">        switch (ta[0]) {</span>
-<span class="fc" id="L120">            case Class&lt;?&gt; cls -&gt; {</span>
-<span class="pc bpc" id="L121" title="1 of 2 branches missed.">                if (Expression.class.isAssignableFrom((Class&lt;?&gt;) cls)) {</span>
-<span class="fc" id="L122">                    fset.addAll((Collection&lt;? extends Expression&gt;) rc.getAccessor().invoke(record));</span>
-<span class="fc" id="L123">                    return;</span>
+<span class="pc bpc" id="L147" title="2 of 3 branches missed.">        switch (ta[0]) {</span>
+<span class="fc" id="L148">            case Class&lt;?&gt; cls -&gt; {</span>
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">                if (Expression.class.isAssignableFrom((Class&lt;?&gt;) cls)) {</span>
+<span class="fc" id="L150">                    fset.addAll((Collection&lt;? extends Expression&gt;) rc.getAccessor().invoke(record));</span>
+<span class="fc" id="L151">                    return;</span>
                 }
-<span class="nc" id="L125">                throw new IllegalArgumentException(&quot;Unknown argument type &quot; + rc);</span>
+<span class="nc" id="L153">                throw new IllegalArgumentException(&quot;Unknown argument type &quot; + rc);</span>
             }
-<span class="nc" id="L127">            case ParameterizedType pt -&gt; {</span>
-<span class="nc" id="L128">                Type rawType = pt.getRawType();</span>
-<span class="nc bnc" id="L129" title="All 4 branches missed.">                if (rawType instanceof Class&lt;?&gt; &amp;&amp; Collection.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
-<span class="nc" id="L130">                    Type[] tb = pt.getActualTypeArguments();</span>
-<span class="nc bnc" id="L131" title="All 6 branches missed.">                    if (tb.length == 1 &amp;&amp; tb[0] instanceof Class&lt;?&gt; &amp;&amp; Expression.class.isAssignableFrom((Class&lt;?&gt;) tb[0])) {</span>
-<span class="nc" id="L132">                        Collection&lt;Collection&lt;? extends Expression&gt;&gt; top = (Collection&lt;Collection&lt;? extends Expression&gt;&gt;) rc.getAccessor().invoke(record);</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">                        for (Collection&lt;? extends Expression&gt; c : top)</span>
-<span class="nc" id="L134">                            fset.addAll(c);</span>
-<span class="nc" id="L135">                        return;</span>
+<span class="nc" id="L155">            case ParameterizedType pt -&gt; {</span>
+<span class="nc" id="L156">                Type rawType = pt.getRawType();</span>
+<span class="nc bnc" id="L157" title="All 4 branches missed.">                if (rawType instanceof Class&lt;?&gt; &amp;&amp; Collection.class.isAssignableFrom((Class&lt;?&gt;) rawType)) {</span>
+<span class="nc" id="L158">                    Type[] tb = pt.getActualTypeArguments();</span>
+<span class="nc bnc" id="L159" title="All 6 branches missed.">                    if (tb.length == 1 &amp;&amp; tb[0] instanceof Class&lt;?&gt; &amp;&amp; Expression.class.isAssignableFrom((Class&lt;?&gt;) tb[0])) {</span>
+<span class="nc" id="L160">                        Collection&lt;Collection&lt;? extends Expression&gt;&gt; top = (Collection&lt;Collection&lt;? extends Expression&gt;&gt;) rc.getAccessor().invoke(record);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">                        for (Collection&lt;? extends Expression&gt; c : top)</span>
+<span class="nc" id="L162">                            fset.addAll(c);</span>
+<span class="nc" id="L163">                        return;</span>
                     }
-<span class="nc" id="L137">                    throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
+<span class="nc" id="L165">                    throw new IllegalArgumentException(&quot;Unknown argument type&quot;);</span>
                 } else
-<span class="nc" id="L139">                    throw new IllegalArgumentException(&quot;Unknown argument type &quot; + pt);</span>
+<span class="nc" id="L167">                    throw new IllegalArgumentException(&quot;Unknown argument type &quot; + pt);</span>
             }
             default -&gt; {
-<span class="nc" id="L142">                throw new IllegalArgumentException(&quot;Unknown argument type &quot; + rc);</span>
+<span class="nc" id="L170">                throw new IllegalArgumentException(&quot;Unknown argument type &quot; + rc);</span>
             }
         }
     }
+
+    static void extractCumulFunction(ImmutableSet.Builder&lt;Expression&gt; fset, CumulFunction cf) {
+<span class="pc bpc" id="L176" title="5 of 8 branches missed.">        switch (cf) {</span>
+<span class="fc" id="L177">            case PulseCumulFunction p -&gt; {</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">                if (p.interval != null) fset.add(p.interval);</span>
+<span class="pc bpc" id="L179" title="2 of 4 branches missed.">                if (p.height != null &amp;&amp; p.hMin != p.hMax) fset.add(p.height);</span>
+            }
+<span class="nc" id="L181">            case StepAtStartCumulFunction s -&gt; {</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">                if (s.interval != null) fset.add(s.interval);</span>
+            }
+<span class="nc" id="L184">            case StepAtEndCumulFunction s -&gt; {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                if (s.interval != null) fset.add(s.interval);</span>
+            }
+<span class="nc" id="L187">            case PlusCumulFunction p -&gt; {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">                if (p.left() != null) extractCumulFunction(fset, p.left());</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">                if (p.right() != null) extractCumulFunction(fset, p.right());</span>
+            }
+<span class="nc" id="L191">            case MinusCumulFunction m -&gt; {</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                if (m.left() != null) extractCumulFunction(fset, m.left());</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">                if (m.right() != null) extractCumulFunction(fset, m.right());</span>
+            }
+<span class="fc" id="L195">            case SumCumulFunction s -&gt; {</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">                if (s.functions != null) {</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">                    for (CumulFunction sub : s.functions) {</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">                        if (sub != null) extractCumulFunction(fset, sub);</span>
+                    }
+                }
+            }
+<span class="fc" id="L202">            case FlatCumulFunction ignored -&gt; {</span>
+            }
+            default -&gt; {
+            }
+        }
+<span class="fc" id="L207">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

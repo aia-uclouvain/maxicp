@@ -10,12 +10,26 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
-<span class="nc" id="L13">public record Table(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
-<span class="nc" id="L14">    public Table(IntExpression[] x, int[][] array) { this(x, array, Optional.empty()); }</span>
+/**
+ * Positive table constraint ensuring that the tuple of values assigned to {@code x} belongs to
+ * the set of allowed tuples in {@code array}.
+ *
+ * @param x       the array of integer expressions
+ * @param array   the table of allowed tuples
+ * @param starred optional wildcard value representing any value in a tuple
+ */
+<span class="fc" id="L21">public record Table(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+    /**
+     * Creates a positive table constraint without wildcard values.
+     *
+     * @param x     the array of integer expressions
+     * @param array the table of allowed tuples
+     */
+<span class="fc" id="L28">    public Table(IntExpression[] x, int[][] array) { this(x, array, Optional.empty()); }</span>
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
-<span class="nc" id="L18">        return Arrays.stream(x).filter(IntVar.class::isInstance).toList();</span>
+<span class="fc" id="L32">        return Arrays.stream(x).filter(IntVar.class::isInstance).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

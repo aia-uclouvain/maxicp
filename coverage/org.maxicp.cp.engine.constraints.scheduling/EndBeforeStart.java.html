@@ -18,32 +18,38 @@ public class EndBeforeStart extends AbstractCPConstraint {
 
     final CPIntervalVar A, B;
 
+    /**
+     * Creates a constraint enforcing {@code end(A) &lt;= start(B)} whenever both {@code A} and {@code B} are present.
+     *
+     * @param A the first interval variable
+     * @param B the second interval variable
+     */
     public EndBeforeStart(CPIntervalVar A, CPIntervalVar B) {
-<span class="fc" id="L22">        super(A.getSolver());</span>
-<span class="fc" id="L23">        this.A = A;</span>
-<span class="fc" id="L24">        this.B = B;</span>
-<span class="fc" id="L25">    }</span>
+<span class="fc" id="L28">        super(A.getSolver());</span>
+<span class="fc" id="L29">        this.A = A;</span>
+<span class="fc" id="L30">        this.B = B;</span>
+<span class="fc" id="L31">    }</span>
 
     @Override
     public void post() {
-<span class="pc bpc" id="L29" title="2 of 4 branches missed.">        if (!A.isAbsent() &amp;&amp; !B.isAbsent()) {</span>
-<span class="fc" id="L30">            A.propagateOnChange(this);</span>
-<span class="fc" id="L31">            B.propagateOnChange(this);</span>
-<span class="fc" id="L32">            propagate();</span>
+<span class="pc bpc" id="L35" title="2 of 4 branches missed.">        if (!A.isAbsent() &amp;&amp; !B.isAbsent()) {</span>
+<span class="fc" id="L36">            A.propagateOnChange(this);</span>
+<span class="fc" id="L37">            B.propagateOnChange(this);</span>
+<span class="fc" id="L38">            propagate();</span>
         }
-<span class="fc" id="L34">    }</span>
+<span class="fc" id="L40">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (A.isPresent()) {</span>
-<span class="fc" id="L39">            B.setStartMin(A.endMin());</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (A.isPresent()) {</span>
+<span class="fc" id="L45">            B.setStartMin(A.endMin());</span>
         }
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (B.isPresent()) {</span>
-<span class="fc" id="L42">            A.setEndMax(B.startMax());</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (B.isPresent()) {</span>
+<span class="fc" id="L48">            A.setEndMax(B.startMax());</span>
         }
-<span class="pc bpc" id="L44" title="2 of 4 branches missed.">        if (A.isAbsent() || B.isAbsent()) {</span>
-<span class="nc" id="L45">            setActive(false);</span>
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        if (A.isAbsent() || B.isAbsent()) {</span>
+<span class="nc" id="L51">            setActive(false);</span>
         }
-<span class="fc" id="L47">    }</span>
+<span class="fc" id="L53">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

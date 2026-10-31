@@ -13,6 +13,12 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 
+/**
+ * Forward Checking Cardinality (Lower Bound) Constraint.
+ * &lt;p&gt;
+ * Constrains the minimum number of occurrences of each value {@code v} in {@code 0..lower.length - 1}
+ * among the variables in {@code x} to be at least {@code lower[v]}.
+ */
 public class CardinalityMinFWC extends AbstractCPConstraint {
 
     private final CPIntVar [] x;
@@ -30,85 +36,83 @@ public class CardinalityMinFWC extends AbstractCPConstraint {
     int [] iterValues;
 
     /**
-     * Constraint the minimum number of occurences of a range of values in X.
+     * Constraint the minimum number of occurrences of a range of values in X.
      * @param x The variables to constraint (at least one)
-     * @param lower The upper cardinality bounds,
-     *              lower[i] is the maximum number of occurences of value i in X
-     *
-     * @author Pierre Schaus
+     * @param lower The lower cardinality bounds,
+     *              lower[i] is the minimum number of occurrences of value i in X
      */
     public CardinalityMinFWC(CPIntVar [] x, int [] lower) {
-<span class="fc" id="L41">        super(x[0].getSolver());</span>
-<span class="fc" id="L42">        this.x = new CPIntVar[x.length];</span>
-<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L44">            this.x[i] = x[i];</span>
+<span class="fc" id="L45">        super(x[0].getSolver());</span>
+<span class="fc" id="L46">        this.x = new CPIntVar[x.length];</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L48">            this.x[i] = x[i];</span>
         }
-<span class="fc" id="L46">        this.lower = new int[lower.length];</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; lower.length; i++) {</span>
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">            if (lower[i] &lt; 0) throw new IllegalArgumentException(&quot;lower bounds must be non negative&quot; + lower[i]);</span>
-<span class="fc" id="L49">            this.lower[i] = lower[i];</span>
+<span class="fc" id="L50">        this.lower = new int[lower.length];</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        for (int i = 0; i &lt; lower.length; i++) {</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">            if (lower[i] &lt; 0) throw new IllegalArgumentException(&quot;lower bounds must be non negative&quot; + lower[i]);</span>
+<span class="fc" id="L53">            this.lower[i] = lower[i];</span>
         }
-<span class="fc" id="L51">        nValues = lower.length;</span>
-<span class="fc" id="L52">        nVars = x.length;</span>
-<span class="fc" id="L53">    }</span>
+<span class="fc" id="L55">        nValues = lower.length;</span>
+<span class="fc" id="L56">        nVars = x.length;</span>
+<span class="fc" id="L57">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L57">        iterVariables = new int [nVars];</span>
-<span class="fc" id="L58">        iterValues = new int [Arrays.stream(x).map(var -&gt; var.size()).max(Integer::compare).get()];</span>
-<span class="fc" id="L59">        possibleVars = new StateSparseSet[nValues];</span>
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; nValues; i++) {</span>
-<span class="fc" id="L61">            possibleVars[i] = new StateSparseSet(getSolver().getStateManager(), nVars,0);</span>
+<span class="fc" id="L61">        iterVariables = new int [nVars];</span>
+<span class="fc" id="L62">        iterValues = new int [Arrays.stream(x).map(var -&gt; var.size()).max(Integer::compare).get()];</span>
+<span class="fc" id="L63">        possibleVars = new StateSparseSet[nValues];</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; nValues; i++) {</span>
+<span class="fc" id="L65">            possibleVars[i] = new StateSparseSet(getSolver().getStateManager(), nVars,0);</span>
         }
 
         // Initial fix-point
-<span class="fc" id="L65">        boolean fixed = false;</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        while (!fixed) {</span>
-<span class="fc" id="L67">            fixed = true;</span>
-<span class="fc bfc" id="L68" title="All 2 branches covered.">            for (int i = 0; i &lt; nVars; i++) {</span>
-<span class="fc bfc" id="L69" title="All 2 branches covered.">                for (int v = 0; v &lt; nValues; v++) {</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">                    if (!x[i].contains(v)) {</span>
-<span class="fc" id="L71">                        possibleVars[v].remove(i);</span>
+<span class="fc" id="L69">        boolean fixed = false;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        while (!fixed) {</span>
+<span class="fc" id="L71">            fixed = true;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                for (int v = 0; v &lt; nValues; v++) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                    if (!x[i].contains(v)) {</span>
+<span class="fc" id="L75">                        possibleVars[v].remove(i);</span>
                     }
                 }
             }
-<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int v = 0; v &lt; nValues; v++) {</span>
-<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (possibleVars[v].size() &lt; lower[v]) {</span>
-<span class="nc" id="L77">                    throw InconsistencyException.INCONSISTENCY;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (int v = 0; v &lt; nValues; v++) {</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">                if (possibleVars[v].size() &lt; lower[v]) {</span>
+<span class="nc" id="L81">                    throw InconsistencyException.INCONSISTENCY;</span>
                 }
-<span class="fc bfc" id="L79" title="All 2 branches covered.">                if (possibleVars[v].size() == lower[v]) {</span>
-<span class="fc bfc" id="L80" title="All 2 branches covered.">                    fixed = !fixPossibles(possibleVars[v],v);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                if (possibleVars[v].size() == lower[v]) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                    fixed = !fixPossibles(possibleVars[v],v);</span>
                 }
             }
         }
         // Incremental propagation based on delta
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) {</span>
-<span class="fc" id="L86">            int finalI = i;</span>
-<span class="fc" id="L87">            x[i].whenDomainChange(delta -&gt; {</span>
-<span class="fc" id="L88">                int deltaSize = delta.fillArray(iterValues);</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">                for (int iter = 0; iter &lt; deltaSize; iter++) {</span>
-<span class="fc" id="L90">                    int v = iterValues[iter];</span>
-<span class="pc bpc" id="L91" title="1 of 4 branches missed.">                    if (0 &lt;= v &amp;&amp; v &lt; nValues) { // possible that domain of x vars is larger than 0..nValues-1 initially</span>
-<span class="fc" id="L92">                        possibleVars[v].remove(finalI);</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">                        if (possibleVars[v].size() == lower[v]) {</span>
-<span class="fc" id="L94">                            fixPossibles(possibleVars[v],v);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; nVars; i++) {</span>
+<span class="fc" id="L90">            int finalI = i;</span>
+<span class="fc" id="L91">            x[i].whenDomainChange(delta -&gt; {</span>
+<span class="fc" id="L92">                int deltaSize = delta.fillArray(iterValues);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                for (int iter = 0; iter &lt; deltaSize; iter++) {</span>
+<span class="fc" id="L94">                    int v = iterValues[iter];</span>
+<span class="pc bpc" id="L95" title="1 of 4 branches missed.">                    if (0 &lt;= v &amp;&amp; v &lt; nValues) { // possible that domain of x vars is larger than 0..nValues-1 initially</span>
+<span class="fc" id="L96">                        possibleVars[v].remove(finalI);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                        if (possibleVars[v].size() == lower[v]) {</span>
+<span class="fc" id="L98">                            fixPossibles(possibleVars[v],v);</span>
                         }
                     }
                 }
-<span class="fc" id="L98">            });</span>
+<span class="fc" id="L102">            });</span>
         }
-<span class="fc" id="L100">    }</span>
+<span class="fc" id="L104">    }</span>
 
     // #vars were v appears  = lower[v], thus fix all vars where it appears to v
     private boolean fixPossibles(StateSparseSet possibleUnfixedVars, int v) {
-<span class="fc" id="L104">        boolean changed = false;</span>
-<span class="fc" id="L105">        int n = possibleUnfixedVars.fillArray(iterVariables);</span>
-<span class="fc bfc" id="L106" title="All 2 branches covered.">        for (int iter = 0; iter &lt; n; iter++) {</span>
-<span class="fc" id="L107">            int i = iterVariables[iter];</span>
-<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (!x[i].isFixed()) changed = true;</span>
-<span class="fc" id="L109">            x[i].fix(v);</span>
+<span class="fc" id="L108">        boolean changed = false;</span>
+<span class="fc" id="L109">        int n = possibleUnfixedVars.fillArray(iterVariables);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int iter = 0; iter &lt; n; iter++) {</span>
+<span class="fc" id="L111">            int i = iterVariables[iter];</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (!x[i].isFixed()) changed = true;</span>
+<span class="fc" id="L113">            x[i].fix(v);</span>
         }
-<span class="fc" id="L111">        return changed;</span>
+<span class="fc" id="L115">        return changed;</span>
     }
 
 }

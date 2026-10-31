@@ -8,9 +8,9 @@ import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
  * at every point overlapping the execution of at least one interval.
  *
  * &lt;p&gt;Specifically, for all time points {@code t} overlapping at least one interval:
- * &lt;pre&gt;
+ * &lt;pre&gt;{@code
  *   minValue &lt;= expr(t) &lt;= maxValue
- * &lt;/pre&gt;
+ * }&lt;/pre&gt;
  *
  * &lt;p&gt;This is typically used in cumulative scheduling to enforce resource capacity limits,
  * e.g. a resource that can handle at most {@code maxValue} concurrent tasks and must

@@ -59,11 +59,11 @@ public class SetTimesModeling implements Supplier&lt;Runnable[]&gt; {
             // select the minimum ect of a task that is not current one, and has an ect greater than lct
             // we just fix it since no other tasks are competing for this time
 <span class="fc" id="L61">            int minEct = getMinEct(est, task);</span>
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (minEct &gt;= lct) {</span>
-<span class="nc" id="L63">                return branch(() -&gt; {</span>
-<span class="nc" id="L64">                    model.add(start(taskInterval, est));</span>
-<span class="nc" id="L65">                    selectableTasks.remove(task);</span>
-<span class="nc" id="L66">                });</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (minEct &gt;= lct) {</span>
+<span class="fc" id="L63">                return branch(() -&gt; {</span>
+<span class="fc" id="L64">                    model.add(start(taskInterval, est));</span>
+<span class="fc" id="L65">                    selectableTasks.remove(task);</span>
+<span class="fc" id="L66">                });</span>
             } else {
 <span class="fc" id="L68">                return branch(() -&gt; {</span>
                     // start = est
@@ -81,7 +81,7 @@ public class SetTimesModeling implements Supplier&lt;Runnable[]&gt; {
     }
 
     private void dominanceCheck() {
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (!selectableTasks.isEmpty()) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (!selectableTasks.isEmpty()) {</span>
 <span class="fc" id="L85">            int nUnassigned = selectableTasks.fillArray(unassignedIterator);</span>
 <span class="fc" id="L86">            boolean failed = true;</span>
 <span class="fc bfc" id="L87" title="All 4 branches covered.">            for (int i = 0; i &lt; nUnassigned &amp;&amp; failed; i++) {</span>
@@ -113,8 +113,8 @@ public class SetTimesModeling implements Supplier&lt;Runnable[]&gt; {
      */
     private OptionalInt validTaskWithMinEst() {
 <span class="fc" id="L115">        int nTasks = selectableTasks.fillArray(unassignedIterator);</span>
-<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (nTasks == 0)</span>
-<span class="nc" id="L117">            return OptionalInt.empty();</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (nTasks == 0)</span>
+<span class="fc" id="L117">            return OptionalInt.empty();</span>
 <span class="fc" id="L118">        int bestTask = -1;</span>
 <span class="fc" id="L119">        int minEst = Integer.MAX_VALUE;</span>
 <span class="fc" id="L120">        int minTie = Integer.MAX_VALUE;</span>
@@ -129,7 +129,7 @@ public class SetTimesModeling implements Supplier&lt;Runnable[]&gt; {
 <span class="fc" id="L129">                        minEst = est;</span>
 <span class="fc" id="L130">                        minTie = tieBreaker.apply(task);</span>
 <span class="fc" id="L131">                        bestTask = task;</span>
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">                    } else if (est == minEst) {</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                    } else if (est == minEst) {</span>
 <span class="fc" id="L133">                        int tie = tieBreaker.apply(task);</span>
 <span class="fc bfc" id="L134" title="All 2 branches covered.">                        if (tie &lt; minTie) {</span>
 <span class="fc" id="L135">                            minTie = tie;</span>

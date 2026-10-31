@@ -14,14 +14,24 @@ import org.maxicp.util.ImmutableSet;
 
 import java.util.Collection;
 
-<span class="fc" id="L17">public record AllDifferent(ImmutableSet&lt;IntExpression&gt; x) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+/**
+ * AllDifferent constraint ensuring that all expressions in {@code x} take pairwise distinct values.
+ *
+ * @param x the set of integer expressions that must be pairwise distinct
+ */
+<span class="fc" id="L22">public record AllDifferent(ImmutableSet&lt;IntExpression&gt; x) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+    /**
+     * Creates an AllDifferent constraint over the given array of integer expressions.
+     *
+     * @param x the integer expressions that must be pairwise distinct
+     */
     public AllDifferent(IntExpression... x) {
-<span class="fc" id="L19">        this(ImmutableSet.of(x));</span>
-<span class="fc" id="L20">    }</span>
+<span class="fc" id="L29">        this(ImmutableSet.of(x));</span>
+<span class="fc" id="L30">    }</span>
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
-<span class="fc" id="L24">        return x.stream().filter(IntVar.class::isInstance).toList();</span>
+<span class="fc" id="L34">        return x.stream().filter(IntVar.class::isInstance).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

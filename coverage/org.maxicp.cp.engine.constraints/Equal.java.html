@@ -9,6 +9,9 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 
+/**
+ * Equality constraint between two integer variables {@code x = y}.
+ */
 public class Equal extends AbstractCPConstraint {
     private final CPIntVar x, y;
 
@@ -22,51 +25,51 @@ public class Equal extends AbstractCPConstraint {
      * @see CPFactory#eq(CPIntVar, CPIntVar)
      */
     public Equal(CPIntVar x, CPIntVar y) { // x == y
-<span class="fc" id="L25">        super(x.getSolver());</span>
-<span class="fc" id="L26">        this.x = x;</span>
-<span class="fc" id="L27">        this.y = y;</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L28">        super(x.getSolver());</span>
+<span class="fc" id="L29">        this.x = x;</span>
+<span class="fc" id="L30">        this.y = y;</span>
+<span class="fc" id="L31">    }</span>
 
     @Override
     public void post() {
-<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (y.isFixed())</span>
-<span class="fc" id="L33">            x.fix(y.min());</span>
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        else if (x.isFixed())</span>
-<span class="fc" id="L35">            y.fix(x.min());</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (y.isFixed())</span>
+<span class="fc" id="L36">            x.fix(y.min());</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        else if (x.isFixed())</span>
+<span class="fc" id="L38">            y.fix(x.min());</span>
         else {
-<span class="fc" id="L37">            boundsIntersect();</span>
-<span class="fc" id="L38">            int[] domVal = new int[Math.max(x.size(), y.size())];</span>
-<span class="fc" id="L39">            pruneEquals(y, x, domVal);</span>
-<span class="fc" id="L40">            pruneEquals(x, y, domVal);</span>
-<span class="fc" id="L41">            x.whenDomainChange(() -&gt; {</span>
-<span class="fc" id="L42">                boundsIntersect();</span>
-<span class="fc" id="L43">                pruneEquals(x, y, domVal);</span>
-<span class="fc" id="L44">            });</span>
-<span class="fc" id="L45">            y.whenDomainChange(() -&gt; {</span>
-<span class="fc" id="L46">                boundsIntersect();</span>
-<span class="fc" id="L47">                pruneEquals(y, x, domVal);</span>
-<span class="fc" id="L48">            });</span>
+<span class="fc" id="L40">            boundsIntersect();</span>
+<span class="fc" id="L41">            int[] domVal = new int[Math.max(x.size(), y.size())];</span>
+<span class="fc" id="L42">            pruneEquals(y, x, domVal);</span>
+<span class="fc" id="L43">            pruneEquals(x, y, domVal);</span>
+<span class="fc" id="L44">            x.whenDomainChange(() -&gt; {</span>
+<span class="fc" id="L45">                boundsIntersect();</span>
+<span class="fc" id="L46">                pruneEquals(x, y, domVal);</span>
+<span class="fc" id="L47">            });</span>
+<span class="fc" id="L48">            y.whenDomainChange(() -&gt; {</span>
+<span class="fc" id="L49">                boundsIntersect();</span>
+<span class="fc" id="L50">                pruneEquals(y, x, domVal);</span>
+<span class="fc" id="L51">            });</span>
         }
-<span class="fc" id="L50">    }</span>
+<span class="fc" id="L53">    }</span>
 
     // dom consistent filtering in the direction from -&gt; to
     // every value of &quot;to&quot; has a support in &quot;from&quot;
     private void pruneEquals(CPIntVar from, CPIntVar to, int[] domVal) {
         // dump the domain of to into domVal
-<span class="fc" id="L56">        int nVal = to.fillArray(domVal);</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">        for (int k = 0; k &lt; nVal; k++)</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (!from.contains(domVal[k]))</span>
-<span class="fc" id="L59">                to.remove(domVal[k]);</span>
-<span class="fc" id="L60">    }</span>
+<span class="fc" id="L59">        int nVal = to.fillArray(domVal);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int k = 0; k &lt; nVal; k++)</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (!from.contains(domVal[k]))</span>
+<span class="fc" id="L62">                to.remove(domVal[k]);</span>
+<span class="fc" id="L63">    }</span>
 
     // make sure bound of variables are the same
     private void boundsIntersect() {
-<span class="fc" id="L64">        int newMin = Math.max(x.min(), y.min());</span>
-<span class="fc" id="L65">        int newMax = Math.min(x.max(), y.max());</span>
-<span class="fc" id="L66">        x.removeBelow(newMin);</span>
-<span class="fc" id="L67">        x.removeAbove(newMax);</span>
-<span class="fc" id="L68">        y.removeBelow(newMin);</span>
-<span class="fc" id="L69">        y.removeAbove(newMax);</span>
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L67">        int newMin = Math.max(x.min(), y.min());</span>
+<span class="fc" id="L68">        int newMax = Math.min(x.max(), y.max());</span>
+<span class="fc" id="L69">        x.removeBelow(newMin);</span>
+<span class="fc" id="L70">        x.removeAbove(newMax);</span>
+<span class="fc" id="L71">        y.removeBelow(newMin);</span>
+<span class="fc" id="L72">        y.removeAbove(newMax);</span>
+<span class="fc" id="L73">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

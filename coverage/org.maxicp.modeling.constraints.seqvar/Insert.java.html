@@ -9,6 +9,13 @@ package org.maxicp.modeling.constraints.seqvar;
 import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="fc" id="L12">public record Insert(SeqVar seqVar, int prev, int node) implements ConstraintFromRecord {</span>
+/**
+ * Constraint inserting {@code node} immediately after {@code prev} in a sequence variable ({@link SeqVar}).
+ *
+ * @param seqVar the sequence variable
+ * @param prev   the predecessor node
+ * @param node   the node to insert after {@code prev}
+ */
+<span class="fc" id="L19">public record Insert(SeqVar seqVar, int prev, int node) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

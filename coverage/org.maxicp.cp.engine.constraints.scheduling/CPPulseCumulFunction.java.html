@@ -23,38 +23,62 @@ public class CPPulseCumulFunction implements CPCumulFunction {
     public final CPIntervalVar var;
     public CPIntVar height;
 
-<span class="fc" id="L26">    public CPPulseCumulFunction(CPIntervalVar var, int hMin, int hMax) {</span>
-<span class="pc bpc" id="L27" title="1 of 2 branches missed.">        if (hMin &gt; hMax) throw new IllegalArgumentException(&quot;hMin &gt; hMax: &quot; + hMin + &quot; &gt; &quot; + hMax);</span>
-<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (hMin &lt;= 0) throw new IllegalArgumentException(&quot;hMin &lt;= 0: &quot; + hMin);</span>
-<span class="fc" id="L29">        this.var = var;</span>
-<span class="fc" id="L30">        height = makeIntVar(var.getSolver(), hMin, hMax);</span>
-<span class="fc" id="L31">    }</span>
+    /**
+     * Creates a pulse cumulative function over an interval variable with height in {@code [hMin, hMax]}.
+     *
+     * @param var  the interval variable over which the pulse is active
+     * @param hMin the minimum pulse height (must be {@code &gt; 0})
+     * @param hMax the maximum pulse height (must be {@code &gt;= hMin})
+     */
+<span class="fc" id="L33">    public CPPulseCumulFunction(CPIntervalVar var, int hMin, int hMax) {</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (hMin &gt; hMax) throw new IllegalArgumentException(&quot;hMin &gt; hMax: &quot; + hMin + &quot; &gt; &quot; + hMax);</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">        if (hMin &lt;= 0) throw new IllegalArgumentException(&quot;hMin &lt;= 0: &quot; + hMin);</span>
+<span class="fc" id="L36">        this.var = var;</span>
+<span class="fc" id="L37">        height = makeIntVar(var.getSolver(), hMin, hMax);</span>
+<span class="fc" id="L38">    }</span>
 
+    /**
+     * Creates a pulse cumulative function over an interval variable with fixed height {@code h}.
+     *
+     * @param var the interval variable over which the pulse is active
+     * @param h   the pulse height (must be {@code &gt; 0})
+     */
     public CPPulseCumulFunction(CPIntervalVar var, int h) {
-<span class="fc" id="L34">        this(var, h, h);</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L47">        this(var, h, h);</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Creates a pulse cumulative function over an interval variable with variable height {@code height}.
+     *
+     * @param var    the interval variable over which the pulse is active
+     * @param height the integer variable representing the pulse height
+     */
+<span class="fc" id="L56">    public CPPulseCumulFunction(CPIntervalVar var, CPIntVar height) {</span>
+<span class="fc" id="L57">        this.var = var;</span>
+<span class="fc" id="L58">        this.height = height;</span>
+<span class="fc" id="L59">    }</span>
 
     @Override
     public List&lt;Activity&gt; flatten(boolean positive) {
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        return List.of(new Activity(var, positive ? height : minus(height)));</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        return List.of(new Activity(var, positive ? height : minus(height)));</span>
     }
 
     @Override
     public boolean inScope(IntervalVar interval) {
-<span class="fc bfc" id="L44" title="All 2 branches covered.">        return var == interval;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        return var == interval;</span>
     }
 
     @Override
     public CPIntVar heightAtStart(IntervalVar interval) {
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
-<span class="fc" id="L50">        CPIntVar y = mul(height, ((CPIntervalVar) interval).status());</span>
-<span class="fc" id="L51">        return y;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="fc" id="L74">        CPIntVar y = mul(height, ((CPIntervalVar) interval).status());</span>
+<span class="fc" id="L75">        return y;</span>
     }
 
     @Override
     public CPIntVar heightAtEnd(IntervalVar interval) {
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
-<span class="fc" id="L57">        return makeIntVar(var.getSolver(), 0, 0);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (interval != var) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="fc" id="L81">        return makeIntVar(var.getSolver(), 0, 0);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

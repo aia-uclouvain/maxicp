@@ -11,14 +11,14 @@ import java.util.function.Function;
 
 public record WeightedSum(IntExpression[] subexprs, int[] weights) implements SymbolicIntExpression, NonLeafExpressionNode {
 
-<span class="nc" id="L14">    public WeightedSum {</span>
-<span class="nc bnc" id="L15" title="All 4 branches missed.">        if(subexprs.length == 0 || subexprs.length != weights.length)</span>
+<span class="fc" id="L14">    public WeightedSum {</span>
+<span class="pc bpc" id="L15" title="2 of 4 branches missed.">        if(subexprs.length == 0 || subexprs.length != weights.length)</span>
 <span class="nc" id="L16">            throw new IllegalArgumentException();</span>
-<span class="nc" id="L17">    }</span>
+<span class="fc" id="L17">    }</span>
 
     @Override
     public Collection&lt;? extends Expression&gt; computeSubexpressions() {
-<span class="nc" id="L21">        return ImmutableSet.of(subexprs);</span>
+<span class="fc" id="L21">        return ImmutableSet.of(subexprs);</span>
     }
 
     @Override

@@ -4,58 +4,71 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.Delta;
 
+/**
+ * Constraint forbidding a node from being inserted immediately between a given predecessor and successor
+ * in a sequence variable ({@link CPSeqVar}).
+ */
 public class NotBetween extends AbstractCPConstraint {
 
     private final CPSeqVar seqVar;
     private final int prev;
     private final int node;
     private final int succ;
-<span class="fc" id="L13">    private boolean scheduled = false;</span>
+<span class="fc" id="L17">    private boolean scheduled = false;</span>
 
+    /**
+     * Creates a constraint forbidding {@code node} from being inserted between {@code prev} and {@code succ}
+     * in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param prev   the predecessor node
+     * @param node   the node whose insertion is forbidden
+     * @param succ   the successor node
+     */
     public NotBetween(CPSeqVar seqVar, int prev, int node, int succ) {
-<span class="fc" id="L16">        super(seqVar.getSolver());</span>
-<span class="fc" id="L17">        this.seqVar = seqVar;</span>
-<span class="fc" id="L18">        this.prev = prev;</span>
-<span class="fc" id="L19">        this.node = node;</span>
-<span class="fc" id="L20">        this.succ = succ;</span>
-<span class="fc" id="L21">    }</span>
+<span class="fc" id="L29">        super(seqVar.getSolver());</span>
+<span class="fc" id="L30">        this.seqVar = seqVar;</span>
+<span class="fc" id="L31">        this.prev = prev;</span>
+<span class="fc" id="L32">        this.node = node;</span>
+<span class="fc" id="L33">        this.succ = succ;</span>
+<span class="fc" id="L34">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L25">        seqVar.notBetween(prev, node, succ);</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L38">        seqVar.notBetween(prev, node, succ);</span>
+<span class="fc" id="L39">    }</span>
 
     @Override
     public void propagate() {
 
-<span class="nc" id="L31">    }</span>
+<span class="nc" id="L44">    }</span>
 
     public void setScheduled(boolean scheduled) {
-<span class="nc" id="L34">        this.scheduled = scheduled;</span>
-<span class="nc" id="L35">    }</span>
+<span class="nc" id="L47">        this.scheduled = scheduled;</span>
+<span class="nc" id="L48">    }</span>
 
     public boolean isScheduled() {
-<span class="nc" id="L38">        return scheduled;</span>
+<span class="nc" id="L51">        return scheduled;</span>
     }
 
     @Override
     public void setActive(boolean active) {
 
-<span class="nc" id="L44">    }</span>
+<span class="nc" id="L57">    }</span>
 
     @Override
     public boolean isActive() {
-<span class="nc" id="L48">        return true;</span>
+<span class="nc" id="L61">        return true;</span>
     }
 
     @Override
     public void registerDelta(Delta delta) {
 
-<span class="nc" id="L54">    }</span>
+<span class="nc" id="L67">    }</span>
 
     @Override
     public void updateDeltas() {
 
-<span class="nc" id="L59">    }</span>
+<span class="nc" id="L72">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

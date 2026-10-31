@@ -16,7 +16,7 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 <span class="fc" id="L16">    }</span>
 
     public static ImmutableSet&lt;Integer&gt; of(int... ints) {
-<span class="nc" id="L19">        return new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(Ints.asSet(ints)));</span>
+<span class="fc" id="L19">        return new ImmutableSet&lt;&gt;(new TrustMeBro&lt;&gt;(Ints.asSet(ints)));</span>
     }
 
     /**
@@ -69,7 +69,7 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
 
     @Override
     public &lt;T&gt; T[] toArray(T[] a) {
-<span class="nc" id="L72">        return delegate.toArray(a);</span>
+<span class="fc" id="L72">        return delegate.toArray(a);</span>
     }
 
     @Override
@@ -108,7 +108,7 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
     }
 
     public static &lt;E&gt; Collector&lt;E,?,ImmutableSet&lt;E&gt;&gt; toImmutableSet() {
-<span class="nc" id="L111">        return Collector.of(</span>
+<span class="fc" id="L111">        return Collector.of(</span>
             (Supplier&lt;Set&lt;E&gt;&gt;) HashSet::new,
             Set::add,
 <span class="nc" id="L114">            (left, right) -&gt; { left.addAll(right); return left; },</span>
@@ -130,8 +130,8 @@ public class ImmutableSet&lt;E&gt; implements Set&lt;E&gt; {
         }
 
         public Builder&lt;E&gt; add(E e) {
-<span class="nc" id="L133">            delegate.add(e);</span>
-<span class="nc" id="L134">            return this;</span>
+<span class="fc" id="L133">            delegate.add(e);</span>
+<span class="fc" id="L134">            return this;</span>
         }
 
         public Builder&lt;E&gt; add(E... es) {

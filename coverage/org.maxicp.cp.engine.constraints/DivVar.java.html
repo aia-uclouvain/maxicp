@@ -19,129 +19,130 @@ public class DivVar extends AbstractCPConstraint {
     private CPIntVar x, y, z;
 
     /**
-     * x / y == z
-     * @param x
-     * @param y
-     * @param z
+     * Creates an integer division constraint {@code x / y == z}.
+     *
+     * @param x the dividend variable
+     * @param y the divisor variable (0 is excluded from its domain)
+     * @param z the quotient variable
      */
     public DivVar(CPIntVar x, CPIntVar y, CPIntVar z) {
-<span class="fc" id="L28">        super(x.getSolver());</span>
-<span class="fc" id="L29">        this.x = x;</span>
-<span class="fc" id="L30">        this.y = y;</span>
-<span class="fc" id="L31">        this.z = z;</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L29">        super(x.getSolver());</span>
+<span class="fc" id="L30">        this.x = x;</span>
+<span class="fc" id="L31">        this.y = y;</span>
+<span class="fc" id="L32">        this.z = z;</span>
+<span class="fc" id="L33">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L36">        x.propagateOnDomainChange(this);</span>
-<span class="fc" id="L37">        y.propagateOnDomainChange(this);</span>
-<span class="fc" id="L38">        z.propagateOnDomainChange(this);</span>
-<span class="fc" id="L39">        propagate();</span>
-<span class="fc" id="L40">    }</span>
+<span class="fc" id="L37">        x.propagateOnDomainChange(this);</span>
+<span class="fc" id="L38">        y.propagateOnDomainChange(this);</span>
+<span class="fc" id="L39">        z.propagateOnDomainChange(this);</span>
+<span class="fc" id="L40">        propagate();</span>
+<span class="fc" id="L41">    }</span>
 
     @Override
     public void propagate() {
         // Reaching a local fixpoint guarantees that every remaining value has support.
         boolean changed;
         do {
-<span class="fc" id="L47">            changed = false;</span>
-<span class="fc" id="L48">            changed |= filterX();</span>
-<span class="fc" id="L49">            changed |= filterY();</span>
-<span class="fc" id="L50">            changed |= filterZ();</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">        } while (changed);</span>
-<span class="fc" id="L52">    }</span>
+<span class="fc" id="L48">            changed = false;</span>
+<span class="fc" id="L49">            changed |= filterX();</span>
+<span class="fc" id="L50">            changed |= filterY();</span>
+<span class="fc" id="L51">            changed |= filterZ();</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        } while (changed);</span>
+<span class="fc" id="L53">    }</span>
 
     private boolean filterX() {
-<span class="fc" id="L55">        int[] vals = new int[x.size()];</span>
-<span class="fc" id="L56">        int n = x.fillArray(vals);</span>
-<span class="fc" id="L57">        boolean changed = false;</span>
+<span class="fc" id="L56">        int[] vals = new int[x.size()];</span>
+<span class="fc" id="L57">        int n = x.fillArray(vals);</span>
+<span class="fc" id="L58">        boolean changed = false;</span>
 
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L60">            int a = vals[i];</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (!hasSupportForX(a)) {</span>
-<span class="fc" id="L62">                x.remove(a);</span>
-<span class="fc" id="L63">                changed = true;</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L61">            int a = vals[i];</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (!hasSupportForX(a)) {</span>
+<span class="fc" id="L63">                x.remove(a);</span>
+<span class="fc" id="L64">                changed = true;</span>
             }
         }
-<span class="fc" id="L66">        return changed;</span>
+<span class="fc" id="L67">        return changed;</span>
     }
 
     private boolean filterY() {
-<span class="fc" id="L70">        int[] vals = new int[y.size()];</span>
-<span class="fc" id="L71">        int n = y.fillArray(vals);</span>
-<span class="fc" id="L72">        boolean changed = false;</span>
+<span class="fc" id="L71">        int[] vals = new int[y.size()];</span>
+<span class="fc" id="L72">        int n = y.fillArray(vals);</span>
+<span class="fc" id="L73">        boolean changed = false;</span>
 
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L75">            int b = vals[i];</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (!hasSupportForY(b)) {</span>
-<span class="fc" id="L77">                y.remove(b);</span>
-<span class="fc" id="L78">                changed = true;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L76">            int b = vals[i];</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (!hasSupportForY(b)) {</span>
+<span class="fc" id="L78">                y.remove(b);</span>
+<span class="fc" id="L79">                changed = true;</span>
             }
         }
-<span class="fc" id="L81">        return changed;</span>
+<span class="fc" id="L82">        return changed;</span>
     }
 
     private boolean filterZ() {
-<span class="fc" id="L85">        int[] vals = new int[z.size()];</span>
-<span class="fc" id="L86">        int n = z.fillArray(vals);</span>
-<span class="fc" id="L87">        boolean changed = false;</span>
+<span class="fc" id="L86">        int[] vals = new int[z.size()];</span>
+<span class="fc" id="L87">        int n = z.fillArray(vals);</span>
+<span class="fc" id="L88">        boolean changed = false;</span>
 
-<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L90">            int c = vals[i];</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (!hasSupportForZ(c)) {</span>
-<span class="fc" id="L92">                z.remove(c);</span>
-<span class="fc" id="L93">                changed = true;</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L91">            int c = vals[i];</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (!hasSupportForZ(c)) {</span>
+<span class="fc" id="L93">                z.remove(c);</span>
+<span class="fc" id="L94">                changed = true;</span>
             }
         }
-<span class="fc" id="L96">        return changed;</span>
+<span class="fc" id="L97">        return changed;</span>
     }
 
     private boolean hasSupportForX(int a) {
-<span class="fc" id="L100">        int[] yVals = new int[y.size()];</span>
-<span class="fc" id="L101">        int ny = y.fillArray(yVals);</span>
+<span class="fc" id="L101">        int[] yVals = new int[y.size()];</span>
+<span class="fc" id="L102">        int ny = y.fillArray(yVals);</span>
 
-<span class="fc bfc" id="L103" title="All 2 branches covered.">        for (int i = 0; i &lt; ny; i++) {</span>
-<span class="fc" id="L104">            int b = yVals[i];</span>
-<span class="fc bfc" id="L105" title="All 4 branches covered.">            if (b != 0 &amp;&amp; z.contains(a / b)) {</span>
-<span class="fc" id="L106">                return true;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        for (int i = 0; i &lt; ny; i++) {</span>
+<span class="fc" id="L105">            int b = yVals[i];</span>
+<span class="fc bfc" id="L106" title="All 4 branches covered.">            if (b != 0 &amp;&amp; z.contains(a / b)) {</span>
+<span class="fc" id="L107">                return true;</span>
             }
         }
-<span class="fc" id="L109">        return false;</span>
+<span class="fc" id="L110">        return false;</span>
     }
 
     private boolean hasSupportForY(int b) {
-<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (b == 0) {</span>
-<span class="fc" id="L114">            return false;</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (b == 0) {</span>
+<span class="fc" id="L115">            return false;</span>
         }
 
-<span class="fc" id="L117">        int[] xVals = new int[x.size()];</span>
-<span class="fc" id="L118">        int nx = x.fillArray(xVals);</span>
+<span class="fc" id="L118">        int[] xVals = new int[x.size()];</span>
+<span class="fc" id="L119">        int nx = x.fillArray(xVals);</span>
 
-<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (int i = 0; i &lt; nx; i++) {</span>
-<span class="fc" id="L121">            int a = xVals[i];</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">            if (z.contains(a / b)) {</span>
-<span class="fc" id="L123">                return true;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        for (int i = 0; i &lt; nx; i++) {</span>
+<span class="fc" id="L122">            int a = xVals[i];</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if (z.contains(a / b)) {</span>
+<span class="fc" id="L124">                return true;</span>
             }
         }
-<span class="fc" id="L126">        return false;</span>
+<span class="fc" id="L127">        return false;</span>
     }
 
     private boolean hasSupportForZ(int c) {
-<span class="fc" id="L130">        int[] xVals = new int[x.size()];</span>
-<span class="fc" id="L131">        int nx = x.fillArray(xVals);</span>
-<span class="fc" id="L132">        int[] yVals = new int[y.size()];</span>
-<span class="fc" id="L133">        int ny = y.fillArray(yVals);</span>
+<span class="fc" id="L131">        int[] xVals = new int[x.size()];</span>
+<span class="fc" id="L132">        int nx = x.fillArray(xVals);</span>
+<span class="fc" id="L133">        int[] yVals = new int[y.size()];</span>
+<span class="fc" id="L134">        int ny = y.fillArray(yVals);</span>
 
-<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int i = 0; i &lt; nx; i++) {</span>
-<span class="fc" id="L136">            int a = xVals[i];</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (int j = 0; j &lt; ny; j++) {</span>
-<span class="fc" id="L138">                int b = yVals[j];</span>
-<span class="pc bpc" id="L139" title="1 of 4 branches missed.">                if (b != 0 &amp;&amp; a / b == c) {</span>
-<span class="fc" id="L140">                    return true;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (int i = 0; i &lt; nx; i++) {</span>
+<span class="fc" id="L137">            int a = xVals[i];</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            for (int j = 0; j &lt; ny; j++) {</span>
+<span class="fc" id="L139">                int b = yVals[j];</span>
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">                if (b != 0 &amp;&amp; a / b == c) {</span>
+<span class="fc" id="L141">                    return true;</span>
                 }
             }
         }
-<span class="fc" id="L144">        return false;</span>
+<span class="fc" id="L145">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

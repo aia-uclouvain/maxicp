@@ -8,11 +8,17 @@ import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 import java.util.Arrays;
 import java.util.Collection;
 
-<span class="fc" id="L11">public record Circuit(IntExpression[] successor) implements ConstraintFromRecord, DecisionVarsProvider {</span>
+/**
+ * Hamiltonian circuit constraint ensuring that the successor array forms a single Hamiltonian circuit
+ * visiting all nodes {@code 0..successor.length - 1}.
+ *
+ * @param successor the array of successor expressions for each node
+ */
+<span class="fc" id="L17">public record Circuit(IntExpression[] successor) implements ConstraintFromRecord, DecisionVarsProvider {</span>
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
-<span class="fc" id="L15">        return Arrays.stream(successor).filter(IntVar.class::isInstance).toList();</span>
+<span class="fc" id="L21">        return Arrays.stream(successor).filter(IntVar.class::isInstance).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

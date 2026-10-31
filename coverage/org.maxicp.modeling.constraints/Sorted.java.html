@@ -22,15 +22,19 @@ import java.util.List;
  * position permutation {@code o} (i.e. {@code y[i] = x[o[i]]}).
  * {@code x} and {@code o} are the input decision variables; {@code y}
  * is the derived sorted output.
+ *
+ * @param x the array of expressions to be sorted
+ * @param o the permutation expressions mapping sorted positions to original indices
+ * @param y the array of sorted expressions in non-decreasing order
  */
-<span class="nc" id="L26">public record Sorted(IntExpression[] x, IntExpression[] o, IntExpression[] y) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+<span class="nc" id="L30">public record Sorted(IntExpression[] x, IntExpression[] o, IntExpression[] y) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
         // x (values to sort) and o (rank permutation) are decisions; y is derived
-<span class="nc" id="L31">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L32">        Arrays.stream(x).filter(IntVar.class::isInstance).forEach(result::add);</span>
-<span class="nc" id="L33">        return List.copyOf(result);</span>
+<span class="nc" id="L35">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L36">        Arrays.stream(x).filter(IntVar.class::isInstance).forEach(result::add);</span>
+<span class="nc" id="L37">        return List.copyOf(result);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -9,6 +9,12 @@ package org.maxicp.modeling.constraints.seqvar;
 import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="fc" id="L12">public record Exclude(SeqVar seqVar, int node) implements ConstraintFromRecord {</span>
+/**
+ * Constraint excluding a node from a sequence variable ({@link SeqVar}) so that it is not visited.
+ *
+ * @param seqVar the sequence variable
+ * @param node   the node to exclude from the sequence
+ */
+<span class="fc" id="L18">public record Exclude(SeqVar seqVar, int node) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

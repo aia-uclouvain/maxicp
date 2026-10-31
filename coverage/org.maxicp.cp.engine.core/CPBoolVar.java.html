@@ -85,7 +85,7 @@ import org.maxicp.util.exception.InconsistencyException;
     }
 
     default boolean evaluateBool() throws VariableNotFixedException {
-<span class="nc bnc" id="L88" title="All 6 branches missed.">        if(min() != 0 || max() == 0) return min() != 0;</span>
+<span class="pc bpc" id="L88" title="4 of 6 branches missed.">        if(min() != 0 || max() == 0) return min() != 0;</span>
 <span class="nc" id="L89">        throw new VariableNotFixedException();</span>
     }
 }

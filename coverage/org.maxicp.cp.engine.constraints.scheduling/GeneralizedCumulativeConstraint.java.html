@@ -301,7 +301,7 @@ public class GeneralizedCumulativeConstraint extends AbstractCPConstraint {
 <span class="fc" id="L301">                        int cmax = act.getHeightMax(); int cmin = act.getHeightMin();</span>
                         //Checking fixed part of activity:
 <span class="pc bpc" id="L303" title="1 of 4 branches missed.">                        while (!act.isAbsent() &amp;&amp; time[tpForward] &lt; act.getEndMin()) {</span>
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">                            if (mandatoryActive) {</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                            if (mandatoryActive) {</span>
 <span class="fc bfc" id="L305" title="All 2 branches covered.">                                if (act.isOptional())</span>
 <span class="fc" id="L306">                                    checkIfMandatory(actIdx, tpForward); //Checking if activity is mandatory</span>
                             }

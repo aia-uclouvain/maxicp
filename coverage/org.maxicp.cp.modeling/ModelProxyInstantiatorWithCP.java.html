@@ -12,7 +12,7 @@ public interface ModelProxyInstantiatorWithCP extends ModelProxyInstantiator {
 <span class="fc" id="L12">    default &lt;R&gt; R runCP(Function&lt;ConcreteCPModel, R&gt; fun) { return runAsConcrete(CPModelInstantiator.withTrailing, fun); }</span>
 <span class="fc" id="L13">    default void runCP(Consumer&lt;ConcreteCPModel&gt; fun) { runAsConcrete(CPModelInstantiator.withTrailing, fun); }</span>
 <span class="fc" id="L14">    default &lt;R&gt; R runCP(Supplier&lt;R&gt; fun) { return runAsConcrete(CPModelInstantiator.withTrailing, fun); }</span>
-<span class="nc" id="L15">    default void runCP(Runnable fun) { runAsConcrete(CPModelInstantiator.withTrailing, fun); }</span>
+<span class="fc" id="L15">    default void runCP(Runnable fun) { runAsConcrete(CPModelInstantiator.withTrailing, fun); }</span>
 <span class="nc" id="L16">    default void runCP(Model bm, Runnable fun) { runAsConcrete(CPModelInstantiator.withTrailing, bm, fun); }</span>
 <span class="nc" id="L17">    default &lt;R&gt; R runCP(Model bm, Function&lt;ConcreteCPModel, R&gt; fun) { return runAsConcrete(CPModelInstantiator.withTrailing, bm, fun); }</span>
 <span class="nc" id="L18">    default void runCP(Model bm, Consumer&lt;ConcreteCPModel&gt; fun) { runAsConcrete(CPModelInstantiator.withTrailing, bm, fun); }</span>

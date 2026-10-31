@@ -11,7 +11,7 @@ import java.util.function.Function;
 public interface SeqVar extends Var, SeqExpression {
 
     default boolean isFixed() {
-<span class="nc bnc" id="L14" title="All 4 branches missed.">        return nNode(SeqStatus.REQUIRED) == nNode(SeqStatus.MEMBER) &amp;&amp; nNode(SeqStatus.POSSIBLE) == 0;</span>
+<span class="pc bpc" id="L14" title="1 of 4 branches missed.">        return nNode(SeqStatus.REQUIRED) == nNode(SeqStatus.MEMBER) &amp;&amp; nNode(SeqStatus.POSSIBLE) == 0;</span>
     }
 
     @Override

@@ -8,6 +8,9 @@ package org.maxicp.cp.engine.constraints;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 
+/**
+ * Element Constraint over an array of variables, modeling {@code array[y] = z}.
+ */
 public class Element1DVar extends AbstractCPConstraint {
 
     private final CPIntVar[] array;
@@ -20,81 +23,88 @@ public class Element1DVar extends AbstractCPConstraint {
     private int zMin;
     private int zMax;
 
+    /**
+     * Creates an element constraint {@code array[y] = z} where {@code array} is an array of integer variables.
+     *
+     * @param array the array of variables to index
+     * @param y     the index variable
+     * @param z     the result variable
+     */
     public Element1DVar(CPIntVar[] array, CPIntVar y, CPIntVar z) {
-<span class="fc" id="L24">        super(y.getSolver());</span>
-<span class="fc" id="L25">        this.array = array;</span>
-<span class="fc" id="L26">        this.y = y;</span>
-<span class="fc" id="L27">        this.z = z;</span>
+<span class="fc" id="L34">        super(y.getSolver());</span>
+<span class="fc" id="L35">        this.array = array;</span>
+<span class="fc" id="L36">        this.y = y;</span>
+<span class="fc" id="L37">        this.z = z;</span>
 
-<span class="fc" id="L29">        yValues = new int[y.size()];</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L39">        yValues = new int[y.size()];</span>
+<span class="fc" id="L40">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L34">        y.removeBelow(0);</span>
-<span class="fc" id="L35">        y.removeAbove(array.length - 1);</span>
+<span class="fc" id="L44">        y.removeBelow(0);</span>
+<span class="fc" id="L45">        y.removeAbove(array.length - 1);</span>
 
-<span class="fc bfc" id="L37" title="All 2 branches covered.">        for (CPIntVar t : array) {</span>
-<span class="fc" id="L38">            t.propagateOnBoundChange(this);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (CPIntVar t : array) {</span>
+<span class="fc" id="L48">            t.propagateOnBoundChange(this);</span>
         }
-<span class="fc" id="L40">        y.propagateOnDomainChange(this);</span>
-<span class="fc" id="L41">        z.propagateOnBoundChange(this);</span>
+<span class="fc" id="L50">        y.propagateOnDomainChange(this);</span>
+<span class="fc" id="L51">        z.propagateOnBoundChange(this);</span>
 
-<span class="fc" id="L43">        propagate();</span>
-<span class="fc" id="L44">    }</span>
+<span class="fc" id="L53">        propagate();</span>
+<span class="fc" id="L54">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc" id="L48">        zMin = z.min();</span>
-<span class="fc" id="L49">        zMax = z.max();</span>
-<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (y.isFixed()) equalityPropagate();</span>
+<span class="fc" id="L58">        zMin = z.min();</span>
+<span class="fc" id="L59">        zMax = z.max();</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (y.isFixed()) equalityPropagate();</span>
         else {
-<span class="fc" id="L52">            filterY();</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (y.isFixed())</span>
-<span class="fc" id="L54">                equalityPropagate();</span>
+<span class="fc" id="L62">            filterY();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (y.isFixed())</span>
+<span class="fc" id="L64">                equalityPropagate();</span>
             else {
-<span class="fc" id="L56">                z.removeBelow(supMin.min());</span>
-<span class="fc" id="L57">                z.removeAbove(supMax.max());</span>
+<span class="fc" id="L66">                z.removeBelow(supMin.min());</span>
+<span class="fc" id="L67">                z.removeAbove(supMax.max());</span>
             }
         }
 
-<span class="fc" id="L61">    }</span>
+<span class="fc" id="L71">    }</span>
 
     private void equalityPropagate() {
-<span class="fc" id="L64">        int id = y.min();</span>
-<span class="fc" id="L65">        CPIntVar tVar = array[id];</span>
-<span class="fc" id="L66">        tVar.removeBelow(zMin);</span>
-<span class="fc" id="L67">        tVar.removeAbove(zMax);</span>
-<span class="fc" id="L68">        z.removeBelow(tVar.min());</span>
-<span class="fc" id="L69">        z.removeAbove(tVar.max());</span>
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L74">        int id = y.min();</span>
+<span class="fc" id="L75">        CPIntVar tVar = array[id];</span>
+<span class="fc" id="L76">        tVar.removeBelow(zMin);</span>
+<span class="fc" id="L77">        tVar.removeAbove(zMax);</span>
+<span class="fc" id="L78">        z.removeBelow(tVar.min());</span>
+<span class="fc" id="L79">        z.removeAbove(tVar.max());</span>
+<span class="fc" id="L80">    }</span>
 
     private void filterY() {
-<span class="fc" id="L73">        int min = Integer.MAX_VALUE;</span>
-<span class="fc" id="L74">        int max = Integer.MIN_VALUE;</span>
+<span class="fc" id="L83">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L84">        int max = Integer.MIN_VALUE;</span>
 
-<span class="fc" id="L76">        int i = y.fillArray(yValues);</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">        while (i &gt; 0) {</span>
-<span class="fc" id="L78">            i -= 1;</span>
-<span class="fc" id="L79">            int id = yValues[i];</span>
-<span class="fc" id="L80">            CPIntVar tVar = array[id];</span>
-<span class="fc" id="L81">            int tMin = tVar.min();</span>
-<span class="fc" id="L82">            int tMax = tVar.max();</span>
-<span class="fc bfc" id="L83" title="All 4 branches covered.">            if (tMax &lt; zMin || tMin &gt; zMax) {</span>
-<span class="fc" id="L84">                y.remove(id);</span>
+<span class="fc" id="L86">        int i = y.fillArray(yValues);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        while (i &gt; 0) {</span>
+<span class="fc" id="L88">            i -= 1;</span>
+<span class="fc" id="L89">            int id = yValues[i];</span>
+<span class="fc" id="L90">            CPIntVar tVar = array[id];</span>
+<span class="fc" id="L91">            int tMin = tVar.min();</span>
+<span class="fc" id="L92">            int tMax = tVar.max();</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">            if (tMax &lt; zMin || tMin &gt; zMax) {</span>
+<span class="fc" id="L94">                y.remove(id);</span>
             } else {
-<span class="fc bfc" id="L86" title="All 2 branches covered.">                if (tMin &lt; min) {</span>
-<span class="fc" id="L87">                    min = tMin;</span>
-<span class="fc" id="L88">                    supMin = tVar;</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                if (tMin &lt; min) {</span>
+<span class="fc" id="L97">                    min = tMin;</span>
+<span class="fc" id="L98">                    supMin = tVar;</span>
                 }
-<span class="fc bfc" id="L90" title="All 2 branches covered.">                if (tMax &gt; max) {</span>
-<span class="fc" id="L91">                    max = tMax;</span>
-<span class="fc" id="L92">                    supMax = tVar;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (tMax &gt; max) {</span>
+<span class="fc" id="L101">                    max = tMax;</span>
+<span class="fc" id="L102">                    supMax = tVar;</span>
                 }
             }
-<span class="fc" id="L95">        }</span>
+<span class="fc" id="L105">        }</span>
 
-<span class="fc" id="L97">    }</span>
+<span class="fc" id="L107">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

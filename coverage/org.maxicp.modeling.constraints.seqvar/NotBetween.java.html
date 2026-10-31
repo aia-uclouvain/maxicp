@@ -3,6 +3,15 @@
 import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="nc" id="L6">public record NotBetween(SeqVar seqVar, int prev, int node, int after) implements ConstraintFromRecord {</span>
+/**
+ * Constraint forbidding {@code node} from being inserted immediately between {@code prev} and {@code after}
+ * in a sequence variable ({@link SeqVar}).
+ *
+ * @param seqVar the sequence variable
+ * @param prev   the predecessor node
+ * @param node   the node whose insertion between {@code prev} and {@code after} is forbidden
+ * @param after  the successor node
+ */
+<span class="fc" id="L15">public record NotBetween(SeqVar seqVar, int prev, int node, int after) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -6,6 +6,9 @@ import org.maxicp.modeling.algebra.Expression;
 import java.util.Collection;
 import java.util.WeakHashMap;
 
+/**
+ * Interface for modeling constraints that cache their computed scope of expressions.
+ */
 public interface CacheScope extends Constraint {
     /**
      * Computes the scope. Should be implemented by subclasses, but not used directly.
@@ -22,11 +25,11 @@ public interface CacheScope extends Constraint {
      * @return the scope of the constraint, i.e. all the Expressions it uses. The collection should be immutable.
      */
     default Collection&lt;? extends Expression&gt; scope() {
-<span class="fc" id="L25">        return ScopeCache.cache.computeIfAbsent(this, k -&gt; this.computeScope());</span>
+<span class="fc" id="L28">        return ScopeCache.cache.computeIfAbsent(this, k -&gt; this.computeScope());</span>
     }
 }
 
-<span class="nc" id="L29">class ScopeCache {</span>
-<span class="fc" id="L30">    static WeakHashMap&lt;CacheScope, Collection&lt;? extends Expression&gt;&gt; cache = new WeakHashMap&lt;&gt;();</span>
+<span class="nc" id="L32">class ScopeCache {</span>
+<span class="fc" id="L33">    static WeakHashMap&lt;CacheScope, Collection&lt;? extends Expression&gt;&gt; cache = new WeakHashMap&lt;&gt;();</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

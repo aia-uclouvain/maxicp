@@ -90,7 +90,7 @@ public class TableCT extends AbstractCPConstraint {
         // Set values in supports, which contains all the tuples supported by each var-val pair
 <span class="fc bfc" id="L91" title="All 2 branches covered.">        for (int i = 0; i &lt; table.length; i++) { //i is the index of the tuple (in table)</span>
 <span class="fc bfc" id="L92" title="All 2 branches covered.">            for (int j = 0; j &lt; this.scpSize; j++) { //j is the index of the current variable (in x)</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                if (x[j].contains(table[i][j])) {</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">                if (x[j].contains(table[i][j])) {</span>
 <span class="fc" id="L94">                    supports[j][table[i][j] - offset[j]].set(i);</span>
                 }
             }
@@ -143,11 +143,11 @@ public class TableCT extends AbstractCPConstraint {
 <span class="fc" id="L143">            int idx = this.unbounded[i];</span>
 <span class="fc" id="L144">            CPIntVar var = this.offx[idx];</span>
 <span class="fc" id="L145">            this.filterDomain(var, supports[idx]);</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">            if (var.isFixed()) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            if (var.isFixed()) {</span>
                 // var is bound, removed from unbounded
-<span class="nc" id="L148">                nUnboundValue--;</span>
-<span class="nc" id="L149">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
-<span class="nc" id="L150">                this.unbounded[nUnboundValue] = idx;</span>
+<span class="fc" id="L148">                nUnboundValue--;</span>
+<span class="fc" id="L149">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="fc" id="L150">                this.unbounded[nUnboundValue] = idx;</span>
             }
         }
 <span class="fc" id="L153">        this.nUnbound.setValue(nUnboundValue);</span>

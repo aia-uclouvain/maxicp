@@ -18,7 +18,8 @@ public interface Model {
     ModelProxy getModelProxy();
 
     default List&lt;List&lt;IntExpression&gt;&gt; getVariableGroups() {
-<span class="nc" id="L21">        return List.of();</span>
+<span class="nc" id="L21">        SymbolicModel sym = symbolicCopy();</span>
+<span class="nc bnc" id="L22" title="All 4 branches missed.">        return sym != null &amp;&amp; sym != this ? sym.getVariableGroups() : List.of();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

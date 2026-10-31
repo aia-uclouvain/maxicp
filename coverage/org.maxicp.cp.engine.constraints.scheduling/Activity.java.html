@@ -10,125 +10,127 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * Represents a scheduling activity i.e. an interval variable that consumes an ammount of resource over time.
+ * Represents a scheduling activity, i.e., an interval variable that consumes an amount of resource over time.
  *
+ * @param interval the interval variable of the activity
+ * @param height   the resource consumption (or production) height variable of the activity
  * @author Pierre Schaus, Charles Thomas
  */
-<span class="fc" id="L17">public record Activity(CPIntervalVar interval, CPIntVar height) {</span>
+<span class="fc" id="L19">public record Activity(CPIntervalVar interval, CPIntVar height) {</span>
 
     public int getStartMin() {
-<span class="fc" id="L20">        return interval.startMin();</span>
+<span class="fc" id="L22">        return interval.startMin();</span>
     }
 
     public int getStartMax() {
-<span class="fc" id="L24">        return interval.startMax();</span>
+<span class="fc" id="L26">        return interval.startMax();</span>
     }
 
     public int getEndMin() {
-<span class="fc" id="L28">        return interval.endMin();</span>
+<span class="fc" id="L30">        return interval.endMin();</span>
     }
 
     public int getEndMax() {
-<span class="fc" id="L32">        return interval.endMax();</span>
+<span class="fc" id="L34">        return interval.endMax();</span>
     }
 
     public int getHeightMin() {
-<span class="fc" id="L36">        return height.min();</span>
+<span class="fc" id="L38">        return height.min();</span>
     }
 
     public int getHeightMax() {
-<span class="fc" id="L40">        return height.max();</span>
+<span class="fc" id="L42">        return height.max();</span>
     }
 
     public int getLengthMin() {
-<span class="fc" id="L44">        return interval.lengthMin();</span>
+<span class="fc" id="L46">        return interval.lengthMin();</span>
     }
 
     public int getLengthMax() {
-<span class="fc" id="L48">        return interval.lengthMax();</span>
+<span class="fc" id="L50">        return interval.lengthMax();</span>
     }
 
     public boolean isPresent() {
-<span class="fc" id="L52">        return interval.isPresent();</span>
+<span class="fc" id="L54">        return interval.isPresent();</span>
     }
 
     public boolean isAbsent() {
-<span class="fc" id="L56">        return interval.isAbsent();</span>
+<span class="fc" id="L58">        return interval.isAbsent();</span>
     }
 
     public boolean isOptional() {
-<span class="fc" id="L60">        return interval.isOptional();</span>
+<span class="fc" id="L62">        return interval.isOptional();</span>
     }
 
     public boolean hasFixedPartAt(int t) {
-<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        return (getStartMax() &lt;= t &amp;&amp; getEndMin() &gt; t);</span>
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">        return (getStartMax() &lt;= t &amp;&amp; getEndMin() &gt; t);</span>
     }
 
     public boolean hasFixedPart() {
-<span class="fc bfc" id="L68" title="All 2 branches covered.">        return getStartMax() &lt; getEndMin();</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        return getStartMax() &lt; getEndMin();</span>
     }
 
     public boolean isStartFixed() {
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        return getStartMin() == getStartMax();</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        return getStartMin() == getStartMax();</span>
     }
 
     public boolean isLengthFixed() {
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        return getLengthMin() == getLengthMax();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        return getLengthMin() == getLengthMax();</span>
     }
 
     public boolean isEndFixed() {
-<span class="nc bnc" id="L80" title="All 2 branches missed.">        return getEndMin() == getEndMax();</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">        return getEndMin() == getEndMax();</span>
     }
 
     public boolean isFixed() {
-<span class="pc bpc" id="L84" title="1 of 6 branches missed.">        return interval().isAbsent() || (interval().isFixed() &amp;&amp; height().isFixed());</span>
+<span class="pc bpc" id="L86" title="1 of 6 branches missed.">        return interval().isAbsent() || (interval().isFixed() &amp;&amp; height().isFixed());</span>
     }
 
     public void setStartMin(int val) {
-<span class="fc" id="L88">        interval.setStartMin(val);</span>
-<span class="fc" id="L89">    }</span>
+<span class="fc" id="L90">        interval.setStartMin(val);</span>
+<span class="fc" id="L91">    }</span>
 
     public void setStartMax(int val) {
-<span class="fc" id="L92">        interval.setStartMax(val);</span>
-<span class="fc" id="L93">    }</span>
+<span class="fc" id="L94">        interval.setStartMax(val);</span>
+<span class="fc" id="L95">    }</span>
 
     public void setEndMin(int val) {
-<span class="fc" id="L96">        interval.setEndMin(val);</span>
-<span class="fc" id="L97">    }</span>
+<span class="fc" id="L98">        interval.setEndMin(val);</span>
+<span class="fc" id="L99">    }</span>
 
     public void setEndMax(int val) {
-<span class="fc" id="L100">        interval.setEndMax(val);</span>
-<span class="fc" id="L101">    }</span>
+<span class="fc" id="L102">        interval.setEndMax(val);</span>
+<span class="fc" id="L103">    }</span>
 
     public void setLengthMin(int val) {
-<span class="nc" id="L104">        interval.setLengthMin(val);</span>
-<span class="nc" id="L105">    }</span>
+<span class="nc" id="L106">        interval.setLengthMin(val);</span>
+<span class="nc" id="L107">    }</span>
 
     public void setLengthMax(int val) {
-<span class="fc" id="L108">        interval.setLengthMax(val);</span>
-<span class="fc" id="L109">    }</span>
+<span class="fc" id="L110">        interval.setLengthMax(val);</span>
+<span class="fc" id="L111">    }</span>
 
     public void setHeightMin(int val) {
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if(val &lt;= height.max()) height.removeBelow(val);</span>
-<span class="nc" id="L113">        else interval.setAbsent();</span>
-<span class="fc" id="L114">    }</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if(val &lt;= height.max()) height.removeBelow(val);</span>
+<span class="nc" id="L115">        else interval.setAbsent();</span>
+<span class="fc" id="L116">    }</span>
 
     public void setHeightMax(int val) {
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">        if(val &gt;= height.min()) height.removeAbove(val);</span>
-<span class="nc" id="L118">        else interval.setAbsent();</span>
-<span class="fc" id="L119">    }</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if(val &gt;= height.min()) height.removeAbove(val);</span>
+<span class="nc" id="L120">        else interval.setAbsent();</span>
+<span class="fc" id="L121">    }</span>
 
     public void setPresent() {
-<span class="fc" id="L122">        interval.setPresent();</span>
-<span class="fc" id="L123">    }</span>
+<span class="fc" id="L124">        interval.setPresent();</span>
+<span class="fc" id="L125">    }</span>
 
     public void setAbsent() {
-<span class="nc" id="L126">        interval.setAbsent();</span>
-<span class="nc" id="L127">    }</span>
+<span class="nc" id="L128">        interval.setAbsent();</span>
+<span class="nc" id="L129">    }</span>
 
     @Override
     public String toString() {
-<span class="nc" id="L131">        return &quot;Activity{&quot; +</span>
+<span class="nc" id="L133">        return &quot;Activity{&quot; +</span>
                 &quot;interval=&quot; + interval +
                 &quot;, height=&quot; + height +
                 '}';

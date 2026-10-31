@@ -17,27 +17,30 @@ import java.util.List;
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
 public class CPFlatCumulFunction implements CPCumulFunction {
-<span class="fc" id="L20">    public CPFlatCumulFunction() {</span>
-<span class="fc" id="L21">    }</span>
+    /**
+     * Creates a flat (zero) cumulative function.
+     */
+<span class="fc" id="L23">    public CPFlatCumulFunction() {</span>
+<span class="fc" id="L24">    }</span>
 
     @Override
     public List&lt;Activity&gt; flatten(boolean positive) {
-<span class="fc" id="L25">        return List.of();</span>
+<span class="fc" id="L28">        return List.of();</span>
     }
 
     @Override
     public CPIntVar heightAtStart(IntervalVar interval) {
-<span class="nc" id="L30">        throw new UnsupportedOperationException(&quot;no interval present&quot;);</span>
+<span class="nc" id="L33">        throw new UnsupportedOperationException(&quot;no interval present&quot;);</span>
     }
 
     @Override
     public CPIntVar heightAtEnd(IntervalVar interval) {
-<span class="nc" id="L35">        throw new UnsupportedOperationException(&quot;no interval present&quot;);</span>
+<span class="nc" id="L38">        throw new UnsupportedOperationException(&quot;no interval present&quot;);</span>
     }
 
     @Override
     public boolean inScope(IntervalVar interval) {
-<span class="fc" id="L40">        return false;</span>
+<span class="fc" id="L43">        return false;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

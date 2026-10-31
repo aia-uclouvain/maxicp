@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CPSolver.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.core</a> &gt; <span class="el_source">CPSolver.java</span></div><h1>CPSolver.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2023 UCLouvain
+ */
+
+package org.maxicp.cp.engine.core;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.IntObjective;
+import org.maxicp.search.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
+import org.maxicp.state.StateManaged;
+import org.maxicp.util.exception.InconsistencyException;
+
+public interface CPSolver extends StateManaged {
+
+    /**
+     * Posts the constraint, that is call {@link CPConstraint#post()} and
+     * computes the fix-point.
+     * A {@link InconsistencyException} is thrown
+     * if by posting the constraint it is proven that there is no solution.
+     *
+     * @param c the constraint to be posted
+     */
+    void post(CPConstraint c);
+
+    /**
+     * Schedules the constraint to be propagated by the fix-point.
+     *
+     * @param c the constraint to be scheduled
+     */
+    void schedule(CPConstraint c);
+
+    /**
+     * Posts the constraint that is call {@link CPConstraint#post()}
+     * and optionally computes the fix-point.
+     * A {@link InconsistencyException} is thrown
+     * if by posting the constraint it is proven that there is no solution.
+     * 
+     * @param c               the constraint to be posted
+     * @param enforceFixPoint is one wants to compute the fix-point after
+     */
+    void post(CPConstraint c, boolean enforceFixPoint);
+
+    /**
+     * Computes the fix-point with all the scheduled constraints.
+     */
+    void fixPoint();
+
+    /**
+     * Adds a listener called whenever the fix-point.
+     *
+     * @param listener the listener that is called whenever the fix-point is started
+     */
+    void onFixPoint(Runnable listener);
+
+    /**
+     * Creates a minimization objective on the given variable.
+     *
+     * @param x the variable to minimize
+     * @return an objective that can minimize x
+     * @see DFSearch#optimize(Objective)
+     */
+    IntObjective minimize(CPIntVar x);
+
+    /**
+     * Creates a maximization objective on the given variable.
+     *
+     * @param x the variable to maximize
+     * @return an objective that can maximize x
+     * @see DFSearch#optimize(Objective)
+     */
+    IntObjective maximize(CPIntVar x);
+
+    /**
+     * Forces the boolean variable to be true and then
+     * computes the fix-point.
+     *
+     * @param b the variable that must be set to true
+     */
+    void post(CPBoolVar b);
+
+    /**
+     * Forces the boolean variable to be true and then
+     * optionally computes the fix-point.
+     *
+     * @param b the variable that must be set to true
+     */
+    void post(CPBoolVar b, boolean enforceFixPoint);
+
+    /**
+     * Gives the ModelProxy associated with this CPSolver, if any
+     */
+    ModelProxy getModelProxy();
+
+    /**
+     * Creates a black-box search that automatically discovers the solver's decision variables.
+     */
+    default BlackBoxSearch blackBoxSearch() {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="fc" id="L103">            return md.blackBoxSearch();</span>
+        }
+<span class="nc" id="L105">        throw new UnsupportedOperationException(&quot;BlackBoxSearch requires a ModelDispatcher proxy&quot;);</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified integer variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntVar... vars) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="nc" id="L113">            return md.blackBoxSearch(vars);</span>
+        }
+<span class="nc" id="L115">        throw new UnsupportedOperationException(&quot;BlackBoxSearch requires a ModelDispatcher proxy&quot;);</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified interval variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntervalVar... intervals) {
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="nc" id="L123">            return md.blackBoxSearch(intervals);</span>
+        }
+<span class="nc" id="L125">        throw new UnsupportedOperationException(&quot;BlackBoxSearch requires a ModelDispatcher proxy&quot;);</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified 2D matrix of interval variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntervalVar[][] intervals) {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="nc" id="L133">            return md.blackBoxSearch(intervals);</span>
+        }
+<span class="nc" id="L135">        throw new UnsupportedOperationException(&quot;BlackBoxSearch requires a ModelDispatcher proxy&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -25,69 +25,82 @@ public class GeneralizedCumulativeChecker extends AbstractCPConstraint {
     protected boolean[] covered;
     int offset; // offset to start indices at zero from the time
 
+    /**
+     * Creates a checker for the generalized cumulative constraint with minimum and maximum capacity bounds.
+     *
+     * @param activities  the array of activities
+     * @param minCapacity the minimum resource capacity bound
+     * @param maxCapacity the maximum resource capacity bound
+     */
     public GeneralizedCumulativeChecker(Activity[] activities, int minCapacity, int maxCapacity) {
-<span class="nc" id="L29">        super(activities[0].interval().getSolver());</span>
-<span class="nc bnc" id="L30" title="All 2 branches missed.">        if (maxCapacity &lt; 0) throw new IllegalArgumentException(&quot;The maximum capacity provided is &lt; 0&quot;);</span>
-<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (minCapacity &gt; maxCapacity)</span>
-<span class="nc" id="L32">            throw new IllegalArgumentException(&quot;The minimum capacity provided is &gt; max capacity&quot;);</span>
+<span class="nc" id="L36">        super(activities[0].interval().getSolver());</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (maxCapacity &lt; 0) throw new IllegalArgumentException(&quot;The maximum capacity provided is &lt; 0&quot;);</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (minCapacity &gt; maxCapacity)</span>
+<span class="nc" id="L39">            throw new IllegalArgumentException(&quot;The minimum capacity provided is &gt; max capacity&quot;);</span>
 
-<span class="nc" id="L34">        this.activities = activities;</span>
-<span class="nc" id="L35">        this.maxCapacity = maxCapacity;</span>
-<span class="nc" id="L36">        this.minCapacity = minCapacity;</span>
+<span class="nc" id="L41">        this.activities = activities;</span>
+<span class="nc" id="L42">        this.maxCapacity = maxCapacity;</span>
+<span class="nc" id="L43">        this.minCapacity = minCapacity;</span>
 
-<span class="nc" id="L38">        int minTime = Integer.MAX_VALUE;</span>
-<span class="nc" id="L39">        int maxTime = Integer.MIN_VALUE;</span>
-<span class="nc bnc" id="L40" title="All 2 branches missed.">        for (Activity act : activities) {</span>
-<span class="nc" id="L41">            minTime = Math.min(minTime, act.interval().startMin());</span>
-<span class="nc" id="L42">            maxTime = Math.max(maxTime, act.interval().endMax());</span>
+<span class="nc" id="L45">        int minTime = Integer.MAX_VALUE;</span>
+<span class="nc" id="L46">        int maxTime = Integer.MIN_VALUE;</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc" id="L48">            minTime = Math.min(minTime, act.interval().startMin());</span>
+<span class="nc" id="L49">            maxTime = Math.max(maxTime, act.interval().endMax());</span>
         }
-<span class="nc" id="L44">        offset = minTime;</span>
-<span class="nc" id="L45">        profile = new int[maxTime - minTime + 1];</span>
-<span class="nc" id="L46">        covered = new boolean[maxTime - minTime + 1];</span>
-<span class="nc" id="L47">    }</span>
+<span class="nc" id="L51">        offset = minTime;</span>
+<span class="nc" id="L52">        profile = new int[maxTime - minTime + 1];</span>
+<span class="nc" id="L53">        covered = new boolean[maxTime - minTime + 1];</span>
+<span class="nc" id="L54">    }</span>
 
+    /**
+     * Creates a checker for the generalized cumulative constraint with a maximum capacity bound.
+     *
+     * @param activities  the array of activities
+     * @param maxCapacity the maximum resource capacity bound
+     */
     public GeneralizedCumulativeChecker(Activity[] activities, int maxCapacity) {
-<span class="nc" id="L50">        this(activities, Integer.MIN_VALUE, maxCapacity);</span>
-<span class="nc" id="L51">    }</span>
+<span class="nc" id="L63">        this(activities, Integer.MIN_VALUE, maxCapacity);</span>
+<span class="nc" id="L64">    }</span>
 
     @Override
     public void post() {
-<span class="nc bnc" id="L55" title="All 2 branches missed.">        for (Activity act : activities) {</span>
-<span class="nc" id="L56">            act.interval().propagateOnChange(this);</span>
-<span class="nc" id="L57">            act.height().propagateOnBoundChange(this);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc" id="L69">            act.interval().propagateOnChange(this);</span>
+<span class="nc" id="L70">            act.height().propagateOnBoundChange(this);</span>
         }
-<span class="nc" id="L59">        propagate();</span>
-<span class="nc" id="L60">    }</span>
+<span class="nc" id="L72">        propagate();</span>
+<span class="nc" id="L73">    }</span>
 
     @Override
     public void propagate() {
-<span class="nc bnc" id="L64" title="All 2 branches missed.">        for (Activity act : activities) {</span>
-<span class="nc bnc" id="L65" title="All 6 branches missed.">            if (!act.interval().isFixed() || (act.interval().isPresent() &amp;&amp; !act.height().isFixed())) {</span>
-<span class="nc" id="L66">                return; // everything is fixed</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc bnc" id="L78" title="All 6 branches missed.">            if (!act.interval().isFixed() || (act.interval().isPresent() &amp;&amp; !act.height().isFixed())) {</span>
+<span class="nc" id="L79">                return; // everything is fixed</span>
             }
         }
 
-<span class="nc" id="L70">        Arrays.fill(profile, 0);</span>
-<span class="nc" id="L71">        Arrays.fill(covered, false);</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">        for (Activity act : activities) {</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">            if (act.interval().isPresent()) {</span>
-<span class="nc" id="L74">                int start = act.interval().startMin() - offset;</span>
-<span class="nc" id="L75">                int end = act.interval().endMax() - offset;</span>
-<span class="nc" id="L76">                int height = act.height().min();</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">                for (int i = start; i &lt; end; i++) {</span>
-<span class="nc" id="L78">                    profile[i] += height;</span>
-<span class="nc" id="L79">                    covered[i] = true;</span>
+<span class="nc" id="L83">        Arrays.fill(profile, 0);</span>
+<span class="nc" id="L84">        Arrays.fill(covered, false);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">        for (Activity act : activities) {</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (act.interval().isPresent()) {</span>
+<span class="nc" id="L87">                int start = act.interval().startMin() - offset;</span>
+<span class="nc" id="L88">                int end = act.interval().endMax() - offset;</span>
+<span class="nc" id="L89">                int height = act.height().min();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                for (int i = start; i &lt; end; i++) {</span>
+<span class="nc" id="L91">                    profile[i] += height;</span>
+<span class="nc" id="L92">                    covered[i] = true;</span>
                 }
             }
         }
 
-<span class="nc bnc" id="L84" title="All 2 branches missed.">        for (int t = 0; t &lt; covered.length; t++) {</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (covered[t]) {</span>
-<span class="nc bnc" id="L86" title="All 4 branches missed.">                if (profile[t] &gt; maxCapacity || profile[t] &lt; minCapacity) {</span>
-<span class="nc" id="L87">                    throw new InconsistencyException();</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        for (int t = 0; t &lt; covered.length; t++) {</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (covered[t]) {</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">                if (profile[t] &gt; maxCapacity || profile[t] &lt; minCapacity) {</span>
+<span class="nc" id="L100">                    throw new InconsistencyException();</span>
                 }
             }
         }
-<span class="nc" id="L91">    }</span>
+<span class="nc" id="L104">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

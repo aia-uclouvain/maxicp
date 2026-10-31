@@ -11,49 +11,49 @@ import org.maxicp.modeling.IntervalVar;
 
 public interface SymbolicIntervalVar extends SymbolicVar, IntervalVar {
     default int startMin() {
-<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L15">            return getModelProxy().getConcreteModel().getConcreteVar(this).startMin();</span>
-<span class="nc" id="L16">        return defaultStartMin();</span>
+<span class="fc" id="L16">        return defaultStartMin();</span>
     }
 
     int defaultStartMin();
 
     default int startMax() {
-<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L23">            return getModelProxy().getConcreteModel().getConcreteVar(this).startMax();</span>
-<span class="nc" id="L24">        return defaultStartMax();</span>
+<span class="fc" id="L24">        return defaultStartMax();</span>
     }
 
     int defaultStartMax();
 
     default int endMin() {
-<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L31">            return getModelProxy().getConcreteModel().getConcreteVar(this).endMin();</span>
-<span class="nc" id="L32">        return defaultEndMin();</span>
+<span class="fc" id="L32">        return defaultEndMin();</span>
     }
 
     int defaultEndMin();
 
     default int endMax() {
-<span class="pc bpc" id="L38" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L39">            return getModelProxy().getConcreteModel().getConcreteVar(this).endMax();</span>
-<span class="nc" id="L40">        return defaultEndMax();</span>
+<span class="fc" id="L40">        return defaultEndMax();</span>
     }
 
     int defaultEndMax();
 
     default int lengthMin() {
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L47">            return getModelProxy().getConcreteModel().getConcreteVar(this).lengthMin();</span>
-<span class="nc" id="L48">        return defaultLengthMin();</span>
+<span class="fc" id="L48">        return defaultLengthMin();</span>
     }
 
     int defaultLengthMin();
 
     default int lengthMax() {
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L55">            return getModelProxy().getConcreteModel().getConcreteVar(this).lengthMax();</span>
-<span class="nc" id="L56">        return defaultLengthMax();</span>
+<span class="fc" id="L56">        return defaultLengthMax();</span>
     }
 
     int defaultLengthMax();

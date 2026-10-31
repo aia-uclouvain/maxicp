@@ -17,15 +17,21 @@ import java.util.Arrays;
 
 /**
  * Arc Consistent AllDifferent Constraint
- *
+ * &lt;p&gt;
  * Algorithm described in
  * &quot;A filtering algorithm for constraints of difference in CSPs&quot; J-C. Régin, AAAI-94
  */
 public class AllDifferentDC extends AtLeastNValueDC {
 
+    /**
+     * Creates an AllDifferent constraint that enforces that all variables in {@code x}
+     * take pairwise different values, using domain-consistent filtering.
+     *
+     * @param x the array of variables that must take pairwise distinct values
+     */
     public AllDifferentDC(CPIntVar... x) {
-<span class="fc" id="L27">        super(x, new CPIntVarImpl(x[0].getSolver(), x.length, x.length));</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L33">        super(x, new CPIntVarImpl(x[0].getSolver(), x.length, x.length));</span>
+<span class="fc" id="L34">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -3,9 +3,14 @@
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.util.exception.InconsistencyException;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
 
 /**
@@ -13,8 +18,8 @@ import java.util.function.UnaryOperator;
  *
  * &lt;p&gt;The API exposes two workflows:&lt;/p&gt;
  * &lt;ul&gt;
- *   &lt;li&gt;{@link #solve(ModelDispatcher, IntExpression[], int)} for feasibility problems.&lt;/li&gt;
- *   &lt;li&gt;{@link #optimize(ModelDispatcher, IntExpression[], Objective, int)} for optimization problems.&lt;/li&gt;
+ *   &lt;li&gt;{@link #solve(ModelDispatcher, int)} and {@link #solve(ModelDispatcher, IntExpression[], int)} for feasibility problems.&lt;/li&gt;
+ *   &lt;li&gt;{@link #optimize(ModelDispatcher, Objective, int)} and {@link #optimize(ModelDispatcher, IntExpression[], Objective, int)} for optimization problems.&lt;/li&gt;
  * &lt;/ul&gt;
  *
  * &lt;p&gt;Both workflows accept optional configurers to tune phase options, phase time shares and verbosity.
@@ -28,8 +33,56 @@ public final class ModelingBlackBox {
      * @param status overall search status
      * @param solution incumbent values for decision variables when one exists
      * @param objectiveValue incumbent objective value for optimization models
+     * @param varValues mapping of model integer variables to their incumbent values
      */
-<span class="fc" id="L32">    public record Result(SearchStatus status, Optional&lt;List&lt;Integer&gt;&gt; solution, Optional&lt;Integer&gt; objectiveValue) {</span>
+    public record Result(
+            SearchStatus status,
+            Optional&lt;List&lt;Integer&gt;&gt; solution,
+            Optional&lt;Integer&gt; objectiveValue,
+            Map&lt;IntExpression, Integer&gt; varValues) {
+
+<span class="fc" id="L44">        public Result {</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">            varValues = varValues == null ? Map.of() : Map.copyOf(varValues);</span>
+<span class="fc" id="L46">        }</span>
+
+        public Result(SearchStatus status, Optional&lt;List&lt;Integer&gt;&gt; solution, Optional&lt;Integer&gt; objectiveValue) {
+<span class="nc" id="L49">            this(status, solution, objectiveValue, Map.of());</span>
+<span class="nc" id="L50">        }</span>
+
+        /**
+         * Returns the value of {@code expr} in the best incumbent solution, if available.
+         */
+        public Optional&lt;Integer&gt; value(IntExpression expr) {
+<span class="nc" id="L56">            Integer v = varValues.get(expr);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (v != null) {</span>
+<span class="nc" id="L58">                return Optional.of(v);</span>
+            }
+<span class="nc bnc" id="L60" title="All 4 branches missed.">            if (expr != null &amp;&amp; expr.isFixed()) {</span>
+<span class="nc" id="L61">                return Optional.of(expr.min());</span>
+            }
+<span class="nc" id="L63">            return Optional.empty();</span>
+        }
+
+        /**
+         * Returns the values of {@code vars} in the best incumbent solution, if available.
+         */
+        public Optional&lt;List&lt;Integer&gt;&gt; values(IntExpression... vars) {
+<span class="pc bpc" id="L70" title="3 of 4 branches missed.">            if (varValues.isEmpty() &amp;&amp; solution.isEmpty()) {</span>
+<span class="nc" id="L71">                return Optional.empty();</span>
+            }
+<span class="fc" id="L73">            List&lt;Integer&gt; res = new ArrayList&lt;&gt;(vars.length);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            for (IntExpression v : vars) {</span>
+<span class="fc" id="L75">                Integer val = varValues.get(v);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">                if (val != null) {</span>
+<span class="fc" id="L77">                    res.add(val);</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">                } else if (v != null &amp;&amp; v.isFixed()) {</span>
+<span class="nc" id="L79">                    res.add(v.min());</span>
+                } else {
+<span class="nc" id="L81">                    return Optional.empty();</span>
+                }
+            }
+<span class="fc" id="L84">            return Optional.of(Collections.unmodifiableList(res));</span>
+        }
     }
 
     private ModelingBlackBox() {
@@ -38,125 +91,175 @@ public final class ModelingBlackBox {
     /**
      * Configuration object used by feasibility solves.
      */
-<span class="fc" id="L41">    public static final class SolveConfig {</span>
-<span class="fc" id="L42">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
-<span class="fc" id="L43">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
-<span class="fc" id="L44">        private double initialExhaustiveShare = 0.0;</span>
-<span class="fc" id="L45">        private double restartShare = 0.40;</span>
-<span class="fc" id="L46">        private double exhaustiveShare = 0.60;</span>
-<span class="fc" id="L47">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+<span class="fc" id="L94">    public static final class SolveConfig {</span>
+<span class="fc" id="L95">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="fc" id="L96">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="fc" id="L97">        private double initialExhaustiveShare = 0.0;</span>
+<span class="fc" id="L98">        private double restartShare = 0.40;</span>
+<span class="fc" id="L99">        private double exhaustiveShare = 0.60;</span>
+<span class="fc" id="L100">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+        private BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; incumbentListener;
+        private Runnable solutionListener;
 
         /**
          * Sets restart-phase options.
          */
         public SolveConfig restart(BlackBoxSearch.RestartPhaseOptions options) {
-<span class="fc" id="L53">            this.restart = options;</span>
-<span class="fc" id="L54">            return this;</span>
+<span class="fc" id="L108">            this.restart = options;</span>
+<span class="fc" id="L109">            return this;</span>
         }
 
         /**
          * Sets exhaustive-phase options.
          */
         public SolveConfig exhaustive(BlackBoxSearch.ExhaustivePhaseOptions options) {
-<span class="fc" id="L61">            this.exhaustive = options;</span>
-<span class="fc" id="L62">            return this;</span>
+<span class="fc" id="L116">            this.exhaustive = options;</span>
+<span class="fc" id="L117">            return this;</span>
         }
 
         /**
          * Sets time shares for restart and exhaustive phases.
          */
         public SolveConfig shares(double restartShare, double exhaustiveShare) {
-<span class="fc" id="L69">            this.restartShare = restartShare;</span>
-<span class="fc" id="L70">            this.exhaustiveShare = exhaustiveShare;</span>
-<span class="fc" id="L71">            return this;</span>
+<span class="fc" id="L124">            this.restartShare = restartShare;</span>
+<span class="fc" id="L125">            this.exhaustiveShare = exhaustiveShare;</span>
+<span class="fc" id="L126">            return this;</span>
         }
 
         /**
          * Sets the optional initial exhaustive phase time share.
          */
         public SolveConfig initialExhaustiveShare(double initialExhaustiveShare) {
-<span class="nc" id="L78">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
-<span class="nc" id="L79">            return this;</span>
+<span class="nc" id="L133">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
+<span class="nc" id="L134">            return this;</span>
         }
 
         /**
          * Sets logging verbosity for the underlying {@link BlackBoxSearch}.
          */
         public SolveConfig verbosity(BlackBoxSearch.Verbosity verbosity) {
-<span class="nc" id="L86">            this.verbosity = verbosity;</span>
-<span class="nc" id="L87">            return this;</span>
+<span class="nc" id="L141">            this.verbosity = verbosity;</span>
+<span class="nc" id="L142">            return this;</span>
+        }
+
+        /**
+         * Registers a listener invoked whenever a new incumbent solution is found.
+         */
+        public SolveConfig onIncumbent(BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; listener) {
+<span class="nc" id="L149">            this.incumbentListener = listener;</span>
+<span class="nc" id="L150">            return this;</span>
+        }
+
+        /**
+         * Registers a callback invoked while the solver is positioned at a new incumbent solution state.
+         */
+        public SolveConfig onSolution(Runnable listener) {
+<span class="nc" id="L157">            this.solutionListener = listener;</span>
+<span class="nc" id="L158">            return this;</span>
         }
     }
 
     /**
      * Configuration object used by optimization solves.
      */
-<span class="fc" id="L94">    public static final class OptimizeConfig {</span>
-<span class="fc" id="L95">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
-<span class="fc" id="L96">        private BlackBoxSearch.LnsPhaseOptions lns = BlackBoxSearch.LnsPhaseOptions.defaults();</span>
-<span class="fc" id="L97">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
-<span class="fc" id="L98">        private double initialExhaustiveShare = 0.25;</span>
-<span class="fc" id="L99">        private double restartShare = 0.20;</span>
-<span class="fc" id="L100">        private double lnsShare = 1.0 / 3.0;</span>
-<span class="fc" id="L101">        private double exhaustiveShare = 1.0 - 0.25 - 0.20 - 1.0 / 3.0;</span>
-<span class="fc" id="L102">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+<span class="fc" id="L165">    public static final class OptimizeConfig {</span>
+<span class="fc" id="L166">        private BlackBoxSearch.RestartPhaseOptions restart = BlackBoxSearch.RestartPhaseOptions.defaults();</span>
+<span class="fc" id="L167">        private BlackBoxSearch.LnsPhaseOptions lns = BlackBoxSearch.LnsPhaseOptions.defaults();</span>
+<span class="fc" id="L168">        private BlackBoxSearch.ExhaustivePhaseOptions exhaustive = BlackBoxSearch.ExhaustivePhaseOptions.defaults();</span>
+<span class="fc" id="L169">        private double initialExhaustiveShare = 0.25;</span>
+<span class="fc" id="L170">        private double restartShare = 0.20;</span>
+<span class="fc" id="L171">        private double lnsShare = 1.0 / 3.0;</span>
+<span class="fc" id="L172">        private double exhaustiveShare = 1.0 - 0.25 - 0.20 - 1.0 / 3.0;</span>
+<span class="fc" id="L173">        private BlackBoxSearch.Verbosity verbosity = BlackBoxSearch.Verbosity.QUIET;</span>
+        private BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; incumbentListener;
+        private Runnable solutionListener;
 
         /**
          * Sets restart-phase options.
          */
         public OptimizeConfig restart(BlackBoxSearch.RestartPhaseOptions options) {
-<span class="nc" id="L108">            this.restart = options;</span>
-<span class="nc" id="L109">            return this;</span>
+<span class="nc" id="L181">            this.restart = options;</span>
+<span class="nc" id="L182">            return this;</span>
         }
 
         /**
          * Sets LNS phase options.
          */
         public OptimizeConfig lns(BlackBoxSearch.LnsPhaseOptions options) {
-<span class="nc" id="L116">            this.lns = options;</span>
-<span class="nc" id="L117">            return this;</span>
+<span class="nc" id="L189">            this.lns = options;</span>
+<span class="nc" id="L190">            return this;</span>
         }
 
         /**
          * Sets exhaustive-phase options.
          */
         public OptimizeConfig exhaustive(BlackBoxSearch.ExhaustivePhaseOptions options) {
-<span class="nc" id="L124">            this.exhaustive = options;</span>
-<span class="nc" id="L125">            return this;</span>
+<span class="nc" id="L197">            this.exhaustive = options;</span>
+<span class="nc" id="L198">            return this;</span>
         }
 
         /**
          * Sets time shares for restart, LNS, and exhaustive phases.
          */
         public OptimizeConfig shares(double restartShare, double lnsShare, double exhaustiveShare) {
-<span class="nc" id="L132">            this.restartShare = restartShare;</span>
-<span class="nc" id="L133">            this.lnsShare = lnsShare;</span>
-<span class="nc" id="L134">            this.exhaustiveShare = exhaustiveShare;</span>
-<span class="nc" id="L135">            return this;</span>
+<span class="nc" id="L205">            this.restartShare = restartShare;</span>
+<span class="nc" id="L206">            this.lnsShare = lnsShare;</span>
+<span class="nc" id="L207">            this.exhaustiveShare = exhaustiveShare;</span>
+<span class="nc" id="L208">            return this;</span>
         }
 
         /**
          * Sets the optional initial exhaustive phase time share.
          */
         public OptimizeConfig initialExhaustiveShare(double initialExhaustiveShare) {
-<span class="nc" id="L142">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
-<span class="nc" id="L143">            return this;</span>
+<span class="nc" id="L215">            this.initialExhaustiveShare = initialExhaustiveShare;</span>
+<span class="nc" id="L216">            return this;</span>
         }
 
         /**
          * Sets logging verbosity for the underlying {@link BlackBoxSearch}.
          */
         public OptimizeConfig verbosity(BlackBoxSearch.Verbosity verbosity) {
-<span class="nc" id="L150">            this.verbosity = verbosity;</span>
-<span class="nc" id="L151">            return this;</span>
+<span class="nc" id="L223">            this.verbosity = verbosity;</span>
+<span class="nc" id="L224">            return this;</span>
         }
+
+        /**
+         * Registers a listener invoked whenever a new incumbent solution is found.
+         */
+        public OptimizeConfig onIncumbent(BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; listener) {
+<span class="nc" id="L231">            this.incumbentListener = listener;</span>
+<span class="nc" id="L232">            return this;</span>
+        }
+
+        /**
+         * Registers a callback invoked while the solver is positioned at a new incumbent solution state.
+         */
+        public OptimizeConfig onSolution(Runnable listener) {
+<span class="nc" id="L239">            this.solutionListener = listener;</span>
+<span class="nc" id="L240">            return this;</span>
+        }
+    }
+
+    /**
+     * Solves a feasibility model with automatic decision variable discovery and default black-box settings.
+     */
+    public static Result solve(ModelDispatcher model, int timeLimitInSeconds) {
+<span class="fc" id="L248">        return solve(model, (IntExpression[]) null, timeLimitInSeconds, cfg -&gt; cfg);</span>
+    }
+
+    /**
+     * Solves a feasibility model with automatic decision variable discovery and caller-provided configuration.
+     */
+    public static Result solve(ModelDispatcher model, int timeLimitInSeconds, UnaryOperator&lt;SolveConfig&gt; configurer) {
+<span class="nc" id="L255">        return solve(model, (IntExpression[]) null, timeLimitInSeconds, configurer);</span>
     }
 
     /**
      * Solves a feasibility model with default black-box settings.
      */
     public static Result solve(ModelDispatcher model, IntExpression[] decisionVars, int timeLimitInSeconds) {
-<span class="fc" id="L159">        return solve(model, decisionVars, timeLimitInSeconds, cfg -&gt; cfg);</span>
+<span class="fc" id="L262">        return solve(model, decisionVars, timeLimitInSeconds, cfg -&gt; cfg);</span>
     }
 
     /**
@@ -164,22 +267,49 @@ public final class ModelingBlackBox {
      */
     public static Result solve(ModelDispatcher model, IntExpression[] decisionVars, int timeLimitInSeconds,
                                UnaryOperator&lt;SolveConfig&gt; configurer) {
-<span class="fc" id="L167">        return model.runCP(() -&gt; {</span>
-<span class="fc" id="L168">            SolveConfig cfg = configurer.apply(new SolveConfig());</span>
-<span class="fc" id="L169">            BlackBoxSearch search = new BlackBoxSearch(model, decisionVars)</span>
-<span class="fc" id="L170">                    .withVerbosity(cfg.verbosity)</span>
-<span class="fc" id="L171">                    .withFeasibilityPlan(cfg.restart, cfg.exhaustive,</span>
+        try {
+<span class="fc" id="L271">            return model.runCP(() -&gt; {</span>
+<span class="fc" id="L272">                SolveConfig cfg = configurer.apply(new SolveConfig());</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">                BlackBoxSearch search = (decisionVars == null ? new BlackBoxSearch(model) : new BlackBoxSearch(model, decisionVars))</span>
+<span class="fc" id="L274">                        .withVerbosity(cfg.verbosity)</span>
+<span class="fc" id="L275">                        .onIncumbent(cfg.incumbentListener);</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">                if (cfg.solutionListener != null) {</span>
+<span class="nc" id="L277">                    search.onSolution(cfg.solutionListener);</span>
+                }
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">                if (search.intervals().isEmpty()) {</span>
+<span class="fc" id="L280">                    search.withFeasibilityPlan(cfg.restart, cfg.exhaustive,</span>
                             cfg.initialExhaustiveShare, cfg.restartShare, cfg.exhaustiveShare);
-<span class="fc" id="L173">            SearchStatus status = search.start(timeLimitInSeconds);</span>
-<span class="fc" id="L174">            return new Result(status, search.bestSolution(), search.bestObjectiveValue());</span>
-        });
+                } else {
+<span class="nc" id="L283">                    search.withDefaultPhasePlan();</span>
+                }
+<span class="fc" id="L285">                SearchStatus status = search.start(timeLimitInSeconds);</span>
+<span class="fc" id="L286">                return new Result(status, search.bestSolution(), search.bestObjectiveValue(), search.bestVarValuesMap());</span>
+            });
+<span class="fc" id="L288">        } catch (InconsistencyException e) {</span>
+<span class="fc" id="L289">            return new Result(SearchStatus.UNSAT, Optional.empty(), Optional.empty(), Map.of());</span>
+        }
+    }
+
+    /**
+     * Solves an optimization model with automatic decision variable discovery and default black-box settings.
+     */
+    public static Result optimize(ModelDispatcher model, Objective objective, int timeLimitInSeconds) {
+<span class="fc" id="L297">        return optimize(model, null, objective, timeLimitInSeconds, cfg -&gt; cfg);</span>
+    }
+
+    /**
+     * Solves an optimization model with automatic decision variable discovery and caller-provided configuration.
+     */
+    public static Result optimize(ModelDispatcher model, Objective objective, int timeLimitInSeconds,
+                                  UnaryOperator&lt;OptimizeConfig&gt; configurer) {
+<span class="nc" id="L305">        return optimize(model, null, objective, timeLimitInSeconds, configurer);</span>
     }
 
     /**
      * Solves an optimization model with default black-box settings.
      */
     public static Result optimize(ModelDispatcher model, IntExpression[] decisionVars, Objective objective, int timeLimitInSeconds) {
-<span class="fc" id="L182">        return optimize(model, decisionVars, objective, timeLimitInSeconds, cfg -&gt; cfg);</span>
+<span class="fc" id="L312">        return optimize(model, decisionVars, objective, timeLimitInSeconds, cfg -&gt; cfg);</span>
     }
 
     /**
@@ -187,15 +317,29 @@ public final class ModelingBlackBox {
      */
     public static Result optimize(ModelDispatcher model, IntExpression[] decisionVars, Objective objective, int timeLimitInSeconds,
                                   UnaryOperator&lt;OptimizeConfig&gt; configurer) {
-<span class="fc" id="L190">        return model.runCP(() -&gt; {</span>
-<span class="fc" id="L191">            OptimizeConfig cfg = configurer.apply(new OptimizeConfig());</span>
-<span class="fc" id="L192">            BlackBoxSearch search = new BlackBoxSearch(model, decisionVars, objective)</span>
-<span class="fc" id="L193">                    .withVerbosity(cfg.verbosity)</span>
-<span class="fc" id="L194">                    .withOptimizationPlan(cfg.restart, cfg.lns, cfg.exhaustive,</span>
+        try {
+<span class="fc" id="L321">            return model.runCP(() -&gt; {</span>
+<span class="fc" id="L322">                OptimizeConfig cfg = configurer.apply(new OptimizeConfig());</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                BlackBoxSearch search = (decisionVars == null</span>
+<span class="fc" id="L324">                        ? new BlackBoxSearch(model, objective)</span>
+<span class="fc" id="L325">                        : new BlackBoxSearch(model, decisionVars, objective))</span>
+<span class="fc" id="L326">                        .withVerbosity(cfg.verbosity)</span>
+<span class="fc" id="L327">                        .onIncumbent(cfg.incumbentListener);</span>
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">                if (cfg.solutionListener != null) {</span>
+<span class="nc" id="L329">                    search.onSolution(cfg.solutionListener);</span>
+                }
+<span class="fc bfc" id="L331" title="All 2 branches covered.">                if (search.intervals().isEmpty()) {</span>
+<span class="fc" id="L332">                    search.withOptimizationPlan(cfg.restart, cfg.lns, cfg.exhaustive,</span>
                             cfg.initialExhaustiveShare, cfg.restartShare, cfg.lnsShare, cfg.exhaustiveShare);
-<span class="fc" id="L196">            SearchStatus status = search.start(timeLimitInSeconds);</span>
-<span class="fc" id="L197">            return new Result(status, search.bestSolution(), search.bestObjectiveValue());</span>
-        });
+                } else {
+<span class="fc" id="L335">                    search.withDefaultPhasePlan();</span>
+                }
+<span class="fc" id="L337">                SearchStatus status = search.start(timeLimitInSeconds);</span>
+<span class="fc" id="L338">                return new Result(status, search.bestSolution(), search.bestObjectiveValue(), search.bestVarValuesMap());</span>
+            });
+<span class="nc" id="L340">        } catch (InconsistencyException e) {</span>
+<span class="nc" id="L341">            return new Result(SearchStatus.UNSAT, Optional.empty(), Optional.empty(), Map.of());</span>
+        }
     }
 }
 

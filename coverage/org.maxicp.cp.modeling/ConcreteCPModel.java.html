@@ -144,11 +144,11 @@ public class ConcreteCPModel implements ConcreteModel {
     }
 
     public ConcreteBoolVar getConcreteVar(BoolExpression expr) {
-<span class="nc" id="L147">        return getCPVar(expr);</span>
+<span class="fc" id="L147">        return getCPVar(expr);</span>
     }
 
     public ConcreteSeqVar getConcreteVar(SeqExpression expr) {
-<span class="nc" id="L151">        return getCPVar(expr);</span>
+<span class="fc" id="L151">        return getCPVar(expr);</span>
     }
 
     public ConcreteIntervalVar getConcreteVar(IntervalExpression expr) {
@@ -160,28 +160,28 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="fc" id="L160">            return cpVar;</span>
 
 <span class="fc" id="L162">        CPBoolVar cached = boolExprMapping.get(v);</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">        if (cached != null)</span>
-<span class="nc" id="L164">            return cached;</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (cached != null)</span>
+<span class="fc" id="L164">            return cached;</span>
 
-<span class="pc bpc" id="L166" title="15 of 17 branches missed.">        CPBoolVar newVar = switch (v) {</span>
-<span class="nc" id="L167">            case IsNodeRequired bv -&gt; getCPVar(bv.seqVar).getNodeVar(bv.node).isRequired();</span>
+<span class="pc bpc" id="L166" title="8 of 18 branches missed.">        CPBoolVar newVar = switch (v) {</span>
+<span class="fc" id="L167">            case IsNodeRequired bv -&gt; getCPVar(bv.seqVar).getNodeVar(bv.node).isRequired();</span>
 <span class="fc" id="L168">            case IntervalStatus s -&gt; getCPVar(s.intervalVar).status();</span>
 <span class="nc" id="L169">            case BoolVarImpl bv -&gt; CPFactory.makeBoolVar(solver, bv.contains(0), bv.contains(1));</span>
-<span class="nc" id="L170">            case Not e -&gt; CPFactory.not(getCPVar(e.a()));</span>
-<span class="nc" id="L171">            case Eq e -&gt; CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b()));</span>
-<span class="nc" id="L172">            case NotEq e -&gt; CPFactory.not(CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="nc" id="L173">            case LessOrEq e -&gt; CPFactory.isLe(getCPVar(e.a()), getCPVar(e.b()));</span>
-<span class="nc" id="L174">            case GreaterOrEq e -&gt; CPFactory.isGe(getCPVar(e.a()), getCPVar(e.b()));</span>
+<span class="fc" id="L170">            case Not e -&gt; CPFactory.not(getCPVar(e.a()));</span>
+<span class="fc" id="L171">            case Eq e -&gt; CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b()));</span>
+<span class="fc" id="L172">            case NotEq e -&gt; CPFactory.not(CPFactory.isEq(getCPVar(e.a()), getCPVar(e.b())));</span>
+<span class="fc" id="L173">            case LessOrEq e -&gt; CPFactory.isLe(getCPVar(e.a()), getCPVar(e.b()));</span>
+<span class="fc" id="L174">            case GreaterOrEq e -&gt; CPFactory.isGe(getCPVar(e.a()), getCPVar(e.b()));</span>
 <span class="nc" id="L175">            case And e -&gt; {</span>
 <span class="nc" id="L176">                CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());</span>
 <span class="nc" id="L177">                post(new org.maxicp.cp.engine.constraints.Sum(</span>
 <span class="nc" id="L178">                        e.exprs().stream().map(x -&gt; getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));</span>
 <span class="nc" id="L179">                yield CPFactory.isEq(s, e.exprs().size());</span>
             }
-<span class="nc" id="L181">            case Or or -&gt; {</span>
-<span class="nc" id="L182">                CPBoolVar b = CPFactory.makeBoolVar(solver);</span>
-<span class="nc" id="L183">                post(new IsOr(b, or.exprs().stream().map(this::getCPVar).toArray(CPBoolVar[]::new)));</span>
-<span class="nc" id="L184">                yield b;</span>
+<span class="fc" id="L181">            case Or or -&gt; {</span>
+<span class="fc" id="L182">                CPBoolVar b = CPFactory.makeBoolVar(solver);</span>
+<span class="fc" id="L183">                post(new IsOr(b, or.exprs().stream().map(this::getCPVar).toArray(CPBoolVar[]::new)));</span>
+<span class="fc" id="L184">                yield b;</span>
             }
 <span class="nc" id="L186">            case EndBeforeStart is -&gt; {</span>
 <span class="nc" id="L187">                CPBoolVar b = CPFactory.makeBoolVar(solver);</span>
@@ -214,585 +214,901 @@ public class ConcreteCPModel implements ConcreteModel {
 <span class="nc" id="L214">                yield b;</span>
             }
 <span class="fc" id="L216">            case org.maxicp.modeling.algebra.bool.Present p -&gt; getCPVar(p.interval()).status();</span>
+<span class="fc" id="L217">            case InSet e -&gt; {</span>
+<span class="fc" id="L218">                CPIntVar x = getCPVar(e.a());</span>
+<span class="fc" id="L219">                int[] dom = new int[x.size()];</span>
+<span class="fc" id="L220">                int sz = x.fillArray(dom);</span>
+<span class="fc" id="L221">                java.util.List&lt;CPBoolVar&gt; inList = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L222">                java.util.List&lt;CPBoolVar&gt; outList = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                for (int i = 0; i &lt; sz; i++) {</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">                    if (e.b().contains(dom[i])) {</span>
+<span class="fc" id="L225">                        inList.add(CPFactory.isEq(x, dom[i]));</span>
+                    } else {
+<span class="fc" id="L227">                        outList.add(CPFactory.isEq(x, dom[i]));</span>
+                    }
+                }
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">                if (inList.isEmpty()) {</span>
+<span class="nc" id="L231">                    yield CPFactory.makeBoolVar(solver, true, false);</span>
+                }
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">                if (outList.isEmpty()) {</span>
+<span class="nc" id="L234">                    yield CPFactory.makeBoolVar(solver, false, true);</span>
+                }
+<span class="fc" id="L236">                CPBoolVar b = CPFactory.makeBoolVar(solver);</span>
+<span class="fc" id="L237">                post(new IsOr(b, inList.toArray(CPBoolVar[]::new)));</span>
+<span class="fc" id="L238">                post(new IsOr(CPFactory.not(b), outList.toArray(CPBoolVar[]::new)));</span>
+<span class="fc" id="L239">                yield b;</span>
+            }
             default -&gt;
-<span class="pc" id="L218">                throw new NotYetImplementedException(&quot;Unknown expression type %s in getCPVar&quot;.formatted(v.getClass()));</span>
+<span class="pc" id="L242">                throw new NotYetImplementedException(&quot;Unknown expression type %s in getCPVar&quot;.formatted(v.getClass()));</span>
         };
-<span class="fc" id="L220">        boolExprMapping.put(v, newVar);</span>
-<span class="fc" id="L221">        return newVar;</span>
+<span class="fc" id="L244">        boolExprMapping.put(v, newVar);</span>
+<span class="fc" id="L245">        return newVar;</span>
     }
 
     public CPIntVar getCPVar(IntExpression v) {
-<span class="fc bfc" id="L225" title="All 2 branches covered.">        if (v instanceof BoolExpression be)</span>
-<span class="fc" id="L226">            return getCPVar(be);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        if (v instanceof BoolExpression be)</span>
+<span class="fc" id="L250">            return getCPVar(be);</span>
 
-<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (v instanceof CPIntVar cpVar)</span>
-<span class="fc" id="L229">            return cpVar;</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (v instanceof CPIntVar cpVar)</span>
+<span class="fc" id="L253">            return cpVar;</span>
 
-<span class="fc" id="L231">        CPIntVar cached = intExprMapping.get(v);</span>
-<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (cached != null)</span>
-<span class="fc" id="L233">            return cached;</span>
+<span class="fc" id="L255">        CPIntVar cached = intExprMapping.get(v);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">        if (cached != null)</span>
+<span class="fc" id="L257">            return cached;</span>
 
-<span class="pc bpc" id="L235" title="8 of 23 branches missed.">        CPIntVar newVar = switch (v) {</span>
-<span class="fc" id="L236">            case IntVarSetImpl iv -&gt; CPFactory.makeIntVar(solver, iv.dom);</span>
-<span class="fc" id="L237">            case IntVarRangeImpl iv -&gt; CPFactory.makeIntVar(solver, iv.defaultMin(), iv.defaultMax());</span>
-<span class="nc" id="L238">            case CstOffset iv -&gt; CPFactory.plus(getCPVar(iv.expr()), iv.v());</span>
-<span class="fc" id="L239">            case CstMul iv -&gt; CPFactory.mul(getCPVar(iv.expr()), iv.mul());</span>
-<span class="nc" id="L240">            case Abs iv -&gt; CPFactory.abs(getCPVar(iv.expr()));</span>
-<span class="fc" id="L241">            case UnaryMinus iv -&gt; CPFactory.minus(getCPVar(iv.expr()));</span>
-<span class="fc" id="L242">            case Sum ie -&gt; CPFactory.sum(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
-<span class="nc" id="L243">            case WeightedSum ie -&gt;</span>
-<span class="nc" id="L244">                CPFactory.sum(IntStream.range(0, ie.subexprs().length)</span>
-<span class="nc" id="L245">                        .mapToObj(i -&gt; CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))</span>
-<span class="nc" id="L246">                        .toArray(CPIntVar[]::new));</span>
-<span class="fc" id="L247">            case Constant c -&gt; CPFactory.makeIntVar(solver, c.v(), c.v());</span>
-<span class="nc" id="L248">            case Min m -&gt; CPFactory.minimum(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
-<span class="fc" id="L249">            case Max m -&gt; CPFactory.max(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
-<span class="fc" id="L250">            case Element1D e -&gt; CPFactory.element(e.array(), getCPVar(e.index()));</span>
-<span class="nc" id="L251">            case Element1DVar e -&gt;</span>
-<span class="nc" id="L252">                CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new),</span>
-<span class="nc" id="L253">                        getCPVar(e.index()));</span>
-<span class="fc" id="L254">            case Element2D e -&gt; CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));</span>
-<span class="fc" id="L255">            case IntervalEndOrValue i -&gt; CPFactory.endOr(getCPVar(i.interval()), i.value());</span>
-<span class="fc" id="L256">            case IntervalEnd i -&gt; CPFactory.end(getCPVar(i.interval()));</span>
-<span class="nc" id="L257">            case IntervalStartOrValue i -&gt; CPFactory.startOr(getCPVar(i.interval()), i.value());</span>
-<span class="fc" id="L258">            case IntervalStart i -&gt; CPFactory.start(getCPVar(i.interval()));</span>
-<span class="nc" id="L259">            case IntervalLengthOrValue i -&gt; CPFactory.lengthOr(getCPVar(i.interval()), i.value());</span>
-<span class="fc" id="L260">            case IntervalLength i -&gt; CPFactory.length(getCPVar(i.interval()));</span>
-<span class="fc" id="L261">            case Mul ie -&gt; CPFactory.mul(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
-<span class="fc" id="L262">            case MulBinary ie -&gt; {</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">                if (ie.b().min() == 1) // x * 1 ==&gt; x</span>
-<span class="fc" id="L264">                    yield getCPVar(ie.x());</span>
+<span class="pc bpc" id="L259" title="4 of 25 branches missed.">        CPIntVar newVar = switch (v) {</span>
+<span class="fc" id="L260">            case IntVarSetImpl iv -&gt; CPFactory.makeIntVar(solver, iv.dom);</span>
+<span class="fc" id="L261">            case IntVarRangeImpl iv -&gt; CPFactory.makeIntVar(solver, iv.defaultMin(), iv.defaultMax());</span>
+<span class="nc" id="L262">            case CstOffset iv -&gt; CPFactory.plus(getCPVar(iv.expr()), iv.v());</span>
+<span class="fc" id="L263">            case CstMul iv -&gt; CPFactory.mul(getCPVar(iv.expr()), iv.mul());</span>
+<span class="nc" id="L264">            case Abs iv -&gt; CPFactory.abs(getCPVar(iv.expr()));</span>
+<span class="fc" id="L265">            case UnaryMinus iv -&gt; CPFactory.minus(getCPVar(iv.expr()));</span>
+<span class="fc" id="L266">            case Sum ie -&gt; {</span>
+<span class="fc" id="L267">                IntExpression[] subs = ie.subexprs();</span>
+<span class="fc bfc" id="L268" title="All 2 branches covered.">                if (subs.length == 2) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">                    if (subs[0] instanceof Constant c) {</span>
+<span class="nc" id="L270">                        yield CPFactory.plus(getCPVar(subs[1]), c.v());</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">                    } else if (subs[1] instanceof Constant c) {</span>
+<span class="fc" id="L272">                        yield CPFactory.plus(getCPVar(subs[0]), c.v());</span>
+                    }
+                }
+<span class="fc" id="L275">                yield CPFactory.sum(Arrays.stream(subs).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
+            }
+<span class="fc" id="L277">            case WeightedSum ie -&gt;</span>
+<span class="fc" id="L278">                CPFactory.sum(IntStream.range(0, ie.subexprs().length)</span>
+<span class="fc" id="L279">                        .mapToObj(i -&gt; CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))</span>
+<span class="fc" id="L280">                        .toArray(CPIntVar[]::new));</span>
+<span class="fc" id="L281">            case Constant c -&gt; CPFactory.makeIntVar(solver, c.v(), c.v());</span>
+<span class="fc" id="L282">            case Min m -&gt; CPFactory.minimum(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
+<span class="fc" id="L283">            case Max m -&gt; CPFactory.max(Arrays.stream(m.exprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
+<span class="fc" id="L284">            case Element1D e -&gt; CPFactory.element(e.array(), getCPVar(e.index()));</span>
+<span class="fc" id="L285">            case Element1DVar e -&gt;</span>
+<span class="fc" id="L286">                CPFactory.element(Arrays.stream(e.array()).map(this::getCPVar).toArray(CPIntVar[]::new),</span>
+<span class="fc" id="L287">                        getCPVar(e.index()));</span>
+<span class="fc" id="L288">            case Element2D e -&gt; CPFactory.element(e.array(), getCPVar(e.x()), getCPVar(e.y()));</span>
+<span class="nc" id="L289">            case Element2DVar e -&gt; {</span>
+<span class="nc" id="L290">                int nRows = e.array().length;</span>
+<span class="nc" id="L291">                int nCols = e.array()[0].length;</span>
+<span class="nc" id="L292">                CPIntVar rx = getCPVar(e.x());</span>
+<span class="nc" id="L293">                CPIntVar cy = getCPVar(e.y());</span>
+<span class="nc" id="L294">                rx.removeBelow(0);</span>
+<span class="nc" id="L295">                rx.removeAbove(nRows - 1);</span>
+<span class="nc" id="L296">                cy.removeBelow(0);</span>
+<span class="nc" id="L297">                cy.removeAbove(nCols - 1);</span>
+<span class="nc" id="L298">                CPIntVar[] flat = new CPIntVar[nRows * nCols];</span>
+<span class="nc" id="L299">                int[][] idxTuples = new int[nRows * nCols][3];</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">                for (int r = 0; r &lt; nRows; r++) {</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">                    for (int c = 0; c &lt; nCols; c++) {</span>
+<span class="nc" id="L302">                        int k = r * nCols + c;</span>
+<span class="nc" id="L303">                        flat[k] = getCPVar(e.array()[r][c]);</span>
+<span class="nc" id="L304">                        idxTuples[k][0] = r;</span>
+<span class="nc" id="L305">                        idxTuples[k][1] = c;</span>
+<span class="nc" id="L306">                        idxTuples[k][2] = k;</span>
+                    }
+                }
+<span class="nc" id="L309">                CPIntVar idx = CPFactory.makeIntVar(solver, 0, nRows * nCols - 1);</span>
+<span class="nc" id="L310">                post(new org.maxicp.cp.engine.constraints.TableCT(new CPIntVar[]{rx, cy, idx}, idxTuples));</span>
+<span class="nc" id="L311">                yield CPFactory.element(flat, idx);</span>
+            }
+<span class="fc" id="L313">            case IntervalEndOrValue i -&gt; CPFactory.endOr(getCPVar(i.interval()), i.value());</span>
+<span class="fc" id="L314">            case IntervalEnd i -&gt; CPFactory.end(getCPVar(i.interval()));</span>
+<span class="fc" id="L315">            case IntervalStartOrValue i -&gt; CPFactory.startOr(getCPVar(i.interval()), i.value());</span>
+<span class="fc" id="L316">            case IntervalStart i -&gt; CPFactory.start(getCPVar(i.interval()));</span>
+<span class="fc" id="L317">            case IntervalLengthOrValue i -&gt; CPFactory.lengthOr(getCPVar(i.interval()), i.value());</span>
+<span class="fc" id="L318">            case IntervalLength i -&gt; CPFactory.length(getCPVar(i.interval()));</span>
+<span class="fc" id="L319">            case Mul ie -&gt; CPFactory.mul(Arrays.stream(ie.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new));</span>
+<span class="fc" id="L320">            case MulBinary ie -&gt; {</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">                if (ie.b().min() == 1) // x * 1 ==&gt; x</span>
+<span class="fc" id="L322">                    yield getCPVar(ie.x());</span>
                 else
-<span class="nc" id="L266">                    yield CPFactory.mul(getCPVar(ie.x()), getCPVar(ie.b()));</span>
+<span class="nc" id="L324">                    yield CPFactory.mul(getCPVar(ie.x()), getCPVar(ie.b()));</span>
+            }
+<span class="fc" id="L326">            case Div div -&gt; {</span>
+<span class="fc" id="L327">                CPIntVar x = getCPVar(div.x());</span>
+<span class="fc" id="L328">                CPIntVar y = getCPVar(div.y());</span>
+<span class="fc" id="L329">                y.remove(0);</span>
+<span class="fc" id="L330">                CPIntVar z = CPFactory.makeIntVar(solver, div.defaultMin(), div.defaultMax());</span>
+<span class="fc" id="L331">                post(new org.maxicp.cp.engine.constraints.DivVar(x, y, z));</span>
+<span class="fc" id="L332">                yield z;</span>
             }
             default -&gt;
-<span class="pc" id="L269">                throw new NotYetImplementedException(&quot;Unknown expression type %s in getCPVar&quot;.formatted(v.getClass()));</span>
+<span class="pc" id="L335">                throw new NotYetImplementedException(&quot;Unknown expression type %s in getCPVar&quot;.formatted(v.getClass()));</span>
         };
-<span class="fc" id="L271">        intExprMapping.put(v, newVar);</span>
-<span class="fc" id="L272">        return newVar;</span>
+<span class="fc" id="L337">        intExprMapping.put(v, newVar);</span>
+<span class="fc" id="L338">        return newVar;</span>
     }
 
     /**
      * Enforce that v == expr, without using Equal/NotEqual if possible.
      */
     public void enforceEqualityIntExpression(IntExpression expr, CPIntVar v) {
-<span class="pc bpc" id="L279" title="4 of 6 branches missed.">        if ((expr instanceof BoolExpression &amp;&amp; boolExprMapping.containsKey(expr)) || intExprMapping.containsKey(expr))</span>
-<span class="nc" id="L280">            throw new RuntimeException(</span>
+<span class="pc bpc" id="L345" title="2 of 6 branches missed.">        if ((expr instanceof BoolExpression &amp;&amp; boolExprMapping.containsKey(expr)) || intExprMapping.containsKey(expr))</span>
+<span class="nc" id="L346">            throw new RuntimeException(</span>
                     &quot;enforceEqualityIntExpression cannot force equality on an already-instantiated expression&quot;);
-<span class="pc bpc" id="L282" title="18 of 25 branches missed.">        switch (expr) {</span>
-<span class="nc" id="L283">            case IntVarSetImpl iv -&gt; {</span>
-<span class="nc" id="L284">                int[] content = new int[v.size()];</span>
-<span class="nc" id="L285">                v.fillArray(content);</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">                for (int val : content)</span>
-<span class="nc bnc" id="L287" title="All 2 branches missed.">                    if (!iv.dom.contains(val))</span>
-<span class="nc" id="L288">                        v.remove(val);</span>
-<span class="nc" id="L289">            }</span>
-<span class="fc" id="L290">            case IntVarRangeImpl iv -&gt; {</span>
-<span class="fc" id="L291">                v.removeBelow(iv.min());</span>
-<span class="fc" id="L292">                v.removeAbove(iv.max());</span>
-<span class="fc" id="L293">            }</span>
-<span class="nc" id="L294">            case IntVar x -&gt; throw new RuntimeException(&quot;Unknown IntVar type %s&quot;.formatted(x.getClass()));</span>
-<span class="nc" id="L295">            case Constant c -&gt; v.fix(c.v());</span>
-<span class="nc" id="L296">            case CstOffset co -&gt; {</span>
+<span class="pc bpc" id="L348" title="23 of 43 branches missed.">        switch (expr) {</span>
+<span class="fc" id="L349">            case IntVarSetImpl iv -&gt; {</span>
+<span class="fc" id="L350">                int[] content = new int[v.size()];</span>
+<span class="fc" id="L351">                v.fillArray(content);</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">                for (int val : content)</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">                    if (!iv.dom.contains(val))</span>
+<span class="nc" id="L354">                        v.remove(val);</span>
+<span class="fc" id="L355">            }</span>
+<span class="fc" id="L356">            case IntVarRangeImpl iv -&gt; {</span>
+<span class="fc" id="L357">                v.removeBelow(iv.min());</span>
+<span class="fc" id="L358">                v.removeAbove(iv.max());</span>
+<span class="fc" id="L359">            }</span>
+<span class="nc" id="L360">            case IsNodeRequired bv -&gt; post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(bv), v));</span>
+<span class="fc" id="L361">            case IntervalStatus s -&gt; post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(s), v));</span>
+<span class="fc" id="L362">            case BoolVarImpl bv -&gt; {</span>
+<span class="fc" id="L363">                v.removeBelow(bv.min());</span>
+<span class="fc" id="L364">                v.removeAbove(bv.max());</span>
+<span class="fc" id="L365">            }</span>
+<span class="nc" id="L366">            case IntVar x -&gt; throw new RuntimeException(&quot;Unknown IntVar type %s&quot;.formatted(x.getClass()));</span>
+<span class="nc" id="L367">            case Constant c -&gt; v.fix(c.v());</span>
+<span class="nc" id="L368">            case CstOffset co -&gt; {</span>
                 // co.expr + c == v &lt;=&gt; co.expr == v - c
-<span class="nc" id="L298">                enforceEqualityIntExpression(co.expr(), CPFactory.minus(v, co.v()));</span>
-<span class="nc" id="L299">            }</span>
-<span class="fc" id="L300">            case CstMul cm -&gt; {</span>
+<span class="nc" id="L370">                enforceEqualityIntExpression(co.expr(), CPFactory.minus(v, co.v()));</span>
+<span class="nc" id="L371">            }</span>
+<span class="fc" id="L372">            case CstMul cm -&gt; {</span>
                 // fallback
-<span class="fc" id="L302">                post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(cm.expr()), cm.mul()), v));</span>
-<span class="fc" id="L303">            }</span>
-<span class="fc" id="L304">            case Mul m -&gt; {</span>
+<span class="fc" id="L374">                post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(getCPVar(cm.expr()), cm.mul()), v));</span>
+<span class="fc" id="L375">            }</span>
+<span class="fc" id="L376">            case Mul m -&gt; {</span>
                 // m.exprs[0] * m.exprs[1] * ... == v
-<span class="fc" id="L306">                CPIntVar[] exprs = Arrays.stream(m.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="pc bpc" id="L307" title="1 of 2 branches missed.">                if (exprs.length == 2) {</span>
+<span class="fc" id="L378">                CPIntVar[] exprs = Arrays.stream(m.subexprs()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">                if (exprs.length == 2) {</span>
                     // m.exprs[0] * m.exprs[1] == v
-<span class="fc" id="L309">                    post(new org.maxicp.cp.engine.constraints.MulVar(exprs[0], exprs[1], v));</span>
+<span class="fc" id="L381">                    post(new org.maxicp.cp.engine.constraints.MulVar(exprs[0], exprs[1], v));</span>
                 } else {
-<span class="nc" id="L311">                    post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(exprs), v));</span>
+<span class="nc" id="L383">                    post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.mul(exprs), v));</span>
                 }
-<span class="fc" id="L313">            }</span>
-<span class="nc" id="L314">            case UnaryMinus um -&gt; {</span>
+<span class="fc" id="L385">            }</span>
+<span class="nc" id="L386">            case UnaryMinus um -&gt; {</span>
                 // -um.expr == v &lt;=&gt; um.expr == -v
-<span class="nc" id="L316">                enforceEqualityIntExpression(um.expr(), CPFactory.minus(v));</span>
-<span class="nc" id="L317">            }</span>
-<span class="nc" id="L318">            case Abs abs -&gt; post(new org.maxicp.cp.engine.constraints.Absolute(getCPVar(abs.expr()), v));</span>
-<span class="fc" id="L319">            case Sum sum -&gt; post(new org.maxicp.cp.engine.constraints.Sum(getCPVar(sum.subexprs()), v));</span>
-<span class="nc" id="L320">            case WeightedSum ie -&gt; post(new org.maxicp.cp.engine.constraints.Sum(</span>
-<span class="nc" id="L321">                    IntStream.range(0, ie.subexprs().length)</span>
-<span class="nc" id="L322">                            .mapToObj(i -&gt; CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))</span>
-<span class="nc" id="L323">                            .toArray(CPIntVar[]::new),</span>
+<span class="nc" id="L388">                enforceEqualityIntExpression(um.expr(), CPFactory.minus(v));</span>
+<span class="nc" id="L389">            }</span>
+<span class="fc" id="L390">            case Abs abs -&gt; post(new org.maxicp.cp.engine.constraints.Absolute(getCPVar(abs.expr()), v));</span>
+<span class="fc" id="L391">            case Sum sum -&gt; post(new org.maxicp.cp.engine.constraints.Sum(getCPVar(sum.subexprs()), v));</span>
+<span class="fc" id="L392">            case WeightedSum ie -&gt; post(new org.maxicp.cp.engine.constraints.Sum(</span>
+<span class="fc" id="L393">                    IntStream.range(0, ie.subexprs().length)</span>
+<span class="fc" id="L394">                            .mapToObj(i -&gt; CPFactory.mul(getCPVar(ie.subexprs()[i]), ie.weights()[i]))</span>
+<span class="fc" id="L395">                            .toArray(CPIntVar[]::new),</span>
                     v));
-<span class="nc" id="L325">            case Min m -&gt;</span>
-<span class="nc" id="L326">                post(new org.maxicp.cp.engine.constraints.Maximum(</span>
-<span class="nc" id="L327">                        Arrays.stream(getCPVar(m.exprs())).map(CPFactory::minus).toArray(CPIntVar[]::new),</span>
-<span class="nc" id="L328">                        CPFactory.minus(v)));</span>
-<span class="nc" id="L329">            case Max m -&gt; post(new org.maxicp.cp.engine.constraints.Maximum(getCPVar(m.exprs()), v));</span>
-<span class="nc" id="L330">            case Element1D e -&gt; post(new org.maxicp.cp.engine.constraints.Element1D(e.array(), getCPVar(e.index()), v));</span>
-<span class="nc" id="L331">            case Element1DVar e -&gt;</span>
-<span class="nc" id="L332">                post(new org.maxicp.cp.engine.constraints.Element1DVar(getCPVar(e.array()), getCPVar(e.index()), v));</span>
-<span class="nc" id="L333">            case Element2D e -&gt;</span>
-<span class="nc" id="L334">                post(new org.maxicp.cp.engine.constraints.Element2D(e.array(), getCPVar(e.x()), getCPVar(e.y()), v));</span>
-<span class="nc" id="L335">            case Eq e -&gt;</span>
-<span class="nc" id="L336">                post(new org.maxicp.cp.engine.constraints.IsEqualVar(asBoolVar(v), getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="nc" id="L337">            case NotEq e -&gt;</span>
-<span class="nc" id="L338">                post(new org.maxicp.cp.engine.constraints.IsEqualVar(CPFactory.not(asBoolVar(v)), getCPVar(e.a()),</span>
-<span class="nc" id="L339">                        getCPVar(e.b())));</span>
-<span class="nc" id="L340">            case LessOrEq e -&gt;</span>
-<span class="nc" id="L341">                post(new org.maxicp.cp.engine.constraints.IsLessOrEqualVar(asBoolVar(v), getCPVar(e.a()),</span>
-<span class="nc" id="L342">                        getCPVar(e.b())));</span>
-<span class="nc" id="L343">            case And e -&gt; {</span>
-<span class="nc" id="L344">                CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());</span>
-<span class="nc" id="L345">                post(new org.maxicp.cp.engine.constraints.Sum(</span>
-<span class="nc" id="L346">                        e.exprs().stream().map(x -&gt; getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));</span>
-<span class="nc" id="L347">                post(new org.maxicp.cp.engine.constraints.IsEqual(asBoolVar(v), s, e.exprs().size()));</span>
-<span class="nc" id="L348">            }</span>
-<span class="nc" id="L349">            case Not e -&gt; {</span>
+<span class="nc" id="L397">            case Min m -&gt;</span>
+<span class="nc" id="L398">                post(new org.maxicp.cp.engine.constraints.Maximum(</span>
+<span class="nc" id="L399">                        Arrays.stream(getCPVar(m.exprs())).map(CPFactory::minus).toArray(CPIntVar[]::new),</span>
+<span class="nc" id="L400">                        CPFactory.minus(v)));</span>
+<span class="nc" id="L401">            case Max m -&gt; post(new org.maxicp.cp.engine.constraints.Maximum(getCPVar(m.exprs()), v));</span>
+<span class="fc" id="L402">            case Element1D e -&gt; post(new org.maxicp.cp.engine.constraints.Element1D(e.array(), getCPVar(e.index()), v));</span>
+<span class="fc" id="L403">            case Element1DVar e -&gt;</span>
+<span class="fc" id="L404">                post(new org.maxicp.cp.engine.constraints.Element1DVar(getCPVar(e.array()), getCPVar(e.index()), v));</span>
+<span class="fc" id="L405">            case Element2D e -&gt;</span>
+<span class="fc" id="L406">                post(new org.maxicp.cp.engine.constraints.Element2D(e.array(), getCPVar(e.x()), getCPVar(e.y()), v));</span>
+<span class="fc" id="L407">            case Element2DVar e -&gt; {</span>
+<span class="fc" id="L408">                int nRows = e.array().length;</span>
+<span class="fc" id="L409">                int nCols = e.array()[0].length;</span>
+<span class="fc" id="L410">                CPIntVar rx = getCPVar(e.x());</span>
+<span class="fc" id="L411">                CPIntVar cy = getCPVar(e.y());</span>
+<span class="fc" id="L412">                rx.removeBelow(0);</span>
+<span class="fc" id="L413">                rx.removeAbove(nRows - 1);</span>
+<span class="fc" id="L414">                cy.removeBelow(0);</span>
+<span class="fc" id="L415">                cy.removeAbove(nCols - 1);</span>
+<span class="fc" id="L416">                CPIntVar[] flat = new CPIntVar[nRows * nCols];</span>
+<span class="fc" id="L417">                int[][] idxTuples = new int[nRows * nCols][3];</span>
+<span class="fc bfc" id="L418" title="All 2 branches covered.">                for (int r = 0; r &lt; nRows; r++) {</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">                    for (int c = 0; c &lt; nCols; c++) {</span>
+<span class="fc" id="L420">                        int k = r * nCols + c;</span>
+<span class="fc" id="L421">                        flat[k] = getCPVar(e.array()[r][c]);</span>
+<span class="fc" id="L422">                        idxTuples[k][0] = r;</span>
+<span class="fc" id="L423">                        idxTuples[k][1] = c;</span>
+<span class="fc" id="L424">                        idxTuples[k][2] = k;</span>
+                    }
+                }
+<span class="fc" id="L427">                CPIntVar idx = CPFactory.makeIntVar(solver, 0, nRows * nCols - 1);</span>
+<span class="fc" id="L428">                post(new org.maxicp.cp.engine.constraints.TableCT(new CPIntVar[]{rx, cy, idx}, idxTuples));</span>
+<span class="fc" id="L429">                post(new org.maxicp.cp.engine.constraints.Element1DVar(flat, idx, v));</span>
+<span class="fc" id="L430">            }</span>
+<span class="nc" id="L431">            case MulBinary ie -&gt; {</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">                if (ie.b().min() == 1) {</span>
+<span class="nc" id="L433">                    post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(ie.x()), v));</span>
+                } else {
+<span class="nc" id="L435">                    post(new org.maxicp.cp.engine.constraints.Mul(getCPVar(ie.x()), getCPVar(ie.b()), v));</span>
+                }
+<span class="nc" id="L437">            }</span>
+<span class="nc" id="L438">            case Eq e -&gt;</span>
+<span class="nc" id="L439">                post(new org.maxicp.cp.engine.constraints.IsEqualVar(asBoolVar(v), getCPVar(e.a()), getCPVar(e.b())));</span>
+<span class="nc" id="L440">            case NotEq e -&gt;</span>
+<span class="nc" id="L441">                post(new org.maxicp.cp.engine.constraints.IsEqualVar(CPFactory.not(asBoolVar(v)), getCPVar(e.a()),</span>
+<span class="nc" id="L442">                        getCPVar(e.b())));</span>
+<span class="nc" id="L443">            case LessOrEq e -&gt;</span>
+<span class="nc" id="L444">                post(new org.maxicp.cp.engine.constraints.IsLessOrEqualVar(asBoolVar(v), getCPVar(e.a()),</span>
+<span class="nc" id="L445">                        getCPVar(e.b())));</span>
+<span class="nc" id="L446">            case GreaterOrEq e -&gt;</span>
+<span class="nc" id="L447">                post(new org.maxicp.cp.engine.constraints.IsLessOrEqualVar(asBoolVar(v), getCPVar(e.b()),</span>
+<span class="nc" id="L448">                        getCPVar(e.a())));</span>
+<span class="nc" id="L449">            case Or or -&gt;</span>
+<span class="nc" id="L450">                post(new IsOr(asBoolVar(v), or.exprs().stream().map(this::getCPVar).toArray(CPBoolVar[]::new)));</span>
+<span class="nc" id="L451">            case InSet e -&gt; {</span>
+<span class="nc" id="L452">                CPIntVar x = getCPVar(e.a());</span>
+<span class="nc" id="L453">                int[] dom = new int[x.size()];</span>
+<span class="nc" id="L454">                int sz = x.fillArray(dom);</span>
+<span class="nc" id="L455">                java.util.List&lt;CPBoolVar&gt; inList = new java.util.ArrayList&lt;&gt;();</span>
+<span class="nc" id="L456">                java.util.List&lt;CPBoolVar&gt; outList = new java.util.ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">                for (int i = 0; i &lt; sz; i++) {</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">                    if (e.b().contains(dom[i])) {</span>
+<span class="nc" id="L459">                        inList.add(CPFactory.isEq(x, dom[i]));</span>
+                    } else {
+<span class="nc" id="L461">                        outList.add(CPFactory.isEq(x, dom[i]));</span>
+                    }
+                }
+<span class="nc" id="L464">                CPBoolVar b = asBoolVar(v);</span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">                if (inList.isEmpty()) {</span>
+<span class="nc" id="L466">                    b.fix(false);</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">                } else if (outList.isEmpty()) {</span>
+<span class="nc" id="L468">                    b.fix(true);</span>
+                } else {
+<span class="nc" id="L470">                    post(new IsOr(b, inList.toArray(CPBoolVar[]::new)));</span>
+<span class="nc" id="L471">                    post(new IsOr(CPFactory.not(b), outList.toArray(CPBoolVar[]::new)));</span>
+                }
+<span class="nc" id="L473">            }</span>
+<span class="nc" id="L474">            case And e -&gt; {</span>
+<span class="nc" id="L475">                CPIntVar s = CPFactory.makeIntVar(solver, 0, e.exprs().size());</span>
+<span class="nc" id="L476">                post(new org.maxicp.cp.engine.constraints.Sum(</span>
+<span class="nc" id="L477">                        e.exprs().stream().map(x -&gt; getCPVar((IntExpression) x)).toArray(CPIntVar[]::new), s));</span>
+<span class="nc" id="L478">                post(new org.maxicp.cp.engine.constraints.IsEqual(asBoolVar(v), s, e.exprs().size()));</span>
+<span class="nc" id="L479">            }</span>
+<span class="nc" id="L480">            case Not e -&gt; {</span>
                 // fallback. Note that we don't use e but expr below, so we put v Equals expr
                 // === v Equals Not(e).
-<span class="nc" id="L352">                post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(expr), v));</span>
-<span class="nc" id="L353">            }</span>
-<span class="fc" id="L354">            case IntervalStart ivs -&gt; {</span>
-<span class="fc" id="L355">                post(new Equal(getCPVar(ivs), getCPVar(v)));</span>
-<span class="fc" id="L356">            }</span>
-<span class="fc" id="L357">            case IntervalEnd ive -&gt; {</span>
-<span class="fc" id="L358">                post(new Equal(getCPVar(ive), getCPVar(v)));</span>
-<span class="fc" id="L359">            }</span>
-<span class="fc" id="L360">            case IntervalLength ivl -&gt; {</span>
-<span class="fc" id="L361">                post(new Equal(getCPVar(ivl), getCPVar(v)));</span>
-<span class="fc" id="L362">            }</span>
+<span class="nc" id="L483">                post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(expr), v));</span>
+<span class="nc" id="L484">            }</span>
+<span class="fc" id="L485">            case IntervalStart ivs -&gt; {</span>
+<span class="fc" id="L486">                post(new Equal(getCPVar(ivs), getCPVar(v)));</span>
+<span class="fc" id="L487">            }</span>
+<span class="fc" id="L488">            case IntervalEnd ive -&gt; {</span>
+<span class="fc" id="L489">                post(new Equal(getCPVar(ive), getCPVar(v)));</span>
+<span class="fc" id="L490">            }</span>
+<span class="fc" id="L491">            case IntervalLength ivl -&gt; {</span>
+<span class="fc" id="L492">                post(new Equal(getCPVar(ivl), getCPVar(v)));</span>
+<span class="fc" id="L493">            }</span>
+<span class="fc" id="L494">            case IntervalStartOrValue ivs -&gt; {</span>
+<span class="fc" id="L495">                post(new Equal(getCPVar(ivs), getCPVar(v)));</span>
+<span class="fc" id="L496">            }</span>
+<span class="fc" id="L497">            case IntervalEndOrValue ive -&gt; {</span>
+<span class="fc" id="L498">                post(new Equal(getCPVar(ive), getCPVar(v)));</span>
+<span class="fc" id="L499">            }</span>
+<span class="fc" id="L500">            case IntervalLengthOrValue ivl -&gt; {</span>
+<span class="fc" id="L501">                post(new Equal(getCPVar(ivl), getCPVar(v)));</span>
+<span class="fc" id="L502">            }</span>
+<span class="nc" id="L503">            case EndBeforeStart is -&gt; {</span>
+<span class="nc" id="L504">                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBeforeStart(getCPVar(is.a()),</span>
+<span class="nc" id="L505">                        getCPVar(is.b()), asBoolVar(v)));</span>
+<span class="nc" id="L506">            }</span>
+<span class="nc" id="L507">            case EndBefore e -&gt; {</span>
+<span class="nc" id="L508">                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndBefore(asBoolVar(v), getCPVar(e.intervalVar()),</span>
+<span class="nc" id="L509">                        getCPVar(e.end())));</span>
+<span class="nc" id="L510">            }</span>
+<span class="nc" id="L511">            case EndAfter e -&gt; {</span>
+<span class="nc" id="L512">                post(new org.maxicp.cp.engine.constraints.scheduling.IsEndAfter(asBoolVar(v), getCPVar(e.interval()),</span>
+<span class="nc" id="L513">                        getCPVar(e.value())));</span>
+<span class="nc" id="L514">            }</span>
+<span class="nc" id="L515">            case StartBefore e -&gt; {</span>
+<span class="nc" id="L516">                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(asBoolVar(v), getCPVar(e.interval()),</span>
+<span class="nc" id="L517">                        getCPVar(e.value())));</span>
+<span class="nc" id="L518">            }</span>
+<span class="nc" id="L519">            case StartAfter e -&gt; {</span>
+<span class="nc" id="L520">                post(new org.maxicp.cp.engine.constraints.scheduling.IsStartBefore(CPFactory.not(asBoolVar(v)),</span>
+<span class="nc" id="L521">                        getCPVar(e.interval()), getCPVar(e.value())));</span>
+<span class="nc" id="L522">            }</span>
+<span class="nc" id="L523">            case org.maxicp.modeling.algebra.bool.Present p -&gt; {</span>
+<span class="nc" id="L524">                post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(p.interval()).status(), v));</span>
+<span class="nc" id="L525">            }</span>
+<span class="fc" id="L526">            case Div div -&gt; {</span>
+<span class="fc" id="L527">                CPIntVar x = getCPVar(div.x());</span>
+<span class="fc" id="L528">                CPIntVar y = getCPVar(div.y());</span>
+<span class="fc" id="L529">                y.remove(0);</span>
+<span class="fc" id="L530">                post(new org.maxicp.cp.engine.constraints.DivVar(x, y, v));</span>
+<span class="fc" id="L531">            }</span>
             default -&gt;
-<span class="nc" id="L364">                throw new NotYetImplementedException(</span>
-<span class="nc" id="L365">                        &quot;Unknown expression type %s in enforceEqualityIntExpression&quot;.formatted(v.getClass()));</span>
+<span class="nc" id="L533">                throw new NotYetImplementedException(</span>
+<span class="nc" id="L534">                        &quot;Unknown expression type %s in enforceEqualityIntExpression&quot;.formatted(expr.getClass()));</span>
         }
-<span class="fc" id="L367">        intExprMapping.put(expr, v);</span>
-<span class="fc" id="L368">    }</span>
+<span class="fc bfc" id="L536" title="All 4 branches covered.">        if (expr instanceof BoolExpression be &amp;&amp; !boolExprMapping.containsKey(be)) {</span>
+<span class="fc" id="L537">            boolExprMapping.put(be, asBoolVar(v));</span>
+        }
+<span class="fc" id="L539">        intExprMapping.put(expr, v);</span>
+<span class="fc" id="L540">    }</span>
 
     public CPBoolVar asBoolVar(CPIntVar v) {
-<span class="nc bnc" id="L371" title="All 2 branches missed.">        if (v instanceof CPBoolVar bv)</span>
-<span class="nc" id="L372">            return bv;</span>
-<span class="nc" id="L373">        return new CPBoolVarImpl(v);</span>
+<span class="pc bpc" id="L543" title="1 of 2 branches missed.">        if (v instanceof CPBoolVar bv)</span>
+<span class="nc" id="L544">            return bv;</span>
+<span class="fc" id="L545">        return new CPBoolVarImpl(v);</span>
     }
 
     public org.maxicp.search.Objective minimize(IntVar v) {
-<span class="nc" id="L377">        return new Minimize(getCPVar(v));</span>
+<span class="nc" id="L549">        return new Minimize(getCPVar(v));</span>
     }
 
     public CPIntVar[] getCPVar(IntExpression[] v) {
-<span class="fc" id="L381">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L553">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
     }
 
     public CPBoolVar[] getCPVar(BoolExpression[] v) {
-<span class="nc" id="L385">        return Arrays.stream(v).map(this::getCPVar).toArray(CPBoolVar[]::new);</span>
+<span class="fc" id="L557">        return Arrays.stream(v).map(this::getCPVar).toArray(CPBoolVar[]::new);</span>
     }
 
     public CPSeqVar getCPVar(SeqExpression v) {
-<span class="pc bpc" id="L389" title="1 of 2 branches missed.">        if (v instanceof CPSeqVar cpv)</span>
-<span class="fc" id="L390">            return cpv;</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">        if (v instanceof CPSeqVar cpv)</span>
+<span class="fc" id="L562">            return cpv;</span>
 
-<span class="nc" id="L392">        CPSeqVar cached = seqExprMapping.get(v);</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">        if (cached != null)</span>
-<span class="nc" id="L394">            return cached;</span>
-<span class="nc bnc" id="L395" title="All 2 branches missed.">        CPSeqVar newVar = switch (v) {</span>
-<span class="nc" id="L396">            case SeqVarImpl sv -&gt; CPFactory.makeSeqVar(solver, sv.nNode(), sv.start(), sv.end());</span>
-<span class="nc" id="L397">            default -&gt; throw new NotImplementedException(&quot;Unknown var type %s&quot;.formatted(v.getClass()));</span>
+<span class="fc" id="L564">        CPSeqVar cached = seqExprMapping.get(v);</span>
+<span class="fc bfc" id="L565" title="All 2 branches covered.">        if (cached != null)</span>
+<span class="fc" id="L566">            return cached;</span>
+<span class="pc bpc" id="L567" title="1 of 2 branches missed.">        CPSeqVar newVar = switch (v) {</span>
+<span class="fc" id="L568">            case SeqVarImpl sv -&gt; CPFactory.makeSeqVar(solver, sv.nNode(), sv.start(), sv.end());</span>
+<span class="pc" id="L569">            default -&gt; throw new NotImplementedException(&quot;Unknown var type %s&quot;.formatted(v.getClass()));</span>
         };
-<span class="nc" id="L399">        seqExprMapping.put(v, newVar);</span>
-<span class="nc" id="L400">        return newVar;</span>
+<span class="fc" id="L571">        seqExprMapping.put(v, newVar);</span>
+<span class="fc" id="L572">        return newVar;</span>
     }
 
     public CPIntervalVar[] getCPVar(IntervalExpression[] v) {
-<span class="fc" id="L404">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntervalVar[]::new);</span>
+<span class="fc" id="L576">        return Arrays.stream(v).map(this::getCPVar).toArray(CPIntervalVar[]::new);</span>
     }
 
     public CPIntervalVar getCPVar(IntervalExpression v) {
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        if (v instanceof CPIntervalVar cpv) {</span>
-<span class="fc" id="L409">            return cpv;</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">        if (v instanceof CPIntervalVar cpv) {</span>
+<span class="fc" id="L581">            return cpv;</span>
         }
-<span class="fc" id="L411">        CPIntervalVar cached = intervalExprMapping.get(v);</span>
-<span class="fc bfc" id="L412" title="All 2 branches covered.">        if (cached != null) {</span>
-<span class="fc" id="L413">            return cached;</span>
+<span class="fc" id="L583">        CPIntervalVar cached = intervalExprMapping.get(v);</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">        if (cached != null) {</span>
+<span class="fc" id="L585">            return cached;</span>
         }
 
-<span class="pc bpc" id="L416" title="1 of 2 branches missed.">        CPIntervalVar newVar = switch (v) {</span>
-<span class="fc" id="L417">            case IntervalVarImpl iv -&gt; {</span>
-<span class="fc" id="L418">                iv.defaultLengthMin();</span>
-<span class="fc" id="L419">                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.defaultIsOptional(),</span>
-<span class="fc" id="L420">                        iv.defaultLengthMin(), iv.defaultLengthMax());</span>
-<span class="fc" id="L421">                intervalVar.setStartMin(iv.defaultStartMin());</span>
-<span class="fc" id="L422">                intervalVar.setStartMax(iv.defaultStartMax());</span>
-<span class="fc" id="L423">                intervalVar.setEndMin(iv.defaultEndMin());</span>
-<span class="fc" id="L424">                intervalVar.setEndMax(iv.defaultEndMax());</span>
-<span class="fc" id="L425">                yield intervalVar;</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">        CPIntervalVar newVar = switch (v) {</span>
+<span class="fc" id="L589">            case IntervalVarImpl iv -&gt; {</span>
+<span class="fc" id="L590">                iv.defaultLengthMin();</span>
+<span class="fc" id="L591">                CPIntervalVar intervalVar = CPFactory.makeIntervalVar(solver, iv.defaultIsOptional(),</span>
+<span class="fc" id="L592">                        iv.defaultLengthMin(), iv.defaultLengthMax());</span>
+<span class="fc" id="L593">                intervalVar.setStartMin(iv.defaultStartMin());</span>
+<span class="fc" id="L594">                intervalVar.setStartMax(iv.defaultStartMax());</span>
+<span class="fc" id="L595">                intervalVar.setEndMin(iv.defaultEndMin());</span>
+<span class="fc" id="L596">                intervalVar.setEndMax(iv.defaultEndMax());</span>
+<span class="fc" id="L597">                yield intervalVar;</span>
             }
             default -&gt; {
-<span class="pc" id="L428">                throw new NotImplementedException(&quot;Unknown var type %s&quot;.formatted(v.getClass()));</span>
+<span class="pc" id="L600">                throw new NotImplementedException(&quot;Unknown var type %s&quot;.formatted(v.getClass()));</span>
             }
         };
-<span class="fc" id="L431">        intervalExprMapping.put(v, newVar);</span>
-<span class="fc" id="L432">        return newVar;</span>
+<span class="fc" id="L603">        intervalExprMapping.put(v, newVar);</span>
+<span class="fc" id="L604">        return newVar;</span>
     }
 
     public CPCumulFunction getCumulFunction(CumulFunction f) {
-<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (f instanceof CPCumulFunction cpe)</span>
-<span class="nc" id="L437">            return cpe;</span>
-<span class="fc" id="L438">        CPCumulFunction cached = cumulFunMapping.get(f);</span>
-<span class="pc bpc" id="L439" title="1 of 2 branches missed.">        if (cached != null)</span>
-<span class="nc" id="L440">            return cached;</span>
-<span class="pc bpc" id="L441" title="5 of 8 branches missed.">        CPCumulFunction c = switch (f) {</span>
-<span class="fc" id="L442">            case FlatCumulFunction ignored -&gt; new CPFlatCumulFunction();</span>
-<span class="nc" id="L443">            case MinusCumulFunction minus -&gt;</span>
-<span class="nc" id="L444">                new CPMinusCumulFunction(getCumulFunction(minus.left()), getCumulFunction(minus.right()));</span>
-<span class="nc" id="L445">            case PlusCumulFunction plus -&gt;</span>
-<span class="nc" id="L446">                new CPPlusCumulFunction(getCumulFunction(plus.left()), getCumulFunction(plus.right()));</span>
-<span class="fc" id="L447">            case PulseCumulFunction pulse -&gt;</span>
-<span class="fc" id="L448">                new CPPulseCumulFunction(getCPVar(pulse.interval), pulse.hMin, pulse.hMax);</span>
-<span class="nc" id="L449">            case StepAtEndCumulFunction step -&gt;</span>
-<span class="nc" id="L450">                new CPStepAtEndCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);</span>
-<span class="nc" id="L451">            case StepAtStartCumulFunction step -&gt;</span>
-<span class="nc" id="L452">                new CPStepAtStartCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);</span>
-<span class="fc" id="L453">            case SumCumulFunction sum -&gt;</span>
-<span class="fc" id="L454">                new CPSumCumulFunction(</span>
-<span class="fc" id="L455">                        Arrays.stream(sum.functions).map(this::getCumulFunction).toArray(CPCumulFunction[]::new));</span>
-<span class="pc" id="L456">            default -&gt; throw new NotImplementedException(&quot;Unknown cumul expression type %s&quot;.formatted(f.getClass()));</span>
+<span class="pc bpc" id="L608" title="1 of 2 branches missed.">        if (f instanceof CPCumulFunction cpe)</span>
+<span class="nc" id="L609">            return cpe;</span>
+<span class="fc" id="L610">        CPCumulFunction cached = cumulFunMapping.get(f);</span>
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">        if (cached != null)</span>
+<span class="nc" id="L612">            return cached;</span>
+<span class="pc bpc" id="L613" title="5 of 8 branches missed.">        CPCumulFunction c = switch (f) {</span>
+<span class="fc" id="L614">            case FlatCumulFunction ignored -&gt; new CPFlatCumulFunction();</span>
+<span class="nc" id="L615">            case MinusCumulFunction minus -&gt;</span>
+<span class="nc" id="L616">                new CPMinusCumulFunction(getCumulFunction(minus.left()), getCumulFunction(minus.right()));</span>
+<span class="nc" id="L617">            case PlusCumulFunction plus -&gt;</span>
+<span class="nc" id="L618">                new CPPlusCumulFunction(getCumulFunction(plus.left()), getCumulFunction(plus.right()));</span>
+<span class="fc" id="L619">            case PulseCumulFunction pulse -&gt;</span>
+<span class="fc" id="L620">                new CPPulseCumulFunction(getCPVar(pulse.interval), getCPVar(pulse.height));</span>
+<span class="nc" id="L621">            case StepAtEndCumulFunction step -&gt;</span>
+<span class="nc" id="L622">                new CPStepAtEndCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);</span>
+<span class="nc" id="L623">            case StepAtStartCumulFunction step -&gt;</span>
+<span class="nc" id="L624">                new CPStepAtStartCumulFunction(getCPVar(step.interval), step.hMin, step.hMax);</span>
+<span class="fc" id="L625">            case SumCumulFunction sum -&gt;</span>
+<span class="fc" id="L626">                new CPSumCumulFunction(</span>
+<span class="fc" id="L627">                        Arrays.stream(sum.functions).map(this::getCumulFunction).toArray(CPCumulFunction[]::new));</span>
+<span class="pc" id="L628">            default -&gt; throw new NotImplementedException(&quot;Unknown cumul expression type %s&quot;.formatted(f.getClass()));</span>
         };
-<span class="fc" id="L458">        cumulFunMapping.put(f, c);</span>
-<span class="fc" id="L459">        return c;</span>
+<span class="fc" id="L630">        cumulFunMapping.put(f, c);</span>
+<span class="fc" id="L631">        return c;</span>
     }
 
     public IntObjective minimize(IntExpression v) {
-<span class="nc" id="L463">        return solver.minimize(getCPVar(v));</span>
+<span class="fc" id="L635">        return solver.minimize(getCPVar(v));</span>
     }
 
     public IntObjective maximize(IntExpression v) {
-<span class="nc" id="L467">        return solver.maximize(getCPVar(v));</span>
+<span class="nc" id="L639">        return solver.maximize(getCPVar(v));</span>
     }
 
     @Override
     public void add(Constraint c, boolean enforceFixPoint) {
-<span class="pc bpc" id="L472" title="1 of 2 branches missed.">        if (!enforceFixPoint) {</span>
-<span class="nc" id="L473">            boolean oldVal = disableFixPoint;</span>
-<span class="nc" id="L474">            disableFixPoint = true;</span>
-<span class="nc" id="L475">            instantiateConstraint(c);</span>
-<span class="nc" id="L476">            disableFixPoint = oldVal;</span>
-<span class="nc" id="L477">        } else {</span>
-<span class="fc" id="L478">            instantiateConstraint(c);</span>
+<span class="pc bpc" id="L644" title="1 of 2 branches missed.">        if (!enforceFixPoint) {</span>
+<span class="nc" id="L645">            boolean oldVal = disableFixPoint;</span>
+<span class="nc" id="L646">            disableFixPoint = true;</span>
+<span class="nc" id="L647">            instantiateConstraint(c);</span>
+<span class="nc" id="L648">            disableFixPoint = oldVal;</span>
+<span class="nc" id="L649">        } else {</span>
+<span class="fc" id="L650">            instantiateConstraint(c);</span>
         }
 
-<span class="fc" id="L481">        model.setValue(model.value().add(c));</span>
-<span class="fc" id="L482">    }</span>
+<span class="fc" id="L653">        model.setValue(model.value().add(c));</span>
+<span class="fc" id="L654">    }</span>
 
     @Override
     public void jumpTo(SymbolicModel node, boolean enforceFixPoint) {
         // Find the first node in common
-<span class="fc" id="L487">        HashSet&lt;SymbolicModel&gt; nodeCurrentlyPresent = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L659">        HashSet&lt;SymbolicModel&gt; nodeCurrentlyPresent = new HashSet&lt;&gt;();</span>
 
-<span class="fc" id="L489">        SymbolicModel cur = model.value();</span>
-<span class="fc bfc" id="L490" title="All 2 branches covered.">        while (cur != concretizedNode) {</span>
-<span class="fc" id="L491">            nodeCurrentlyPresent.add(cur);</span>
-<span class="fc" id="L492">            cur = cur.parent();</span>
+<span class="fc" id="L661">        SymbolicModel cur = model.value();</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">        while (cur != concretizedNode) {</span>
+<span class="fc" id="L663">            nodeCurrentlyPresent.add(cur);</span>
+<span class="fc" id="L664">            cur = cur.parent();</span>
         }
-<span class="fc" id="L494">        nodeCurrentlyPresent.add(cur);</span>
+<span class="fc" id="L666">        nodeCurrentlyPresent.add(cur);</span>
 
-<span class="fc" id="L496">        cur = node;</span>
-<span class="pc bpc" id="L497" title="1 of 4 branches missed.">        while (cur != null &amp;&amp; !nodeCurrentlyPresent.contains(cur)) {</span>
-<span class="fc" id="L498">            cur = cur.parent();</span>
+<span class="fc" id="L668">        cur = node;</span>
+<span class="pc bpc" id="L669" title="1 of 4 branches missed.">        while (cur != null &amp;&amp; !nodeCurrentlyPresent.contains(cur)) {</span>
+<span class="fc" id="L670">            cur = cur.parent();</span>
         }
-<span class="fc" id="L500">        SymbolicModel firstCommonNode = cur;</span>
+<span class="fc" id="L672">        SymbolicModel firstCommonNode = cur;</span>
 
         // Now list the nodes before this first common node
-<span class="fc" id="L503">        nodeCurrentlyPresent.clear();</span>
-<span class="fc" id="L504">        cur = firstCommonNode;</span>
-<span class="fc bfc" id="L505" title="All 2 branches covered.">        while (cur != null) {</span>
-<span class="fc" id="L506">            nodeCurrentlyPresent.add(cur);</span>
-<span class="fc" id="L507">            cur = cur.parent();</span>
+<span class="fc" id="L675">        nodeCurrentlyPresent.clear();</span>
+<span class="fc" id="L676">        cur = firstCommonNode;</span>
+<span class="fc bfc" id="L677" title="All 2 branches covered.">        while (cur != null) {</span>
+<span class="fc" id="L678">            nodeCurrentlyPresent.add(cur);</span>
+<span class="fc" id="L679">            cur = cur.parent();</span>
         }
 
         // Now revert the solver until we are at a node below the first common node
-<span class="fc" id="L511">        boolean hasJumped = false; // set to true if the solver has actually jumped (in case jumping to the current</span>
+<span class="fc" id="L683">        boolean hasJumped = false; // set to true if the solver has actually jumped (in case jumping to the current</span>
                                    // location)
-<span class="fc bfc" id="L513" title="All 2 branches covered.">        while (!nodeCurrentlyPresent.contains(model.value())) {</span>
-<span class="fc" id="L514">            hasJumped = true;</span>
-<span class="fc" id="L515">            getStateManager().restoreState();</span>
+<span class="fc bfc" id="L685" title="All 2 branches covered.">        while (!nodeCurrentlyPresent.contains(model.value())) {</span>
+<span class="fc" id="L686">            hasJumped = true;</span>
+<span class="fc" id="L687">            getStateManager().restoreState();</span>
         }
-<span class="fc bfc" id="L517" title="All 2 branches covered.">        if (hasJumped)</span>
-<span class="fc" id="L518">            getStateManager().saveState();</span>
+<span class="fc bfc" id="L689" title="All 2 branches covered.">        if (hasJumped)</span>
+<span class="fc" id="L690">            getStateManager().saveState();</span>
 
         // We now just have to add constraints until we are at the right node
-<span class="fc" id="L521">        ArrayDeque&lt;Constraint&gt; needConcretization = new ArrayDeque&lt;&gt;();</span>
-<span class="fc" id="L522">        cur = node;</span>
-<span class="fc bfc" id="L523" title="All 2 branches covered.">        while (cur != model.value()) {</span>
-<span class="fc" id="L524">            needConcretization.addFirst(cur.constraint());</span>
-<span class="fc" id="L525">            cur = cur.parent();</span>
+<span class="fc" id="L693">        ArrayDeque&lt;Constraint&gt; needConcretization = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L694">        cur = node;</span>
+<span class="fc bfc" id="L695" title="All 2 branches covered.">        while (cur != model.value()) {</span>
+<span class="fc" id="L696">            needConcretization.addFirst(cur.constraint());</span>
+<span class="fc" id="L697">            cur = cur.parent();</span>
         }
 
-<span class="fc" id="L528">        noFixPoint(() -&gt; {</span>
-<span class="fc bfc" id="L529" title="All 2 branches covered.">            for (Constraint cln : needConcretization) {</span>
-<span class="fc" id="L530">                instantiateConstraint(cln);</span>
-<span class="fc" id="L531">            }</span>
-<span class="fc" id="L532">        });</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">        if (enforceFixPoint)</span>
-<span class="fc" id="L534">            solver.fixPoint();</span>
+<span class="fc" id="L700">        noFixPoint(() -&gt; {</span>
+<span class="fc bfc" id="L701" title="All 2 branches covered.">            for (Constraint cln : needConcretization) {</span>
+<span class="fc" id="L702">                instantiateConstraint(cln);</span>
+<span class="fc" id="L703">            }</span>
+<span class="fc" id="L704">        });</span>
+<span class="pc bpc" id="L705" title="1 of 2 branches missed.">        if (enforceFixPoint)</span>
+<span class="fc" id="L706">            solver.fixPoint();</span>
 
-<span class="fc" id="L536">        model.setValue(node);</span>
-<span class="fc" id="L537">    }</span>
+<span class="fc" id="L708">        model.setValue(node);</span>
+<span class="fc" id="L709">    }</span>
 
     @Override
     public void jumpToChild(SymbolicModel m, boolean enforceFixPoint) {
-<span class="fc" id="L541">        SymbolicModel me = model.value();</span>
-<span class="fc" id="L542">        ArrayDeque&lt;Constraint&gt; todo = new ArrayDeque&lt;&gt;();</span>
-<span class="fc" id="L543">        SymbolicModel child = m;</span>
-<span class="fc bfc" id="L544" title="All 2 branches covered.">        while (child != me) {</span>
-<span class="fc bfc" id="L545" title="All 2 branches covered.">            if (child.isEmpty())</span>
-<span class="fc" id="L546">                throw new NotAChildModelException();</span>
-<span class="fc" id="L547">            todo.addLast(child.constraint());</span>
-<span class="pc bpc" id="L548" title="1 of 2 branches missed.">            if (child.parent() == null)</span>
-<span class="nc" id="L549">                throw new NotAChildModelException();</span>
-<span class="fc" id="L550">            child = child.parent();</span>
+<span class="fc" id="L713">        SymbolicModel me = model.value();</span>
+<span class="fc" id="L714">        ArrayDeque&lt;Constraint&gt; todo = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L715">        SymbolicModel child = m;</span>
+<span class="fc bfc" id="L716" title="All 2 branches covered.">        while (child != me) {</span>
+<span class="fc bfc" id="L717" title="All 2 branches covered.">            if (child.isEmpty())</span>
+<span class="fc" id="L718">                throw new NotAChildModelException();</span>
+<span class="fc" id="L719">            todo.addLast(child.constraint());</span>
+<span class="pc bpc" id="L720" title="1 of 2 branches missed.">            if (child.parent() == null)</span>
+<span class="nc" id="L721">                throw new NotAChildModelException();</span>
+<span class="fc" id="L722">            child = child.parent();</span>
         }
-<span class="fc" id="L552">        noFixPoint(() -&gt; {</span>
-<span class="fc bfc" id="L553" title="All 2 branches covered.">            for (Constraint cln : todo) {</span>
-<span class="fc" id="L554">                instantiateConstraint(cln);</span>
-<span class="fc" id="L555">            }</span>
-<span class="fc" id="L556">        });</span>
-<span class="pc bpc" id="L557" title="1 of 2 branches missed.">        if (enforceFixPoint)</span>
-<span class="fc" id="L558">            solver.fixPoint();</span>
-<span class="fc" id="L559">    }</span>
+<span class="fc" id="L724">        noFixPoint(() -&gt; {</span>
+<span class="fc bfc" id="L725" title="All 2 branches covered.">            for (Constraint cln : todo) {</span>
+<span class="fc" id="L726">                instantiateConstraint(cln);</span>
+<span class="fc" id="L727">            }</span>
+<span class="fc" id="L728">        });</span>
+<span class="pc bpc" id="L729" title="1 of 2 branches missed.">        if (enforceFixPoint)</span>
+<span class="fc" id="L730">            solver.fixPoint();</span>
+<span class="fc" id="L731">    }</span>
 
     @Override
     public SymbolicModel symbolicCopy() {
-<span class="fc" id="L563">        return model.value();</span>
+<span class="fc" id="L735">        return model.value();</span>
     }
 
     @Override
     public java.util.List&lt;java.util.List&lt;IntExpression&gt;&gt; getVariableGroups() {
-<span class="fc" id="L568">        return model.value().getVariableGroups();</span>
+<span class="fc" id="L740">        return model.value().getVariableGroups();</span>
     }
 
     @Override
     public Iterable&lt;Constraint&gt; getConstraints() {
-<span class="fc" id="L573">        return model.value().getConstraints();</span>
+<span class="fc" id="L745">        return model.value().getConstraints();</span>
     }
 
     @Override
     public ModelProxy getModelProxy() {
-<span class="fc" id="L578">        return modelProxy;</span>
+<span class="fc" id="L750">        return modelProxy;</span>
     }
 
     private void instantiateBoolExpression(BoolExpression expr) {
-<span class="pc bpc" id="L582" title="6 of 14 branches missed.">        switch (expr) {</span>
-<span class="fc" id="L583">            case Eq e -&gt; {</span>
-<span class="pc bpc" id="L584" title="1 of 2 branches missed.">                if (firstConstruction)</span>
-<span class="nc" id="L585">                    throw new RuntimeException(&quot;It should be impossible to post new Equal constraints while building&quot;);</span>
-<span class="fc" id="L586">                post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="fc" id="L587">            }</span>
-<span class="nc" id="L588">            case And a -&gt; {</span>
-<span class="nc bnc" id="L589" title="All 2 branches missed.">                for (BoolExpression e : a.exprs()) {</span>
-<span class="nc" id="L590">                    instantiateBoolExpression(e);</span>
-<span class="nc" id="L591">                }</span>
-<span class="nc" id="L592">            }</span>
-<span class="fc" id="L593">            case Not e -&gt; {</span>
-<span class="fc" id="L594">                CPBoolVar b = getCPVar(e.a());</span>
-<span class="fc" id="L595">                post(CPFactory.not(b));</span>
-<span class="fc" id="L596">            }</span>
-<span class="fc" id="L597">            case NotEq e -&gt; post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="fc" id="L598">            case LessOrEq e -&gt; post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="nc" id="L599">            case GreaterOrEq e -&gt;</span>
-<span class="nc" id="L600">                post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.b()), getCPVar(e.a())));</span>
-<span class="nc" id="L601">            case Or e -&gt;</span>
-<span class="nc" id="L602">                post(new org.maxicp.cp.engine.constraints.Or(getCPVar(e.exprs().toArray(BoolExpression[]::new))));</span>
-<span class="nc" id="L603">            case InSet e -&gt; {</span>
-<span class="nc" id="L604">                CPIntVar v = getCPVar(e.a());</span>
-<span class="nc" id="L605">                int[] values = new int[v.size()];</span>
-<span class="nc" id="L606">                v.fillArray(values);</span>
-<span class="nc bnc" id="L607" title="All 2 branches missed.">                for (int val : values) {</span>
-<span class="nc bnc" id="L608" title="All 2 branches missed.">                    if (!e.b().contains(val))</span>
-<span class="nc" id="L609">                        v.remove(val);</span>
+<span class="pc bpc" id="L754" title="2 of 15 branches missed.">        switch (expr) {</span>
+<span class="fc" id="L755">            case Eq e -&gt; {</span>
+<span class="pc bpc" id="L756" title="1 of 2 branches missed.">                if (firstConstruction)</span>
+<span class="nc" id="L757">                    throw new RuntimeException(&quot;It should be impossible to post new Equal constraints while building&quot;);</span>
+<span class="fc bfc" id="L758" title="All 2 branches covered.">                if (e.a() instanceof Constant c) {</span>
+<span class="fc" id="L759">                    getCPVar(e.b()).fix(c.v());</span>
+<span class="fc" id="L760">                    fixpoint();</span>
+<span class="pc bpc" id="L761" title="1 of 2 branches missed.">                } else if (e.b() instanceof Constant c) {</span>
+<span class="fc" id="L762">                    getCPVar(e.a()).fix(c.v());</span>
+<span class="fc" id="L763">                    fixpoint();</span>
+                } else {
+<span class="nc" id="L765">                    post(new org.maxicp.cp.engine.constraints.Equal(getCPVar(e.a()), getCPVar(e.b())));</span>
                 }
-<span class="nc" id="L611">            }</span>
-<span class="fc" id="L612">            case EndBeforeStart e -&gt; {</span>
-<span class="fc" id="L613">                post(new org.maxicp.cp.engine.constraints.scheduling.EndBeforeStart(getCPVar(e.a()), getCPVar(e.b())));</span>
-<span class="fc" id="L614">            }</span>
-<span class="nc" id="L615">            case EndBefore e -&gt; {</span>
-<span class="nc" id="L616">                post(new org.maxicp.cp.engine.constraints.scheduling.EndBefore(getCPVar(e.intervalVar()),</span>
-<span class="nc" id="L617">                        getCPVar(e.end())));</span>
-<span class="nc" id="L618">            }</span>
-<span class="fc" id="L619">            case StartAfter s -&gt; {</span>
-<span class="fc" id="L620">                post(new org.maxicp.cp.engine.constraints.scheduling.StartAfter(getCPVar(s.interval()),</span>
-<span class="fc" id="L621">                        getCPVar(s.value())));</span>
-<span class="fc" id="L622">            }</span>
-<span class="fc" id="L623">            case StartBefore s -&gt; {</span>
-<span class="fc" id="L624">                post(new org.maxicp.cp.engine.constraints.scheduling.StartBefore(getCPVar(s.interval()),</span>
-<span class="fc" id="L625">                        getCPVar(s.value())));</span>
-<span class="fc" id="L626">            }</span>
-<span class="fc" id="L627">            case org.maxicp.modeling.algebra.bool.Present p -&gt; {</span>
-<span class="fc" id="L628">                getCPVar(p.interval().status()).fix(true);</span>
-<span class="fc" id="L629">                fixpoint();</span>
-<span class="fc" id="L630">            }</span>
+<span class="nc" id="L767">            }</span>
+<span class="nc" id="L768">            case And a -&gt; {</span>
+<span class="nc bnc" id="L769" title="All 2 branches missed.">                for (BoolExpression e : a.exprs()) {</span>
+<span class="nc" id="L770">                    instantiateBoolExpression(e);</span>
+<span class="nc" id="L771">                }</span>
+<span class="nc" id="L772">            }</span>
+<span class="fc" id="L773">            case Not e -&gt; {</span>
+<span class="fc" id="L774">                CPBoolVar b = getCPVar(e.a());</span>
+<span class="fc" id="L775">                post(CPFactory.not(b));</span>
+<span class="fc" id="L776">            }</span>
+<span class="fc" id="L777">            case NotEq e -&gt; {</span>
+<span class="fc bfc" id="L778" title="All 2 branches covered.">                if (e.a() instanceof Constant c) {</span>
+<span class="fc" id="L779">                    getCPVar(e.b()).remove(c.v());</span>
+<span class="fc" id="L780">                    fixpoint();</span>
+<span class="fc bfc" id="L781" title="All 2 branches covered.">                } else if (e.b() instanceof Constant c) {</span>
+<span class="fc" id="L782">                    getCPVar(e.a()).remove(c.v());</span>
+<span class="fc" id="L783">                    fixpoint();</span>
+                } else {
+<span class="fc" id="L785">                    post(new org.maxicp.cp.engine.constraints.NotEqual(getCPVar(e.a()), getCPVar(e.b())));</span>
+                }
+<span class="fc" id="L787">            }</span>
+<span class="fc" id="L788">            case LessOrEq e -&gt; {</span>
+<span class="pc bpc" id="L789" title="1 of 2 branches missed.">                if (e.a() instanceof Constant c) {</span>
+<span class="nc" id="L790">                    getCPVar(e.b()).removeBelow(c.v());</span>
+<span class="nc" id="L791">                    fixpoint();</span>
+<span class="fc bfc" id="L792" title="All 2 branches covered.">                } else if (e.b() instanceof Constant c) {</span>
+<span class="fc" id="L793">                    getCPVar(e.a()).removeAbove(c.v());</span>
+<span class="fc" id="L794">                    fixpoint();</span>
+                } else {
+<span class="fc" id="L796">                    post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.a()), getCPVar(e.b())));</span>
+                }
+<span class="fc" id="L798">            }</span>
+<span class="fc" id="L799">            case GreaterOrEq e -&gt; {</span>
+<span class="pc bpc" id="L800" title="1 of 2 branches missed.">                if (e.a() instanceof Constant c) {</span>
+<span class="nc" id="L801">                    getCPVar(e.b()).removeAbove(c.v());</span>
+<span class="nc" id="L802">                    fixpoint();</span>
+<span class="pc bpc" id="L803" title="1 of 2 branches missed.">                } else if (e.b() instanceof Constant c) {</span>
+<span class="fc" id="L804">                    getCPVar(e.a()).removeBelow(c.v());</span>
+<span class="fc" id="L805">                    fixpoint();</span>
+                } else {
+<span class="nc" id="L807">                    post(new org.maxicp.cp.engine.constraints.LessOrEqual(getCPVar(e.b()), getCPVar(e.a())));</span>
+                }
+<span class="nc" id="L809">            }</span>
+<span class="fc" id="L810">            case Or e -&gt;</span>
+<span class="fc" id="L811">                post(new org.maxicp.cp.engine.constraints.Or(getCPVar(e.exprs().toArray(BoolExpression[]::new))));</span>
+<span class="fc" id="L812">            case InSet e -&gt; {</span>
+<span class="fc" id="L813">                CPIntVar v = getCPVar(e.a());</span>
+<span class="fc" id="L814">                int[] values = new int[v.size()];</span>
+<span class="fc" id="L815">                v.fillArray(values);</span>
+<span class="fc bfc" id="L816" title="All 2 branches covered.">                for (int val : values) {</span>
+<span class="fc bfc" id="L817" title="All 2 branches covered.">                    if (!e.b().contains(val))</span>
+<span class="fc" id="L818">                        v.remove(val);</span>
+                }
+<span class="fc" id="L820">                fixpoint();</span>
+<span class="fc" id="L821">            }</span>
+<span class="fc" id="L822">            case EndBeforeStart e -&gt; {</span>
+<span class="fc" id="L823">                post(new org.maxicp.cp.engine.constraints.scheduling.EndBeforeStart(getCPVar(e.a()), getCPVar(e.b())));</span>
+<span class="fc" id="L824">            }</span>
+<span class="fc" id="L825">            case EndBefore e -&gt; {</span>
+<span class="fc" id="L826">                post(new org.maxicp.cp.engine.constraints.scheduling.EndBefore(getCPVar(e.intervalVar()),</span>
+<span class="fc" id="L827">                        getCPVar(e.end())));</span>
+<span class="fc" id="L828">            }</span>
+<span class="fc" id="L829">            case EndAfter e -&gt; {</span>
+<span class="fc" id="L830">                post(new org.maxicp.cp.engine.constraints.scheduling.EndAfter(getCPVar(e.interval()),</span>
+<span class="fc" id="L831">                        getCPVar(e.value())));</span>
+<span class="fc" id="L832">            }</span>
+<span class="fc" id="L833">            case StartAfter s -&gt; {</span>
+<span class="fc" id="L834">                post(new org.maxicp.cp.engine.constraints.scheduling.StartAfter(getCPVar(s.interval()),</span>
+<span class="fc" id="L835">                        getCPVar(s.value())));</span>
+<span class="fc" id="L836">            }</span>
+<span class="fc" id="L837">            case StartBefore s -&gt; {</span>
+<span class="fc" id="L838">                post(new org.maxicp.cp.engine.constraints.scheduling.StartBefore(getCPVar(s.interval()),</span>
+<span class="fc" id="L839">                        getCPVar(s.value())));</span>
+<span class="fc" id="L840">            }</span>
+<span class="fc" id="L841">            case org.maxicp.modeling.algebra.bool.Present p -&gt; {</span>
+<span class="fc" id="L842">                getCPVar(p.interval().status()).fix(true);</span>
+<span class="fc" id="L843">                fixpoint();</span>
+<span class="fc" id="L844">            }</span>
             default -&gt;
-<span class="nc" id="L632">                throw new NotYetImplementedException(</span>
-<span class="nc" id="L633">                        &quot;Unknown expression type %s in instantiateBoolExpression&quot;.formatted(expr.getClass()));</span>
+<span class="nc" id="L846">                throw new NotYetImplementedException(</span>
+<span class="nc" id="L847">                        &quot;Unknown expression type %s in instantiateBoolExpression&quot;.formatted(expr.getClass()));</span>
         }
-<span class="fc" id="L635">    }</span>
+<span class="fc" id="L849">    }</span>
 
     private void instantiateConstraint(Constraint c) {
-<span class="pc bpc" id="L638" title="19 of 33 branches missed.">        switch (c) {</span>
-<span class="fc" id="L639">            case AllDifferent a -&gt; {</span>
-<span class="fc" id="L640">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="fc" id="L641">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
-<span class="fc" id="L642">            }</span>
-<span class="nc" id="L643">            case CardinalityMin cardMin -&gt; {</span>
-<span class="nc" id="L644">                CPIntVar[] args = Arrays.stream(cardMin.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L645">                int[] card = cardMin.array();</span>
-<span class="nc" id="L646">                post(new org.maxicp.cp.engine.constraints.CardinalityMinFWC(args, card));</span>
-<span class="nc" id="L647">            }</span>
-<span class="nc" id="L648">            case CardinalityMax cardMax -&gt; {</span>
-<span class="nc" id="L649">                CPIntVar[] args = Arrays.stream(cardMax.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L650">                int[] card = cardMax.array();</span>
-<span class="nc" id="L651">                post(new org.maxicp.cp.engine.constraints.CardinalityMaxFWC(args, card));</span>
-<span class="nc" id="L652">            }</span>
-<span class="nc" id="L653">            case BinPacking binPacking -&gt; {</span>
-<span class="nc" id="L654">                CPIntVar[] x = Arrays.stream(binPacking.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L655">                int[] w = binPacking.weights();</span>
-<span class="nc" id="L656">                CPIntVar[] l = Arrays.stream(binPacking.loads()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L657">                post(new org.maxicp.cp.engine.constraints.BinPacking(x, w, l));</span>
-<span class="nc" id="L658">            }</span>
-<span class="nc" id="L659">            case Sorted sorted -&gt; {</span>
-<span class="nc" id="L660">                CPIntVar[] x = Arrays.stream(sorted.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L661">                CPIntVar[] o = Arrays.stream(sorted.o()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L662">                CPIntVar[] y = Arrays.stream(sorted.o()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L663">                post(new org.maxicp.cp.engine.constraints.Sorted(x, o, y));</span>
-<span class="nc" id="L664">            }</span>
-<span class="nc" id="L665">            case Table t -&gt; {</span>
-<span class="nc bnc" id="L666" title="All 2 branches missed.">                if (t.starred().isEmpty())</span>
-<span class="nc" id="L667">                    post(new org.maxicp.cp.engine.constraints.TableCT(getCPVar(t.x()), t.array()));</span>
+<span class="pc bpc" id="L852" title="6 of 38 branches missed.">        switch (c) {</span>
+<span class="fc" id="L853">            case AllDifferent a -&gt; {</span>
+<span class="fc" id="L854">                CPIntVar[] args = a.x().stream().map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L855">                post(new org.maxicp.cp.engine.constraints.AllDifferentDC(args));</span>
+<span class="fc" id="L856">            }</span>
+<span class="fc" id="L857">            case CardinalityMin cardMin -&gt; {</span>
+<span class="fc" id="L858">                CPIntVar[] args = Arrays.stream(cardMin.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L859">                int[] card = cardMin.array();</span>
+<span class="fc" id="L860">                post(new org.maxicp.cp.engine.constraints.CardinalityMinFWC(args, card));</span>
+<span class="fc" id="L861">            }</span>
+<span class="fc" id="L862">            case CardinalityMax cardMax -&gt; {</span>
+<span class="fc" id="L863">                CPIntVar[] args = Arrays.stream(cardMax.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L864">                int[] card = cardMax.array();</span>
+<span class="fc" id="L865">                post(new org.maxicp.cp.engine.constraints.CardinalityMaxFWC(args, card));</span>
+<span class="fc" id="L866">            }</span>
+<span class="fc" id="L867">            case BinPacking binPacking -&gt; {</span>
+<span class="fc" id="L868">                CPIntVar[] x = Arrays.stream(binPacking.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L869">                int[] w = binPacking.weights();</span>
+<span class="fc" id="L870">                CPIntVar[] l = Arrays.stream(binPacking.loads()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L871">                post(new org.maxicp.cp.engine.constraints.BinPacking(x, w, l));</span>
+<span class="fc" id="L872">            }</span>
+<span class="nc" id="L873">            case Sorted sorted -&gt; {</span>
+<span class="nc" id="L874">                CPIntVar[] x = Arrays.stream(sorted.x()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="nc" id="L875">                CPIntVar[] o = Arrays.stream(sorted.o()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="nc" id="L876">                CPIntVar[] y = Arrays.stream(sorted.o()).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="nc" id="L877">                post(new org.maxicp.cp.engine.constraints.Sorted(x, o, y));</span>
+<span class="nc" id="L878">            }</span>
+<span class="fc" id="L879">            case Table t -&gt; {</span>
+<span class="fc bfc" id="L880" title="All 2 branches covered.">                if (t.starred().isEmpty())</span>
+<span class="fc" id="L881">                    post(new org.maxicp.cp.engine.constraints.TableCT(getCPVar(t.x()), t.array()));</span>
                 else
-<span class="nc" id="L669">                    post(new org.maxicp.cp.engine.constraints.ShortTableCT(getCPVar(t.x()), t.array(),</span>
-<span class="nc" id="L670">                            t.starred().get()));</span>
-<span class="nc" id="L671">            }</span>
-<span class="nc" id="L672">            case NegTable t -&gt; {</span>
-<span class="nc bnc" id="L673" title="All 2 branches missed.">                if (t.starred().isEmpty())</span>
-<span class="nc" id="L674">                    post(new org.maxicp.cp.engine.constraints.NegTableCT(getCPVar(t.x()), t.array()));</span>
+<span class="fc" id="L883">                    post(new org.maxicp.cp.engine.constraints.ShortTableCT(getCPVar(t.x()), t.array(),</span>
+<span class="fc" id="L884">                            t.starred().get()));</span>
+<span class="fc" id="L885">            }</span>
+<span class="fc" id="L886">            case NegTable t -&gt; {</span>
+<span class="pc bpc" id="L887" title="1 of 2 branches missed.">                if (t.starred().isEmpty())</span>
+<span class="fc" id="L888">                    post(new org.maxicp.cp.engine.constraints.NegTableCT(getCPVar(t.x()), t.array()));</span>
                 else
-<span class="nc" id="L676">                    throw new NotYetImplementedException(</span>
+<span class="nc" id="L890">                    throw new NotYetImplementedException(</span>
                             &quot;Negative Table with stars is available in maxicp.cp but not yet implemented&quot;);
             }
             // -----------------------------------------
-<span class="fc" id="L680">            case Circuit circuit -&gt; {</span>
-<span class="fc" id="L681">                post(new org.maxicp.cp.engine.constraints.Circuit(getCPVar(circuit.successor())));</span>
-<span class="fc" id="L682">            }</span>
-<span class="nc" id="L683">            case Require require -&gt; {</span>
-<span class="nc" id="L684">                post(new org.maxicp.cp.engine.constraints.seqvar.Require(getCPVar(require.seqVar()), require.node()));</span>
-<span class="nc" id="L685">            }</span>
-<span class="fc" id="L686">            case Insert insert -&gt; {</span>
-<span class="fc" id="L687">                post(new org.maxicp.cp.engine.constraints.seqvar.Insert(getCPVar(insert.seqVar()), insert.prev(),</span>
-<span class="fc" id="L688">                        insert.node()));</span>
-<span class="fc" id="L689">            }</span>
-<span class="fc" id="L690">            case Exclude exclude -&gt; {</span>
-<span class="fc" id="L691">                post(new org.maxicp.cp.engine.constraints.seqvar.Exclude(getCPVar(exclude.seqVar()),</span>
-<span class="fc" id="L692">                        exclude.node()));</span>
-<span class="fc" id="L693">            }</span>
-<span class="nc" id="L694">            case Distance distance -&gt; {</span>
-<span class="nc" id="L695">                post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar),</span>
-<span class="nc" id="L696">                        distance.distanceMatrix, getCPVar(distance.distance)));</span>
-<span class="nc" id="L697">            }</span>
-<span class="nc" id="L698">            case TransitionTimes transitionTimes -&gt; {</span>
-<span class="nc" id="L699">                CPIntVar[] time = Arrays.stream(transitionTimes.time).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L700">                post(new org.maxicp.cp.engine.constraints.seqvar.TransitionTimes(</span>
-<span class="nc" id="L701">                        getCPVar(transitionTimes.seqVar), time, transitionTimes.dist, transitionTimes.serviceTime));</span>
-<span class="nc" id="L702">            }</span>
-<span class="nc" id="L703">            case org.maxicp.modeling.constraints.seqvar.Cumulative cumu -&gt; {</span>
-<span class="nc" id="L704">                post(new org.maxicp.cp.engine.constraints.seqvar.Cumulative(getCPVar(cumu.seqVar), cumu.starts,</span>
+<span class="fc" id="L894">            case Circuit circuit -&gt; {</span>
+<span class="fc" id="L895">                post(new org.maxicp.cp.engine.constraints.Circuit(getCPVar(circuit.successor())));</span>
+<span class="fc" id="L896">            }</span>
+<span class="fc" id="L897">            case SubCircuit subCircuit -&gt; {</span>
+<span class="fc" id="L898">                post(new org.maxicp.cp.engine.constraints.SubCircuit(getCPVar(subCircuit.successor())));</span>
+<span class="fc" id="L899">            }</span>
+<span class="fc" id="L900">            case LexLe lex -&gt; {</span>
+<span class="fc" id="L901">                post(new org.maxicp.cp.engine.constraints.LexLe(getCPVar(lex.x()), getCPVar(lex.y()), lex.strict()));</span>
+<span class="fc" id="L902">            }</span>
+<span class="fc" id="L903">            case Among among -&gt; {</span>
+<span class="fc" id="L904">                post(new org.maxicp.cp.engine.constraints.Among(getCPVar(among.x()), among.values(), getCPVar(among.count())));</span>
+<span class="fc" id="L905">            }</span>
+<span class="fc" id="L906">            case Require require -&gt; {</span>
+<span class="fc" id="L907">                post(new org.maxicp.cp.engine.constraints.seqvar.Require(getCPVar(require.seqVar()), require.node()));</span>
+<span class="fc" id="L908">            }</span>
+<span class="fc" id="L909">            case Insert insert -&gt; {</span>
+<span class="fc" id="L910">                post(new org.maxicp.cp.engine.constraints.seqvar.Insert(getCPVar(insert.seqVar()), insert.prev(),</span>
+<span class="fc" id="L911">                        insert.node()));</span>
+<span class="fc" id="L912">            }</span>
+<span class="fc" id="L913">            case Exclude exclude -&gt; {</span>
+<span class="fc" id="L914">                post(new org.maxicp.cp.engine.constraints.seqvar.Exclude(getCPVar(exclude.seqVar()),</span>
+<span class="fc" id="L915">                        exclude.node()));</span>
+<span class="fc" id="L916">            }</span>
+<span class="fc" id="L917">            case Distance distance -&gt; {</span>
+<span class="fc" id="L918">                post(new org.maxicp.cp.engine.constraints.seqvar.Distance(getCPVar(distance.seqVar),</span>
+<span class="fc" id="L919">                        distance.distanceMatrix, getCPVar(distance.distance)));</span>
+<span class="fc" id="L920">            }</span>
+<span class="fc" id="L921">            case TransitionTimes transitionTimes -&gt; {</span>
+<span class="fc" id="L922">                CPIntVar[] time = Arrays.stream(transitionTimes.time).map(this::getCPVar).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L923">                post(new org.maxicp.cp.engine.constraints.seqvar.TransitionTimes(</span>
+<span class="fc" id="L924">                        getCPVar(transitionTimes.seqVar), time, transitionTimes.dist, transitionTimes.serviceTime));</span>
+<span class="fc" id="L925">            }</span>
+<span class="fc" id="L926">            case org.maxicp.modeling.constraints.seqvar.Cumulative cumu -&gt; {</span>
+<span class="fc" id="L927">                post(new org.maxicp.cp.engine.constraints.seqvar.Cumulative(getCPVar(cumu.seqVar), cumu.starts,</span>
                         cumu.ends, cumu.load, cumu.capacity));
-<span class="nc" id="L706">            }</span>
-<span class="nc" id="L707">            case Precedence prec -&gt; {</span>
-<span class="nc" id="L708">                post(new org.maxicp.cp.engine.constraints.seqvar.Precedence(getCPVar(prec.seqVar()), prec.nodes()));</span>
-<span class="nc" id="L709">            }</span>
-<span class="nc" id="L710">            case org.maxicp.modeling.constraints.seqvar.NotBetween nb -&gt; {</span>
-<span class="nc" id="L711">                post(new org.maxicp.cp.engine.constraints.seqvar.NotBetween(getCPVar(nb.seqVar()), nb.prev(),</span>
-<span class="nc" id="L712">                        nb.node(), nb.after()));</span>
-<span class="nc" id="L713">            }</span>
-<span class="nc" id="L714">            case SubSequence ss -&gt; {</span>
-<span class="nc" id="L715">                post(new org.maxicp.cp.engine.constraints.seqvar.SubSequence(getCPVar(ss.main()),</span>
-<span class="nc" id="L716">                        getCPVar(ss.sub())));</span>
-<span class="nc" id="L717">            }</span>
-<span class="fc" id="L718">            case ExpressionIsTrue eit -&gt; instantiateBoolExpression(eit.expr());</span>
-<span class="fc" id="L719">            case EqHelper.EqInstantiateAndCache eqic -&gt; getCPVar(eqic.expr());</span>
-<span class="fc" id="L720">            case EqHelper.EqInstantiateAndReuse eqir -&gt; {</span>
-<span class="pc bpc" id="L721" title="1 of 2 branches missed.">                switch (eqir.repr()) {</span>
-<span class="nc" id="L722">                    case BoolExpression bexpr -&gt; enforceEqualityIntExpression(eqir.expr(), boolExprMapping.get(bexpr));</span>
-<span class="fc" id="L723">                    case IntExpression iexpr -&gt; enforceEqualityIntExpression(eqir.expr(), intExprMapping.get(iexpr));</span>
+<span class="fc" id="L929">            }</span>
+<span class="fc" id="L930">            case Precedence prec -&gt; {</span>
+<span class="fc" id="L931">                post(new org.maxicp.cp.engine.constraints.seqvar.Precedence(getCPVar(prec.seqVar()), prec.nodes()));</span>
+<span class="fc" id="L932">            }</span>
+<span class="fc" id="L933">            case org.maxicp.modeling.constraints.seqvar.NotBetween nb -&gt; {</span>
+<span class="fc" id="L934">                post(new org.maxicp.cp.engine.constraints.seqvar.NotBetween(getCPVar(nb.seqVar()), nb.prev(),</span>
+<span class="fc" id="L935">                        nb.node(), nb.after()));</span>
+<span class="fc" id="L936">            }</span>
+<span class="fc" id="L937">            case SubSequence ss -&gt; {</span>
+<span class="fc" id="L938">                post(new org.maxicp.cp.engine.constraints.seqvar.SubSequence(getCPVar(ss.main()),</span>
+<span class="fc" id="L939">                        getCPVar(ss.sub())));</span>
+<span class="fc" id="L940">            }</span>
+<span class="fc" id="L941">            case ExpressionIsTrue eit -&gt; instantiateBoolExpression(eit.expr());</span>
+<span class="fc" id="L942">            case EqHelper.EqInstantiateAndCache eqic -&gt; getCPVar(eqic.expr());</span>
+<span class="fc" id="L943">            case EqHelper.EqInstantiateAndReuse eqir -&gt; {</span>
+<span class="pc bpc" id="L944" title="1 of 2 branches missed.">                switch (eqir.repr()) {</span>
+<span class="nc" id="L945">                    case BoolExpression bexpr -&gt; enforceEqualityIntExpression(eqir.expr(), boolExprMapping.get(bexpr));</span>
+<span class="fc" id="L946">                    case IntExpression iexpr -&gt; enforceEqualityIntExpression(eqir.expr(), intExprMapping.get(iexpr));</span>
                 }
-<span class="fc" id="L725">            }</span>
-<span class="fc" id="L726">            case NoOverlap noOverlap -&gt; {</span>
-<span class="fc" id="L727">                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));</span>
-<span class="fc" id="L728">            }</span>
-<span class="fc" id="L729">            case org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition noOverlapPos -&gt; {</span>
-<span class="fc" id="L730">                int[][] trans = noOverlapPos.minTransition();</span>
-<span class="fc bfc" id="L731" title="All 2 branches covered.">                if (trans == null)</span>
-<span class="fc" id="L732">                    trans = new int[noOverlapPos.intervals().length][noOverlapPos.intervals().length];</span>
-<span class="fc" id="L733">                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlapWithPosition(</span>
-<span class="fc" id="L734">                        getCPVar(noOverlapPos.intervals()),</span>
-<span class="fc" id="L735">                        getCPVar(noOverlapPos.posOfInterval()),</span>
-<span class="fc" id="L736">                        getCPVar(noOverlapPos.intervalInPos()),</span>
+<span class="fc" id="L948">            }</span>
+<span class="fc" id="L949">            case org.maxicp.modeling.constraints.Disjunctive disj -&gt; {</span>
+<span class="fc" id="L950">                IntExpression[] starts = disj.start();</span>
+<span class="fc" id="L951">                IntExpression[] durations = disj.duration();</span>
+<span class="fc" id="L952">                java.util.List&lt;CPIntervalVar&gt; intervals = new java.util.ArrayList&lt;&gt;(starts.length);</span>
+<span class="fc bfc" id="L953" title="All 2 branches covered.">                for (int i = 0; i &lt; starts.length; i++) {</span>
+<span class="pc bpc" id="L954" title="1 of 2 branches missed.">                    if (durations[i].max() &lt;= 0) continue;</span>
+<span class="fc" id="L955">                    CPIntVar s = getCPVar(starts[i]);</span>
+<span class="fc" id="L956">                    CPIntVar d = getCPVar(durations[i]);</span>
+<span class="fc" id="L957">                    d.removeBelow(0);</span>
+<span class="fc" id="L958">                    int lMin = Math.max(0, d.min());</span>
+<span class="fc" id="L959">                    int lMax = d.max();</span>
+<span class="fc" id="L960">                    CPIntervalVar iv = CPFactory.makeIntervalVar(solver, false, lMin, lMax);</span>
+<span class="fc" id="L961">                    iv.setStartMin(s.min());</span>
+<span class="fc" id="L962">                    iv.setStartMax(s.max());</span>
+<span class="fc" id="L963">                    iv.setEndMin(s.min() + lMin);</span>
+<span class="fc" id="L964">                    iv.setEndMax(s.max() + lMax);</span>
+<span class="fc" id="L965">                    post(new IntervalVarStart(iv, s));</span>
+<span class="pc bpc" id="L966" title="1 of 2 branches missed.">                    if (!d.isFixed()) {</span>
+<span class="nc" id="L967">                        post(new IntervalVarLength(iv, d));</span>
+                    }
+<span class="fc" id="L969">                    intervals.add(iv);</span>
+                }
+<span class="pc bpc" id="L971" title="1 of 2 branches missed.">                if (intervals.size() &gt; 1) {</span>
+<span class="fc" id="L972">                    post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(</span>
+<span class="fc" id="L973">                            intervals.toArray(new CPIntervalVar[0])));</span>
+                }
+<span class="fc" id="L975">            }</span>
+<span class="fc" id="L976">            case org.maxicp.modeling.constraints.Cumulative cumu -&gt; {</span>
+<span class="fc" id="L977">                IntExpression[] starts = cumu.start();</span>
+<span class="fc" id="L978">                IntExpression[] durations = cumu.duration();</span>
+<span class="fc" id="L979">                IntExpression[] ends = cumu.end();</span>
+<span class="fc" id="L980">                IntExpression[] demands = cumu.demand();</span>
+<span class="fc" id="L981">                CPIntVar capaVar = getCPVar(cumu.capa());</span>
+<span class="fc" id="L982">                int maxCap = capaVar.max();</span>
+<span class="fc" id="L983">                java.util.List&lt;CPCumulFunction&gt; pulses = new java.util.ArrayList&lt;&gt;(starts.length + 1);</span>
+<span class="fc" id="L984">                java.util.List&lt;CPIntervalVar&gt; disjunctiveTasks = new java.util.ArrayList&lt;&gt;(starts.length);</span>
+<span class="fc" id="L985">                int minHorizon = Integer.MAX_VALUE;</span>
+<span class="fc" id="L986">                int maxHorizon = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L987" title="All 2 branches covered.">                for (int i = 0; i &lt; starts.length; i++) {</span>
+<span class="fc" id="L988">                    CPIntVar s = getCPVar(starts[i]);</span>
+<span class="fc" id="L989">                    CPIntVar d = getCPVar(durations[i]);</span>
+<span class="fc" id="L990">                    CPIntVar h = getCPVar(demands[i]);</span>
+<span class="fc" id="L991">                    d.removeBelow(0);</span>
+<span class="fc" id="L992">                    h.removeBelow(0);</span>
+<span class="fc" id="L993">                    int lMin = Math.max(0, d.min());</span>
+<span class="fc" id="L994">                    int lMax = d.max();</span>
+<span class="pc bpc" id="L995" title="1 of 4 branches missed.">                    if (lMax &lt;= 0 || h.max() &lt;= 0) {</span>
+<span class="pc bpc" id="L996" title="2 of 6 branches missed.">                        if (ends != null &amp;&amp; i &lt; ends.length &amp;&amp; ends[i] != null) {</span>
+<span class="fc" id="L997">                            CPIntVar e = getCPVar(ends[i]);</span>
+<span class="fc" id="L998">                            post(new org.maxicp.cp.engine.constraints.Equal(CPFactory.sum(s, d), e));</span>
+<span class="fc" id="L999">                        }</span>
+                        continue;
+                    }
+<span class="fc" id="L1002">                    CPIntervalVar iv = CPFactory.makeIntervalVar(solver, false, lMin, lMax);</span>
+<span class="fc" id="L1003">                    iv.setStartMin(s.min());</span>
+<span class="fc" id="L1004">                    iv.setStartMax(s.max());</span>
+<span class="fc" id="L1005">                    iv.setEndMin(s.min() + lMin);</span>
+<span class="fc" id="L1006">                    iv.setEndMax(s.max() + lMax);</span>
+<span class="fc" id="L1007">                    post(new IntervalVarStart(iv, s));</span>
+<span class="fc bfc" id="L1008" title="All 2 branches covered.">                    if (!d.isFixed()) {</span>
+<span class="fc" id="L1009">                        post(new IntervalVarLength(iv, d));</span>
+                    }
+<span class="pc bpc" id="L1011" title="2 of 6 branches missed.">                    if (ends != null &amp;&amp; i &lt; ends.length &amp;&amp; ends[i] != null) {</span>
+<span class="fc" id="L1012">                        CPIntVar e = getCPVar(ends[i]);</span>
+<span class="fc" id="L1013">                        iv.setEndMin(Math.max(iv.endMin(), e.min()));</span>
+<span class="fc" id="L1014">                        iv.setEndMax(Math.min(iv.endMax(), e.max()));</span>
+<span class="fc" id="L1015">                        post(new IntervalVarEnd(iv, e));</span>
+                    }
+<span class="fc" id="L1017">                    minHorizon = Math.min(minHorizon, iv.startMin());</span>
+<span class="fc" id="L1018">                    maxHorizon = Math.max(maxHorizon, iv.endMax());</span>
+<span class="fc" id="L1019">                    pulses.add(new CPPulseCumulFunction(iv, h));</span>
+<span class="pc bpc" id="L1020" title="1 of 4 branches missed.">                    if (lMin &gt; 0 &amp;&amp; 2L * h.min() &gt; maxCap) {</span>
+<span class="fc" id="L1021">                        disjunctiveTasks.add(iv);</span>
+                    }
+                }
+<span class="fc bfc" id="L1024" title="All 2 branches covered.">                if (disjunctiveTasks.size() &gt; 1) {</span>
+<span class="fc" id="L1025">                    post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(</span>
+<span class="fc" id="L1026">                            disjunctiveTasks.toArray(new CPIntervalVar[0])));</span>
+                }
+<span class="pc bpc" id="L1028" title="1 of 2 branches missed.">                if (!pulses.isEmpty()) {</span>
+<span class="pc bpc" id="L1029" title="1 of 4 branches missed.">                    if (!capaVar.isFixed() &amp;&amp; minHorizon &lt; maxHorizon) {</span>
+<span class="fc" id="L1030">                        CPIntervalVar horizonIv = CPFactory.makeIntervalVar(solver, false, maxHorizon - minHorizon);</span>
+<span class="fc" id="L1031">                        horizonIv.setStart(minHorizon);</span>
+<span class="fc" id="L1032">                        horizonIv.setEnd(maxHorizon);</span>
+<span class="fc" id="L1033">                        CPIntVar slackCap = CPFactory.plus(CPFactory.minus(capaVar), maxCap);</span>
+<span class="fc" id="L1034">                        pulses.add(new CPPulseCumulFunction(horizonIv, slackCap));</span>
+                    }
+<span class="fc" id="L1036">                    CPCumulFunction sum = CPFactory.sum(pulses.toArray(new CPCumulFunction[0]));</span>
+<span class="fc" id="L1037">                    post(CPFactory.le(sum, maxCap));</span>
+<span class="pc bnc" id="L1038" title="All 2 branches missed.">                } else if (capaVar.max() &lt; 0) {</span>
+<span class="nc" id="L1039">                    throw new org.maxicp.util.exception.InconsistencyException();</span>
+                }
+<span class="fc" id="L1041">            }</span>
+<span class="fc" id="L1042">            case NoOverlap noOverlap -&gt; {</span>
+<span class="fc" id="L1043">                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlap(getCPVar(noOverlap.intervals())));</span>
+<span class="fc" id="L1044">            }</span>
+<span class="fc" id="L1045">            case org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition noOverlapPos -&gt; {</span>
+<span class="fc" id="L1046">                int[][] trans = noOverlapPos.minTransition();</span>
+<span class="fc bfc" id="L1047" title="All 2 branches covered.">                if (trans == null)</span>
+<span class="fc" id="L1048">                    trans = new int[noOverlapPos.intervals().length][noOverlapPos.intervals().length];</span>
+<span class="fc" id="L1049">                post(new org.maxicp.cp.engine.constraints.scheduling.NoOverlapWithPosition(</span>
+<span class="fc" id="L1050">                        getCPVar(noOverlapPos.intervals()),</span>
+<span class="fc" id="L1051">                        getCPVar(noOverlapPos.posOfInterval()),</span>
+<span class="fc" id="L1052">                        getCPVar(noOverlapPos.intervalInPos()),</span>
                         trans));
-<span class="fc" id="L738">            }</span>
-<span class="fc" id="L739">            case Length length -&gt; {</span>
-<span class="fc" id="L740">                getCPVar(length.interval()).setLength(length.length());</span>
-<span class="fc" id="L741">                fixpoint();</span>
-<span class="fc" id="L742">            }</span>
-<span class="nc" id="L743">            case Present present -&gt; {</span>
-<span class="nc" id="L744">                getCPVar(present.intervalVar()).setPresent();</span>
-<span class="nc" id="L745">                fixpoint();</span>
-<span class="nc" id="L746">            }</span>
-<span class="fc" id="L747">            case Start start -&gt; {</span>
-<span class="fc" id="L748">                getCPVar(start.intervalVar()).setStart(start.start());</span>
-<span class="fc" id="L749">                fixpoint();</span>
-<span class="fc" id="L750">            }</span>
-<span class="nc" id="L751">            case org.maxicp.modeling.constraints.scheduling.StartAfter start -&gt; {</span>
-<span class="nc" id="L752">                getCPVar(start.var()).setStartMin(start.start() + 1);</span>
-<span class="nc" id="L753">                fixpoint();</span>
-<span class="nc" id="L754">            }</span>
-<span class="fc" id="L755">            case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -&gt; {</span>
-<span class="fc" id="L756">                CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());</span>
-<span class="fc" id="L757">                post(CPFactory.le(cpExpression, lessOrEqual.limit()));</span>
-<span class="fc" id="L758">            }</span>
-<span class="nc" id="L759">            case org.maxicp.modeling.constraints.scheduling.Alternative alternative -&gt; {</span>
-<span class="nc" id="L760">                post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()),</span>
-<span class="nc" id="L761">                        getCPVar(alternative.n())));</span>
-<span class="nc" id="L762">            }</span>
-<span class="nc" id="L763">            case org.maxicp.modeling.constraints.scheduling.AlwaysIn alwaysIn -&gt; {</span>
-<span class="nc" id="L764">                CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());</span>
-<span class="nc" id="L765">                post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));</span>
-<span class="nc" id="L766">            }</span>
-<span class="nc" id="L767">            case org.maxicp.modeling.constraints.scheduling.Span span -&gt; {</span>
-<span class="nc" id="L768">                post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));</span>
-<span class="nc" id="L769">            }</span>
-<span class="fc" id="L770">            case CustomConstraint instantiableConstraint -&gt; {</span>
-<span class="fc" id="L771">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
-<span class="pc bpc" id="L772" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
-<span class="nc" id="L773">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot;</span>
-<span class="nc" id="L774">                            + cpConstraint.getClass());</span>
-<span class="fc" id="L775">                post(constraint);</span>
-<span class="fc" id="L776">            }</span>
-<span class="fc" id="L777">            case NoOpConstraint ignored -&gt; fixpoint();</span>
-<span class="nc" id="L778">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
+<span class="fc" id="L1054">            }</span>
+<span class="fc" id="L1055">            case Length length -&gt; {</span>
+<span class="fc" id="L1056">                getCPVar(length.interval()).setLength(length.length());</span>
+<span class="fc" id="L1057">                fixpoint();</span>
+<span class="fc" id="L1058">            }</span>
+<span class="nc" id="L1059">            case Present present -&gt; {</span>
+<span class="nc" id="L1060">                getCPVar(present.intervalVar()).setPresent();</span>
+<span class="nc" id="L1061">                fixpoint();</span>
+<span class="nc" id="L1062">            }</span>
+<span class="fc" id="L1063">            case Start start -&gt; {</span>
+<span class="fc" id="L1064">                getCPVar(start.intervalVar()).setStart(start.start());</span>
+<span class="fc" id="L1065">                fixpoint();</span>
+<span class="fc" id="L1066">            }</span>
+<span class="nc" id="L1067">            case org.maxicp.modeling.constraints.scheduling.StartAfter start -&gt; {</span>
+<span class="nc" id="L1068">                getCPVar(start.var()).setStartMin(start.start() + 1);</span>
+<span class="nc" id="L1069">                fixpoint();</span>
+<span class="nc" id="L1070">            }</span>
+<span class="fc" id="L1071">            case org.maxicp.modeling.constraints.scheduling.LessOrEqual lessOrEqual -&gt; {</span>
+<span class="fc" id="L1072">                CPCumulFunction cpExpression = getCumulFunction(lessOrEqual.function());</span>
+<span class="fc" id="L1073">                post(CPFactory.le(cpExpression, lessOrEqual.limit()));</span>
+<span class="fc" id="L1074">            }</span>
+<span class="fc" id="L1075">            case org.maxicp.modeling.constraints.scheduling.Alternative alternative -&gt; {</span>
+<span class="fc" id="L1076">                post(CPFactory.alternative(getCPVar(alternative.real()), getCPVar(alternative.alternatives()),</span>
+<span class="fc" id="L1077">                        getCPVar(alternative.n())));</span>
+<span class="fc" id="L1078">            }</span>
+<span class="nc" id="L1079">            case org.maxicp.modeling.constraints.scheduling.AlwaysIn alwaysIn -&gt; {</span>
+<span class="nc" id="L1080">                CPCumulFunction cpExpression = getCumulFunction(alwaysIn.expr());</span>
+<span class="nc" id="L1081">                post(CPFactory.alwaysIn(cpExpression, alwaysIn.minValue(), alwaysIn.maxValue()));</span>
+<span class="nc" id="L1082">            }</span>
+<span class="nc" id="L1083">            case org.maxicp.modeling.constraints.scheduling.Span span -&gt; {</span>
+<span class="nc" id="L1084">                post(CPFactory.span(getCPVar(span.span()), getCPVar(span.alternatives())));</span>
+<span class="nc" id="L1085">            }</span>
+<span class="fc" id="L1086">            case CustomConstraint instantiableConstraint -&gt; {</span>
+<span class="fc" id="L1087">                Object cpConstraint = instantiableConstraint.instantiate(this);</span>
+<span class="pc bpc" id="L1088" title="1 of 2 branches missed.">                if (!(cpConstraint instanceof CPConstraint constraint))</span>
+<span class="nc" id="L1089">                    throw new ClassCastException(&quot;The given instantiable constraint cannot be cast to a CPConstraint &quot;</span>
+<span class="nc" id="L1090">                            + cpConstraint.getClass());</span>
+<span class="fc" id="L1091">                post(constraint);</span>
+<span class="fc" id="L1092">            }</span>
+<span class="fc" id="L1093">            case NoOpConstraint ignored -&gt; fixpoint();</span>
+<span class="nc" id="L1094">            default -&gt; throw new NotYetImplementedException(&quot;Unexpected value: &quot; + c);</span>
         }
-<span class="fc" id="L780">    }</span>
+<span class="fc" id="L1096">    }</span>
 
     @Override
     public org.maxicp.search.Objective createObjective(Objective obj) {
-<span class="pc bpc" id="L784" title="4 of 5 branches missed.">        return switch (obj) {</span>
-<span class="fc" id="L785">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
-<span class="nc" id="L786">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
-<span class="nc" id="L787">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L788">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
-<span class="nc" id="L789">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
+<span class="pc bpc" id="L1100" title="3 of 5 branches missed.">        return switch (obj) {</span>
+<span class="fc" id="L1101">            case Minimization m -&gt; new Minimize(getCPVar(m.expr()));</span>
+<span class="fc" id="L1102">            case Maximization m -&gt; new Maximize(getCPVar(m.expr()));</span>
+<span class="nc" id="L1103">            case SharedMaximization m -&gt; new Maximize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L1104">            case SharedMinimization m -&gt; new Minimize(getCPVar(m.expr), m.bound);</span>
+<span class="nc" id="L1105">            default -&gt; throw new IllegalArgumentException(&quot;the objective is not supported&quot;);</span>
         };
     }
 
     @Override
     public StateManager getStateManager() {
-<span class="fc" id="L795">        return solver.getStateManager();</span>
+<span class="fc" id="L1111">        return solver.getStateManager();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

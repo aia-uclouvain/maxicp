@@ -21,72 +21,78 @@ public class Span extends AbstractCPConstraint {
     private final CPIntervalVar span;
     private final CPIntervalVar[] alts;
 
+    /**
+     * Creates a Span constraint linking the spanning interval {@code span} to the sub-intervals {@code alts}.
+     *
+     * @param span the main interval variable spanning all present intervals in {@code alts}
+     * @param alts the array of sub-intervals
+     */
     public Span(CPIntervalVar span, CPIntervalVar[] alts) {
-<span class="fc" id="L25">        super(span.getSolver());</span>
-<span class="fc" id="L26">        this.span = span;</span>
-<span class="fc" id="L27">        this.alts = alts;</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L31">        super(span.getSolver());</span>
+<span class="fc" id="L32">        this.span = span;</span>
+<span class="fc" id="L33">        this.alts = alts;</span>
+<span class="fc" id="L34">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L32">        span.propagateOnChange(this);</span>
-<span class="fc bfc" id="L33" title="All 2 branches covered.">        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);</span>
-<span class="fc" id="L34">        propagate();</span>
-<span class="fc" id="L35">    }</span>
+<span class="fc" id="L38">        span.propagateOnChange(this);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);</span>
+<span class="fc" id="L40">        propagate();</span>
+<span class="fc" id="L41">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (span.isAbsent()) {</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
-<span class="fc" id="L41">                alt.setAbsent();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (span.isAbsent()) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
+<span class="fc" id="L47">                alt.setAbsent();</span>
             }
-<span class="fc" id="L43">            setActive(false);</span>
+<span class="fc" id="L49">            setActive(false);</span>
         } else {
             // new bounds for span
-<span class="fc" id="L46">            int startMinAlts = Constants.HORIZON;</span>
-<span class="fc" id="L47">            int startMaxAlts = 0;</span>
-<span class="fc" id="L48">            int endMinAlts = Constants.HORIZON;</span>
-<span class="fc" id="L49">            int endMaxAlts = 0;</span>
+<span class="fc" id="L52">            int startMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L53">            int startMaxAlts = 0;</span>
+<span class="fc" id="L54">            int endMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L55">            int endMaxAlts = 0;</span>
             // count of absence / optional, and tracking of one optional interval
-<span class="fc" id="L51">            int nAbsent = 0;</span>
-<span class="fc" id="L52">            int nOptional = 0;</span>
-<span class="fc" id="L53">            int nPresent = 0;</span>
-<span class="fc" id="L54">            CPIntervalVar onlyOptional = null;</span>
-<span class="fc bfc" id="L55" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
-<span class="fc bfc" id="L56" title="All 2 branches covered.">                if (alt.isAbsent()) {</span>
-<span class="fc" id="L57">                    nAbsent++;</span>
+<span class="fc" id="L57">            int nAbsent = 0;</span>
+<span class="fc" id="L58">            int nOptional = 0;</span>
+<span class="fc" id="L59">            int nPresent = 0;</span>
+<span class="fc" id="L60">            CPIntervalVar onlyOptional = null;</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (CPIntervalVar alt : alts) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">                if (alt.isAbsent()) {</span>
+<span class="fc" id="L63">                    nAbsent++;</span>
                 } else {
-<span class="fc bfc" id="L59" title="All 2 branches covered.">                    if (alt.isPresent()) {</span>
-<span class="fc" id="L60">                        span.setPresent();</span>
-<span class="fc" id="L61">                        nPresent++;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                    if (alt.isPresent()) {</span>
+<span class="fc" id="L66">                        span.setPresent();</span>
+<span class="fc" id="L67">                        nPresent++;</span>
                     } else {
-<span class="fc" id="L63">                        nOptional++;</span>
-<span class="fc" id="L64">                        onlyOptional = alt;</span>
+<span class="fc" id="L69">                        nOptional++;</span>
+<span class="fc" id="L70">                        onlyOptional = alt;</span>
                     }
                     // interval cannot begin before / end after the span
-<span class="fc" id="L67">                    alt.setStartMin(span.startMin());</span>
-<span class="fc" id="L68">                    alt.setEndMax(span.endMax());</span>
+<span class="fc" id="L73">                    alt.setStartMin(span.startMin());</span>
+<span class="fc" id="L74">                    alt.setEndMax(span.endMax());</span>
                     // update candidate for start / end of the span
-<span class="fc" id="L70">                    startMinAlts = Math.min(startMinAlts, alt.startMin());</span>
-<span class="fc" id="L71">                    startMaxAlts = Math.max(startMaxAlts, alt.startMax());</span>
-<span class="fc" id="L72">                    endMinAlts = Math.min(endMinAlts, alt.endMin());</span>
-<span class="fc" id="L73">                    endMaxAlts = Math.max(endMaxAlts, alt.endMax());</span>
+<span class="fc" id="L76">                    startMinAlts = Math.min(startMinAlts, alt.startMin());</span>
+<span class="fc" id="L77">                    startMaxAlts = Math.max(startMaxAlts, alt.startMax());</span>
+<span class="fc" id="L78">                    endMinAlts = Math.min(endMinAlts, alt.endMin());</span>
+<span class="fc" id="L79">                    endMaxAlts = Math.max(endMaxAlts, alt.endMax());</span>
                 }
             }
-<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (nAbsent == alts.length) {</span>
-<span class="fc" id="L77">                span.setAbsent();</span>
-<span class="fc" id="L78">                setActive(false);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (nAbsent == alts.length) {</span>
+<span class="fc" id="L83">                span.setAbsent();</span>
+<span class="fc" id="L84">                setActive(false);</span>
             } else {
-<span class="fc bfc" id="L80" title="All 6 branches covered.">                if (nOptional == 1 &amp;&amp; nPresent == 0 &amp;&amp; span.isPresent()) {</span>
-<span class="fc" id="L81">                    onlyOptional.setPresent();</span>
+<span class="fc bfc" id="L86" title="All 6 branches covered.">                if (nOptional == 1 &amp;&amp; nPresent == 0 &amp;&amp; span.isPresent()) {</span>
+<span class="fc" id="L87">                    onlyOptional.setPresent();</span>
                 }
                 // shrink the time of span
-<span class="fc" id="L84">                span.setStartMin(startMinAlts);</span>
-<span class="fc" id="L85">                span.setStartMax(startMaxAlts);</span>
-<span class="fc" id="L86">                span.setEndMin(endMinAlts);</span>
-<span class="fc" id="L87">                span.setEndMax(endMaxAlts);</span>
+<span class="fc" id="L90">                span.setStartMin(startMinAlts);</span>
+<span class="fc" id="L91">                span.setStartMax(startMaxAlts);</span>
+<span class="fc" id="L92">                span.setEndMin(endMinAlts);</span>
+<span class="fc" id="L93">                span.setEndMax(endMaxAlts);</span>
             }
         }
-<span class="fc" id="L90">    }</span>
+<span class="fc" id="L96">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

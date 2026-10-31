@@ -16,7 +16,7 @@ import org.maxicp.modeling.symbolic.IntVarRangeImpl;
 public class PulseCumulFunction implements CumulFunction {
     private final ModelProxy modelProxy;
     public final IntervalVar interval;
-    private final IntVar height;
+    public final IntExpression height;
     public final int hMin;
     public final int hMax;
 
@@ -34,22 +34,30 @@ public class PulseCumulFunction implements CumulFunction {
 <span class="fc" id="L34">        this(interval, h, h);</span>
 <span class="fc" id="L35">    }</span>
 
+<span class="nc" id="L37">    public PulseCumulFunction(IntervalVar interval, IntExpression height) {</span>
+<span class="nc" id="L38">        this.modelProxy = interval.getModelProxy();</span>
+<span class="nc" id="L39">        this.interval = interval;</span>
+<span class="nc" id="L40">        this.height = height;</span>
+<span class="nc" id="L41">        this.hMin = height.min();</span>
+<span class="nc" id="L42">        this.hMax = height.max();</span>
+<span class="nc" id="L43">    }</span>
+
     @Override
     public IntExpression heightAtStart(IntervalVar interval) {
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (this.interval != interval) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
-<span class="fc" id="L40">        IntExpression y = Factory.mul(height, interval.status());</span>
-<span class="fc" id="L41">        return y;</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (this.interval != interval) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="fc" id="L48">        IntExpression y = Factory.mul(height, interval.status());</span>
+<span class="fc" id="L49">        return y;</span>
     }
 
     @Override
     public IntExpression heightAtEnd(IntervalVar interval) {
-<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (this.interval != interval) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
-<span class="nc" id="L47">        return new Constant(modelProxy, 0);</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (this.interval != interval) throw new IllegalArgumentException(&quot;this interval is not present in the function&quot;);</span>
+<span class="nc" id="L55">        return new Constant(modelProxy, 0);</span>
     }
 
     @Override
     public boolean inScope(IntervalVar interval) {
-<span class="nc bnc" id="L52" title="All 2 branches missed.">        return this.interval == interval;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        return this.interval == interval;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

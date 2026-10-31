@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Among.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.modeling.constraints</a> &gt; <span class="el_source">Among.java</span></div><h1>Among.java</h1><pre class="source lang-java linenums">package org.maxicp.modeling.constraints;
+
+import org.maxicp.modeling.DecisionVarsProvider;
+import org.maxicp.modeling.IntVar;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Among constraint ensuring that exactly {@code count} expressions in {@code x} take a value in {@code values}.
+ *
+ * @param x      the array of integer expressions
+ * @param values the set of target values
+ * @param count  the expression representing the number of expressions in {@code x} taking a value in {@code values}
+ */
+<span class="fc" id="L20">public record Among(IntExpression[] x, @IgnoreScope Set&lt;Integer&gt; values, IntExpression count) implements ConstraintFromRecord, DecisionVarsProvider {</span>
+
+    @Override
+    public Collection&lt;IntExpression&gt; decisionVariables() {
+<span class="nc" id="L24">        List&lt;IntExpression&gt; vars = new ArrayList&lt;&gt;(x.length + 1);</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        for (IntExpression e : x) {</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">            if (e instanceof IntVar) vars.add(e);</span>
+        }
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        if (count instanceof IntVar) vars.add(count);</span>
+<span class="nc" id="L29">        return vars;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

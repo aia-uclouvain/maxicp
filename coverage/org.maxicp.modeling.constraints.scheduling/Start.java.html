@@ -3,7 +3,13 @@
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="fc" id="L6">public record Start(IntervalVar intervalVar, int start) implements ConstraintFromRecord {</span>
+/**
+ * Constraint fixing the start time of an interval variable to a given constant value.
+ *
+ * @param intervalVar the interval variable
+ * @param start       the fixed start time
+ */
+<span class="fc" id="L12">public record Start(IntervalVar intervalVar, int start) implements ConstraintFromRecord {</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -81,34 +81,39 @@ public class Profile {
     }
 
 
-<span class="nc" id="L84">    public Profile(Rectangle... rectangles) {</span>
-<span class="nc" id="L85">        ArrayList&lt;Rectangle&gt; profile = new ArrayList&lt;Rectangle&gt;();</span>
-<span class="nc" id="L86">        Entry[] points = new Entry[2 * rectangles.length + 2];</span>
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        for (int i = 0; i &lt; rectangles.length; i++) {</span>
-<span class="nc" id="L88">            Rectangle r = rectangles[i];</span>
-<span class="nc" id="L89">            points[i] = new Entry(r.start, r.height);</span>
-<span class="nc" id="L90">            points[rectangles.length + i] = new Entry(r.end, -r.height);</span>
+    /**
+     * Creates a cumulated profile from the given rectangles using a sweep-line algorithm.
+     *
+     * @param rectangles the input rectangles to aggregate into a profile
+     */
+<span class="nc" id="L89">    public Profile(Rectangle... rectangles) {</span>
+<span class="nc" id="L90">        ArrayList&lt;Rectangle&gt; profile = new ArrayList&lt;Rectangle&gt;();</span>
+<span class="nc" id="L91">        Entry[] points = new Entry[2 * rectangles.length + 2];</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        for (int i = 0; i &lt; rectangles.length; i++) {</span>
+<span class="nc" id="L93">            Rectangle r = rectangles[i];</span>
+<span class="nc" id="L94">            points[i] = new Entry(r.start, r.height);</span>
+<span class="nc" id="L95">            points[rectangles.length + i] = new Entry(r.end, -r.height);</span>
         }
-<span class="nc" id="L92">        points[2 * rectangles.length] = new Entry(Integer.MIN_VALUE, 0);</span>
-<span class="nc" id="L93">        points[2 * rectangles.length + 1] = new Entry(Integer.MAX_VALUE, 0);</span>
+<span class="nc" id="L97">        points[2 * rectangles.length] = new Entry(Integer.MIN_VALUE, 0);</span>
+<span class="nc" id="L98">        points[2 * rectangles.length + 1] = new Entry(Integer.MAX_VALUE, 0);</span>
 
-<span class="nc" id="L95">        Arrays.sort(points);</span>
+<span class="nc" id="L100">        Arrays.sort(points);</span>
 
-<span class="nc" id="L97">        int sweepHeight = 0;</span>
-<span class="nc" id="L98">        int sweepTime = points[0].key;</span>
-<span class="nc bnc" id="L99" title="All 2 branches missed.">        for (Entry e : points) {</span>
-<span class="nc" id="L100">            int t = e.key;</span>
-<span class="nc" id="L101">            int h = e.value;</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">            if (t != sweepTime) {</span>
+<span class="nc" id="L102">        int sweepHeight = 0;</span>
+<span class="nc" id="L103">        int sweepTime = points[0].key;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        for (Entry e : points) {</span>
+<span class="nc" id="L105">            int t = e.key;</span>
+<span class="nc" id="L106">            int h = e.value;</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (t != sweepTime) {</span>
                 //System.out.println(sweep_t+&quot; &quot;+t);
-<span class="nc" id="L104">                profile.add(new Rectangle(sweepTime, t, sweepHeight));</span>
-<span class="nc" id="L105">                sweepTime = t;</span>
+<span class="nc" id="L109">                profile.add(new Rectangle(sweepTime, t, sweepHeight));</span>
+<span class="nc" id="L110">                sweepTime = t;</span>
             }
-<span class="nc" id="L107">            sweepHeight += h;</span>
+<span class="nc" id="L112">            sweepHeight += h;</span>
         }
-<span class="nc" id="L109">        this.profileRectangles = profile.toArray(new Rectangle[0]);</span>
+<span class="nc" id="L114">        this.profileRectangles = profile.toArray(new Rectangle[0]);</span>
 
-<span class="nc" id="L111">    }</span>
+<span class="nc" id="L116">    }</span>
 
     /**
      * Retrieves the rectangle index of the profile that overlaps a given time.
@@ -117,11 +122,11 @@ public class Profile {
      * @return the rectangle index r of the profile such that {@code r.start &lt;= t} and {@code r.end &gt; t}
      */
     public int rectangleIndex(int t) {
-<span class="nc bnc" id="L120" title="All 2 branches missed.">        for (int i = 0; i &lt; profileRectangles.length; i++) {</span>
-<span class="nc bnc" id="L121" title="All 4 branches missed.">            if (profileRectangles[i].start &lt;= t &amp;&amp; profileRectangles[i].end &gt; t)</span>
-<span class="nc" id="L122">                return i;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        for (int i = 0; i &lt; profileRectangles.length; i++) {</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">            if (profileRectangles[i].start &lt;= t &amp;&amp; profileRectangles[i].end &gt; t)</span>
+<span class="nc" id="L127">                return i;</span>
         }
-<span class="nc" id="L124">        return -1;</span>
+<span class="nc" id="L129">        return -1;</span>
     }
 
     /**
@@ -130,7 +135,7 @@ public class Profile {
      * @return the number of rectangles in the profile
      */
     public int size() {
-<span class="nc" id="L133">        return profileRectangles.length;</span>
+<span class="nc" id="L138">        return profileRectangles.length;</span>
     }
 
     /**
@@ -139,13 +144,13 @@ public class Profile {
      * @see #rectangleIndex(int)
      */
     public Rectangle get(int i) {
-<span class="nc" id="L142">        return profileRectangles[i];</span>
+<span class="nc" id="L147">        return profileRectangles[i];</span>
     }
 
 
     @Override
     public String toString() {
-<span class="nc" id="L148">        return Arrays.toString(profileRectangles);</span>
+<span class="nc" id="L153">        return Arrays.toString(profileRectangles);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

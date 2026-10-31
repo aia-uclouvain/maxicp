@@ -23,7 +23,7 @@ public class RandomFragmentSelector implements FragmentSelector {
 <span class="fc" id="L23">                frozen.add(idx);</span>
             }
 <span class="fc" id="L25">        }</span>
-<span class="pc bpc" id="L26" title="1 of 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
+<span class="pc bpc" id="L26" title="2 of 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
             // Avoid degenerate neighborhoods: keep at least one decision variable relaxed.
 <span class="nc" id="L28">            frozen.remove(random.nextInt(frozen.size()));</span>
         }

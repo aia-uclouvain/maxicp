@@ -6,6 +6,7 @@
 package org.maxicp.cp;
 
 import org.maxicp.Constants;
+import org.maxicp.ModelDispatcher;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.constraints.seqvar.*;
@@ -16,8 +17,10 @@ import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.state.copy.Copier;
 import org.maxicp.state.trail.Trailer;
 import org.maxicp.util.NumberUtils;
@@ -26,6 +29,7 @@ import org.maxicp.util.exception.IntOverFlowException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -60,8 +64,8 @@ import java.util.stream.Stream;
  */
 public final class CPFactory {
 
-<span class="nc" id="L63">    private CPFactory() {</span>
-<span class="nc" id="L64">        throw new UnsupportedOperationException();</span>
+<span class="nc" id="L67">    private CPFactory() {</span>
+<span class="nc" id="L68">        throw new UnsupportedOperationException();</span>
     }
 
     // -------------- instantiation of the solver -----------------------
@@ -72,7 +76,7 @@ public final class CPFactory {
      * @return a constraint programming solver with trail-based memory management
      */
     public static CPSolver makeSolver() {
-<span class="fc" id="L75">        return new MaxiCP(new Trailer());</span>
+<span class="fc" id="L79">        return new MaxiCP(new Trailer());</span>
     }
 
     /**
@@ -84,7 +88,7 @@ public final class CPFactory {
      * @return a constraint programming solver
      */
     public static CPSolver makeSolver(boolean byCopy) {
-<span class="nc bnc" id="L87" title="All 2 branches missed.">        return new MaxiCP(byCopy ? new Copier() : new Trailer());</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        return new MaxiCP(byCopy ? new Copier() : new Trailer());</span>
     }
 
     // -------------- variables creation ---------------------
@@ -101,12 +105,51 @@ public final class CPFactory {
      * @return a set variable without required elements, and possible elements {@code {0,...,n-1}}
      */
     public static CPSetVar makeSetVar(CPSolver cp, int n) {
-<span class="nc" id="L104">        return new CPSetVarImpl(cp, n);</span>
+<span class="nc" id="L108">        return new CPSetVarImpl(cp, n);</span>
     }
 
     // ********************
     // Integer variables
     // ********************
+
+    private static &lt;T extends CPIntVar&gt; T registerRawIntVar(CPSolver cp, T v) {
+<span class="pc bpc" id="L116" title="2 of 4 branches missed.">        if (cp != null &amp;&amp; cp.getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="fc" id="L117">            md.registerRawIntVar(v);</span>
+        }
+<span class="fc" id="L119">        return v;</span>
+    }
+
+    private static &lt;T extends CPIntervalVar&gt; T registerRawIntervalVar(CPSolver cp, T v) {
+<span class="pc bpc" id="L123" title="2 of 4 branches missed.">        if (cp != null &amp;&amp; cp.getModelProxy() instanceof ModelDispatcher md) {</span>
+<span class="fc" id="L124">            md.registerRawIntervalVar(v);</span>
+        }
+<span class="fc" id="L126">        return v;</span>
+    }
+
+    private static void registerRawVariableGroup(CPIntVar[] vars) {
+<span class="pc bpc" id="L130" title="1 of 4 branches missed.">        if (vars != null &amp;&amp; vars.length &gt; 1) {</span>
+<span class="fc" id="L131">            List&lt;IntExpression&gt; group = Arrays.stream(vars).filter(Objects::nonNull).map(v -&gt; (IntExpression) v).toList();</span>
+<span class="pc bpc" id="L132" title="3 of 6 branches missed.">            if (group.size() &gt; 1 &amp;&amp; vars[0] != null &amp;&amp; vars[0].getSolver() != null</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">                    &amp;&amp; vars[0].getSolver().getModelProxy() instanceof ModelDispatcher md &amp;&amp; md.isRawSolver()) {</span>
+<span class="fc" id="L134">                md.addVariableGroup(group);</span>
+            }
+        }
+<span class="fc" id="L137">    }</span>
+
+    private static CPIntVar makeAuxIntVar(CPSolver cp, int min, int max) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (min == max) {</span>
+<span class="fc" id="L141">            return new CPIntVarConstant(cp, min);</span>
+        }
+<span class="fc" id="L143">        return new CPIntVarImpl(cp, min, max);</span>
+    }
+
+    private static CPBoolVar makeAuxBoolVar(CPSolver cp) {
+<span class="fc" id="L147">        return new CPBoolVarImpl(cp);</span>
+    }
+
+    private static CPIntervalVar makeAuxIntervalVar(CPSolver cp) {
+<span class="fc" id="L151">        return new CPIntervalVarImpl(cp);</span>
+    }
 
     /**
      * Creates a variable with a domain of specified arity.
@@ -116,7 +159,7 @@ public final class CPFactory {
      * @return a variable with domain equal to the set {0,...,sz-1}
      */
     public static CPIntVar makeIntVar(CPSolver cp, int sz) {
-<span class="fc" id="L119">        return makeIntVar(cp, 0, sz - 1);</span>
+<span class="fc" id="L162">        return makeIntVar(cp, 0, sz - 1);</span>
     }
 
     /**
@@ -128,10 +171,10 @@ public final class CPFactory {
      * @return a variable with domain equal to the set {min,...,max}
      */
     public static CPIntVar makeIntVar(CPSolver cp, int min, int max) {
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (min == max)</span>
-<span class="fc" id="L132">            return new CPIntVarConstant(cp, min);</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (min == max)</span>
+<span class="fc" id="L175">            return new CPIntVarConstant(cp, min);</span>
         else
-<span class="fc" id="L134">            return new CPIntVarImpl(cp, min, max);</span>
+<span class="fc" id="L177">            return registerRawIntVar(cp, new CPIntVarImpl(cp, min, max));</span>
     }
 
     /**
@@ -142,11 +185,11 @@ public final class CPFactory {
      * @return a variable with domain equal to the set of values
      */
     public static CPIntVar makeIntVar(CPSolver cp, Set&lt;Integer&gt; values) {
-<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (values.size() == 1) {</span>
-<span class="fc" id="L146">            int value = values.iterator().next();</span>
-<span class="fc" id="L147">            return new CPIntVarConstant(cp, value);</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">        if (values.size() == 1) {</span>
+<span class="fc" id="L189">            int value = values.iterator().next();</span>
+<span class="fc" id="L190">            return new CPIntVarConstant(cp, value);</span>
         } else
-<span class="fc" id="L149">            return new CPIntVarImpl(cp, values);</span>
+<span class="fc" id="L192">            return registerRawIntVar(cp, new CPIntVarImpl(cp, values));</span>
     }
 
     /**
@@ -158,10 +201,11 @@ public final class CPFactory {
      * with variable at index &lt;i&gt;i&lt;/i&gt; generated as {@code body.get(i)}
      */
     public static CPIntVar[] makeIntVarArray(int n, Function&lt;Integer, CPIntVar&gt; body) {
-<span class="fc" id="L161">        CPIntVar[] t = new CPIntVar[n];</span>
-<span class="fc bfc" id="L162" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
-<span class="fc" id="L163">            t[i] = body.apply(i);</span>
-<span class="fc" id="L164">        return t;</span>
+<span class="fc" id="L204">        CPIntVar[] t = new CPIntVar[n];</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++)</span>
+<span class="fc" id="L206">            t[i] = body.apply(i);</span>
+<span class="fc" id="L207">        registerRawVariableGroup(t);</span>
+<span class="fc" id="L208">        return t;</span>
     }
 
     /**
@@ -173,7 +217,7 @@ public final class CPFactory {
      * @return an array of n variables, each with domain equal to the set {0,...,sz-1}
      */
     public static CPIntVar[] makeIntVarArray(CPSolver cp, int n, int sz) {
-<span class="fc" id="L176">        return makeIntVarArray(n, i -&gt; makeIntVar(cp, sz));</span>
+<span class="fc" id="L220">        return makeIntVarArray(n, i -&gt; makeIntVar(cp, sz));</span>
     }
 
     /**
@@ -186,7 +230,7 @@ public final class CPFactory {
      * @return an array of n variables each with a domain equal to the set {min,...,max}
      */
     public static CPIntVar[] makeIntVarArray(CPSolver cp, int n, int min, int max) {
-<span class="fc" id="L189">        return makeIntVarArray(n, i -&gt; makeIntVar(cp, min, max));</span>
+<span class="fc" id="L233">        return makeIntVarArray(n, i -&gt; makeIntVar(cp, min, max));</span>
     }
 
     // ********************
@@ -200,7 +244,7 @@ public final class CPFactory {
      * @return an uninstantiated boolean variable
      */
     public static CPBoolVar makeBoolVar(CPSolver cp) {
-<span class="fc" id="L203">        return new CPBoolVarImpl(cp);</span>
+<span class="fc" id="L247">        return registerRawIntVar(cp, new CPBoolVarImpl(cp));</span>
     }
 
     /**
@@ -212,12 +256,12 @@ public final class CPFactory {
      * @return an uninstantiated boolean variable
      */
     public static CPBoolVar makeBoolVar(CPSolver cp, boolean containsTrue, boolean containsFalse) {
-<span class="nc" id="L215">        CPBoolVarImpl boolVar = new CPBoolVarImpl(cp);</span>
-<span class="nc bnc" id="L216" title="All 2 branches missed.">        if (!containsFalse)</span>
-<span class="nc" id="L217">            boolVar.fix(true);</span>
-<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (!containsTrue)</span>
-<span class="nc" id="L219">            boolVar.fix(false);</span>
-<span class="nc" id="L220">        return boolVar;</span>
+<span class="nc" id="L259">        CPBoolVarImpl boolVar = new CPBoolVarImpl(cp);</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (!containsFalse)</span>
+<span class="nc" id="L261">            boolVar.fix(true);</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (!containsTrue)</span>
+<span class="nc" id="L263">            boolVar.fix(false);</span>
+<span class="nc" id="L264">        return registerRawIntVar(cp, boolVar);</span>
     }
 
     /**
@@ -229,10 +273,11 @@ public final class CPFactory {
      * with variable at index &lt;i&gt;i&lt;/i&gt; generated as {@code body.get(i)}
      */
     public static CPBoolVar[] makeBoolVarArray(int n, Function&lt;Integer, CPBoolVar&gt; body) {
-<span class="nc" id="L232">        CPBoolVar[] t = new CPBoolVar[n];</span>
-<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++)</span>
-<span class="nc" id="L234">            t[i] = body.apply(i);</span>
-<span class="nc" id="L235">        return t;</span>
+<span class="nc" id="L276">        CPBoolVar[] t = new CPBoolVar[n];</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        for (int i = 0; i &lt; n; i++)</span>
+<span class="nc" id="L278">            t[i] = body.apply(i);</span>
+<span class="nc" id="L279">        registerRawVariableGroup(t);</span>
+<span class="nc" id="L280">        return t;</span>
     }
 
     /**
@@ -243,7 +288,7 @@ public final class CPFactory {
      * @return an array of n boolean variables
      */
     public static CPBoolVar[] makeBoolVarArray(CPSolver cp, int n) {
-<span class="nc" id="L246">        return makeBoolVarArray(n, i -&gt; makeBoolVar(cp));</span>
+<span class="nc" id="L291">        return makeBoolVarArray(n, i -&gt; makeBoolVar(cp));</span>
     }
 
     // ********************
@@ -257,7 +302,7 @@ public final class CPFactory {
      * @return an uninstantiated boolean variable
      */
     public static CPSeqVar makeSeqVar(CPSolver cp, int nNodes, int start, int end) {
-<span class="fc" id="L260">        return new CPSeqVarImpl(cp, nNodes, start, end);</span>
+<span class="fc" id="L305">        return new CPSeqVarImpl(cp, nNodes, start, end);</span>
     }
 
     // ********************
@@ -271,7 +316,7 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp) {
-<span class="fc" id="L274">        return new CPIntervalVarImpl(cp);</span>
+<span class="fc" id="L319">        return registerRawIntervalVar(cp, new CPIntervalVarImpl(cp));</span>
     }
 
     /**
@@ -282,9 +327,9 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp, int length) {
-<span class="fc" id="L285">        CPIntervalVar var = makeIntervalVar(cp);</span>
-<span class="fc" id="L286">        var.setLength(length);</span>
-<span class="fc" id="L287">        return var;</span>
+<span class="fc" id="L330">        CPIntervalVar var = makeIntervalVar(cp);</span>
+<span class="fc" id="L331">        var.setLength(length);</span>
+<span class="fc" id="L332">        return var;</span>
     }
 
     /**
@@ -297,9 +342,9 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp, boolean optional, int length) {
-<span class="fc" id="L300">        CPIntervalVar var = makeIntervalVar(cp, length);</span>
-<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (!optional) var.setPresent();</span>
-<span class="fc" id="L302">        return var;</span>
+<span class="fc" id="L345">        CPIntervalVar var = makeIntervalVar(cp, length);</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (!optional) var.setPresent();</span>
+<span class="fc" id="L347">        return var;</span>
     }
 
     /**
@@ -311,10 +356,10 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp, int lengthMin, int lengthMax) {
-<span class="fc" id="L314">        CPIntervalVar var = makeIntervalVar(cp);</span>
-<span class="fc" id="L315">        var.setLengthMin(lengthMin);</span>
-<span class="fc" id="L316">        var.setLengthMax(lengthMax);</span>
-<span class="fc" id="L317">        return var;</span>
+<span class="fc" id="L359">        CPIntervalVar var = makeIntervalVar(cp);</span>
+<span class="fc" id="L360">        var.setLengthMin(lengthMin);</span>
+<span class="fc" id="L361">        var.setLengthMax(lengthMax);</span>
+<span class="fc" id="L362">        return var;</span>
     }
 
     /**
@@ -327,9 +372,9 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp, boolean optional, int lengthMin, int lengthMax) {
-<span class="fc" id="L330">        CPIntervalVar var = makeIntervalVar(cp, lengthMin, lengthMax);</span>
-<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (!optional) var.setPresent();</span>
-<span class="fc" id="L332">        return var;</span>
+<span class="fc" id="L375">        CPIntervalVar var = makeIntervalVar(cp, lengthMin, lengthMax);</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">        if (!optional) var.setPresent();</span>
+<span class="fc" id="L377">        return var;</span>
     }
 
     /**
@@ -340,14 +385,42 @@ public final class CPFactory {
      * @return an array of new interval variables each with a startMin of 0 and an unbounded end
      */
     public static CPIntervalVar[] makeIntervalVarArray(CPSolver cp, int n) {
-<span class="fc" id="L343">        CPIntervalVar[] vars = new CPIntervalVar[n];</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L345">            vars[i] = new CPIntervalVarImpl(cp);</span>
+<span class="fc" id="L388">        CPIntervalVar[] vars = new CPIntervalVar[n];</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L390">            vars[i] = makeIntervalVar(cp);</span>
         }
-<span class="fc" id="L347">        return vars;</span>
+<span class="fc" id="L392">        return vars;</span>
     }
 
     // -------------- searches -----------------------
+
+    /**
+     * Creates a black-box search that automatically discovers the solver's decision variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp) {
+<span class="fc" id="L401">        return cp.blackBoxSearch();</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified integer variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntVar... vars) {
+<span class="nc" id="L408">        return cp.blackBoxSearch(vars);</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified interval variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntervalVar... intervals) {
+<span class="nc" id="L415">        return cp.blackBoxSearch(intervals);</span>
+    }
+
+    /**
+     * Creates a black-box search over the specified 2D matrix of interval variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntervalVar[][] intervals) {
+<span class="nc" id="L422">        return cp.blackBoxSearch(intervals);</span>
+    }
 
     /**
      * Creates a Depth First Search with custom branching heuristic
@@ -384,7 +457,7 @@ public final class CPFactory {
      * @see org.maxicp.search.Searches#branch(Runnable...)
      */
     public static DFSearch makeDfs(CPSolver cp, Supplier&lt;Runnable[]&gt; branching) {
-<span class="fc" id="L387">        return new DFSearch(cp.getStateManager(), branching);</span>
+<span class="fc" id="L460">        return new DFSearch(cp.getStateManager(), branching);</span>
     }
 
     // -------------- constraints -----------------------
@@ -401,7 +474,7 @@ public final class CPFactory {
      * @return a variable that is a view of {@code x+v}
      */
     public static CPIntVar plus(CPIntVar x, int v) {
-<span class="fc" id="L404">        return new CPIntVarViewOffset(x, v);</span>
+<span class="fc" id="L477">        return new CPIntVarViewOffset(x, v);</span>
     }
 
     /**
@@ -411,7 +484,7 @@ public final class CPFactory {
      * @return a variable that is a view of {@code -x}
      */
     public static CPIntVar minus(CPIntVar x) {
-<span class="fc" id="L414">        return new CPIntVarViewOpposite(x);</span>
+<span class="fc" id="L487">        return new CPIntVarViewOpposite(x);</span>
     }
 
     /**
@@ -422,7 +495,7 @@ public final class CPFactory {
      * @return a variable that is a view of {@code x-v}
      */
     public static CPIntVar minus(CPIntVar x, int v) {
-<span class="fc" id="L425">        return new CPIntVarViewOffset(x, -v);</span>
+<span class="fc" id="L498">        return new CPIntVarViewOffset(x, -v);</span>
     }
 
     /**
@@ -433,12 +506,12 @@ public final class CPFactory {
      * @return a variable that is a view of {@code x*a}
      */
     public static CPIntVar mul(CPIntVar x, int a) {
-<span class="pc bpc" id="L436" title="1 of 2 branches missed.">        if (a == 0) return makeIntVar(x.getSolver(), 0, 0);</span>
-<span class="fc bfc" id="L437" title="All 2 branches covered.">        else if (a == 1) return x;</span>
-<span class="fc bfc" id="L438" title="All 2 branches covered.">        else if (a &lt; 0) {</span>
-<span class="fc" id="L439">            return minus(new CPIntVarViewMul(x, -a));</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">        if (a == 0) return makeAuxIntVar(x.getSolver(), 0, 0);</span>
+<span class="fc bfc" id="L510" title="All 2 branches covered.">        else if (a == 1) return x;</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">        else if (a &lt; 0) {</span>
+<span class="fc" id="L512">            return minus(new CPIntVarViewMul(x, -a));</span>
         } else {
-<span class="fc" id="L441">            return new CPIntVarViewMul(x, a);</span>
+<span class="fc" id="L514">            return new CPIntVarViewMul(x, a);</span>
         }
     }
 
@@ -449,7 +522,7 @@ public final class CPFactory {
      * @return a variable that is a view of {@code seqVar} in reverse order
      */
     public static CPSeqVar flip(CPSeqVar seqVar) {
-<span class="fc" id="L452">        return new CPSeqVarViewFlip(seqVar);</span>
+<span class="fc" id="L525">        return new CPSeqVarViewFlip(seqVar);</span>
     }
 
     /**
@@ -460,10 +533,10 @@ public final class CPFactory {
      * @return a variable that is equal to {@code x*b}
      */
     public static CPIntVar mul(CPIntVar x, CPBoolVar b) {
-<span class="fc bfc" id="L463" title="All 2 branches covered.">        if (b.isTrue()) return x;</span>
-<span class="fc" id="L464">        CPIntVar y = makeIntVar(x.getSolver(), Math.min(0, x.min()), Math.max(0, x.max()));</span>
-<span class="fc" id="L465">        x.getSolver().post(new Mul(x, b, y));</span>
-<span class="fc" id="L466">        return y;</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">        if (b.isTrue()) return x;</span>
+<span class="fc" id="L537">        CPIntVar y = makeAuxIntVar(x.getSolver(), Math.min(0, x.min()), Math.max(0, x.max()));</span>
+<span class="fc" id="L538">        x.getSolver().post(new Mul(x, b, y));</span>
+<span class="fc" id="L539">        return y;</span>
     }
 
     /**
@@ -475,9 +548,9 @@ public final class CPFactory {
      * @return a variable that represents the absolute value of x
      */
     public static CPIntVar abs(CPIntVar x) {
-<span class="nc" id="L478">        CPIntVar r = makeIntVar(x.getSolver(), 0, Math.max(Math.abs(x.max()), Math.abs(x.min())));</span>
-<span class="nc" id="L479">        x.getSolver().post(new Absolute(x, r), false);</span>
-<span class="nc" id="L480">        return r;</span>
+<span class="nc" id="L551">        CPIntVar r = makeAuxIntVar(x.getSolver(), 0, Math.max(Math.abs(x.max()), Math.abs(x.min())));</span>
+<span class="nc" id="L552">        x.getSolver().post(new Absolute(x, r), false);</span>
+<span class="nc" id="L553">        return r;</span>
     }
 
     // ********************
@@ -494,21 +567,21 @@ public final class CPFactory {
      * @return a variable equal to {@code x[0]+x[1]+...+x[n-1]}
      */
     public static CPIntVar sum(CPIntVar... x) {
-<span class="pc bpc" id="L497" title="1 of 2 branches missed.">        if (x.length == 1)</span>
-<span class="nc" id="L498">            return x[0];</span>
-<span class="fc" id="L499">        long sumMin = 0;</span>
-<span class="fc" id="L500">        long sumMax = 0;</span>
-<span class="fc bfc" id="L501" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
-<span class="fc" id="L502">            sumMin += x[i].min();</span>
-<span class="fc" id="L503">            sumMax += x[i].max();</span>
+<span class="pc bpc" id="L570" title="1 of 2 branches missed.">        if (x.length == 1)</span>
+<span class="nc" id="L571">            return x[0];</span>
+<span class="fc" id="L572">        long sumMin = 0;</span>
+<span class="fc" id="L573">        long sumMax = 0;</span>
+<span class="fc bfc" id="L574" title="All 2 branches covered.">        for (int i = 0; i &lt; x.length; i++) {</span>
+<span class="fc" id="L575">            sumMin += x[i].min();</span>
+<span class="fc" id="L576">            sumMax += x[i].max();</span>
         }
-<span class="pc bpc" id="L505" title="1 of 4 branches missed.">        if (sumMin &lt; (long) Integer.MIN_VALUE || sumMax &gt; (long) Integer.MAX_VALUE) {</span>
-<span class="fc" id="L506">            throw new IntOverFlowException(&quot;domains are too large for sum constraint and would exceed Integer bounds&quot;);</span>
+<span class="pc bpc" id="L578" title="1 of 4 branches missed.">        if (sumMin &lt; (long) Integer.MIN_VALUE || sumMax &gt; (long) Integer.MAX_VALUE) {</span>
+<span class="fc" id="L579">            throw new IntOverFlowException(&quot;domains are too large for sum constraint and would exceed Integer bounds&quot;);</span>
         }
-<span class="fc" id="L508">        CPSolver cp = x[0].getSolver();</span>
-<span class="fc" id="L509">        CPIntVar s = makeIntVar(cp, (int) sumMin, (int) sumMax);</span>
-<span class="fc" id="L510">        cp.post(new Sum(x, s), false);</span>
-<span class="fc" id="L511">        return s;</span>
+<span class="fc" id="L581">        CPSolver cp = x[0].getSolver();</span>
+<span class="fc" id="L582">        CPIntVar s = makeAuxIntVar(cp, (int) sumMin, (int) sumMax);</span>
+<span class="fc" id="L583">        cp.post(new Sum(x, s), false);</span>
+<span class="fc" id="L584">        return s;</span>
     }
 
     /**
@@ -519,7 +592,7 @@ public final class CPFactory {
      * @return a constraint so that {@code y = x[0]+x[1]+...+x[n-1]}
      */
     public static CPConstraint sum(CPIntVar[] x, CPIntVar y) {
-<span class="fc" id="L522">        return new Sum(x, y);</span>
+<span class="fc" id="L595">        return new Sum(x, y);</span>
     }
 
     /**
@@ -530,7 +603,7 @@ public final class CPFactory {
      * @return a constraint so that {@code y = x[0]+x[1]+...+x[n-1]}
      */
     public static CPConstraint sum(CPIntVar[] x, int y) {
-<span class="nc" id="L533">        return new Sum(x, y);</span>
+<span class="nc" id="L606">        return new Sum(x, y);</span>
     }
 
     /**
@@ -543,7 +616,7 @@ public final class CPFactory {
      * @return a constraint so that {@code y = x[0] + ... + x[n-1]}
      */
     public static CPConstraint sum(int y, CPIntVar... x) {
-<span class="nc" id="L546">        return new Sum(x, y);</span>
+<span class="nc" id="L619">        return new Sum(x, y);</span>
     }
 
     /**
@@ -557,13 +630,13 @@ public final class CPFactory {
      */
     public static CPIntVar mul(CPIntVar... x) {
         // reduce using mult
-<span class="pc bpc" id="L560" title="1 of 2 branches missed.">        if (x.length == 1)</span>
-<span class="nc" id="L561">            return x[0];</span>
-<span class="fc" id="L562">        CPIntVar res = x[0];</span>
-<span class="fc bfc" id="L563" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
-<span class="fc" id="L564">            res = mul(res, x[i]);</span>
+<span class="pc bpc" id="L633" title="1 of 2 branches missed.">        if (x.length == 1)</span>
+<span class="nc" id="L634">            return x[0];</span>
+<span class="fc" id="L635">        CPIntVar res = x[0];</span>
+<span class="fc bfc" id="L636" title="All 2 branches covered.">        for (int i = 1; i &lt; x.length; i++) {</span>
+<span class="fc" id="L637">            res = mul(res, x[i]);</span>
         }
-<span class="fc" id="L566">        return res;</span>
+<span class="fc" id="L639">        return res;</span>
     }
 
     /**
@@ -572,16 +645,16 @@ public final class CPFactory {
      * @return a variable in the same store representing: x * y
      */
     public static CPIntVar mul(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L575">        int a = x.min();</span>
-<span class="fc" id="L576">        int b = x.max();</span>
-<span class="fc" id="L577">        int c = y.min();</span>
-<span class="fc" id="L578">        int d = y.max();</span>
-<span class="fc" id="L579">        int [] t = new int[] {NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};</span>
-<span class="fc" id="L580">        int min = Arrays.stream(t).min().getAsInt();</span>
-<span class="fc" id="L581">        int max = Arrays.stream(t).max().getAsInt();</span>
-<span class="fc" id="L582">        CPIntVar z = makeIntVar(x.getSolver(),min, max);</span>
-<span class="fc" id="L583">        x.getSolver().post(new MulVar(x, y, z));</span>
-<span class="fc" id="L584">        return z;</span>
+<span class="fc" id="L648">        int a = x.min();</span>
+<span class="fc" id="L649">        int b = x.max();</span>
+<span class="fc" id="L650">        int c = y.min();</span>
+<span class="fc" id="L651">        int d = y.max();</span>
+<span class="fc" id="L652">        int [] t = new int[] {NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};</span>
+<span class="fc" id="L653">        int min = Arrays.stream(t).min().getAsInt();</span>
+<span class="fc" id="L654">        int max = Arrays.stream(t).max().getAsInt();</span>
+<span class="fc" id="L655">        CPIntVar z = makeAuxIntVar(x.getSolver(),min, max);</span>
+<span class="fc" id="L656">        x.getSolver().post(new MulVar(x, y, z));</span>
+<span class="fc" id="L657">        return z;</span>
     }
 
     /**
@@ -594,12 +667,12 @@ public final class CPFactory {
      * @see CPFactory#minimum(CPIntVar...)
      */
     public static CPIntVar max(CPIntVar... x) {
-<span class="fc" id="L597">        CPSolver cp = x[0].getSolver();</span>
-<span class="fc" id="L598">        int min = Arrays.stream(x).mapToInt(CPIntVar::min).min().getAsInt();</span>
-<span class="fc" id="L599">        int max = Arrays.stream(x).mapToInt(CPIntVar::max).max().getAsInt();</span>
-<span class="fc" id="L600">        CPIntVar y = makeIntVar(cp, min, max);</span>
-<span class="fc" id="L601">        cp.post(new Maximum(x, y), false);</span>
-<span class="fc" id="L602">        return y;</span>
+<span class="fc" id="L670">        CPSolver cp = x[0].getSolver();</span>
+<span class="fc" id="L671">        int min = Arrays.stream(x).mapToInt(CPIntVar::min).min().getAsInt();</span>
+<span class="fc" id="L672">        int max = Arrays.stream(x).mapToInt(CPIntVar::max).max().getAsInt();</span>
+<span class="fc" id="L673">        CPIntVar y = makeAuxIntVar(cp, min, max);</span>
+<span class="fc" id="L674">        cp.post(new Maximum(x, y), false);</span>
+<span class="fc" id="L675">        return y;</span>
     }
 
     /**
@@ -612,8 +685,8 @@ public final class CPFactory {
      * @see CPFactory#max(CPIntVar...) (IntVar...)
      */
     public static CPIntVar minimum(CPIntVar... x) {
-<span class="nc" id="L615">        CPIntVar[] minusX = Arrays.stream(x).map(CPFactory::minus).toArray(CPIntVar[]::new);</span>
-<span class="nc" id="L616">        return minus(max(minusX));</span>
+<span class="fc" id="L688">        CPIntVar[] minusX = Arrays.stream(x).map(CPFactory::minus).toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L689">        return minus(max(minusX));</span>
     }
 
     // ********************
@@ -629,11 +702,11 @@ public final class CPFactory {
      * @return a constraint so that {@code x = v}
      */
     public static CPConstraint eq(CPIntVar x, int v) {
-<span class="fc" id="L632">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L705">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L635">                x.fix(v);</span>
-<span class="fc" id="L636">            }</span>
+<span class="fc" id="L708">                x.fix(v);</span>
+<span class="fc" id="L709">            }</span>
         };
     }
 
@@ -647,11 +720,11 @@ public final class CPFactory {
      * @return a constraint so that {@code v in x}
      */
     public static CPConstraint include(CPSetVar x, int v) {
-<span class="fc" id="L650">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L723">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L653">                x.include(v);</span>
-<span class="fc" id="L654">            }</span>
+<span class="fc" id="L726">                x.include(v);</span>
+<span class="fc" id="L727">            }</span>
         };
     }
 
@@ -664,11 +737,11 @@ public final class CPFactory {
      * @return a constraint so that {@code v not in x}
      */
     public static CPConstraint exclude(CPSetVar x, int v) {
-<span class="fc" id="L667">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L740">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L670">                x.exclude(v);</span>
-<span class="fc" id="L671">            }</span>
+<span class="fc" id="L743">                x.exclude(v);</span>
+<span class="fc" id="L744">            }</span>
         };
     }
 
@@ -681,7 +754,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x = y}
      */
     public static CPConstraint eq(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L684">        return new Equal(x, y);</span>
+<span class="fc" id="L757">        return new Equal(x, y);</span>
     }
 
     /**
@@ -693,11 +766,11 @@ public final class CPFactory {
      * @return a constraint so that {@code x != y}
      */
     public static CPConstraint neq(CPIntVar x, int v) {
-<span class="fc" id="L696">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L769">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L699">                x.remove(v);</span>
-<span class="fc" id="L700">            }</span>
+<span class="fc" id="L772">                x.remove(v);</span>
+<span class="fc" id="L773">            }</span>
         };
     }
 
@@ -710,7 +783,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x != y}
      */
     public static CPConstraint neq(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L713">        return new NotEqual(x, y);</span>
+<span class="fc" id="L786">        return new NotEqual(x, y);</span>
     }
 
     /**
@@ -723,7 +796,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x != y+c}
      */
     public static CPConstraint neq(CPIntVar x, CPIntVar y, int c) {
-<span class="nc" id="L726">        return new NotEqual(x, y, c);</span>
+<span class="nc" id="L799">        return new NotEqual(x, y, c);</span>
     }
 
     /**
@@ -735,11 +808,11 @@ public final class CPFactory {
      * @return a constraint so that {@code x &lt;= v}
      */
     public static CPConstraint le(CPIntVar x, int v) {
-<span class="fc" id="L738">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L811">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L741">                x.removeAbove(v);</span>
-<span class="fc" id="L742">            }</span>
+<span class="fc" id="L814">                x.removeAbove(v);</span>
+<span class="fc" id="L815">            }</span>
         };
     }
 
@@ -752,7 +825,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &lt;= y}
      */
     public static CPConstraint le(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L755">        return new LessOrEqual(x, y);</span>
+<span class="fc" id="L828">        return new LessOrEqual(x, y);</span>
     }
 
     /**
@@ -764,7 +837,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &lt; v}
      */
     public static CPConstraint lt(CPIntVar x, int v) {
-<span class="nc" id="L767">        return le(x, v - 1);</span>
+<span class="nc" id="L840">        return le(x, v - 1);</span>
     }
 
     /**
@@ -776,7 +849,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &lt; y}
      */
     public static CPConstraint lt(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L779">        return le(x, minus(y, 1));</span>
+<span class="nc" id="L852">        return le(x, minus(y, 1));</span>
     }
 
     /**
@@ -788,11 +861,11 @@ public final class CPFactory {
      * @return a constraint so that {@code x &gt;= v}
      */
     public static CPConstraint ge(CPIntVar x, int v) {
-<span class="fc" id="L791">        return new AbstractCPConstraint(x.getSolver()) {</span>
+<span class="fc" id="L864">        return new AbstractCPConstraint(x.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L794">                x.removeBelow(v);</span>
-<span class="fc" id="L795">            }</span>
+<span class="fc" id="L867">                x.removeBelow(v);</span>
+<span class="fc" id="L868">            }</span>
         };
     }
 
@@ -805,7 +878,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &gt;= y}
      */
     public static CPConstraint ge(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L808">        return le(y, x);</span>
+<span class="nc" id="L881">        return le(y, x);</span>
     }
 
     /**
@@ -817,7 +890,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &gt; v}
      */
     public static CPConstraint gt(CPIntVar x, int v) {
-<span class="nc" id="L820">        return ge(x, v + 1);</span>
+<span class="nc" id="L893">        return ge(x, v + 1);</span>
     }
 
     /**
@@ -829,7 +902,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x &gt; y}
      */
     public static CPConstraint gt(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L832">        return ge(x, plus(y, 1));</span>
+<span class="nc" id="L905">        return ge(x, plus(y, 1));</span>
     }
 
     // ********************
@@ -848,10 +921,10 @@ public final class CPFactory {
      * @see IsEqual
      */
     public static CPBoolVar isEq(CPIntVar x, final int c) {
-<span class="fc" id="L851">        CPSolver cp = x.getSolver();</span>
-<span class="fc" id="L852">        CPBoolVar b = makeBoolVar(cp);</span>
-<span class="fc" id="L853">        cp.post(new IsEqual(b, x, c), false);</span>
-<span class="fc" id="L854">        return b;</span>
+<span class="fc" id="L924">        CPSolver cp = x.getSolver();</span>
+<span class="fc" id="L925">        CPBoolVar b = makeAuxBoolVar(cp);</span>
+<span class="fc" id="L926">        cp.post(new IsEqual(b, x, c), false);</span>
+<span class="fc" id="L927">        return b;</span>
     }
 
     /**
@@ -866,10 +939,10 @@ public final class CPFactory {
      * @see IsEqualVar
      */
     public static CPBoolVar isEq(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L869">        CPSolver cp = x.getSolver();</span>
-<span class="nc" id="L870">        CPBoolVar b = makeBoolVar(cp);</span>
-<span class="nc" id="L871">        cp.post(new IsEqualVar(b, x, y), false);</span>
-<span class="nc" id="L872">        return b;</span>
+<span class="fc" id="L942">        CPSolver cp = x.getSolver();</span>
+<span class="fc" id="L943">        CPBoolVar b = makeAuxBoolVar(cp);</span>
+<span class="fc" id="L944">        cp.post(new IsEqualVar(b, x, y), false);</span>
+<span class="fc" id="L945">        return b;</span>
     }
 
     /**
@@ -881,7 +954,7 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if x don't take the value c
      */
     public static CPBoolVar isNeq(CPIntVar x, final int c) {
-<span class="nc" id="L884">        return not(isEq(x, c));</span>
+<span class="fc" id="L957">        return not(isEq(x, c));</span>
     }
 
     /**
@@ -893,7 +966,7 @@ public final class CPFactory {
      * @return boolean variable that is set to true if and only if x != y
      */
     public static CPBoolVar isNeq(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L896">        return not(isEq(x, y));</span>
+<span class="fc" id="L969">        return not(isEq(x, y));</span>
     }
 
     /**
@@ -908,10 +981,10 @@ public final class CPFactory {
      * x takes a value less or equal to c
      */
     public static CPBoolVar isLe(CPIntVar x, final int c) {
-<span class="nc" id="L911">        CPSolver cp = x.getSolver();</span>
-<span class="nc" id="L912">        CPBoolVar b = makeBoolVar(cp);</span>
-<span class="nc" id="L913">        cp.post(new IsLessOrEqual(b, x, c), false);</span>
-<span class="nc" id="L914">        return b;</span>
+<span class="fc" id="L984">        CPSolver cp = x.getSolver();</span>
+<span class="fc" id="L985">        CPBoolVar b = makeAuxBoolVar(cp);</span>
+<span class="fc" id="L986">        cp.post(new IsLessOrEqual(b, x, c), false);</span>
+<span class="fc" id="L987">        return b;</span>
     }
 
     /**
@@ -926,10 +999,10 @@ public final class CPFactory {
      * x takes a value less or equal to y
      */
     public static CPBoolVar isLe(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L929">        CPSolver cp = x.getSolver();</span>
-<span class="fc" id="L930">        CPBoolVar b = makeBoolVar(cp);</span>
-<span class="fc" id="L931">        cp.post(new IsLessOrEqualVar(b, x, y), false);</span>
-<span class="fc" id="L932">        return b;</span>
+<span class="fc" id="L1002">        CPSolver cp = x.getSolver();</span>
+<span class="fc" id="L1003">        CPBoolVar b = makeAuxBoolVar(cp);</span>
+<span class="fc" id="L1004">        cp.post(new IsLessOrEqualVar(b, x, y), false);</span>
+<span class="fc" id="L1005">        return b;</span>
     }
 
     /**
@@ -943,7 +1016,7 @@ public final class CPFactory {
      * {@code x &lt;= y}, false otherwise
      */
     public static CPConstraint isLe(CPBoolVar b, CPIntVar x, CPIntVar y) {
-<span class="nc" id="L946">        return new IsLessOrEqualVar(b, x, y);</span>
+<span class="nc" id="L1019">        return new IsLessOrEqualVar(b, x, y);</span>
     }
 
     /**
@@ -957,25 +1030,25 @@ public final class CPFactory {
      * {@code x &lt; y}, false otherwise
      */
     public static CPConstraint isLt(CPBoolVar b, CPIntVar x, CPIntVar y) {
-<span class="fc" id="L960">        return new IsLessOrEqualVar(b, x, minus(y, 1));</span>
+<span class="fc" id="L1033">        return new IsLessOrEqualVar(b, x, minus(y, 1));</span>
     }
 
     /**
      * Creates a Boolean variable b encoding the strict ordering between x and y.
      *
-     * The constraint enforces x ≠ y and links b to the ordering as follows:
-     *   - b = true  if and only if x &lt; y
-     *   - b = false if and only if x &gt; y
+     * The constraint enforces {@code x != y} and links {@code b} to the ordering as follows:
+     *   - {@code b = true}  if and only if {@code x &lt; y}
+     *   - {@code b = false} if and only if {@code x &gt; y}
      *
      * @param x the first integer variable
      * @param y the second integer variable
      * @return a Boolean variable representing the strict order between x and y
      */
     public static CPBoolVar strictOrder(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L975">        CPBoolVar b = makeBoolVar(x.getSolver());</span>
-<span class="fc" id="L976">        x.getSolver().post(isLt(b, x, y));</span>
-<span class="fc" id="L977">        x.getSolver().post(isLt(not(b), y, x));</span>
-<span class="fc" id="L978">        return b;</span>
+<span class="fc" id="L1048">        CPBoolVar b = makeAuxBoolVar(x.getSolver());</span>
+<span class="fc" id="L1049">        x.getSolver().post(isLt(b, x, y));</span>
+<span class="fc" id="L1050">        x.getSolver().post(isLt(not(b), y, x));</span>
+<span class="fc" id="L1051">        return b;</span>
     }
 
 
@@ -993,7 +1066,7 @@ public final class CPFactory {
      * x takes a value less than c
      */
     public static CPBoolVar isLt(CPIntVar x, final int c) {
-<span class="nc" id="L996">        return isLe(x, c - 1);</span>
+<span class="fc" id="L1069">        return isLe(x, c - 1);</span>
     }
 
     /**
@@ -1008,7 +1081,7 @@ public final class CPFactory {
      * x takes a value less than y
      */
     public static CPBoolVar isLt(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L1011">        return isLe(x, minus(y, 1));</span>
+<span class="fc" id="L1084">        return isLe(x, minus(y, 1));</span>
     }
 
     /**
@@ -1023,7 +1096,7 @@ public final class CPFactory {
      * x takes a value larger or equal to c
      */
     public static CPBoolVar isGe(CPIntVar x, final int c) {
-<span class="nc" id="L1026">        return isLe(minus(x), -c);</span>
+<span class="fc" id="L1099">        return isLe(minus(x), -c);</span>
     }
 
     /**
@@ -1038,7 +1111,7 @@ public final class CPFactory {
      * {@code x &gt;= y}, false otherwise
      */
     public static CPBoolVar isGe(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L1041">        return isLe(y, x);</span>
+<span class="fc" id="L1114">        return isLe(y, x);</span>
     }
 
     /**
@@ -1053,7 +1126,7 @@ public final class CPFactory {
      * x takes a value larger than c
      */
     public static CPBoolVar isGt(CPIntVar x, final int c) {
-<span class="nc" id="L1056">        return isGe(x, c + 1);</span>
+<span class="fc" id="L1129">        return isGe(x, c + 1);</span>
     }
 
     /**
@@ -1068,7 +1141,7 @@ public final class CPFactory {
      * x takes a value larger than y
      */
     public static CPBoolVar isGt(CPIntVar x, CPIntVar y) {
-<span class="nc" id="L1071">        return isGe(x, plus(y, 1));</span>
+<span class="fc" id="L1144">        return isGe(x, plus(y, 1));</span>
     }
 
     /**
@@ -1080,10 +1153,10 @@ public final class CPFactory {
      * @return a boolean variable that is true if and only if x contains v
      */
     public static CPBoolVar isIncluded(CPSetVar x, final int v) {
-<span class="nc" id="L1083">        CPSolver cp = x.getSolver();</span>
-<span class="nc" id="L1084">        CPBoolVar b = makeBoolVar(cp);</span>
-<span class="nc" id="L1085">        cp.post(new IsIncluded(b, x, v));</span>
-<span class="nc" id="L1086">        return b;</span>
+<span class="nc" id="L1156">        CPSolver cp = x.getSolver();</span>
+<span class="nc" id="L1157">        CPBoolVar b = makeAuxBoolVar(cp);</span>
+<span class="nc" id="L1158">        cp.post(new IsIncluded(b, x, v));</span>
+<span class="nc" id="L1159">        return b;</span>
     }
 
     // ********************
@@ -1097,7 +1170,7 @@ public final class CPFactory {
      * @return a boolean variable that is a view of {@code !b}
      */
     public static CPBoolVar not(CPBoolVar b) {
-<span class="fc" id="L1100">        return new CPBoolVarImpl(plus(minus(b), 1));</span>
+<span class="fc" id="L1173">        return new CPBoolVarImpl(plus(minus(b), 1));</span>
     }
 
     /**
@@ -1109,7 +1182,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x[0] or ... or x[n-1]}
      */
     public static CPConstraint or(CPBoolVar... x) {
-<span class="nc" id="L1112">        return new Or(x);</span>
+<span class="nc" id="L1185">        return new Or(x);</span>
     }
 
     /**
@@ -1120,8 +1193,8 @@ public final class CPFactory {
      * @return a constraint enforcing &quot;b1 implies b2&quot;.
      */
     public static CPConstraint implies(CPBoolVar b1, CPBoolVar b2) {
-<span class="fc" id="L1123">        CPIntVar notB1 = CPFactory.plus(CPFactory.minus(b1), 1);</span>
-<span class="fc" id="L1124">        return CPFactory.ge(CPFactory.sum(notB1, b2), 1);</span>
+<span class="fc" id="L1196">        CPIntVar notB1 = CPFactory.plus(CPFactory.minus(b1), 1);</span>
+<span class="fc" id="L1197">        return CPFactory.ge(CPFactory.sum(notB1, b2), 1);</span>
     }
 
     // TODO implies b -&gt; cst (as in choco!)
@@ -1136,10 +1209,10 @@ public final class CPFactory {
      * @param x an array of variables
      */
     public static CPBoolVar isOr(CPBoolVar... x) {
-<span class="nc" id="L1139">        CPBoolVar b = makeBoolVar(x[0].getSolver());</span>
-<span class="nc" id="L1140">        CPSolver cp = x[0].getSolver();</span>
-<span class="nc" id="L1141">        cp.post(new IsOr(b, x), false);</span>
-<span class="nc" id="L1142">        return b;</span>
+<span class="nc" id="L1212">        CPBoolVar b = makeAuxBoolVar(x[0].getSolver());</span>
+<span class="nc" id="L1213">        CPSolver cp = x[0].getSolver();</span>
+<span class="nc" id="L1214">        cp.post(new IsOr(b, x), false);</span>
+<span class="nc" id="L1215">        return b;</span>
     }
 
     // ********************
@@ -1158,10 +1231,10 @@ public final class CPFactory {
      * @return a variable equal to {@code array[y]}
      */
     public static CPIntVar element(int[] array, CPIntVar y) {
-<span class="fc" id="L1161">        CPSolver cp = y.getSolver();</span>
-<span class="fc" id="L1162">        CPIntVar z = makeIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());</span>
-<span class="fc" id="L1163">        cp.post(new Element1D(array, y, z), false);</span>
-<span class="fc" id="L1164">        return z;</span>
+<span class="fc" id="L1234">        CPSolver cp = y.getSolver();</span>
+<span class="fc" id="L1235">        CPIntVar z = makeAuxIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());</span>
+<span class="fc" id="L1236">        cp.post(new Element1D(array, y, z), false);</span>
+<span class="fc" id="L1237">        return z;</span>
     }
 
     /**
@@ -1177,10 +1250,10 @@ public final class CPFactory {
      * @return a variable equal to {@code array[y]}
      */
     public static CPIntVar elementDC(int[] array, CPIntVar y) {
-<span class="nc" id="L1180">        CPSolver cp = y.getSolver();</span>
-<span class="nc" id="L1181">        CPIntVar z = makeIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());</span>
-<span class="nc" id="L1182">        cp.post(new Element1D(array, y, z), false);</span>
-<span class="nc" id="L1183">        return z;</span>
+<span class="fc" id="L1253">        CPSolver cp = y.getSolver();</span>
+<span class="fc" id="L1254">        CPIntVar z = makeAuxIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());</span>
+<span class="fc" id="L1255">        cp.post(new Element1D(array, y, z), false);</span>
+<span class="fc" id="L1256">        return z;</span>
     }
 
     /**
@@ -1195,12 +1268,12 @@ public final class CPFactory {
      * @return a variable equal to {@code array[y]}
      */
     public static CPIntVar element(CPIntVar[] array, CPIntVar y) {
-<span class="nc" id="L1198">        CPSolver cp = y.getSolver();</span>
-<span class="nc" id="L1199">        CPIntVar z = makeIntVar(cp,</span>
-<span class="nc" id="L1200">                Arrays.stream(array).mapToInt(CPIntVar::min).min().getAsInt(),</span>
-<span class="nc" id="L1201">                Arrays.stream(array).mapToInt(CPIntVar::max).max().getAsInt());</span>
-<span class="nc" id="L1202">        cp.post(new Element1DVar(array, y, z), false);</span>
-<span class="nc" id="L1203">        return z;</span>
+<span class="fc" id="L1271">        CPSolver cp = y.getSolver();</span>
+<span class="fc" id="L1272">        CPIntVar z = makeAuxIntVar(cp,</span>
+<span class="fc" id="L1273">                Arrays.stream(array).mapToInt(CPIntVar::min).min().getAsInt(),</span>
+<span class="fc" id="L1274">                Arrays.stream(array).mapToInt(CPIntVar::max).max().getAsInt());</span>
+<span class="fc" id="L1275">        cp.post(new Element1DVar(array, y, z), false);</span>
+<span class="fc" id="L1276">        return z;</span>
     }
 
     /**
@@ -1216,17 +1289,17 @@ public final class CPFactory {
      * @return a variable equal to {@code matrix[x][y]}
      */
     public static CPIntVar element(int[][] matrix, CPIntVar x, CPIntVar y) {
-<span class="fc" id="L1219">        int min = Integer.MAX_VALUE;</span>
-<span class="fc" id="L1220">        int max = Integer.MIN_VALUE;</span>
-<span class="fc bfc" id="L1221" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
-<span class="fc bfc" id="L1222" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
-<span class="fc" id="L1223">                min = Math.min(min, matrix[i][j]);</span>
-<span class="fc" id="L1224">                max = Math.max(max, matrix[i][j]);</span>
+<span class="fc" id="L1292">        int min = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1293">        int max = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L1294" title="All 2 branches covered.">        for (int i = 0; i &lt; matrix.length; i++) {</span>
+<span class="fc bfc" id="L1295" title="All 2 branches covered.">            for (int j = 0; j &lt; matrix[i].length; j++) {</span>
+<span class="fc" id="L1296">                min = Math.min(min, matrix[i][j]);</span>
+<span class="fc" id="L1297">                max = Math.max(max, matrix[i][j]);</span>
             }
         }
-<span class="fc" id="L1227">        CPIntVar z = makeIntVar(x.getSolver(), min, max);</span>
-<span class="fc" id="L1228">        x.getSolver().post(new Element2D(matrix, x, y, z), false);</span>
-<span class="fc" id="L1229">        return z;</span>
+<span class="fc" id="L1300">        CPIntVar z = makeAuxIntVar(x.getSolver(), min, max);</span>
+<span class="fc" id="L1301">        x.getSolver().post(new Element2D(matrix, x, y, z), false);</span>
+<span class="fc" id="L1302">        return z;</span>
     }
 
     // ********************
@@ -1240,7 +1313,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x[i] != x[j] for all i &lt; j}
      */
     public static CPConstraint allDifferent(CPIntVar[] x) {
-<span class="fc" id="L1243">        return new AllDifferentFWC(x);</span>
+<span class="fc" id="L1316">        return new AllDifferentFWC(x);</span>
     }
 
     /**
@@ -1251,7 +1324,7 @@ public final class CPFactory {
      * @return a constraint so that {@code x[i] != x[j] for all i &lt; j}
      */
     public static CPConstraint allDifferentDC(CPIntVar[] x) {
-<span class="nc" id="L1254">        return new AllDifferentDC(x);</span>
+<span class="nc" id="L1327">        return new AllDifferentDC(x);</span>
     }
 
     /**
@@ -1262,7 +1335,7 @@ public final class CPFactory {
      * @return a constraint so that {@code #{x[i] | i in 0..x.length-1} &gt;= nValue}
      */
     public static CPConstraint atLeastNValue(CPIntVar[] x, CPIntVar nValue) {
-<span class="nc" id="L1265">        return new AtLeastNValueFWC(x, nValue);</span>
+<span class="nc" id="L1338">        return new AtLeastNValueFWC(x, nValue);</span>
     }
 
 
@@ -1275,7 +1348,7 @@ public final class CPFactory {
      * @return a constraint so that {@code N = #{i | x[i] in vals}}
      */
     public static CPConstraint among(CPIntVar[] x, Set&lt;Integer&gt; vals, CPIntVar N) {
-<span class="fc" id="L1278">        return new Among(x, vals, N);</span>
+<span class="fc" id="L1351">        return new Among(x, vals, N);</span>
     }
 
     // ********************
@@ -1289,7 +1362,7 @@ public final class CPFactory {
      * @return a constraint so that the path described by the successor array forms an hamiltonian circuit
      */
     public static CPConstraint circuit(CPIntVar[] x) {
-<span class="nc" id="L1292">        return new Circuit(x);</span>
+<span class="nc" id="L1365">        return new Circuit(x);</span>
     }
 
     // ********************
@@ -1304,7 +1377,7 @@ public final class CPFactory {
      * @return a constraint the value taken by the variables in x are from a tuple from the table
      */
     public static CPConstraint table(CPIntVar[] x, int[][] table) {
-<span class="nc" id="L1307">        return new TableCT(x, table);</span>
+<span class="nc" id="L1380">        return new TableCT(x, table);</span>
     }
 
     /**
@@ -1316,7 +1389,7 @@ public final class CPFactory {
      * @return a constraint the value taken by the variables in x are from a tuple from the table
      */
     public static CPConstraint shortTable(CPIntVar[] x, int[][] table, int star) {
-<span class="nc" id="L1319">        return new ShortTableCT(x, table, star);</span>
+<span class="nc" id="L1392">        return new ShortTableCT(x, table, star);</span>
     }
 
     /**
@@ -1327,7 +1400,7 @@ public final class CPFactory {
      * @return a constraint the value taken by the variables in x are not from a tuple from the table
      */
     public static CPConstraint negTable(CPIntVar[] x, int[][] table) {
-<span class="nc" id="L1330">        return new NegTableCT(x, table);</span>
+<span class="nc" id="L1403">        return new NegTableCT(x, table);</span>
     }
 
     // ********************
@@ -1343,7 +1416,7 @@ public final class CPFactory {
      * @return a constraint so that {@code seqVar.memberAfter(prev) == node}
      */
     public static CPConstraint insert(CPSeqVar seqVar, int prev, int node) {
-<span class="fc" id="L1346">        return new Insert(seqVar, prev, node);</span>
+<span class="fc" id="L1419">        return new Insert(seqVar, prev, node);</span>
     }
 
     /**
@@ -1354,7 +1427,7 @@ public final class CPFactory {
      * @return a constraint so that {@code seqVar.isNode(node, REQUIRED)} holds
      */
     public static CPConstraint require(CPSeqVar seqVar, int node) {
-<span class="nc" id="L1357">        return new Require(seqVar, node);</span>
+<span class="nc" id="L1430">        return new Require(seqVar, node);</span>
     }
 
     /**
@@ -1365,7 +1438,7 @@ public final class CPFactory {
      * @return a constraint so that {@code seqVar.isNode(node, EXCLUDED)} holds
      */
     public static CPConstraint exclude(CPSeqVar seqVar, int node) {
-<span class="fc" id="L1368">        return new Exclude(seqVar, node);</span>
+<span class="fc" id="L1441">        return new Exclude(seqVar, node);</span>
     }
 
     /**
@@ -1381,7 +1454,7 @@ public final class CPFactory {
      * @return a constraint applying a {@code seqVar.notBetween(prev, node, succ)}
      */
     public static CPConstraint notBetween(CPSeqVar seqVar, int prev, int node, int succ) {
-<span class="fc" id="L1384">        return new NotBetween(seqVar, prev, node, succ);</span>
+<span class="fc" id="L1457">        return new NotBetween(seqVar, prev, node, succ);</span>
     }
 
     // ********************
@@ -1395,7 +1468,7 @@ public final class CPFactory {
      * @return a CPBoolVar that is equal to the status of the interval
      */
     public static CPIntVar status(CPIntervalVar var) {
-<span class="nc" id="L1398">        return var.status();</span>
+<span class="fc" id="L1471">        return var.status();</span>
     }
 
     /**
@@ -1405,11 +1478,11 @@ public final class CPFactory {
      * @return a constraint that enforces the interval to be present
      */
     public static CPConstraint present(CPIntervalVar var1) {
-<span class="fc" id="L1408">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1481">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L1411">                var1.setPresent();</span>
-<span class="fc" id="L1412">            }</span>
+<span class="fc" id="L1484">                var1.setPresent();</span>
+<span class="fc" id="L1485">            }</span>
         };
     }
 
@@ -1420,11 +1493,11 @@ public final class CPFactory {
      * @return a constraint that enforces the interval to be absent
      */
     public static CPConstraint absent(CPIntervalVar var1) {
-<span class="fc" id="L1423">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1496">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L1426">                var1.setAbsent();</span>
-<span class="fc" id="L1427">            }</span>
+<span class="fc" id="L1499">                var1.setAbsent();</span>
+<span class="fc" id="L1500">            }</span>
         };
     }
 
@@ -1436,9 +1509,9 @@ public final class CPFactory {
      * @return a variable that is a view of {@code intervalVar+v}
      */
     public static CPIntervalVar delay(CPIntervalVar intervalVar, int v) {
-<span class="pc bpc" id="L1439" title="1 of 2 branches missed.">        if (v == 0)</span>
-<span class="nc" id="L1440">            return intervalVar;</span>
-<span class="fc" id="L1441">        return new CPIntervalVarOffset(intervalVar, v);</span>
+<span class="fc bfc" id="L1512" title="All 2 branches covered.">        if (v == 0)</span>
+<span class="fc" id="L1513">            return intervalVar;</span>
+<span class="fc" id="L1514">        return new CPIntervalVarOffset(intervalVar, v);</span>
     }
 
     /**
@@ -1448,10 +1521,10 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the start of interval
      */
     public static CPIntVar start(CPIntervalVar var) {
-<span class="fc" id="L1451">        CPSolver cp = var.getSolver();</span>
-<span class="fc" id="L1452">        CPIntVar start = makeIntVar(cp, var.startMin(), var.startMax());</span>
-<span class="fc" id="L1453">        cp.post(new IntervalVarStart(var, start));</span>
-<span class="fc" id="L1454">        return start;</span>
+<span class="fc" id="L1524">        CPSolver cp = var.getSolver();</span>
+<span class="fc" id="L1525">        CPIntVar start = makeAuxIntVar(cp, var.startMin(), var.startMax());</span>
+<span class="fc" id="L1526">        cp.post(new IntervalVarStart(var, start));</span>
+<span class="fc" id="L1527">        return start;</span>
     }
 
     /**
@@ -1462,12 +1535,12 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the start of interval if it is present, or equal to val if interval is absent
      */
     public static CPIntVar startOr(CPIntervalVar interval, int val) {
-<span class="fc" id="L1465">        CPSolver cp = interval.getSolver();</span>
-<span class="fc" id="L1466">        int minBound = Math.min(interval.startMin(), val);</span>
-<span class="fc" id="L1467">        int maxBound = Math.max(interval.startMax(), val);</span>
-<span class="fc" id="L1468">        CPIntVar start = makeIntVar(cp, minBound, maxBound);</span>
-<span class="fc" id="L1469">        cp.post(new IntervalVarStartOrValue(interval, start, val));</span>
-<span class="fc" id="L1470">        return start;</span>
+<span class="fc" id="L1538">        CPSolver cp = interval.getSolver();</span>
+<span class="fc" id="L1539">        int minBound = Math.min(interval.startMin(), val);</span>
+<span class="fc" id="L1540">        int maxBound = Math.max(interval.startMax(), val);</span>
+<span class="fc" id="L1541">        CPIntVar start = makeAuxIntVar(cp, minBound, maxBound);</span>
+<span class="fc" id="L1542">        cp.post(new IntervalVarStartOrValue(interval, start, val));</span>
+<span class="fc" id="L1543">        return start;</span>
     }
 
     /**
@@ -1478,11 +1551,11 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be equal to start
      */
     public static CPConstraint startAt(CPIntervalVar var1, int start) {
-<span class="fc" id="L1481">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1554">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L1484">                var1.setStart(start);</span>
-<span class="fc" id="L1485">            }</span>
+<span class="fc" id="L1557">                var1.setStart(start);</span>
+<span class="fc" id="L1558">            }</span>
         };
     }
 
@@ -1494,11 +1567,11 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be at or after start
      */
     public static CPConstraint startAfter(CPIntervalVar var1, int start) {
-<span class="fc" id="L1497">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1570">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="fc" id="L1500">                var1.setStartMin(start);</span>
-<span class="fc" id="L1501">            }</span>
+<span class="fc" id="L1573">                var1.setStartMin(start);</span>
+<span class="fc" id="L1574">            }</span>
         };
     }
 
@@ -1510,11 +1583,11 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be before or at start
      */
     public static CPConstraint startBefore(CPIntervalVar var1, int start) {
-<span class="nc" id="L1513">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1586">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="nc" id="L1516">                var1.setStartMax(start);</span>
-<span class="nc" id="L1517">            }</span>
+<span class="fc" id="L1589">                var1.setStartMax(start);</span>
+<span class="fc" id="L1590">            }</span>
         };
     }
 
@@ -1526,7 +1599,7 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be equal to the start of var2
      */
     public static CPConstraint startAtStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1529">        return new StartAtStart(var1, var2);</span>
+<span class="fc" id="L1602">        return new StartAtStart(var1, var2);</span>
     }
 
     /**
@@ -1538,7 +1611,7 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be equal to the start of var2 + delay
      */
     public static CPConstraint startAtStart(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="fc" id="L1541">        return new StartAtStart(var1, delay(var2, delay));</span>
+<span class="fc" id="L1614">        return new StartAtStart(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1549,7 +1622,7 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be equal to the end of var2
      */
     public static CPConstraint startAtEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1552">        return new StartAtEnd(var1, var2);</span>
+<span class="fc" id="L1625">        return new StartAtEnd(var1, var2);</span>
     }
 
     /**
@@ -1561,7 +1634,7 @@ public final class CPFactory {
      * @return a constraint that enforces the start of var1 to be equal to the end of var2 + delay
      */
     public static CPConstraint startAtEnd(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="fc" id="L1564">        return new StartAtEnd(var1, delay(var2, delay));</span>
+<span class="fc" id="L1637">        return new StartAtEnd(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1572,7 +1645,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.start &lt;= var2.start}
      */
     public static CPConstraint startBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1575">        return new StartBeforeStart(var1, var2);</span>
+<span class="fc" id="L1648">        return new StartBeforeStart(var1, var2);</span>
     }
 
     /**
@@ -1584,7 +1657,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.start &lt;= var2.start}
      */
     public static CPConstraint startBeforeStart(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="nc" id="L1587">        return new StartBeforeStart(var1, delay(var2, delay));</span>
+<span class="fc" id="L1660">        return new StartBeforeStart(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1595,7 +1668,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.start &lt;= var2.end}
      */
     public static CPConstraint startBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1598">        return new StartBeforeEnd(var1, var2);</span>
+<span class="fc" id="L1671">        return new StartBeforeEnd(var1, var2);</span>
     }
 
     /**
@@ -1607,7 +1680,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.start &lt;= var2.end + delay}
      */
     public static CPConstraint startBeforeEnd(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="nc" id="L1610">        return new StartBeforeEnd(var1, delay(var2, delay));</span>
+<span class="nc" id="L1683">        return new StartBeforeEnd(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1620,10 +1693,10 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.start &lt;= var2.start}
      */
     public static CPBoolVar isStartBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="nc" id="L1623">        CPBoolVar b = makeBoolVar(var1.getSolver());</span>
-<span class="nc" id="L1624">        CPSolver cp = var1.getSolver();</span>
-<span class="nc" id="L1625">        cp.post(new IsStartBeforeStart(var1, var2, b), false);</span>
-<span class="nc" id="L1626">        return b;</span>
+<span class="fc" id="L1696">        CPBoolVar b = makeAuxBoolVar(var1.getSolver());</span>
+<span class="fc" id="L1697">        CPSolver cp = var1.getSolver();</span>
+<span class="fc" id="L1698">        cp.post(new IsStartBeforeStart(var1, var2, b), false);</span>
+<span class="fc" id="L1699">        return b;</span>
     }
 
     /**
@@ -1636,10 +1709,10 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.start &lt;= var2.end}
      */
     public static CPBoolVar isStartBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="nc" id="L1639">        CPBoolVar b = makeBoolVar(var1.getSolver());</span>
-<span class="nc" id="L1640">        CPSolver cp = var1.getSolver();</span>
-<span class="nc" id="L1641">        cp.post(new IsStartBeforeEnd(var1, var2, b), false);</span>
-<span class="nc" id="L1642">        return b;</span>
+<span class="fc" id="L1712">        CPBoolVar b = makeAuxBoolVar(var1.getSolver());</span>
+<span class="fc" id="L1713">        CPSolver cp = var1.getSolver();</span>
+<span class="fc" id="L1714">        cp.post(new IsStartBeforeEnd(var1, var2, b), false);</span>
+<span class="fc" id="L1715">        return b;</span>
     }
 
     /**
@@ -1649,10 +1722,10 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the end of interval
      */
     public static CPIntVar end(CPIntervalVar var) {
-<span class="fc" id="L1652">        CPSolver cp = var.getSolver();</span>
-<span class="fc" id="L1653">        CPIntVar end = makeIntVar(cp, var.endMin(), var.endMax());</span>
-<span class="fc" id="L1654">        cp.post(new IntervalVarEnd(var, end));</span>
-<span class="fc" id="L1655">        return end;</span>
+<span class="fc" id="L1725">        CPSolver cp = var.getSolver();</span>
+<span class="fc" id="L1726">        CPIntVar end = makeAuxIntVar(cp, var.endMin(), var.endMax());</span>
+<span class="fc" id="L1727">        cp.post(new IntervalVarEnd(var, end));</span>
+<span class="fc" id="L1728">        return end;</span>
     }
 
     /**
@@ -1663,12 +1736,12 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the end of interval if it is present, or equal to val if interval is absent
      */
     public static CPIntVar endOr(CPIntervalVar interval, int val) {
-<span class="fc" id="L1666">        CPSolver cp = interval.getSolver();</span>
-<span class="fc" id="L1667">        int minBound = Math.min(interval.endMin(), val);</span>
-<span class="fc" id="L1668">        int maxBound = Math.max(interval.endMax(), val);</span>
-<span class="fc" id="L1669">        CPIntVar end = makeIntVar(cp, minBound, maxBound);</span>
-<span class="fc" id="L1670">        cp.post(new IntervalVarEndOrValue(interval, end, val));</span>
-<span class="fc" id="L1671">        return end;</span>
+<span class="fc" id="L1739">        CPSolver cp = interval.getSolver();</span>
+<span class="fc" id="L1740">        int minBound = Math.min(interval.endMin(), val);</span>
+<span class="fc" id="L1741">        int maxBound = Math.max(interval.endMax(), val);</span>
+<span class="fc" id="L1742">        CPIntVar end = makeAuxIntVar(cp, minBound, maxBound);</span>
+<span class="fc" id="L1743">        cp.post(new IntervalVarEndOrValue(interval, end, val));</span>
+<span class="fc" id="L1744">        return end;</span>
     }
 
     /**
@@ -1679,11 +1752,11 @@ public final class CPFactory {
      * @return a constraint that enforces that var1 ends at end
      */
     public static CPConstraint endAt(CPIntervalVar var1, int end) {
-<span class="nc" id="L1682">        return new AbstractCPConstraint(var1.getSolver()) {</span>
+<span class="fc" id="L1755">        return new AbstractCPConstraint(var1.getSolver()) {</span>
             @Override
             public void post() {
-<span class="nc" id="L1685">                var1.setEnd(end);</span>
-<span class="nc" id="L1686">            }</span>
+<span class="fc" id="L1758">                var1.setEnd(end);</span>
+<span class="fc" id="L1759">            }</span>
         };
     }
 
@@ -1695,7 +1768,7 @@ public final class CPFactory {
      * @return a constraint that enforces the end of var1 to be equal to the start of var2
      */
     public static CPConstraint endAtStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1698">        return new EndAtStart(var1, var2);</span>
+<span class="fc" id="L1771">        return new EndAtStart(var1, var2);</span>
     }
 
     /**
@@ -1707,7 +1780,7 @@ public final class CPFactory {
      * @return a constraint that enforces the end of var1 to be equal to the start of var2 + delay
      */
     public static CPConstraint endAtStart(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="fc" id="L1710">        return new EndAtStart(var1, delay(var2, delay));</span>
+<span class="fc" id="L1783">        return new EndAtStart(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1718,7 +1791,7 @@ public final class CPFactory {
      * @return a constraint that enforces the end of var1 to be equal to the end of var2
      */
     public static CPConstraint endAtEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1721">        return new EndAtEnd(var1, var2);</span>
+<span class="fc" id="L1794">        return new EndAtEnd(var1, var2);</span>
     }
 
     /**
@@ -1730,7 +1803,7 @@ public final class CPFactory {
      * @return a constraint that enforces the end of var1 to be equal to the end of var2 + delay
      */
     public static CPConstraint endAtEnd(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="fc" id="L1733">        return new EndAtEnd(var1, delay(var2, delay));</span>
+<span class="fc" id="L1806">        return new EndAtEnd(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1741,7 +1814,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.end &lt;= var2.start}
      */
     public static CPConstraint endBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1744">        return new EndBeforeStart(var1, var2);</span>
+<span class="fc" id="L1817">        return new EndBeforeStart(var1, var2);</span>
     }
 
     /**
@@ -1753,7 +1826,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.end &lt;= var2.start + delay}
      */
     public static CPConstraint endBeforeStart(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="nc" id="L1756">        return new EndBeforeStart(var1, delay(var2, delay));</span>
+<span class="fc" id="L1829">        return new EndBeforeStart(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1764,7 +1837,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.end &lt;= var2.end}
      */
     public static CPConstraint endBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="fc" id="L1767">        return new EndBeforeEnd(var1, var2);</span>
+<span class="fc" id="L1840">        return new EndBeforeEnd(var1, var2);</span>
     }
 
     /**
@@ -1776,7 +1849,7 @@ public final class CPFactory {
      * @return a constraint that enforces {@code var1.end &lt;= var2.end}
      */
     public static CPConstraint endBeforeEnd(CPIntervalVar var1, CPIntervalVar var2, int delay) {
-<span class="nc" id="L1779">        return new EndBeforeEnd(var1, delay(var2, delay));</span>
+<span class="fc" id="L1852">        return new EndBeforeEnd(var1, delay(var2, delay));</span>
     }
 
     /**
@@ -1789,10 +1862,10 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.end &lt;= var2.start}
      */
     public static CPBoolVar isEndBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="nc" id="L1792">        CPBoolVar b = makeBoolVar(var1.getSolver());</span>
-<span class="nc" id="L1793">        CPSolver cp = var1.getSolver();</span>
-<span class="nc" id="L1794">        cp.post(new IsEndBeforeStart(var1, var2, b), false);</span>
-<span class="nc" id="L1795">        return b;</span>
+<span class="fc" id="L1865">        CPBoolVar b = makeAuxBoolVar(var1.getSolver());</span>
+<span class="fc" id="L1866">        CPSolver cp = var1.getSolver();</span>
+<span class="fc" id="L1867">        cp.post(new IsEndBeforeStart(var1, var2, b), false);</span>
+<span class="fc" id="L1868">        return b;</span>
     }
 
     /**
@@ -1805,10 +1878,10 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.end &lt;= var2.end}
      */
     public static CPBoolVar isEndBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-<span class="nc" id="L1808">        CPBoolVar b = makeBoolVar(var1.getSolver());</span>
-<span class="nc" id="L1809">        CPSolver cp = var1.getSolver();</span>
-<span class="nc" id="L1810">        cp.post(new IsEndBeforeEnd(var1, var2, b), false);</span>
-<span class="nc" id="L1811">        return b;</span>
+<span class="fc" id="L1881">        CPBoolVar b = makeAuxBoolVar(var1.getSolver());</span>
+<span class="fc" id="L1882">        CPSolver cp = var1.getSolver();</span>
+<span class="fc" id="L1883">        cp.post(new IsEndBeforeEnd(var1, var2, b), false);</span>
+<span class="fc" id="L1884">        return b;</span>
     }
 
     /**
@@ -1818,10 +1891,10 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the length of interval
      */
     public static CPIntVar length(CPIntervalVar var) {
-<span class="fc" id="L1821">        CPSolver cp = var.getSolver();</span>
-<span class="fc" id="L1822">        CPIntVar length = makeIntVar(cp, var.lengthMin(), var.lengthMax());</span>
-<span class="fc" id="L1823">        cp.post(new IntervalVarLength(var, length));</span>
-<span class="fc" id="L1824">        return length;</span>
+<span class="fc" id="L1894">        CPSolver cp = var.getSolver();</span>
+<span class="fc" id="L1895">        CPIntVar length = makeAuxIntVar(cp, var.lengthMin(), var.lengthMax());</span>
+<span class="fc" id="L1896">        cp.post(new IntervalVarLength(var, length));</span>
+<span class="fc" id="L1897">        return length;</span>
     }
 
     /**
@@ -1832,12 +1905,12 @@ public final class CPFactory {
      * @return a CPIntVar that is equal to the length of interval if it is present, or equal to val if interval is absent
      */
     public static CPIntVar lengthOr(CPIntervalVar interval, int val) {
-<span class="nc" id="L1835">        CPSolver cp = interval.getSolver();</span>
-<span class="nc" id="L1836">        int minBound = Math.min(interval.lengthMin(), val);</span>
-<span class="nc" id="L1837">        int maxBound = Math.max(interval.lengthMax(), val);</span>
-<span class="nc" id="L1838">        CPIntVar length = makeIntVar(cp, minBound, maxBound);</span>
-<span class="nc" id="L1839">        cp.post(new IntervalVarLengthOrValue(interval, length, val));</span>
-<span class="nc" id="L1840">        return length;</span>
+<span class="fc" id="L1908">        CPSolver cp = interval.getSolver();</span>
+<span class="fc" id="L1909">        int minBound = Math.min(interval.lengthMin(), val);</span>
+<span class="fc" id="L1910">        int maxBound = Math.max(interval.lengthMax(), val);</span>
+<span class="fc" id="L1911">        CPIntVar length = makeAuxIntVar(cp, minBound, maxBound);</span>
+<span class="fc" id="L1912">        cp.post(new IntervalVarLengthOrValue(interval, length, val));</span>
+<span class="fc" id="L1913">        return length;</span>
     }
 
     /**
@@ -1848,10 +1921,10 @@ public final class CPFactory {
      */
 
     public static CPIntVar makespan(CPIntervalVar... vars) {
-<span class="fc" id="L1851">        Stream&lt;CPIntVar&gt; stream = Arrays.stream(vars).map(var -&gt; endOr(var, 0));</span>
-<span class="fc" id="L1852">        CPIntVar[] ends = stream.toArray(CPIntVar[]::new);</span>
-<span class="fc" id="L1853">        CPIntVar end = max(ends);</span>
-<span class="fc" id="L1854">        return end;</span>
+<span class="fc" id="L1924">        Stream&lt;CPIntVar&gt; stream = Arrays.stream(vars).map(var -&gt; endOr(var, 0));</span>
+<span class="fc" id="L1925">        CPIntVar[] ends = stream.toArray(CPIntVar[]::new);</span>
+<span class="fc" id="L1926">        CPIntVar end = max(ends);</span>
+<span class="fc" id="L1927">        return end;</span>
     }
 
     /**
@@ -1861,7 +1934,7 @@ public final class CPFactory {
      * @return a noOverlap constraint on the elements of vars.
      */
     public static NoOverlap noOverlap(CPIntervalVar... vars) {
-<span class="fc" id="L1864">        return new NoOverlap(vars);</span>
+<span class="fc" id="L1937">        return new NoOverlap(vars);</span>
     }
 
     /**
@@ -1874,7 +1947,7 @@ public final class CPFactory {
      * @return a NoOverlapWithPosition constraint
      */
     public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos) {
-<span class="nc" id="L1877">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);</span>
+<span class="nc" id="L1950">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos);</span>
     }
 
     /**
@@ -1889,7 +1962,7 @@ public final class CPFactory {
      * @return a NoOverlapWithPosition constraint with transition times
      */
     public static NoOverlapWithPosition noOverlap(CPIntervalVar[] intervals, CPIntVar[] posOfInterval, CPIntVar[] intervalInPos, int[][] minTransition) {
-<span class="nc" id="L1892">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
+<span class="nc" id="L1965">        return new NoOverlapWithPosition(intervals, posOfInterval, intervalInPos, minTransition);</span>
     }
 
 
@@ -1906,7 +1979,7 @@ public final class CPFactory {
      *                      minimum transition time from interval i to interval j
      */
     public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals, int[][] minTransition) {
-<span class="fc" id="L1909">        return new NoOverlapSequence(seqVar, intervals, minTransition);</span>
+<span class="fc" id="L1982">        return new NoOverlapSequence(seqVar, intervals, minTransition);</span>
     }
 
     /**
@@ -1920,7 +1993,7 @@ public final class CPFactory {
      * @param intervals    intervals that must not overlap and be linked with the sequence variable
      */
     public static NoOverlapSequence noOverlap(CPSeqVar seqVar, CPIntervalVar[] intervals) {
-<span class="fc" id="L1923">        return new NoOverlapSequence(seqVar, intervals, new int[intervals.length][intervals.length]);</span>
+<span class="fc" id="L1996">        return new NoOverlapSequence(seqVar, intervals, new int[intervals.length][intervals.length]);</span>
     }
 
     /**
@@ -1935,8 +2008,8 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives, CPIntVar cardinality) {
-<span class="fc" id="L1938">        CPSolver cp = interval.getSolver();</span>
-<span class="fc" id="L1939">        return new Alternative(interval, alternatives, cardinality);</span>
+<span class="fc" id="L2011">        CPSolver cp = interval.getSolver();</span>
+<span class="fc" id="L2012">        return new Alternative(interval, alternatives, cardinality);</span>
     }
 
     /**
@@ -1951,7 +2024,7 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives, int cardinality) {
-<span class="fc" id="L1954">        return alternative(interval, alternatives, CPFactory.makeIntVar(interval.getSolver(), cardinality, cardinality));</span>
+<span class="fc" id="L2027">        return alternative(interval, alternatives, makeAuxIntVar(interval.getSolver(), cardinality, cardinality));</span>
     }
 
     /**
@@ -1965,7 +2038,7 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives) {
-<span class="nc" id="L1968">        return alternative(interval, alternatives, 1);</span>
+<span class="nc" id="L2041">        return alternative(interval, alternatives, 1);</span>
     }
 
     /**
@@ -1979,7 +2052,7 @@ public final class CPFactory {
      * @return a {@link Span} constraint
      */
     public static CPConstraint span(CPIntervalVar interval, CPIntervalVar[] alternatives) {
-<span class="fc" id="L1982">        return new Span(interval, alternatives);</span>
+<span class="fc" id="L2055">        return new Span(interval, alternatives);</span>
     }
 
     // ********************
@@ -1992,7 +2065,7 @@ public final class CPFactory {
      * @return a cumulative function that is flat
      */
     public static CPCumulFunction flat() {
-<span class="nc" id="L1995">        return new CPFlatCumulFunction();</span>
+<span class="fc" id="L2068">        return new CPFlatCumulFunction();</span>
     }
 
     /**
@@ -2004,7 +2077,7 @@ public final class CPFactory {
      * @return a cumulative function that is a pulse of height h when var is present
      */
     public static CPCumulFunction pulse(CPIntervalVar var, int h) {
-<span class="fc" id="L2007">        return new CPPulseCumulFunction(var, h, h);</span>
+<span class="fc" id="L2080">        return new CPPulseCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2017,7 +2090,11 @@ public final class CPFactory {
      * @return a cumulative function that is a pulse of height {@code [hMin, hMax]} when var is present
      */
     public static CPCumulFunction pulse(CPIntervalVar var, int hMin, int hMax) {
-<span class="fc" id="L2020">        return new CPPulseCumulFunction(var, hMin, hMax);</span>
+<span class="fc" id="L2093">        return new CPPulseCumulFunction(var, hMin, hMax);</span>
+    }
+
+    public static CPCumulFunction pulse(CPIntervalVar var, CPIntVar height) {
+<span class="fc" id="L2097">        return new CPPulseCumulFunction(var, height);</span>
     }
 
     /**
@@ -2029,7 +2106,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at the start of var if it is present
      */
     public static CPCumulFunction stepAtStart(CPIntervalVar var, int h) {
-<span class="fc" id="L2032">        return new CPStepAtStartCumulFunction(var, h, h);</span>
+<span class="fc" id="L2109">        return new CPStepAtStartCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2043,7 +2120,7 @@ public final class CPFactory {
      * present
      */
     public static CPCumulFunction stepAtStart(CPIntervalVar var, int hMin, int hMax) {
-<span class="nc" id="L2046">        return new CPStepAtStartCumulFunction(var, hMin, hMax);</span>
+<span class="fc" id="L2123">        return new CPStepAtStartCumulFunction(var, hMin, hMax);</span>
     }
 
     /**
@@ -2055,7 +2132,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at the end of var if it is present
      */
     public static CPCumulFunction stepAtEnd(CPIntervalVar var, int h) {
-<span class="nc" id="L2058">        return new CPStepAtEndCumulFunction(var, h, h);</span>
+<span class="fc" id="L2135">        return new CPStepAtEndCumulFunction(var, h, h);</span>
     }
 
     /**
@@ -2069,7 +2146,7 @@ public final class CPFactory {
      * present
      */
     public static CPCumulFunction stepAtEnd(CPIntervalVar var, int hMin, int hMax) {
-<span class="nc" id="L2072">        return new CPStepAtEndCumulFunction(var, hMin, hMax);</span>
+<span class="fc" id="L2149">        return new CPStepAtEndCumulFunction(var, hMin, hMax);</span>
     }
 
     /**
@@ -2080,13 +2157,13 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction step(CPSolver cp, int from, int h) {
-<span class="nc" id="L2083">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
-<span class="nc" id="L2084">        dummy.setStartMin(from);</span>
-<span class="nc" id="L2085">        dummy.setStartMax(from);</span>
-<span class="nc" id="L2086">        dummy.setEndMin(Constants.HORIZON);</span>
-<span class="nc" id="L2087">        dummy.setEndMax(Constants.HORIZON);</span>
-<span class="nc" id="L2088">        dummy.setPresent();</span>
-<span class="nc" id="L2089">        return pulse(dummy, h);</span>
+<span class="fc" id="L2160">        CPIntervalVar dummy = makeAuxIntervalVar(cp);</span>
+<span class="fc" id="L2161">        dummy.setStartMin(from);</span>
+<span class="fc" id="L2162">        dummy.setStartMax(from);</span>
+<span class="fc" id="L2163">        dummy.setEndMin(Constants.HORIZON);</span>
+<span class="fc" id="L2164">        dummy.setEndMax(Constants.HORIZON);</span>
+<span class="fc" id="L2165">        dummy.setPresent();</span>
+<span class="fc" id="L2166">        return pulse(dummy, h);</span>
     }
 
     /**
@@ -2097,13 +2174,13 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction pulse(CPSolver cp, int from, int to, int h) {
-<span class="nc" id="L2100">        CPIntervalVar dummy = makeIntervalVar(cp);</span>
-<span class="nc" id="L2101">        dummy.setStartMin(from);</span>
-<span class="nc" id="L2102">        dummy.setStartMax(from);</span>
-<span class="nc" id="L2103">        dummy.setEndMin(to);</span>
-<span class="nc" id="L2104">        dummy.setEndMax(to);</span>
-<span class="nc" id="L2105">        dummy.setPresent();</span>
-<span class="nc" id="L2106">        return pulse(dummy, h);</span>
+<span class="fc" id="L2177">        CPIntervalVar dummy = makeAuxIntervalVar(cp);</span>
+<span class="fc" id="L2178">        dummy.setStartMin(from);</span>
+<span class="fc" id="L2179">        dummy.setStartMax(from);</span>
+<span class="fc" id="L2180">        dummy.setEndMin(to);</span>
+<span class="fc" id="L2181">        dummy.setEndMax(to);</span>
+<span class="fc" id="L2182">        dummy.setPresent();</span>
+<span class="fc" id="L2183">        return pulse(dummy, h);</span>
     }
 
     /**
@@ -2114,7 +2191,7 @@ public final class CPFactory {
      * @return a cumulative function that is the sum of fun1 and fun2
      */
     public static CPCumulFunction plus(CPCumulFunction fun1, CPCumulFunction fun2) {
-<span class="fc" id="L2117">        return new CPPlusCumulFunction(fun1, fun2);</span>
+<span class="fc" id="L2194">        return new CPPlusCumulFunction(fun1, fun2);</span>
     }
 
     /**
@@ -2125,7 +2202,7 @@ public final class CPFactory {
      * @return a cumulative function that is the difference of fun1 and fun2
      */
     public static CPCumulFunction minus(CPCumulFunction fun1, CPCumulFunction fun2) {
-<span class="fc" id="L2128">        return new CPMinusCumulFunction(fun1, fun2);</span>
+<span class="fc" id="L2205">        return new CPMinusCumulFunction(fun1, fun2);</span>
     }
 
     /**
@@ -2135,7 +2212,7 @@ public final class CPFactory {
      * @return a cumulative function that is the sum of the cumulative Functions in fun
      */
     public static CPCumulFunction sum(CPCumulFunction... fun) {
-<span class="nc" id="L2138">        return new CPSumCumulFunction(fun);</span>
+<span class="fc" id="L2215">        return new CPSumCumulFunction(fun);</span>
     }
 
     // *********************************
@@ -2153,44 +2230,46 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2156">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2233">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2158" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
-<span class="nc" id="L2159">            throw new InconsistencyException();</span>
+<span class="fc bfc" id="L2235" title="All 4 branches covered.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
+<span class="fc" id="L2236">            throw new InconsistencyException();</span>
         }
-<span class="pc bpc" id="L2161" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2162">            return new DoNothingConstraint();</span>
+<span class="fc bfc" id="L2238" title="All 2 branches covered.">        if (activities.isEmpty()) {</span>
+<span class="fc" id="L2239">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2165">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2242">        CPSolver cp = activities.get(0).interval().getSolver();</span>
 
-<span class="fc" id="L2167">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2244">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="fc" id="L2170">                int minStart = Constants.HORIZON;</span>
-<span class="fc" id="L2171">                int maxEnd = 0;</span>
-<span class="fc bfc" id="L2172" title="All 2 branches covered.">                for (Activity act : activities) {</span>
-<span class="fc bfc" id="L2173" title="All 2 branches covered.">                    if (act.getStartMin() &lt; minStart) minStart = act.getStartMin();</span>
-<span class="fc bfc" id="L2174" title="All 2 branches covered.">                    if (act.getEndMax() &gt; maxEnd) maxEnd = act.getEndMax();</span>
-<span class="fc" id="L2175">                }</span>
-<span class="fc" id="L2176">                CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);</span>
-<span class="fc" id="L2177">                interval.setStart(minStart);</span>
-<span class="fc" id="L2178">                interval.setEnd(maxEnd);</span>
-<span class="fc" id="L2179">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
-<span class="fc" id="L2180">                activities.add(dummy);</span>
-<span class="pc bpc" id="L2181" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="fc" id="L2247">                int minStart = Constants.HORIZON;</span>
+<span class="fc" id="L2248">                int maxEnd = 0;</span>
+<span class="fc bfc" id="L2249" title="All 2 branches covered.">                for (Activity act : activities) {</span>
+<span class="fc bfc" id="L2250" title="All 2 branches covered.">                    if (act.getStartMin() &lt; minStart) minStart = act.getStartMin();</span>
+<span class="fc bfc" id="L2251" title="All 2 branches covered.">                    if (act.getEndMax() &gt; maxEnd) maxEnd = act.getEndMax();</span>
+<span class="fc" id="L2252">                }</span>
+<span class="fc" id="L2253">                CPIntervalVar interval = makeAuxIntervalVar(cp);</span>
+<span class="fc" id="L2254">                interval.setLength(maxEnd - minStart);</span>
+<span class="fc" id="L2255">                interval.setPresent();</span>
+<span class="fc" id="L2256">                interval.setStart(minStart);</span>
+<span class="fc" id="L2257">                interval.setEnd(maxEnd);</span>
+<span class="fc" id="L2258">                Activity dummy = new Activity(interval, makeAuxIntVar(cp, 0, 0));</span>
+<span class="fc" id="L2259">                activities.add(dummy);</span>
+<span class="pc bpc" id="L2260" title="1 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2183">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
-<span class="nc" id="L2184">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2185">                    }</span>
+<span class="fc" id="L2262">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
+<span class="fc" id="L2263">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2264">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2187">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
-<span class="fc" id="L2188">                    }</span>
+<span class="fc" id="L2266">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2267">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2190">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2269">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
                     }
                 }
-<span class="fc" id="L2193">            }</span>
+<span class="fc" id="L2272">            }</span>
         };
     }
 
@@ -2204,7 +2283,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue) {
-<span class="fc" id="L2207">        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2286">        return alwaysIn(fun, minValue, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 
     /**
@@ -2219,39 +2298,41 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2222">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2301">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2224" title="3 of 4 branches missed.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
-<span class="nc" id="L2225">            throw new InconsistencyException();</span>
+<span class="fc bfc" id="L2303" title="All 4 branches covered.">        if (activities.isEmpty() &amp;&amp; minValue &gt; 0) {</span>
+<span class="fc" id="L2304">            throw new InconsistencyException();</span>
         }
-<span class="pc bpc" id="L2227" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2228">            return new DoNothingConstraint();</span>
+<span class="fc bfc" id="L2306" title="All 2 branches covered.">        if (activities.isEmpty()) {</span>
+<span class="fc" id="L2307">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2231">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2310">        CPSolver cp = activities.get(0).interval().getSolver();</span>
 
-<span class="fc" id="L2233">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2312">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="fc" id="L2236">                CPIntervalVar interval = makeIntervalVar(cp, false, to - from);</span>
-<span class="fc" id="L2237">                interval.setStart(from);</span>
-<span class="fc" id="L2238">                interval.setEnd(to);</span>
-<span class="fc" id="L2239">                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));</span>
-<span class="fc" id="L2240">                activities.add(dummy);</span>
+<span class="fc" id="L2315">                CPIntervalVar interval = makeAuxIntervalVar(cp);</span>
+<span class="fc" id="L2316">                interval.setLength(to - from);</span>
+<span class="fc" id="L2317">                interval.setPresent();</span>
+<span class="fc" id="L2318">                interval.setStart(from);</span>
+<span class="fc" id="L2319">                interval.setEnd(to);</span>
+<span class="fc" id="L2320">                Activity dummy = new Activity(interval, makeAuxIntVar(cp, 0, 0));</span>
+<span class="fc" id="L2321">                activities.add(dummy);</span>
 
-<span class="pc bpc" id="L2242" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="pc bpc" id="L2323" title="1 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2244">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
-<span class="nc" id="L2245">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2246">                    }</span>
+<span class="fc" id="L2325">                        cp.post(new GeneralizedCumulativeSweepMin(activities.toArray(new Activity[0]), minValue));</span>
+<span class="fc" id="L2326">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2327">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2248">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
-<span class="fc" id="L2249">                    }</span>
+<span class="fc" id="L2329">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2330">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2251">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
+<span class="fc" id="L2332">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), minValue, maxValue));</span>
                     }
                 }
-<span class="fc" id="L2254">            }</span>
+<span class="fc" id="L2335">            }</span>
         };
     }
 
@@ -2267,7 +2348,7 @@ public final class CPFactory {
      * @return a constraint which enforces the cumulative function fun to stay within the range [minValue..maxValue]
      */
     public static CPConstraint alwaysIn(CPCumulFunction fun, int minValue, int maxValue, int from, int to) {
-<span class="fc" id="L2270">        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2351">        return alwaysIn(fun, minValue, maxValue, from, to, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 
         /**
@@ -2280,28 +2361,28 @@ public final class CPFactory {
          * @return a constraint which ensures that fun is always lesser or equal to maxVal
          */
     public static CPConstraint le(CPCumulFunction fun, int maxValue, Constants.CumulativeAlgo algo) {
-<span class="fc" id="L2283">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
+<span class="fc" id="L2364">        List&lt;Activity&gt; activities = fun.flatten(true);</span>
 
-<span class="pc bpc" id="L2285" title="1 of 2 branches missed.">        if (activities.isEmpty()) {</span>
-<span class="nc" id="L2286">            return new DoNothingConstraint();</span>
+<span class="fc bfc" id="L2366" title="All 2 branches covered.">        if (activities.isEmpty()) {</span>
+<span class="fc" id="L2367">            return new DoNothingConstraint();</span>
         }
 
-<span class="fc" id="L2289">        CPSolver cp = activities.get(0).interval().getSolver();</span>
-<span class="fc" id="L2290">        return new AbstractCPConstraint(cp) {</span>
+<span class="fc" id="L2370">        CPSolver cp = activities.get(0).interval().getSolver();</span>
+<span class="fc" id="L2371">        return new AbstractCPConstraint(cp) {</span>
             @Override
             public void post() {
-<span class="pc bpc" id="L2293" title="3 of 4 branches missed.">                switch (algo) {</span>
+<span class="pc bpc" id="L2374" title="1 of 4 branches missed.">                switch (algo) {</span>
                     case BELDICEANU_CARLSSON -&gt; {
-<span class="nc" id="L2295">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="nc" id="L2296">                    }</span>
+<span class="fc" id="L2376">                        cp.post(new GeneralizedCumulativeSweepMax(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2377">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE -&gt; {
-<span class="fc" id="L2298">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));</span>
-<span class="fc" id="L2299">                    }</span>
+<span class="fc" id="L2379">                        cp.post(new GeneralizedCumulativeConstraint(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2380">                    }</span>
                     case SCHAUS_THOMAS_KAMEUGNE_BASELINE -&gt; {
-<span class="nc" id="L2301">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), maxValue));</span>
+<span class="fc" id="L2382">                        cp.post(new GeneralizedCumulativeConstraintBaseLine(activities.toArray(new Activity[0]), maxValue));</span>
                     }
                 }
-<span class="fc" id="L2304">            }</span>
+<span class="fc" id="L2385">            }</span>
         };
     }
 
@@ -2314,7 +2395,7 @@ public final class CPFactory {
      * @return a constraint which ensures that fun is always lesser or equal to maxVal
      */
     public static CPConstraint le(CPCumulFunction fun, int maxValue) {
-<span class="fc" id="L2317">        return le(fun, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
+<span class="fc" id="L2398">        return le(fun, maxValue, Constants.CumulativeAlgo.SCHAUS_THOMAS_KAMEUGNE);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

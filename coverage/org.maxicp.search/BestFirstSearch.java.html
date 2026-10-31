@@ -16,67 +16,67 @@ import java.util.function.Supplier;
 public class BestFirstSearch&lt;T extends Comparable&lt;T&gt;&gt; extends RunnableSearchMethod {
     private Supplier&lt;T&gt; nodeEvaluator;
     private ModelProxy modelProxy;
-<span class="nc" id="L19">    private PriorityQueue&lt;PQEntry&lt;T&gt;&gt; pq = new PriorityQueue&lt;&gt;();</span>
+<span class="fc" id="L19">    private PriorityQueue&lt;PQEntry&lt;T&gt;&gt; pq = new PriorityQueue&lt;&gt;();</span>
 
-<span class="nc" id="L21">    record PQEntry&lt;T extends Comparable&lt;T&gt;&gt;(T order, SymbolicModel m) implements Comparable&lt;PQEntry&lt;T&gt;&gt; {</span>
+<span class="fc" id="L21">    record PQEntry&lt;T extends Comparable&lt;T&gt;&gt;(T order, SymbolicModel m) implements Comparable&lt;PQEntry&lt;T&gt;&gt; {</span>
         @Override
         public int compareTo(PQEntry&lt;T&gt; o) {
-<span class="nc" id="L24">            return this.order.compareTo(o.order);</span>
+<span class="fc" id="L24">            return this.order.compareTo(o.order);</span>
         }
     }
 
     // TODO best first search with limited number of opened nodes
     public BestFirstSearch(ModelProxy modelProxy, Supplier&lt;Runnable[]&gt; branching, Supplier&lt;T&gt; nodeEvaluator) {
-<span class="nc" id="L30">        super(modelProxy.getConcreteModel().getStateManager(), branching);</span>
-<span class="nc" id="L31">        this.modelProxy = modelProxy;</span>
-<span class="nc" id="L32">        this.nodeEvaluator = nodeEvaluator;</span>
-<span class="nc" id="L33">    }</span>
+<span class="fc" id="L30">        super(modelProxy.getConcreteModel().getStateManager(), branching);</span>
+<span class="fc" id="L31">        this.modelProxy = modelProxy;</span>
+<span class="fc" id="L32">        this.nodeEvaluator = nodeEvaluator;</span>
+<span class="fc" id="L33">    }</span>
 
     @Override
     protected void startSolve(SearchStatistics statistics, Predicate&lt;SearchStatistics&gt; limit, Runnable onNodeVisit) {
-<span class="nc" id="L37">        pq.clear();</span>
-<span class="nc" id="L38">        pq.add(new PQEntry&lt;&gt;(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));</span>
+<span class="fc" id="L37">        pq.clear();</span>
+<span class="fc" id="L38">        pq.add(new PQEntry&lt;&gt;(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));</span>
 
-<span class="nc bnc" id="L40" title="All 2 branches missed.">        while (!pq.isEmpty()) {</span>
-<span class="nc bnc" id="L41" title="All 2 branches missed.">            if (limit.test(statistics))</span>
-<span class="nc" id="L42">                throw new StopSearchException();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        while (!pq.isEmpty()) {</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (limit.test(statistics))</span>
+<span class="fc" id="L42">                throw new StopSearchException();</span>
 
-<span class="nc" id="L44">            SymbolicModel m = pq.poll().m;</span>
-<span class="nc" id="L45">            statistics.incrNodes();</span>
+<span class="fc" id="L44">            SymbolicModel m = pq.poll().m;</span>
+<span class="fc" id="L45">            statistics.incrNodes();</span>
 
-<span class="nc" id="L47">            sm.saveState();</span>
+<span class="fc" id="L47">            sm.saveState();</span>
             try {
                 // jumpTo will perform restore operations until it finds the common ancestor
-<span class="nc" id="L50">                modelProxy.getConcreteModel().jumpTo(m);</span>
+<span class="fc" id="L50">                modelProxy.getConcreteModel().jumpTo(m);</span>
 <span class="nc" id="L51">            } catch (InconsistencyException e) {</span>
 <span class="nc" id="L52">                sm.restoreState();</span>
 <span class="nc" id="L53">                continue;</span>
-<span class="nc" id="L54">            }</span>
+<span class="fc" id="L54">            }</span>
 
-<span class="nc" id="L56">            Runnable[] alts = branching.get();</span>
+<span class="fc" id="L56">            Runnable[] alts = branching.get();</span>
 
-<span class="nc bnc" id="L58" title="All 2 branches missed.">            if (alts.length == 0) {</span>
-<span class="nc" id="L59">                statistics.incrSolutions();</span>
-<span class="nc" id="L60">                notifySolution(statistics);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (alts.length == 0) {</span>
+<span class="fc" id="L59">                statistics.incrSolutions();</span>
+<span class="fc" id="L60">                notifySolution(statistics);</span>
             } else {
-<span class="nc bnc" id="L62" title="All 2 branches missed.">                for (Runnable b : alts) {</span>
-<span class="nc" id="L63">                    sm.saveState();</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">                for (Runnable b : alts) {</span>
+<span class="fc" id="L63">                    sm.saveState();</span>
                     try {
-<span class="nc" id="L65">                        onNodeVisit.run();</span>
-<span class="nc" id="L66">                        b.run();</span>
-<span class="nc" id="L67">                        pq.add(new PQEntry&lt;&gt;(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));</span>
-<span class="nc" id="L68">                    } catch (InconsistencyException e) {</span>
-<span class="nc" id="L69">                        statistics.incrFailures();</span>
-<span class="nc" id="L70">                        notifyFailure(statistics);</span>
-<span class="nc" id="L71">                    }</span>
-<span class="nc" id="L72">                    sm.restoreState();</span>
+<span class="fc" id="L65">                        onNodeVisit.run();</span>
+<span class="fc" id="L66">                        b.run();</span>
+<span class="fc" id="L67">                        pq.add(new PQEntry&lt;&gt;(nodeEvaluator.get(), modelProxy.getModel().symbolicCopy()));</span>
+<span class="fc" id="L68">                    } catch (InconsistencyException e) {</span>
+<span class="fc" id="L69">                        statistics.incrFailures();</span>
+<span class="fc" id="L70">                        notifyFailure(statistics);</span>
+<span class="fc" id="L71">                    }</span>
+<span class="fc" id="L72">                    sm.restoreState();</span>
                 }
             }
-<span class="nc" id="L75">        }</span>
-<span class="nc" id="L76">    }</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
 
     public SymbolicModel[] getUnexploredModels() {
-<span class="nc" id="L79">        return pq.stream().map(x -&gt; x.m).toArray(SymbolicModel[]::new);</span>
+<span class="fc" id="L79">        return pq.stream().map(x -&gt; x.m).toArray(SymbolicModel[]::new);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

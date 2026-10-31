@@ -58,15 +58,15 @@ public abstract class AbstractSearchMethod&lt;T&gt; implements SearchMethod {
      *                 the search need to backtrack
      */
     public void onFailure(Consumer&lt;SearchStatistics&gt; listener) {
-<span class="nc" id="L61">        failureListeners.add(listener);</span>
-<span class="nc" id="L62">    }</span>
+<span class="fc" id="L61">        failureListeners.add(listener);</span>
+<span class="fc" id="L62">    }</span>
 
     protected void notifySolution(SearchStatistics stats) {
 <span class="fc" id="L65">        solutionListeners.forEach(c -&gt; c.accept(stats));</span>
 <span class="fc" id="L66">    }</span>
 
     protected void notifyFailure(SearchStatistics stats) {
-<span class="pc" id="L69">        failureListeners.forEach(c -&gt; c.accept(stats));</span>
+<span class="fc" id="L69">        failureListeners.forEach(c -&gt; c.accept(stats));</span>
 <span class="fc" id="L70">    }</span>
 
     protected SearchStatistics solve(SearchStatistics statistics, Predicate&lt;SearchStatistics&gt; limit, Runnable onNodeVisit) {

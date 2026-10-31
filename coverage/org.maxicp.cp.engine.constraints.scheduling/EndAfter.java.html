@@ -4,6 +4,10 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Constraint enforcing that the end of an interval variable comes after or at a given integer variable:
+ * {@code end(interval) &gt;= var} when {@code interval} is present.
+ */
 public class EndAfter extends AbstractCPConstraint {
 
     final CPIntervalVar interval;
@@ -15,30 +19,30 @@ public class EndAfter extends AbstractCPConstraint {
      * @param var variable after which the interval must end
      */
     public EndAfter(CPIntervalVar interval, CPIntVar var) {
-<span class="fc" id="L18">        super(interval.getSolver());</span>
-<span class="fc" id="L19">        this.interval = interval;</span>
-<span class="fc" id="L20">        this.var = var;</span>
-<span class="fc" id="L21">    }</span>
+<span class="fc" id="L22">        super(interval.getSolver());</span>
+<span class="fc" id="L23">        this.interval = interval;</span>
+<span class="fc" id="L24">        this.var = var;</span>
+<span class="fc" id="L25">    }</span>
 
     @Override
     public void post() {
-<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (!interval.isAbsent()) {</span>
-<span class="fc" id="L26">            interval.propagateOnChange(this);</span>
-<span class="fc" id="L27">            var.propagateOnBoundChange(this);</span>
-<span class="fc" id="L28">            propagate();</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (!interval.isAbsent()) {</span>
+<span class="fc" id="L30">            interval.propagateOnChange(this);</span>
+<span class="fc" id="L31">            var.propagateOnBoundChange(this);</span>
+<span class="fc" id="L32">            propagate();</span>
         }
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L34">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (interval.isPresent()) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (interval.isPresent()) {</span>
             // only filters the variable if the interval is present
-<span class="fc" id="L36">            var.removeAbove(interval.endMax());</span>
+<span class="fc" id="L40">            var.removeAbove(interval.endMax());</span>
         }
-<span class="fc" id="L38">        interval.setEndMin(var.min());</span>
-<span class="pc bpc" id="L39" title="2 of 4 branches missed.">        if (interval.isAbsent() || (interval.endMin() &gt; var.max())) {</span>
-<span class="nc" id="L40">            setActive(false);</span>
+<span class="fc" id="L42">        interval.setEndMin(var.min());</span>
+<span class="fc bfc" id="L43" title="All 4 branches covered.">        if (interval.isAbsent() || (interval.endMin() &gt; var.max())) {</span>
+<span class="fc" id="L44">            setActive(false);</span>
         }
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L46">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -3,7 +3,13 @@
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="fc" id="L6">public record Length(IntervalVar interval, int length) implements ConstraintFromRecord {</span>
+/**
+ * Constraint fixing the length of an interval variable to a given constant value.
+ *
+ * @param interval the interval variable
+ * @param length   the required length of the interval when present
+ */
+<span class="fc" id="L12">public record Length(IntervalVar interval, int length) implements ConstraintFromRecord {</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

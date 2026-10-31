@@ -11,9 +11,9 @@ public interface SymbolicIntExpression extends IntExpression {
      * @throws VariableNotFixedException when a variable is not fixed
      */
     default int evaluate() throws VariableNotFixedException {
-<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L15">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluate();</span>
-<span class="nc" id="L16">        return defaultEvaluate();</span>
+<span class="fc" id="L16">        return defaultEvaluate();</span>
     }
 
     int defaultEvaluate() throws VariableNotFixedException;
@@ -44,13 +44,13 @@ public interface SymbolicIntExpression extends IntExpression {
      * Returns whether this expression *can* contain v.
      */
     default boolean contains(int v) {
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L48">            return getModelProxy().getConcreteModel().getConcreteVar(this).contains(v);</span>
-<span class="nc" id="L49">        return defaultContains(v);</span>
+<span class="fc" id="L49">        return defaultContains(v);</span>
     }
 
     default boolean defaultContains(int v) {
-<span class="nc bnc" id="L53" title="All 4 branches missed.">        return min() &lt;= v &amp;&amp; v &lt;= max();</span>
+<span class="pc bpc" id="L53" title="1 of 4 branches missed.">        return min() &lt;= v &amp;&amp; v &lt;= max();</span>
     }
 
     /**
@@ -64,24 +64,24 @@ public interface SymbolicIntExpression extends IntExpression {
     }
 
     default int defaultFillArray(int[] array) {
-<span class="nc" id="L67">        int vmin = min();</span>
-<span class="nc" id="L68">        int vmax = max();</span>
-<span class="nc bnc" id="L69" title="All 2 branches missed.">        for (int i = 0; i &lt;= vmax - vmin; i++)</span>
-<span class="nc" id="L70">            array[i] = vmin + i;</span>
-<span class="nc" id="L71">        return vmax - vmin + 1;</span>
+<span class="fc" id="L67">        int vmin = min();</span>
+<span class="fc" id="L68">        int vmax = max();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt;= vmax - vmin; i++)</span>
+<span class="fc" id="L70">            array[i] = vmin + i;</span>
+<span class="fc" id="L71">        return vmax - vmin + 1;</span>
     }
 
     /**
      * *Upper bound* on the size of the domain of this expression.
      */
     default int size() {
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (getModelProxy().isConcrete())</span>
 <span class="fc" id="L79">            return getModelProxy().getConcreteModel().getConcreteVar(this).size();</span>
-<span class="nc" id="L80">        return defaultSize();</span>
+<span class="fc" id="L80">        return defaultSize();</span>
     }
 
     default int defaultSize() {
-<span class="nc" id="L84">        return max() - min() + 1;</span>
+<span class="fc" id="L84">        return max() - min() + 1;</span>
     }
 
     default IntExpression plus(int v) {
@@ -98,15 +98,15 @@ public interface SymbolicIntExpression extends IntExpression {
 
 
     default IntExpression plus(IntExpression v) {
-<span class="nc" id="L101">        return Factory.plus(this, v);</span>
+<span class="fc" id="L101">        return Factory.plus(this, v);</span>
     }
 
     default IntExpression minus(IntExpression v) {
-<span class="nc" id="L105">        return Factory.minus(this, v);</span>
+<span class="fc" id="L105">        return Factory.minus(this, v);</span>
     }
 
     default IntExpression abs() {
-<span class="nc" id="L109">        return new Abs(this);</span>
+<span class="fc" id="L109">        return new Abs(this);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -9,12 +9,12 @@ import org.maxicp.util.ImmutableSet;
 import java.util.Collection;
 import java.util.function.Function;
 
-<span class="nc" id="L12">public record Or(ImmutableSet&lt;BoolExpression&gt; exprs) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
-<span class="nc" id="L13">    public Or(BoolExpression[] exprs) { this(ImmutableSet.of(exprs)); }</span>
+<span class="fc" id="L12">public record Or(ImmutableSet&lt;BoolExpression&gt; exprs) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L13">    public Or(BoolExpression[] exprs) { this(ImmutableSet.of(exprs)); }</span>
 
     @Override
     public Collection&lt;? extends Expression&gt; computeSubexpressions() {
-<span class="nc" id="L17">        return exprs;</span>
+<span class="fc" id="L17">        return exprs;</span>
     }
 
     @Override

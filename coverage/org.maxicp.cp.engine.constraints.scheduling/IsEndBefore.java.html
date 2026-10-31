@@ -3,6 +3,9 @@
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.*;
 
+/**
+ * Reified constraint enforcing {@code boolVar &lt;=&gt; end(intervalVar) &lt;= var} when {@code intervalVar} is present.
+ */
 public class IsEndBefore extends AbstractCPConstraint {
 
     private final CPIntervalVar intervalVar;
@@ -12,47 +15,54 @@ public class IsEndBefore extends AbstractCPConstraint {
     private final CPConstraint endBefore;
     private final CPConstraint endAfter;
 
+    /**
+     * Creates a reified constraint linking {@code boolVar} to {@code end(intervalVar) &lt;= var}.
+     *
+     * @param boolVar     the boolean variable that is true iff {@code end(intervalVar) &lt;= var}
+     * @param intervalVar the interval variable
+     * @param var         the integer variable compared against the end of {@code intervalVar}
+     */
     public IsEndBefore(CPBoolVar boolVar, CPIntervalVar intervalVar, CPIntVar var) {
-<span class="fc" id="L16">        super(intervalVar.getSolver());</span>
-<span class="fc" id="L17">        this.boolVar = boolVar;</span>
-<span class="fc" id="L18">        this.intervalVar = intervalVar;</span>
-<span class="fc" id="L19">        this.end = var;</span>
-<span class="fc" id="L20">        endBefore = new EndBefore(intervalVar, end);</span>
-<span class="fc" id="L21">        endAfter = new EndAfter(intervalVar, CPFactory.plus(end, 1));</span>
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L26">        super(intervalVar.getSolver());</span>
+<span class="fc" id="L27">        this.boolVar = boolVar;</span>
+<span class="fc" id="L28">        this.intervalVar = intervalVar;</span>
+<span class="fc" id="L29">        this.end = var;</span>
+<span class="fc" id="L30">        endBefore = new EndBefore(intervalVar, end);</span>
+<span class="fc" id="L31">        endAfter = new EndAfter(intervalVar, CPFactory.plus(end, 1));</span>
+<span class="fc" id="L32">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L26">        intervalVar.propagateOnChange(this);</span>
-<span class="fc" id="L27">        end.propagateOnBoundChange(this);</span>
-<span class="fc" id="L28">        boolVar.propagateOnFix(this);</span>
-<span class="fc" id="L29">        propagate();</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L36">        intervalVar.propagateOnChange(this);</span>
+<span class="fc" id="L37">        end.propagateOnBoundChange(this);</span>
+<span class="fc" id="L38">        boolVar.propagateOnFix(this);</span>
+<span class="fc" id="L39">        propagate();</span>
+<span class="fc" id="L40">    }</span>
 
     @Override
     public void propagate() {
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">        if (intervalVar.isAbsent()) {</span>
-<span class="nc" id="L35">            setActive(false);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (intervalVar.isAbsent()) {</span>
+<span class="fc" id="L45">            setActive(false);</span>
         } else {
-<span class="fc bfc" id="L37" title="All 2 branches covered.">            if (boolVar.isFixed()) {</span>
-<span class="fc bfc" id="L38" title="All 2 branches covered.">                if (boolVar.isTrue()) {</span>
-<span class="fc" id="L39">                    getSolver().post(endBefore, false);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (boolVar.isFixed()) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">                if (boolVar.isTrue()) {</span>
+<span class="fc" id="L49">                    getSolver().post(endBefore, false);</span>
                 } else {
-<span class="fc" id="L41">                    getSolver().post(endAfter, false);</span>
+<span class="fc" id="L51">                    getSolver().post(endAfter, false);</span>
                 }
-<span class="fc" id="L43">                setActive(false);</span>
-<span class="fc bfc" id="L44" title="All 2 branches covered.">            } else if (intervalVar.isPresent()) {</span>
+<span class="fc" id="L53">                setActive(false);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            } else if (intervalVar.isPresent()) {</span>
                 // only case for setting the boolean variable:
                 // changing it with absent interval has no meaning
-<span class="fc bfc" id="L47" title="All 2 branches covered.">                if (intervalVar.endMax() &lt;= end.min()) {</span>
-<span class="fc" id="L48">                    boolVar.fix(true);</span>
-<span class="fc" id="L49">                    setActive(false);</span>
-<span class="fc bfc" id="L50" title="All 2 branches covered.">                } else if (intervalVar.endMin() &gt; end.max()) {</span>
-<span class="fc" id="L51">                    boolVar.fix(false);</span>
-<span class="fc" id="L52">                    setActive(false);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                if (intervalVar.endMax() &lt;= end.min()) {</span>
+<span class="fc" id="L58">                    boolVar.fix(true);</span>
+<span class="fc" id="L59">                    setActive(false);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                } else if (intervalVar.endMin() &gt; end.max()) {</span>
+<span class="fc" id="L61">                    boolVar.fix(false);</span>
+<span class="fc" id="L62">                    setActive(false);</span>
                 }
             }
         }
-<span class="fc" id="L56">    }</span>
+<span class="fc" id="L66">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

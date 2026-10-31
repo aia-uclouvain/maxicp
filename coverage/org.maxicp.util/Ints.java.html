@@ -7,17 +7,17 @@ import java.util.Set;
 
 <span class="nc" id="L8">public class Ints {</span>
     public static List&lt;Integer&gt; asList(int[] list) {
-<span class="nc" id="L10">        List&lt;Integer&gt; resultList = new ArrayList&lt;&gt;(list.length);</span>
-<span class="nc bnc" id="L11" title="All 2 branches missed.">        for (int i : list)</span>
-<span class="nc" id="L12">            resultList.add(i);</span>
-<span class="nc" id="L13">        return resultList;</span>
+<span class="fc" id="L10">        List&lt;Integer&gt; resultList = new ArrayList&lt;&gt;(list.length);</span>
+<span class="fc bfc" id="L11" title="All 2 branches covered.">        for (int i : list)</span>
+<span class="fc" id="L12">            resultList.add(i);</span>
+<span class="fc" id="L13">        return resultList;</span>
     }
 
     public static Set&lt;Integer&gt; asSet(int[] list) {
-<span class="nc" id="L17">        Set&lt;Integer&gt; resultList = new HashSet&lt;&gt;(list.length);</span>
-<span class="nc bnc" id="L18" title="All 2 branches missed.">        for (int i : list)</span>
-<span class="nc" id="L19">            resultList.add(i);</span>
-<span class="nc" id="L20">        return resultList;</span>
+<span class="fc" id="L17">        Set&lt;Integer&gt; resultList = new HashSet&lt;&gt;(list.length);</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        for (int i : list)</span>
+<span class="fc" id="L19">            resultList.add(i);</span>
+<span class="fc" id="L20">        return resultList;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-<span class="nc" id="L15">public record EndBefore(IntervalVar intervalVar, IntExpression end) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L15">public record EndBefore(IntervalVar intervalVar, IntExpression end) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
 
     public EndBefore(IntervalVar intervalVar, int end) {
 <span class="nc" id="L18">        this(intervalVar, new Constant(intervalVar.getModelProxy(), end));</span>

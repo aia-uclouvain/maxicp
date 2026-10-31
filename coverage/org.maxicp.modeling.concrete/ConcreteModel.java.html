@@ -5,7 +5,9 @@
 
 package org.maxicp.modeling.concrete;
 
+import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.Constraint;
+import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.Model;
 import org.maxicp.modeling.algebra.bool.BoolExpression;
 import org.maxicp.modeling.algebra.integer.IntExpression;
@@ -16,6 +18,7 @@ import org.maxicp.search.BestFirstSearch;
 import org.maxicp.search.ConcurrentDFSearch;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.state.StateManaged;
 
 import java.util.function.Supplier;
@@ -30,7 +33,7 @@ public interface ConcreteModel extends Model, StateManaged {
 
     ConcreteIntervalVar getConcreteVar(IntervalExpression expr);
 
-<span class="fc" id="L33">    default void add(Constraint c) { add(c, true); }</span>
+<span class="fc" id="L36">    default void add(Constraint c) { add(c, true); }</span>
 
     void add(Constraint c, boolean enforceFixPoint);
 
@@ -43,7 +46,7 @@ public interface ConcreteModel extends Model, StateManaged {
      * @param m the model to jump to
      */
     void jumpTo(SymbolicModel m, boolean enforceFixPoint);
-<span class="fc" id="L46">    default void jumpTo(SymbolicModel m) { jumpTo(m, true); }</span>
+<span class="fc" id="L49">    default void jumpTo(SymbolicModel m) { jumpTo(m, true); }</span>
 
     /**
      * Similar function to jumpTo, but enforces a jump to a child model.
@@ -52,20 +55,36 @@ public interface ConcreteModel extends Model, StateManaged {
      */
     void jumpToChild(SymbolicModel m, boolean enforceFixPoint);
 
-<span class="fc" id="L55">    default void jumpToChild(SymbolicModel m) { jumpToChild(m, true); }</span>
+<span class="fc" id="L58">    default void jumpToChild(SymbolicModel m) { jumpToChild(m, true); }</span>
 
     Objective createObjective(org.maxicp.modeling.symbolic.Objective obj);
 
     default ConcurrentDFSearch concurrentDFSearch(Supplier&lt;SymbolicModel[]&gt; symbolicBranching) {
-<span class="nc" id="L60">        return new ConcurrentDFSearch(getModelProxy(), symbolicBranching);</span>
+<span class="fc" id="L63">        return new ConcurrentDFSearch(getModelProxy(), symbolicBranching);</span>
     }
 
     default DFSearch dfSearch(Supplier&lt;Runnable[]&gt; branching) {
-<span class="fc" id="L64">        return new DFSearch(getStateManager(), branching);</span>
+<span class="fc" id="L67">        return new DFSearch(getStateManager(), branching);</span>
     }
 
     default &lt;U extends Comparable&lt;U&gt;&gt; BestFirstSearch&lt;U&gt; bestFirstSearch(Supplier&lt;Runnable[]&gt; branching, Supplier&lt;U&gt; nodeEvaluator) {
-<span class="nc" id="L68">        return new BestFirstSearch&lt;U&gt;(getModelProxy(), branching, nodeEvaluator);</span>
+<span class="fc" id="L71">        return new BestFirstSearch&lt;U&gt;(getModelProxy(), branching, nodeEvaluator);</span>
+    }
+
+    default BlackBoxSearch blackBoxSearch() {
+<span class="fc" id="L75">        return ((ModelDispatcher) getModelProxy()).blackBoxSearch();</span>
+    }
+
+    default BlackBoxSearch blackBoxSearch(IntExpression... vars) {
+<span class="nc" id="L79">        return ((ModelDispatcher) getModelProxy()).blackBoxSearch(vars);</span>
+    }
+
+    default BlackBoxSearch blackBoxSearch(IntervalVar... intervals) {
+<span class="nc" id="L83">        return ((ModelDispatcher) getModelProxy()).blackBoxSearch(intervals);</span>
+    }
+
+    default BlackBoxSearch blackBoxSearch(IntervalVar[][] intervals) {
+<span class="nc" id="L87">        return ((ModelDispatcher) getModelProxy()).blackBoxSearch(intervals);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

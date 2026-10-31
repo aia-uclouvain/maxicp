@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-<span class="nc" id="L13">public record GreaterOrEq(IntExpression a, IntExpression b) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L13">public record GreaterOrEq(IntExpression a, IntExpression b) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
     public GreaterOrEq(IntExpression a, int b) {
 <span class="nc" id="L15">        this(a, new Constant(a.getModelProxy(), b));</span>
 <span class="nc" id="L16">    }</span>
@@ -21,7 +21,7 @@ import java.util.function.Function;
 
     @Override
     public Collection&lt;? extends Expression&gt; computeSubexpressions() {
-<span class="nc" id="L24">        return List.of(a, b);</span>
+<span class="fc" id="L24">        return List.of(a, b);</span>
     }
 
     @Override

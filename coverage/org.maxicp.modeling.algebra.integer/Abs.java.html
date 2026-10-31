@@ -9,10 +9,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-<span class="nc" id="L12">public record Abs(IntExpression expr) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L12">public record Abs(IntExpression expr) implements SymbolicIntExpression, NonLeafExpressionNode {</span>
     @Override
     public Collection&lt;Expression&gt; computeSubexpressions() {
-<span class="nc" id="L15">        return List.of(expr);</span>
+<span class="fc" id="L15">        return List.of(expr);</span>
     }
 
     @Override

@@ -12,22 +12,22 @@ public class BasicModelProxy implements ModelProxy {
     private Model model;
 
     public BasicModelProxy() {
-<span class="fc" id="L15">        this(null);</span>
-<span class="fc" id="L16">    }</span>
+<span class="nc" id="L15">        this(null);</span>
+<span class="nc" id="L16">    }</span>
 
-<span class="fc" id="L18">    public BasicModelProxy(Model model) {</span>
-<span class="fc" id="L19">        this.model = model;</span>
-<span class="fc" id="L20">    }</span>
+<span class="nc" id="L18">    public BasicModelProxy(Model model) {</span>
+<span class="nc" id="L19">        this.model = model;</span>
+<span class="nc" id="L20">    }</span>
 
     @Override
     public Model getModel() {
-<span class="fc" id="L24">        return model;</span>
+<span class="nc" id="L24">        return model;</span>
     }
 
     @Override
     public &lt;T extends Model&gt; T setModel(T m) {
-<span class="fc" id="L29">        model = m;</span>
-<span class="fc" id="L30">        return m;</span>
+<span class="nc" id="L29">        model = m;</span>
+<span class="nc" id="L30">        return m;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

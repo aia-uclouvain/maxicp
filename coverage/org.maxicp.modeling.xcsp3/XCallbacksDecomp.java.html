@@ -24,19 +24,19 @@ import java.util.stream.Stream;
  * Taken from the source code of OscaR (the file having been written by the same author)
  */
 public abstract class XCallbacksDecomp implements XCallbacks2 {
-<span class="nc" id="L27">    protected boolean CONVERT_SYMBOLIC = true;</span>
+<span class="fc" id="L27">    protected boolean CONVERT_SYMBOLIC = true;</span>
     protected HashMap&lt;String, Integer&gt; symbolicValues;
     protected ArrayList&lt;String&gt; symbolicValuesReversed;
     protected HashMap&lt;String, XVariables.XVarInteger&gt; symbolicVariables;
 
-<span class="nc" id="L32">    protected String reservedArray = &quot;oscarReserved&quot;;</span>
+<span class="fc" id="L32">    protected String reservedArray = &quot;oscarReserved&quot;;</span>
     protected int currentReservedArrayIdx;
-<span class="nc" id="L34">    public XCallbacksDecomp() {</span>
-<span class="nc" id="L35">        symbolicValues = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L36">        symbolicValuesReversed = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L37">        symbolicVariables = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L38">        currentReservedArrayIdx = 0;</span>
-<span class="nc" id="L39">    }</span>
+<span class="fc" id="L34">    public XCallbacksDecomp() {</span>
+<span class="fc" id="L35">        symbolicValues = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L36">        symbolicValuesReversed = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L37">        symbolicVariables = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L38">        currentReservedArrayIdx = 0;</span>
+<span class="fc" id="L39">    }</span>
 
     /**
      * Generate a variable id that is unique and will not be sent in the solution
@@ -156,11 +156,11 @@ public abstract class XCallbacksDecomp implements XCallbacks2 {
      */
     @Override
     public void buildCtrAllDifferentMatrix(String id, XVariables.XVarInteger[][] matrix) {
-<span class="nc bnc" id="L159" title="All 2 branches missed.">        for(XVariables.XVarInteger[] line: matrix)</span>
-<span class="nc" id="L160">            this.buildCtrAllDifferent(id, line);</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for(XVariables.XVarInteger[] line: matrix)</span>
+<span class="fc" id="L160">            this.buildCtrAllDifferent(id, line);</span>
 
-<span class="nc" id="L162">        IntStream.range(0, matrix[0].length).forEach(i -&gt; buildCtrAllDifferent(id, Arrays.stream(matrix).map(l -&gt; l[i]).toArray(XVariables.XVarInteger[]::new)));</span>
-<span class="nc" id="L163">    }</span>
+<span class="fc" id="L162">        IntStream.range(0, matrix[0].length).forEach(i -&gt; buildCtrAllDifferent(id, Arrays.stream(matrix).map(l -&gt; l[i]).toArray(XVariables.XVarInteger[]::new)));</span>
+<span class="fc" id="L163">    }</span>
 
     /**
      * Compute possible ends for given job starts and lenghts
@@ -233,15 +233,15 @@ public abstract class XCallbacksDecomp implements XCallbacks2 {
      */
     @Override
     public void buildCtrLexMatrix(String id, XVariables.XVarInteger[][] matrix, Types.TypeOperatorRel operator) {
-<span class="nc" id="L236">        buildCtrLex(id, matrix, operator);</span>
+<span class="fc" id="L236">        buildCtrLex(id, matrix, operator);</span>
 
-<span class="nc" id="L238">        XVariables.XVarInteger[][] mt = new XVariables.XVarInteger[matrix[0].length][matrix.length];</span>
-<span class="nc bnc" id="L239" title="All 2 branches missed.">        for (int r = 0; r &lt; matrix.length; r++)</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">            for (int c = 0; c &lt; matrix[0].length; c++)</span>
-<span class="nc" id="L241">                mt[c][r] = matrix[r][c];</span>
+<span class="fc" id="L238">        XVariables.XVarInteger[][] mt = new XVariables.XVarInteger[matrix[0].length][matrix.length];</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        for (int r = 0; r &lt; matrix.length; r++)</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            for (int c = 0; c &lt; matrix[0].length; c++)</span>
+<span class="fc" id="L241">                mt[c][r] = matrix[r][c];</span>
 
-<span class="nc" id="L243">        buildCtrLex(id, mt, operator);</span>
-<span class="nc" id="L244">    }</span>
+<span class="fc" id="L243">        buildCtrLex(id, mt, operator);</span>
+<span class="fc" id="L244">    }</span>
 
     @Override
     public void buildCtrNoOverlap(String id, XVariables.XVarInteger[][] origins, int[][] lengths, boolean zeroIgnored) {

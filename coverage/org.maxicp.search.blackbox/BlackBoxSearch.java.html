@@ -1,272 +1,614 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BlackBoxSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">BlackBoxSearch.java</span></div><h1>BlackBoxSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.Maximize;
+import org.maxicp.cp.engine.core.Minimize;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.DecisionVarCollector;
 import org.maxicp.modeling.Factory;
+import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.modeling.symbolic.Maximization;
 import org.maxicp.modeling.symbolic.Minimization;
 import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.modeling.symbolic.SharedMaximization;
+import org.maxicp.modeling.symbolic.SharedMinimization;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
+import org.maxicp.search.SetTimesModeling;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
- * Phase-based black-box search orchestrator for modeling-level CP problems.
+ * Commercial-solver-style black-box search orchestrator for modeling-level CP and scheduling problems.
  *
- * &lt;p&gt;
- * A {@code BlackBoxSearch} executes a sequence of configured phases, each phase
- * being a
- * {@link RunnableSearch} with a relative time budget. The class stores and
- * propagates incumbents
- * (solution and objective value), handles early stopping criteria, and merges
- * per-phase statuses
- * into a global status.
- * &lt;/p&gt;
+ * &lt;p&gt;Implements {@link SearchMethod} so it can be used as a drop-in replacement for {@link DFSearch}
+ * inside {@code model.runCP(cp -&gt; ...)} via {@code cp.blackBoxSearch()}, or directly on a
+ * {@link ModelDispatcher} via {@code model.blackBoxSearch()}, {@code model.solve(...)}, and
+ * {@code model.optimize(...)}.&lt;/p&gt;
  *
- * &lt;p&gt;
- * &lt;b&gt;Time-share semantics:&lt;/b&gt;
- * &lt;/p&gt;
- * &lt;ul&gt;
- * &lt;li&gt;Each phase has a {@code timeShare} in {@code (0,1]}.&lt;/li&gt;
- * &lt;li&gt;Configured shares must sum to at most {@code 1.0} (not necessarily
- * exactly {@code 1.0}).&lt;/li&gt;
- * &lt;li&gt;If shares sum to less than {@code 1.0}, the remaining budget is assigned
- * to the last phase
- * in the configured sequence when that phase is reached.&lt;/li&gt;
- * &lt;li&gt;The actual per-phase budget is always capped by the currently remaining
- * global time.&lt;/li&gt;
- * &lt;/ul&gt;
+ * &lt;p&gt;Automatically discovers both integer/boolean variables ({@link IntExpression}) and scheduling
+ * interval variables ({@link IntervalVar}) from the model when not explicitly provided.&lt;/p&gt;
  */
-public class BlackBoxSearch {
+public class BlackBoxSearch implements SearchMethod {
+
+    /** Snapshot of an {@link IntervalVar} in an incumbent solution. */
+<span class="fc" id="L56">    public record IntervalSnapshot(boolean present, int start, int length, int end) {</span>
+    }
 
     /**
      * Strategy used to choose which decision variables are frozen in each LNS
      * restart.
      */
-<span class="fc" id="L53">    public enum FragmentSelectionStrategy {</span>
+<span class="fc" id="L63">    public enum FragmentSelectionStrategy {</span>
         /** Legacy behavior: independent random freeze decisions. */
-<span class="fc" id="L55">        RANDOM_UNIFORM,</span>
+<span class="fc" id="L65">        RANDOM_UNIFORM,</span>
         /** Impact-guided behavior inspired by PGLNS ideas. */
-<span class="fc" id="L57">        IMPACT_GUIDED,</span>
+<span class="fc" id="L67">        IMPACT_GUIDED,</span>
         /** Group-coherent behavior relaxing variables from the same array. */
-<span class="fc" id="L59">        GROUP_COHERENT</span>
+<span class="fc" id="L69">        GROUP_COHERENT</span>
     }
 
     /** Logging granularity for phase execution. */
-<span class="fc" id="L63">    public enum Verbosity {</span>
+<span class="fc" id="L73">    public enum Verbosity {</span>
         /** No logs. */
-<span class="fc" id="L65">        QUIET,</span>
+<span class="fc" id="L75">        QUIET,</span>
         /** Phase start/end and high-level orchestration logs. */
-<span class="fc" id="L67">        PHASE,</span>
+<span class="fc" id="L77">        PHASE,</span>
         /**
          * Phase logs plus progress events (solutions, improvements, restart
          * milestones).
          */
-<span class="fc" id="L72">        PROGRESS,</span>
+<span class="fc" id="L82">        PROGRESS,</span>
         /** Full trace including per-iteration/per-restart fine-grained details. */
-<span class="fc" id="L74">        TRACE</span>
+<span class="fc" id="L84">        TRACE</span>
     }
 
     /** Configuration for restart-based feasibility phase. */
     public record RestartPhaseOptions(int baseFailureLimit, double randomSwapProbability, long randomSeed) {
-<span class="fc" id="L79">        public RestartPhaseOptions {</span>
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">            if (baseFailureLimit &lt;= 0)</span>
-<span class="nc" id="L81">                throw new IllegalArgumentException(&quot;baseFailureLimit must be &gt; 0&quot;);</span>
-<span class="pc bpc" id="L82" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
-<span class="nc" id="L83">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
-<span class="fc" id="L84">        }</span>
+<span class="fc" id="L89">        public RestartPhaseOptions {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (baseFailureLimit &lt;= 0)</span>
+<span class="nc" id="L91">                throw new IllegalArgumentException(&quot;baseFailureLimit must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L92" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
+<span class="nc" id="L93">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
+<span class="fc" id="L94">        }</span>
 
         public static RestartPhaseOptions defaults() {
-<span class="fc" id="L87">            return new RestartPhaseOptions(32, 0.50, 42L);</span>
+<span class="fc" id="L97">            return new RestartPhaseOptions(32, 0.50, 42L);</span>
         }
     }
 
     /** Configuration for LNS improvement phase. */
     public record LnsPhaseOptions(int failureLimitPerRestart, int freezeRatePercent, double randomSwapProbability,
             long randomSeed, FragmentSelectionStrategy fragmentSelectionStrategy) {
-<span class="fc" id="L94">        public LnsPhaseOptions {</span>
-<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (failureLimitPerRestart &lt;= 0)</span>
-<span class="nc" id="L96">                throw new IllegalArgumentException(&quot;failureLimitPerRestart must be &gt; 0&quot;);</span>
-<span class="pc bpc" id="L97" title="2 of 4 branches missed.">            if (freezeRatePercent &lt; 0 || freezeRatePercent &gt; 100)</span>
-<span class="nc" id="L98">                throw new IllegalArgumentException(&quot;freezeRatePercent must be in [0,100]&quot;);</span>
-<span class="pc bpc" id="L99" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
-<span class="nc" id="L100">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">            if (fragmentSelectionStrategy == null)</span>
-<span class="nc" id="L102">                throw new IllegalArgumentException(&quot;fragmentSelectionStrategy must not be null&quot;);</span>
-<span class="fc" id="L103">        }</span>
+<span class="fc" id="L104">        public LnsPhaseOptions {</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (failureLimitPerRestart &lt;= 0)</span>
+<span class="nc" id="L106">                throw new IllegalArgumentException(&quot;failureLimitPerRestart must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">            if (freezeRatePercent &lt; 0 || freezeRatePercent &gt; 100)</span>
+<span class="nc" id="L108">                throw new IllegalArgumentException(&quot;freezeRatePercent must be in [0,100]&quot;);</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
+<span class="nc" id="L110">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            if (fragmentSelectionStrategy == null)</span>
+<span class="nc" id="L112">                throw new IllegalArgumentException(&quot;fragmentSelectionStrategy must not be null&quot;);</span>
+<span class="fc" id="L113">        }</span>
 
         public LnsPhaseOptions(int failureLimitPerRestart, int freezeRatePercent, double randomSwapProbability,
                 long randomSeed) {
-<span class="nc" id="L107">            this(failureLimitPerRestart, freezeRatePercent, randomSwapProbability,</span>
+<span class="nc" id="L117">            this(failureLimitPerRestart, freezeRatePercent, randomSwapProbability,</span>
                     randomSeed, FragmentSelectionStrategy.IMPACT_GUIDED);
-<span class="nc" id="L109">        }</span>
+<span class="nc" id="L119">        }</span>
 
         public static LnsPhaseOptions defaults() {
-<span class="fc" id="L112">            return new LnsPhaseOptions(100, 95, 0.20, 43L, FragmentSelectionStrategy.GROUP_COHERENT);</span>
+<span class="fc" id="L122">            return new LnsPhaseOptions(100, 95, 0.20, 43L, FragmentSelectionStrategy.GROUP_COHERENT);</span>
         }
     }
 
     /** Configuration for exhaustive DFS/FDS phase. */
     public record ExhaustivePhaseOptions(double randomSwapProbability, long randomSeed) {
-<span class="fc" id="L118">        public ExhaustivePhaseOptions {</span>
-<span class="pc bpc" id="L119" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
-<span class="nc" id="L120">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
-<span class="fc" id="L121">        }</span>
+<span class="fc" id="L128">        public ExhaustivePhaseOptions {</span>
+<span class="pc bpc" id="L129" title="2 of 4 branches missed.">            if (randomSwapProbability &lt; 0.0 || randomSwapProbability &gt; 1.0)</span>
+<span class="nc" id="L130">                throw new IllegalArgumentException(&quot;randomSwapProbability must be in [0,1]&quot;);</span>
+<span class="fc" id="L131">        }</span>
 
         public static ExhaustivePhaseOptions defaults() {
-<span class="fc" id="L124">            return new ExhaustivePhaseOptions(0, 44L);</span>
+<span class="fc" id="L134">            return new ExhaustivePhaseOptions(0, 44L);</span>
         }
     }
 
     private record Phase(String name, RunnableSearch search, double timeShare, boolean requiresFeasible) {
-<span class="fc" id="L129">        private Phase {</span>
-<span class="pc bpc" id="L130" title="2 of 4 branches missed.">            if (timeShare &lt; 0.0 || timeShare &gt; 1.0)</span>
-<span class="nc" id="L131">                throw new IllegalArgumentException(&quot;timeShare must be in [0,1]&quot;);</span>
-<span class="fc" id="L132">        }</span>
+<span class="fc" id="L139">        private Phase {</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">            if (timeShare &lt; 0.0 || timeShare &gt; 1.0)</span>
+<span class="nc" id="L141">                throw new IllegalArgumentException(&quot;timeShare must be in [0,1]&quot;);</span>
+<span class="fc" id="L142">        }</span>
     }
 
     private final ModelDispatcher model;
-    private final List&lt;IntExpression&gt; vars;
-    private final Objective objective;
-<span class="fc" id="L138">    private final List&lt;Phase&gt; phases = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L139">    private final List&lt;String&gt; executedPhaseNames = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L140">    private Verbosity verbosity = Verbosity.QUIET;</span>
-<span class="fc" id="L141">    private Optional&lt;List&lt;Integer&gt;&gt; bestSolution = Optional.empty();</span>
-<span class="fc" id="L142">    private Optional&lt;Integer&gt; bestObjectiveValue = Optional.empty();</span>
-<span class="fc" id="L143">    private long solutionCount = 0;</span>
+    private final boolean autoDiscoveredVars;
+    private List&lt;IntExpression&gt; vars;
+    private final List&lt;IntervalVar&gt; intervals;
+    private Objective objective;
+<span class="fc" id="L150">    private final List&lt;Phase&gt; phases = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L151">    private boolean userConfiguredPhases = false;</span>
+<span class="fc" id="L152">    private final List&lt;String&gt; executedPhaseNames = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L153">    private Verbosity verbosity = Verbosity.QUIET;</span>
+
+<span class="fc" id="L155">    private Optional&lt;List&lt;Integer&gt;&gt; bestSolution = Optional.empty();</span>
+<span class="fc" id="L156">    private Optional&lt;List&lt;IntervalSnapshot&gt;&gt; bestIntervalSolution = Optional.empty();</span>
+<span class="fc" id="L157">    private final IdentityHashMap&lt;IntExpression, Integer&gt; bestVarValues = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L158">    private Optional&lt;Integer&gt; bestObjectiveValue = Optional.empty();</span>
+<span class="fc" id="L159">    private SearchStatus lastStatus = SearchStatus.UNKNOWN;</span>
+<span class="fc" id="L160">    private long solutionCount = 0;</span>
+
+    private BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; incumbentListener;
+<span class="fc" id="L163">    private final List&lt;Consumer&lt;SearchStatistics&gt;&gt; solutionListeners = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L164">    private final List&lt;Consumer&lt;SearchStatistics&gt;&gt; failureListeners = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L166">    private SearchStatistics liveStats = new SearchStatistics();</span>
+<span class="fc" id="L167">    private int accumulatedNodes = 0;</span>
+<span class="fc" id="L168">    private int accumulatedFailures = 0;</span>
+<span class="fc" id="L169">    private long searchStartMillis = 0L;</span>
+<span class="fc" id="L170">    private Predicate&lt;SearchStatistics&gt; activeLimit = null;</span>
+<span class="fc" id="L171">    private boolean limitReached = false;</span>
+
+    private ModelStructureAnalyzer cachedStructure;
+    private ConflictDrivenBranching sharedConflictBranching;
+    private FDSModeling sharedPrimaryFds;
+    private FDSModeling sharedSchedulingFds;
+    private ConcreteModel cachedConcreteModel;
+    private CPIntVar[] cachedCpVars;
+    private CPIntervalVar[] cachedCpIntervals;
+    private CPIntVar cachedObjCpVar;
 
     /**
-     * Creates a black-box search on decision variables with an objective
-     * (optimization).
+     * Creates a black-box search on explicit integer decision variables with an objective.
      */
-<span class="fc" id="L149">    public BlackBoxSearch(ModelDispatcher model, List&lt;IntExpression&gt; vars, Objective objective) {</span>
-<span class="fc" id="L150">        this.model = model;</span>
-<span class="fc" id="L151">        this.vars = List.copyOf(vars);</span>
-<span class="fc" id="L152">        this.objective = objective;</span>
-<span class="fc" id="L153">    }</span>
+    public BlackBoxSearch(ModelDispatcher model, List&lt;IntExpression&gt; vars, Objective objective) {
+<span class="nc" id="L186">        this(model, vars, DecisionVarCollector.collectIntervals(model), objective, false);</span>
+<span class="nc" id="L187">    }</span>
+
+    private BlackBoxSearch(
+            ModelDispatcher model,
+            List&lt;IntExpression&gt; vars,
+            List&lt;IntervalVar&gt; intervals,
+            Objective objective,
+<span class="fc" id="L194">            boolean autoDiscoveredVars) {</span>
+<span class="fc" id="L195">        this.model = model;</span>
+<span class="fc" id="L196">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L197">        this.intervals = List.copyOf(intervals);</span>
+<span class="fc" id="L198">        this.objective = objective;</span>
+<span class="fc" id="L199">        this.autoDiscoveredVars = autoDiscoveredVars;</span>
+<span class="fc" id="L200">    }</span>
 
     /**
-     * Creates a black-box search with automatic decision-variable inference.
-     *
-     * &lt;p&gt;
-     * The variables are obtained from
-     * {@link ModelDispatcher#getDecisionVariables()}.
-     * This is convenient for LNS users who want to freeze only real decision
-     * variables and avoid freezing derived expressions.
-     * &lt;/p&gt;
+     * Creates a black-box search with automatic decision-variable and interval-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model, Objective objective) {
-<span class="nc" id="L166">        this(model, model.getDecisionVariables(), objective);</span>
-<span class="nc" id="L167">    }</span>
+<span class="fc" id="L206">        this(</span>
+                model,
+<span class="fc" id="L208">                DecisionVarCollector.collectAllIntVars(model, objective),</span>
+<span class="fc" id="L209">                DecisionVarCollector.collectIntervals(model),</span>
+                objective,
+                true);
+<span class="fc" id="L212">    }</span>
 
     /**
-     * Creates a black-box search on an array of decision variables with an
-     * objective (optimization).
+     * Creates a black-box search on an array of integer decision variables with an objective.
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars, Objective objective) {
-<span class="fc" id="L174">        this(model, Arrays.asList(vars), objective);</span>
-<span class="fc" id="L175">    }</span>
+<span class="fc" id="L218">        this(model, Arrays.asList(vars), List.of(), objective, false);</span>
+<span class="fc" id="L219">    }</span>
 
     /**
-     * Creates a black-box search on decision variables without objective
-     * (feasibility).
+     * Creates a black-box search on an array of integer decision variables without objective (feasibility).
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars) {
-<span class="fc" id="L182">        this(model, Arrays.asList(vars), null);</span>
-<span class="fc" id="L183">    }</span>
+<span class="fc" id="L225">        this(model, Arrays.asList(vars), List.of(), null, false);</span>
+<span class="fc" id="L226">    }</span>
 
     /**
-     * Creates a feasibility black-box search with automatic decision-variable
-     * inference.
+     * Creates a black-box search on an array of scheduling interval variables.
+     */
+    public BlackBoxSearch(ModelDispatcher model, IntervalVar... intervals) {
+<span class="fc" id="L232">        this(model, DecisionVarCollector.collectAllIntVars(model, null), Arrays.asList(intervals), null, true);</span>
+<span class="fc" id="L233">    }</span>
+
+    /**
+     * Creates a black-box search on a 2D matrix of scheduling interval variables.
+     */
+    public BlackBoxSearch(ModelDispatcher model, IntervalVar[][] intervals) {
+<span class="nc" id="L239">        this(</span>
+                model,
+<span class="nc" id="L241">                DecisionVarCollector.collectAllIntVars(model, null),</span>
+<span class="nc" id="L242">                Arrays.stream(intervals).flatMap(Arrays::stream).toList(),</span>
+                null,
+                true);
+<span class="nc" id="L245">    }</span>
+
+    /**
+     * Creates a black-box search with automatic decision-variable and interval-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model) {
-<span class="nc" id="L190">        this(model, model.getDecisionVariables(), null);</span>
-<span class="nc" id="L191">    }</span>
+<span class="fc" id="L251">        this(model, (Objective) null);</span>
+<span class="fc" id="L252">    }</span>
 
     /** Sets logging verbosity for this search. */
     public BlackBoxSearch withVerbosity(Verbosity verbosity) {
-<span class="pc bpc" id="L195" title="1 of 2 branches missed.">        this.verbosity = verbosity == null ? Verbosity.QUIET : verbosity;</span>
-<span class="fc" id="L196">        return this;</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">        this.verbosity = verbosity == null ? Verbosity.QUIET : verbosity;</span>
+<span class="fc" id="L257">        return this;</span>
+    }
+
+    /**
+     * Registers a callback invoked whenever a new feasible or improving incumbent is recorded.
+     */
+    public BlackBoxSearch onIncumbent(BiConsumer&lt;List&lt;Integer&gt;, Integer&gt; listener) {
+<span class="fc" id="L264">        this.incumbentListener = listener;</span>
+<span class="fc" id="L265">        return this;</span>
+    }
+
+    @Override
+    public void onSolution(Consumer&lt;SearchStatistics&gt; listener) {
+<span class="pc bpc" id="L270" title="1 of 2 branches missed.">        if (listener != null) {</span>
+<span class="fc" id="L271">            solutionListeners.add(listener);</span>
+        }
+<span class="fc" id="L273">    }</span>
+
+    @Override
+    public void onFailure(Consumer&lt;SearchStatistics&gt; listener) {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">        if (listener != null) {</span>
+<span class="nc" id="L278">            failureListeners.add(listener);</span>
+        }
+<span class="nc" id="L280">    }</span>
+
+    List&lt;IntervalVar&gt; intervals() {
+<span class="fc" id="L283">        return intervals;</span>
+    }
+
+    List&lt;IntExpression&gt; vars() {
+<span class="nc" id="L287">        return vars;</span>
+    }
+
+    ModelStructureAnalyzer structureAnalyzer() {
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        if (cachedStructure == null) {</span>
+<span class="fc" id="L292">            cachedStructure = ModelStructureAnalyzer.analyze(model, vars, objective);</span>
+        }
+<span class="fc" id="L294">        return cachedStructure;</span>
+    }
+
+    ConflictDrivenBranching conflictDrivenBranching(Random fallbackRandom) {
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (sharedConflictBranching == null) {</span>
+<span class="fc" id="L299">            sharedConflictBranching = new ConflictDrivenBranching(</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">                    model, vars, structureAnalyzer(), fallbackRandom != null ? fallbackRandom : new Random(42L));</span>
+<span class="fc" id="L301">            bestSolution.ifPresent(sharedConflictBranching::updateIncumbent);</span>
+        }
+<span class="fc" id="L303">        return sharedConflictBranching;</span>
+    }
+
+    private IntExpression[] computePrimaryIntVars() {
+<span class="fc" id="L307">        ModelStructureAnalyzer structure = structureAnalyzer();</span>
+<span class="fc" id="L308">        int[] primaryIdx = structure.primaryIndices();</span>
+<span class="fc" id="L309">        IntExpression[] primaryVars = new IntExpression[primaryIdx.length];</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        for (int i = 0; i &lt; primaryIdx.length; i++) {</span>
+<span class="fc" id="L311">            primaryVars[i] = vars.get(primaryIdx[i]);</span>
+        }
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">        if (primaryVars.length == 0 &amp;&amp; !vars.isEmpty()) {</span>
+<span class="nc" id="L314">            primaryVars = vars.toArray(IntExpression[]::new);</span>
+        }
+<span class="fc" id="L316">        return primaryVars;</span>
+    }
+
+    FDSModeling primaryFdsBranching() {
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (sharedPrimaryFds == null) {</span>
+<span class="fc" id="L321">            IntExpression[] primaryVars = computePrimaryIntVars();</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">            if (primaryVars.length &gt; 0) {</span>
+<span class="fc" id="L323">                sharedPrimaryFds = new FDSModeling(primaryVars);</span>
+            }
+<span class="fc" id="L325">        } else {</span>
+<span class="fc" id="L326">            sharedPrimaryFds.resetLevel();</span>
+        }
+<span class="fc" id="L328">        return sharedPrimaryFds;</span>
+    }
+
+    Supplier&lt;Runnable[]&gt; tieredFdsBranching(Random fallbackRandom) {
+<span class="pc bpc" id="L332" title="1 of 2 branches missed.">        if (!intervals.isEmpty()) {</span>
+<span class="nc" id="L333">            return schedulingFdsBranching(fallbackRandom);</span>
+        }
+<span class="fc" id="L335">        FDSModeling fds = primaryFdsBranching();</span>
+<span class="pc bpc" id="L336" title="1 of 2 branches missed.">        if (fds == null) {</span>
+<span class="nc" id="L337">            return () -&gt; Searches.EMPTY;</span>
+        }
+<span class="fc" id="L339">        ModelStructureAnalyzer structure = structureAnalyzer();</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">        if (structure.secondaryIndices().length == 0) {</span>
+<span class="fc" id="L341">            return fds;</span>
+        }
+<span class="fc" id="L343">        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);</span>
+<span class="fc" id="L344">        return Searches.and(fds, cd);</span>
+    }
+
+    Supplier&lt;Runnable[]&gt; schedulingFdsBranching(Random fallbackRandom) {
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">        if (intervals.isEmpty()) {</span>
+<span class="nc" id="L349">            return tieredFdsBranching(fallbackRandom);</span>
+        }
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (sharedSchedulingFds == null) {</span>
+<span class="fc" id="L352">            IntervalVar[] ivArr = intervals.toArray(IntervalVar[]::new);</span>
+<span class="fc" id="L353">            IntExpression[] primaryVars = computePrimaryIntVars();</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            sharedSchedulingFds = primaryVars.length &gt; 0</span>
+<span class="fc" id="L355">                    ? new FDSModeling(ivArr, primaryVars)</span>
+<span class="fc" id="L356">                    : new FDSModeling(ivArr);</span>
+<span class="fc" id="L357">        } else {</span>
+<span class="fc" id="L358">            sharedSchedulingFds.resetLevel();</span>
+        }
+<span class="pc bpc" id="L360" title="1 of 4 branches missed.">        if (vars.isEmpty() || structureAnalyzer().secondaryIndices().length == 0) {</span>
+<span class="fc" id="L361">            return sharedSchedulingFds;</span>
+        }
+<span class="nc" id="L363">        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);</span>
+<span class="nc" id="L364">        return Searches.and(sharedSchedulingFds, cd);</span>
+    }
+
+    Supplier&lt;Runnable[]&gt; schedulingSetTimesBranching(Random fallbackRandom) {
+<span class="fc" id="L368">        IntervalVar[] ivArr = intervals.toArray(IntervalVar[]::new);</span>
+<span class="fc" id="L369">        Supplier&lt;Runnable[]&gt; setTimes = new SetTimesModeling(ivArr);</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">        if (vars.isEmpty()) {</span>
+<span class="fc" id="L371">            return setTimes;</span>
+        }
+<span class="fc" id="L373">        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);</span>
+<span class="fc" id="L374">        return Searches.and(setTimes, cd);</span>
+    }
+
+    DFSearch createSubSearch(Supplier&lt;Runnable[]&gt; branching) {
+<span class="fc" id="L378">        DFSearch dfs = model.dfSearch(branching);</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">        if (!failureListeners.isEmpty()) {</span>
+<span class="nc" id="L380">            dfs.onFailure(subStats -&gt; {</span>
+<span class="nc" id="L381">                syncLiveStats(subStats);</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                for (Consumer&lt;SearchStatistics&gt; fl : failureListeners) {</span>
+<span class="nc" id="L383">                    fl.accept(liveStats);</span>
+<span class="nc" id="L384">                }</span>
+<span class="nc" id="L385">            });</span>
+        }
+<span class="fc" id="L387">        return dfs;</span>
+    }
+
+    boolean shouldAbortSubSearch(
+            SearchStatistics subStats,
+            long phaseStartMillis,
+            long phaseBudgetMillis,
+            int failureCutoff) {
+<span class="fc" id="L395">        syncLiveStats(subStats);</span>
+<span class="fc bfc" id="L396" title="All 4 branches covered.">        if (activeLimit != null &amp;&amp; activeLimit.test(liveStats)) {</span>
+<span class="fc" id="L397">            limitReached = true;</span>
+<span class="fc" id="L398">            return true;</span>
+        }
+<span class="fc bfc" id="L400" title="All 2 branches covered.">        if ((System.currentTimeMillis() - phaseStartMillis) &gt;= phaseBudgetMillis) {</span>
+<span class="fc" id="L401">            return true;</span>
+        }
+<span class="fc bfc" id="L403" title="All 4 branches covered.">        return failureCutoff &lt; Integer.MAX_VALUE &amp;&amp; subStats.numberOfFailures() &gt;= failureCutoff;</span>
+    }
+
+    void accumulateSubSearchStats(SearchStatistics subStats) {
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        if (subStats == null) {</span>
+<span class="nc" id="L408">            return;</span>
+        }
+<span class="fc" id="L410">        accumulatedNodes += subStats.numberOfNodes();</span>
+<span class="fc" id="L411">        accumulatedFailures += subStats.numberOfFailures();</span>
+<span class="fc" id="L412">        syncLiveStats(null);</span>
+<span class="fc" id="L413">    }</span>
+
+    private void syncLiveStats(SearchStatistics currentSubStats) {
+<span class="fc bfc" id="L416" title="All 2 branches covered.">        int subNodes = currentSubStats != null ? currentSubStats.numberOfNodes() : 0;</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        int subFails = currentSubStats != null ? currentSubStats.numberOfFailures() : 0;</span>
+<span class="fc" id="L418">        int targetNodes = accumulatedNodes + subNodes;</span>
+<span class="fc" id="L419">        int targetFails = accumulatedFailures + subFails;</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        while (liveStats.numberOfNodes() &lt; targetNodes) {</span>
+<span class="fc" id="L421">            liveStats.incrNodes();</span>
+        }
+<span class="fc bfc" id="L423" title="All 2 branches covered.">        while (liveStats.numberOfFailures() &lt; targetFails) {</span>
+<span class="fc" id="L424">            liveStats.incrFailures();</span>
+        }
+<span class="fc bfc" id="L426" title="All 2 branches covered.">        if (searchStartMillis &gt; 0L) {</span>
+<span class="fc" id="L427">            liveStats.setTimeInMillis(Math.max(0L, System.currentTimeMillis() - searchStartMillis));</span>
+        }
+<span class="fc" id="L429">    }</span>
+
+    boolean isLimitReached() {
+<span class="fc bfc" id="L432" title="All 2 branches covered.">        if (limitReached) {</span>
+<span class="fc" id="L433">            return true;</span>
+        }
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        if (activeLimit != null) {</span>
+<span class="fc" id="L436">            syncLiveStats(null);</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (activeLimit.test(liveStats)) {</span>
+<span class="nc" id="L438">                limitReached = true;</span>
+<span class="nc" id="L439">                return true;</span>
+            }
+        }
+<span class="fc" id="L442">        return false;</span>
+    }
+
+    void ensureCpCache() {
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">        if (!model.isConcrete()) {</span>
+<span class="nc" id="L447">            return;</span>
+        }
+<span class="fc" id="L449">        ConcreteModel cm = model.getConcreteModel();</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        if (cm != cachedConcreteModel) {</span>
+<span class="fc" id="L451">            cachedConcreteModel = cm;</span>
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">            if (cm instanceof ConcreteCPModel cpm) {</span>
+<span class="fc" id="L453">                cachedCpVars = new CPIntVar[vars.size()];</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L455">                    cachedCpVars[i] = cpm.getCPVar(vars.get(i));</span>
+                }
+<span class="fc" id="L457">                cachedCpIntervals = new CPIntervalVar[intervals.size()];</span>
+<span class="fc bfc" id="L458" title="All 2 branches covered.">                for (int i = 0; i &lt; intervals.size(); i++) {</span>
+<span class="fc" id="L459">                    cachedCpIntervals[i] = cpm.getCPVar(intervals.get(i));</span>
+                }
+<span class="fc" id="L461">                IntExpression objExpr = extractObjectiveExpr(objective);</span>
+<span class="fc bfc" id="L462" title="All 2 branches covered.">                if (objExpr != null) {</span>
+<span class="fc" id="L463">                    cachedObjCpVar = cpm.getCPVar(objExpr);</span>
+<span class="fc" id="L464">                    cpm.solver.fixPoint();</span>
+                } else {
+<span class="fc" id="L466">                    cachedObjCpVar = null;</span>
+                }
+<span class="fc" id="L468">            } else {</span>
+<span class="nc" id="L469">                cachedCpVars = null;</span>
+<span class="nc" id="L470">                cachedCpIntervals = null;</span>
+<span class="nc" id="L471">                cachedObjCpVar = null;</span>
+            }
+        }
+<span class="fc" id="L474">    }</span>
+
+    private CPIntVar currentObjCpVar() {
+<span class="fc" id="L477">        ensureCpCache();</span>
+<span class="pc bpc" id="L478" title="1 of 4 branches missed.">        if (cachedConcreteModel instanceof ConcreteCPModel cpm &amp;&amp; objective != null) {</span>
+<span class="fc" id="L479">            IntExpression objExpr = extractObjectiveExpr(objective);</span>
+<span class="fc" id="L480">            return cpm.getCPVar(objExpr);</span>
+        }
+<span class="fc" id="L482">        return null;</span>
+    }
+
+    void recordSolutionFromCurrentState() {
+<span class="fc" id="L486">        ensureCpCache();</span>
+<span class="fc" id="L487">        Integer objVal = evaluateCurrentObjective();</span>
+<span class="pc bpc" id="L488" title="1 of 6 branches missed.">        if (objective != null &amp;&amp; objVal != null &amp;&amp; bestObjectiveValue.isPresent()) {</span>
+<span class="fc" id="L489">            int currentBest = bestObjectiveValue.get();</span>
+<span class="pc bpc" id="L490" title="2 of 6 branches missed.">            boolean strictlyBetter = isMinimization(objective) ? (objVal &lt; currentBest) : (objVal &gt; currentBest);</span>
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">            if (!strictlyBetter) {</span>
+<span class="nc" id="L492">                return;</span>
+            }
+        }
+
+<span class="fc" id="L496">        List&lt;Integer&gt; solution = new ArrayList&lt;&gt;(vars.size());</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">        if (cachedCpVars != null) {</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L499">                int val = cachedCpVars[i].min();</span>
+<span class="fc" id="L500">                solution.add(val);</span>
+<span class="fc" id="L501">                bestVarValues.put(vars.get(i), val);</span>
+            }
+        } else {
+<span class="nc bnc" id="L504" title="All 2 branches missed.">            for (IntExpression var : vars) {</span>
+<span class="nc" id="L505">                int val = var.min();</span>
+<span class="nc" id="L506">                solution.add(val);</span>
+<span class="nc" id="L507">                bestVarValues.put(var, val);</span>
+<span class="nc" id="L508">            }</span>
+        }
+
+<span class="fc bfc" id="L511" title="All 2 branches covered.">        if (!intervals.isEmpty()) {</span>
+<span class="fc" id="L512">            List&lt;IntervalSnapshot&gt; ivSnaps = new ArrayList&lt;&gt;(intervals.size());</span>
+<span class="pc bpc" id="L513" title="1 of 2 branches missed.">            if (cachedCpIntervals != null) {</span>
+<span class="fc bfc" id="L514" title="All 2 branches covered.">                for (CPIntervalVar cpIv : cachedCpIntervals) {</span>
+<span class="fc" id="L515">                    ivSnaps.add(new IntervalSnapshot(</span>
+<span class="fc" id="L516">                            cpIv.isPresent(),</span>
+<span class="fc" id="L517">                            cpIv.startMin(),</span>
+<span class="fc" id="L518">                            cpIv.lengthMin(),</span>
+<span class="fc" id="L519">                            cpIv.endMin()));</span>
+                }
+            } else {
+<span class="nc bnc" id="L522" title="All 2 branches missed.">                for (IntervalVar iv : intervals) {</span>
+<span class="nc" id="L523">                    ivSnaps.add(new IntervalSnapshot(</span>
+<span class="nc" id="L524">                            iv.isPresent(),</span>
+<span class="nc" id="L525">                            iv.startMin(),</span>
+<span class="nc" id="L526">                            iv.lengthMin(),</span>
+<span class="nc" id="L527">                            iv.endMin()));</span>
+<span class="nc" id="L528">                }</span>
+            }
+<span class="fc" id="L530">            bestIntervalSolution = Optional.of(Collections.unmodifiableList(ivSnaps));</span>
+        }
+
+<span class="fc" id="L533">        updateObjective(objVal);</span>
+<span class="fc" id="L534">        updateSolution(solution);</span>
+
+<span class="fc" id="L536">        liveStats.incrSolutions();</span>
+<span class="fc" id="L537">        syncLiveStats(null);</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">        for (Consumer&lt;SearchStatistics&gt; listener : solutionListeners) {</span>
+<span class="fc" id="L539">            listener.accept(liveStats);</span>
+<span class="fc" id="L540">        }</span>
+<span class="fc" id="L541">    }</span>
+
+    private static boolean isMinimization(Objective objective) {
+<span class="pc bpc" id="L544" title="1 of 4 branches missed.">        return objective instanceof Minimization || objective instanceof SharedMinimization;</span>
     }
 
     /**
      * Registers one executable phase in the black-box plan.
-     *
-     * @param name             descriptive phase name used in logs and diagnostics
-     * @param search           runnable implementation executed for the phase
-     * @param timeShare        relative share of the global timeout allocated to
-     *                         this phase for non-last phases
-     *                         (must be in {@code (0,1]}; shares across phases must
-     *                         sum to at most {@code 1.0})
-     * @param requiresFeasible whether this phase can run only after an incumbent
-     *                         exists
-     * @return this search instance for fluent configuration
      */
     public BlackBoxSearch addPhase(String name, RunnableSearch search, double timeShare, boolean requiresFeasible) {
-<span class="fc bfc" id="L213" title="All 2 branches covered.">        if (timeShare &lt;= 0.0) {</span>
-<span class="fc" id="L214">            return this;</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">        if (timeShare &lt;= 0.0) {</span>
+<span class="fc" id="L552">            return this;</span>
         }
-<span class="fc" id="L216">        phases.add(new Phase(name, search, timeShare, requiresFeasible));</span>
-<span class="fc" id="L217">        return this;</span>
+<span class="fc" id="L554">        phases.add(new Phase(name, search, timeShare, requiresFeasible));</span>
+<span class="fc" id="L555">        return this;</span>
     }
 
     /**
      * Builds the built-in default plan.
-     *
-     * &lt;p&gt;
-     * Feasibility: initial exhaustive + restart phases.
-     * &lt;/p&gt;
-     * &lt;p&gt;
-     * Optimization: initial exhaustive + restart + LNS + exhaustive phases.
-     * &lt;/p&gt;
      */
     public BlackBoxSearch withDefaultPhasePlan() {
-<span class="nc" id="L231">        phases.clear();</span>
+<span class="fc" id="L562">        phases.clear();</span>
 
-<span class="nc" id="L233">        ExhaustivePhaseOptions exhaustiveOptions = ExhaustivePhaseOptions.defaults();</span>
-<span class="nc" id="L234">        RunnableSearch initialExhaustive = new DFSRunnableSearch(this, model, vars, objective,</span>
-<span class="nc" id="L235">                exhaustiveOptions.randomSwapProbability(), exhaustiveOptions.randomSeed());</span>
-<span class="nc bnc" id="L236" title="All 2 branches missed.">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustive, objective == null ? 0.10 : 0.25, false);</span>
+<span class="fc bfc" id="L564" title="All 2 branches covered.">        if (!intervals.isEmpty()) {</span>
+<span class="fc" id="L565">            RunnableSearch initialSched = new SchedulingRunnableSearch(this, model, intervals, vars, objective, 42L);</span>
+<span class="fc bfc" id="L566" title="All 2 branches covered.">            addPhase(&quot;initial-exhaustive&quot;, initialSched, objective == null ? 0.25 : 0.25, false);</span>
 
-<span class="nc" id="L238">        RestartPhaseOptions restartOptions = RestartPhaseOptions.defaults();</span>
-<span class="nc" id="L239">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
-<span class="nc" id="L240">                restartOptions.baseFailureLimit(), restartOptions.randomSwapProbability(), restartOptions.randomSeed());</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, objective == null ? 0.90 : 0.20, false);</span>
+<span class="fc bfc" id="L568" title="All 2 branches covered.">            if (objective == null) {</span>
+<span class="fc" id="L569">                RunnableSearch restSched = new SchedulingRunnableSearch(this, model, intervals, vars, null, 43L);</span>
+<span class="fc" id="L570">                addPhase(&quot;feasibility-restarts&quot;, restSched, 0.75, false);</span>
+<span class="fc" id="L571">                return this;</span>
+            }
 
-<span class="nc bnc" id="L243" title="All 2 branches missed.">        if (objective == null) {</span>
-<span class="nc" id="L244">            return this;</span>
+<span class="fc" id="L574">            RunnableSearch schedLns = new SchedulingLNSRunnableSearch(this, model, intervals, vars, objective, 80, 65, 43L);</span>
+<span class="fc" id="L575">            addPhase(&quot;lns-improvement&quot;, schedLns, 0.50, true);</span>
+
+<span class="fc" id="L577">            RunnableSearch finalSched = new SchedulingRunnableSearch(this, model, intervals, vars, objective, 44L);</span>
+<span class="fc" id="L578">            addPhase(&quot;exhaustive-fds&quot;, finalSched, 0.25, false);</span>
+<span class="fc" id="L579">            return this;</span>
         }
 
-<span class="nc" id="L247">        LnsPhaseOptions lnsOptions = LnsPhaseOptions.defaults();</span>
-<span class="nc" id="L248">        RunnableSearch lns = new LNSRunnableSearch(this, model, vars, objective,</span>
-<span class="nc" id="L249">                lnsOptions.failureLimitPerRestart(), lnsOptions.freezeRatePercent(),</span>
-<span class="nc" id="L250">                lnsOptions.randomSwapProbability(), lnsOptions.randomSeed(),</span>
-<span class="nc" id="L251">                lnsOptions.fragmentSelectionStrategy());</span>
-<span class="nc" id="L252">        addPhase(&quot;lns-improvement&quot;, lns, 1.0 / 3.0, true);</span>
+<span class="fc" id="L582">        ExhaustivePhaseOptions exhaustiveOptions = ExhaustivePhaseOptions.defaults();</span>
+<span class="fc" id="L583">        RunnableSearch initialExhaustive = new DFSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L584">                exhaustiveOptions.randomSwapProbability(), exhaustiveOptions.randomSeed());</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustive, objective == null ? 0.10 : 0.25, false);</span>
 
-<span class="nc" id="L254">        RunnableSearch exhaustive = new DFSRunnableSearch(this, model, vars, objective,</span>
-<span class="nc" id="L255">                exhaustiveOptions.randomSwapProbability(), exhaustiveOptions.randomSeed());</span>
-<span class="nc" id="L256">        addPhase(&quot;exhaustive-fds&quot;, exhaustive, (1.0 - 0.25 - 0.20 - 1.0 / 3.0), true);</span>
+<span class="fc" id="L587">        RestartPhaseOptions restartOptions = RestartPhaseOptions.defaults();</span>
+<span class="fc" id="L588">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
+<span class="fc" id="L589">                restartOptions.baseFailureLimit(), restartOptions.randomSwapProbability(), restartOptions.randomSeed());</span>
+<span class="fc bfc" id="L590" title="All 2 branches covered.">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, objective == null ? 0.90 : 0.20, false);</span>
 
-<span class="nc" id="L258">        return this;</span>
+<span class="fc bfc" id="L592" title="All 2 branches covered.">        if (objective == null) {</span>
+<span class="fc" id="L593">            return this;</span>
+        }
+
+<span class="fc" id="L596">        LnsPhaseOptions lnsOptions = LnsPhaseOptions.defaults();</span>
+<span class="fc" id="L597">        RunnableSearch lns = new LNSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L598">                lnsOptions.failureLimitPerRestart(), lnsOptions.freezeRatePercent(),</span>
+<span class="fc" id="L599">                lnsOptions.randomSwapProbability(), lnsOptions.randomSeed(),</span>
+<span class="fc" id="L600">                lnsOptions.fragmentSelectionStrategy());</span>
+<span class="fc" id="L601">        addPhase(&quot;lns-improvement&quot;, lns, 1.0 / 3.0, true);</span>
+
+<span class="fc" id="L603">        RunnableSearch exhaustive = new DFSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L604">                exhaustiveOptions.randomSwapProbability(), exhaustiveOptions.randomSeed());</span>
+<span class="fc" id="L605">        addPhase(&quot;exhaustive-fds&quot;, exhaustive, (1.0 - 0.25 - 0.20 - 1.0 / 3.0), false);</span>
+
+<span class="fc" id="L607">        return this;</span>
     }
 
     /**
      * Configures the optimization phase plan explicitly.
-     *
-     * &lt;p&gt;
-     * Shares do &lt;b&gt;not&lt;/b&gt; need to sum to exactly {@code 1.0}; they must sum to at
-     * most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via
-     * remaining-time assignment.
-     * &lt;/p&gt;
      */
     public BlackBoxSearch withOptimizationPlan(RestartPhaseOptions restart,
             LnsPhaseOptions lns,
@@ -275,305 +617,656 @@ public class BlackBoxSearch {
             double restartShare,
             double lnsShare,
             double exhaustiveShare) {
-<span class="pc bpc" id="L278" title="1 of 2 branches missed.">        if (objective == null) {</span>
-<span class="nc" id="L279">            throw new IllegalStateException(&quot;Optimization plan requires an objective&quot;);</span>
+<span class="pc bpc" id="L620" title="1 of 2 branches missed.">        if (objective == null) {</span>
+<span class="nc" id="L621">            throw new IllegalStateException(&quot;Optimization plan requires an objective&quot;);</span>
         }
-<span class="fc" id="L281">        validateShares(initialExhaustiveShare, restartShare, lnsShare, exhaustiveShare);</span>
-<span class="fc" id="L282">        phases.clear();</span>
+<span class="fc" id="L623">        validateShares(initialExhaustiveShare, restartShare, lnsShare, exhaustiveShare);</span>
+<span class="fc" id="L624">        phases.clear();</span>
+<span class="fc" id="L625">        userConfiguredPhases = true;</span>
 
-<span class="fc" id="L284">        RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,</span>
-<span class="fc" id="L285">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
+<span class="fc" id="L627">        RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L628">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
 
-<span class="fc" id="L287">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
-<span class="fc" id="L288">                restart.baseFailureLimit(), restart.randomSwapProbability(), restart.randomSeed());</span>
-<span class="fc" id="L289">        RunnableSearch lnsSearch = new LNSRunnableSearch(this, model, vars, objective,</span>
-<span class="fc" id="L290">                lns.failureLimitPerRestart(), lns.freezeRatePercent(), lns.randomSwapProbability(), lns.randomSeed(),</span>
-<span class="fc" id="L291">                lns.fragmentSelectionStrategy());</span>
-<span class="fc" id="L292">        RunnableSearch exhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,</span>
-<span class="fc" id="L293">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
+<span class="fc" id="L630">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
+<span class="fc" id="L631">                restart.baseFailureLimit(), restart.randomSwapProbability(), restart.randomSeed());</span>
+<span class="fc" id="L632">        RunnableSearch lnsSearch = new LNSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L633">                lns.failureLimitPerRestart(), lns.freezeRatePercent(), lns.randomSwapProbability(), lns.randomSeed(),</span>
+<span class="fc" id="L634">                lns.fragmentSelectionStrategy());</span>
+<span class="fc" id="L635">        RunnableSearch exhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,</span>
+<span class="fc" id="L636">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
 
-<span class="fc" id="L295">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustiveSearch, initialExhaustiveShare, false);</span>
-<span class="fc" id="L296">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, restartShare, false);</span>
-<span class="fc" id="L297">        addPhase(&quot;lns-improvement&quot;, lnsSearch, lnsShare, true);</span>
-<span class="fc" id="L298">        addPhase(&quot;exhaustive-fds&quot;, exhaustiveSearch, exhaustiveShare, true);</span>
-<span class="fc" id="L299">        return this;</span>
+<span class="fc" id="L638">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustiveSearch, initialExhaustiveShare, false);</span>
+<span class="fc" id="L639">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, restartShare, false);</span>
+<span class="fc" id="L640">        addPhase(&quot;lns-improvement&quot;, lnsSearch, lnsShare, true);</span>
+<span class="fc" id="L641">        addPhase(&quot;exhaustive-fds&quot;, exhaustiveSearch, exhaustiveShare, false);</span>
+<span class="fc" id="L642">        return this;</span>
     }
 
     /**
      * Configures the feasibility phase plan explicitly.
-     *
-     * &lt;p&gt;
-     * Shares do &lt;b&gt;not&lt;/b&gt; need to sum to exactly {@code 1.0}; they must sum to at
-     * most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via
-     * remaining-time assignment.
-     * &lt;/p&gt;
      */
     public BlackBoxSearch withFeasibilityPlan(RestartPhaseOptions restart,
             ExhaustivePhaseOptions exhaustive,
             double initialExhaustiveShare,
             double restartShare,
             double exhaustiveShare) {
-<span class="fc" id="L317">        validateShares(initialExhaustiveShare, restartShare, exhaustiveShare);</span>
-<span class="fc" id="L318">        phases.clear();</span>
+<span class="fc" id="L653">        validateShares(initialExhaustiveShare, restartShare, exhaustiveShare);</span>
+<span class="fc" id="L654">        phases.clear();</span>
+<span class="fc" id="L655">        userConfiguredPhases = true;</span>
 
-<span class="fc" id="L320">        RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, null,</span>
-<span class="fc" id="L321">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
+<span class="fc" id="L657">        RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, null,</span>
+<span class="fc" id="L658">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
 
-<span class="fc" id="L323">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
-<span class="fc" id="L324">                restart.baseFailureLimit(), restart.randomSwapProbability(), restart.randomSeed());</span>
-<span class="fc" id="L325">        RunnableSearch exhaustiveSearch = new DFSRunnableSearch(this, model, vars, null,</span>
-<span class="fc" id="L326">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
+<span class="fc" id="L660">        RunnableSearch restartSearch = new RestartRunnableSearch(this, model, vars,</span>
+<span class="fc" id="L661">                restart.baseFailureLimit(), restart.randomSwapProbability(), restart.randomSeed());</span>
+<span class="fc" id="L662">        RunnableSearch exhaustiveSearch = new DFSRunnableSearch(this, model, vars, null,</span>
+<span class="fc" id="L663">                exhaustive.randomSwapProbability(), exhaustive.randomSeed());</span>
 
-<span class="fc" id="L328">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustiveSearch, initialExhaustiveShare, false);</span>
-<span class="fc" id="L329">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, restartShare, false);</span>
-<span class="fc" id="L330">        addPhase(&quot;exhaustive-fds&quot;, exhaustiveSearch, exhaustiveShare, false);</span>
-<span class="fc" id="L331">        return this;</span>
+<span class="fc" id="L665">        addPhase(&quot;initial-exhaustive&quot;, initialExhaustiveSearch, initialExhaustiveShare, false);</span>
+<span class="fc" id="L666">        addPhase(&quot;feasibility-restarts&quot;, restartSearch, restartShare, false);</span>
+<span class="fc" id="L667">        addPhase(&quot;exhaustive-fds&quot;, exhaustiveSearch, exhaustiveShare, false);</span>
+<span class="fc" id="L668">        return this;</span>
     }
 
     private static void validateShares(double... shares) {
-<span class="fc" id="L335">        double total = 0.0;</span>
-<span class="fc" id="L336">        boolean hasPositiveShare = false;</span>
-<span class="fc bfc" id="L337" title="All 2 branches covered.">        for (double share : shares) {</span>
-<span class="pc bpc" id="L338" title="2 of 4 branches missed.">            if (share &lt; 0.0 || share &gt; 1.0) {</span>
-<span class="nc" id="L339">                throw new IllegalArgumentException(&quot;Each phase share must be in [0,1]&quot;);</span>
+<span class="fc" id="L672">        double total = 0.0;</span>
+<span class="fc" id="L673">        boolean hasPositiveShare = false;</span>
+<span class="fc bfc" id="L674" title="All 2 branches covered.">        for (double share : shares) {</span>
+<span class="pc bpc" id="L675" title="2 of 4 branches missed.">            if (share &lt; 0.0 || share &gt; 1.0) {</span>
+<span class="nc" id="L676">                throw new IllegalArgumentException(&quot;Each phase share must be in [0,1]&quot;);</span>
             }
-<span class="fc" id="L341">            total += share;</span>
-<span class="fc bfc" id="L342" title="All 2 branches covered.">            hasPositiveShare |= share &gt; 0.0;</span>
+<span class="fc" id="L678">            total += share;</span>
+<span class="fc bfc" id="L679" title="All 2 branches covered.">            hasPositiveShare |= share &gt; 0.0;</span>
         }
-<span class="pc bpc" id="L344" title="1 of 2 branches missed.">        if (total &gt; 1.001) {</span>
-<span class="nc" id="L345">            throw new IllegalArgumentException(&quot;Phase shares must sum to at most 1.0&quot;);</span>
+<span class="pc bpc" id="L681" title="1 of 2 branches missed.">        if (total &gt; 1.001) {</span>
+<span class="nc" id="L682">            throw new IllegalArgumentException(&quot;Phase shares must sum to at most 1.0&quot;);</span>
         }
-<span class="pc bpc" id="L347" title="1 of 2 branches missed.">        if (!hasPositiveShare) {</span>
-<span class="nc" id="L348">            throw new IllegalArgumentException(&quot;At least one phase share must be &gt; 0&quot;);</span>
+<span class="pc bpc" id="L684" title="1 of 2 branches missed.">        if (!hasPositiveShare) {</span>
+<span class="nc" id="L685">            throw new IllegalArgumentException(&quot;At least one phase share must be &gt; 0&quot;);</span>
         }
-<span class="fc" id="L350">    }</span>
+<span class="fc" id="L687">    }</span>
+
+    private void resetRunMetrics() {
+<span class="fc" id="L690">        liveStats = new SearchStatistics();</span>
+<span class="fc" id="L691">        accumulatedNodes = 0;</span>
+<span class="fc" id="L692">        accumulatedFailures = 0;</span>
+<span class="fc" id="L693">        searchStartMillis = System.currentTimeMillis();</span>
+<span class="fc" id="L694">        limitReached = false;</span>
+<span class="fc" id="L695">        bestSolution = Optional.empty();</span>
+<span class="fc" id="L696">        bestIntervalSolution = Optional.empty();</span>
+<span class="fc" id="L697">        bestVarValues.clear();</span>
+<span class="fc" id="L698">        bestObjectiveValue = Optional.empty();</span>
+<span class="fc" id="L699">        solutionCount = 0;</span>
+<span class="fc" id="L700">        executedPhaseNames.clear();</span>
+<span class="fc" id="L701">    }</span>
+
+    private void setObjectiveInternal(Objective newObjective) {
+<span class="fc bfc" id="L704" title="All 2 branches covered.">        if (this.objective != newObjective) {</span>
+<span class="fc" id="L705">            this.objective = newObjective;</span>
+<span class="fc" id="L706">            this.cachedStructure = null;</span>
+<span class="fc" id="L707">            this.sharedConflictBranching = null;</span>
+<span class="fc" id="L708">            this.sharedPrimaryFds = null;</span>
+<span class="fc" id="L709">            this.sharedSchedulingFds = null;</span>
+<span class="fc" id="L710">            this.cachedConcreteModel = null;</span>
+<span class="pc bpc" id="L711" title="1 of 2 branches missed.">            if (autoDiscoveredVars) {</span>
+<span class="fc" id="L712">                this.vars = DecisionVarCollector.collectAllIntVars(model, newObjective);</span>
+            }
+<span class="pc bpc" id="L714" title="1 of 2 branches missed.">            if (!userConfiguredPhases) {</span>
+<span class="fc" id="L715">                phases.clear();</span>
+            }
+        }
+<span class="fc" id="L718">    }</span>
 
     /**
      * Executes the configured phase plan under a global timeout.
-     *
-     * &lt;p&gt;
-     * Early stop conditions:
-     * &lt;/p&gt;
-     * &lt;ul&gt;
-     * &lt;li&gt;Feasibility mode: stops on first feasible solution.&lt;/li&gt;
-     * &lt;li&gt;Any mode: stops on {@link SearchStatus#PROVEN_OPTIMAL} or
-     * {@link SearchStatus#UNSAT}.&lt;/li&gt;
-     * &lt;/ul&gt;
      *
      * @param timeLimitInSeconds global timeout in seconds
      * @return merged global status across executed phases
      */
     public SearchStatus start(int timeLimitInSeconds) {
-<span class="pc bpc" id="L368" title="1 of 2 branches missed.">        if (phases.isEmpty()) {</span>
-<span class="nc" id="L369">            throw new IllegalStateException(&quot;No search phases configured&quot;);</span>
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">        if (phases.isEmpty()) {</span>
+<span class="nc" id="L728">            throw new IllegalStateException(&quot;No search phases configured&quot;);</span>
+        }
+<span class="pc bpc" id="L730" title="1 of 2 branches missed.">        if (!model.isConcrete()) {</span>
+            try {
+<span class="nc" id="L732">                return model.runCP(() -&gt; startInConcreteContext(timeLimitInSeconds));</span>
+<span class="nc" id="L733">            } catch (InconsistencyException e) {</span>
+<span class="nc" id="L734">                lastStatus = SearchStatus.UNSAT;</span>
+<span class="nc" id="L735">                liveStats.setCompleted();</span>
+<span class="nc" id="L736">                return SearchStatus.UNSAT;</span>
+            }
+        }
+<span class="fc" id="L739">        return startInConcreteContext(timeLimitInSeconds);</span>
+    }
+
+    private SearchStatus startInConcreteContext(int timeLimitInSeconds) {
+<span class="fc" id="L743">        ensureCpCache();</span>
+<span class="fc bfc" id="L744" title="All 2 branches covered.">        if (searchStartMillis == 0L) {</span>
+<span class="fc" id="L745">            searchStartMillis = System.currentTimeMillis();</span>
         }
 
-<span class="fc" id="L372">        long totalBudgetMillis = Math.max(1L, timeLimitInSeconds * 1000L);</span>
-<span class="fc" id="L373">        long t0 = System.currentTimeMillis();</span>
-<span class="fc" id="L374">        SearchStatus globalStatus = SearchStatus.UNKNOWN;</span>
-<span class="fc" id="L375">        int phaseIndex = 0;</span>
-<span class="fc" id="L376">        executedPhaseNames.clear();</span>
-<span class="fc" id="L377">        solutionCount = 0;</span>
+        // Check trivial root satisfaction when there are no variables and no intervals
+<span class="pc bpc" id="L749" title="1 of 4 branches missed.">        if (vars.isEmpty() &amp;&amp; intervals.isEmpty()) {</span>
+<span class="nc" id="L750">            recordSolutionFromCurrentState();</span>
+<span class="nc" id="L751">            liveStats.setCompleted();</span>
+<span class="nc bnc" id="L752" title="All 2 branches missed.">            lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;</span>
+<span class="nc" id="L753">            return lastStatus;</span>
+        }
 
-<span class="fc" id="L379">        logPhase(&quot;[blackbox] start timeout=%ds phases=%d objective=%s&quot;</span>
-<span class="fc" id="L380">                .formatted(timeLimitInSeconds, phases.size(),</span>
-<span class="fc bfc" id="L381" title="All 2 branches covered.">                        objective == null ? &quot;none&quot; : objective.getClass().getSimpleName()));</span>
+<span class="fc" id="L756">        long totalBudgetMillis = Math.max(1L, timeLimitInSeconds * 1000L);</span>
+<span class="fc" id="L757">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L758">        SearchStatus globalStatus = SearchStatus.UNKNOWN;</span>
+<span class="fc" id="L759">        int phaseIndex = 0;</span>
+<span class="fc" id="L760">        executedPhaseNames.clear();</span>
+<span class="fc" id="L761">        solutionCount = 0;</span>
 
-<span class="fc bfc" id="L383" title="All 2 branches covered.">        for (Phase phase : phases) {</span>
-<span class="fc" id="L384">            long elapsed = System.currentTimeMillis() - t0;</span>
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">            if (elapsed &gt;= totalBudgetMillis) {</span>
-<span class="nc" id="L386">                logPhase(&quot;[blackbox] timeout reached before phase '%s'&quot;.formatted(phase.name));</span>
-<span class="nc" id="L387">                break;</span>
+<span class="fc" id="L763">        logPhase(&quot;[blackbox] start timeout=%ds phases=%d objective=%s&quot;</span>
+<span class="fc" id="L764">                .formatted(timeLimitInSeconds, phases.size(),</span>
+<span class="fc bfc" id="L765" title="All 2 branches covered.">                        objective == null ? &quot;none&quot; : objective.getClass().getSimpleName()));</span>
+
+<span class="fc bfc" id="L767" title="All 2 branches covered.">        for (Phase phase : phases) {</span>
+<span class="fc" id="L768">            long elapsed = System.currentTimeMillis() - t0;</span>
+<span class="pc bpc" id="L769" title="2 of 4 branches missed.">            if (elapsed &gt;= totalBudgetMillis || isLimitReached()) {</span>
+<span class="nc" id="L770">                logPhase(&quot;[blackbox] timeout/limit reached before phase '%s'&quot;.formatted(phase.name));</span>
+<span class="nc" id="L771">                break;</span>
             }
 
-<span class="pc bpc" id="L390" title="1 of 4 branches missed.">            if (phase.requiresFeasible &amp;&amp; bestSolution.isEmpty()) {</span>
-<span class="nc" id="L391">                logPhase(&quot;[blackbox] skip phase '%s' (no feasible incumbent yet)&quot;.formatted(phase.name));</span>
-<span class="nc" id="L392">                phaseIndex++;</span>
-<span class="nc" id="L393">                continue;</span>
+<span class="pc bpc" id="L774" title="1 of 4 branches missed.">            if (phase.requiresFeasible &amp;&amp; !hasAnyIncumbent()) {</span>
+<span class="nc" id="L775">                logPhase(&quot;[blackbox] skip phase '%s' (no feasible incumbent yet)&quot;.formatted(phase.name));</span>
+<span class="nc" id="L776">                phaseIndex++;</span>
+<span class="nc" id="L777">                continue;</span>
             }
 
-<span class="fc" id="L396">            long remaining = totalBudgetMillis - elapsed;</span>
+<span class="fc" id="L780">            long remaining = totalBudgetMillis - elapsed;</span>
             long phaseBudget;
-<span class="fc bfc" id="L398" title="All 2 branches covered.">            if (phaseIndex == phases.size() - 1) {</span>
-<span class="fc" id="L399">                phaseBudget = remaining;</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">            if (phaseIndex == phases.size() - 1) {</span>
+<span class="fc" id="L783">                phaseBudget = remaining;</span>
             } else {
-<span class="fc" id="L401">                double sumAll = 0.0;</span>
-<span class="fc bfc" id="L402" title="All 2 branches covered.">                for (Phase p : phases) {</span>
-<span class="fc" id="L403">                    sumAll += p.timeShare;</span>
-<span class="fc" id="L404">                }</span>
-<span class="fc" id="L405">                double implicitFraction = Math.max(0.0, 1.0 - sumAll);</span>
-<span class="fc" id="L406">                double S_rem = implicitFraction;</span>
-<span class="fc bfc" id="L407" title="All 2 branches covered.">                for (int j = phaseIndex; j &lt; phases.size(); j++) {</span>
-<span class="fc" id="L408">                    S_rem += phases.get(j).timeShare;</span>
+<span class="fc" id="L785">                double sumAll = 0.0;</span>
+<span class="fc bfc" id="L786" title="All 2 branches covered.">                for (Phase p : phases) {</span>
+<span class="fc" id="L787">                    sumAll += p.timeShare;</span>
+<span class="fc" id="L788">                }</span>
+<span class="fc" id="L789">                double implicitFraction = Math.max(0.0, 1.0 - sumAll);</span>
+<span class="fc" id="L790">                double S_rem = implicitFraction;</span>
+<span class="fc bfc" id="L791" title="All 2 branches covered.">                for (int j = phaseIndex; j &lt; phases.size(); j++) {</span>
+<span class="fc" id="L792">                    S_rem += phases.get(j).timeShare;</span>
                 }
-<span class="pc bpc" id="L410" title="1 of 2 branches missed.">                if (S_rem &gt; 0.0) {</span>
-<span class="fc" id="L411">                    phaseBudget = Math.max(1L, Math.round(remaining * (phase.timeShare / S_rem)));</span>
+<span class="pc bpc" id="L794" title="1 of 2 branches missed.">                if (S_rem &gt; 0.0) {</span>
+<span class="fc" id="L795">                    phaseBudget = Math.max(1L, Math.round(remaining * (phase.timeShare / S_rem)));</span>
                 } else {
-<span class="nc" id="L413">                    phaseBudget = Math.max(1L, Math.round(totalBudgetMillis * phase.timeShare));</span>
+<span class="nc" id="L797">                    phaseBudget = Math.max(1L, Math.round(totalBudgetMillis * phase.timeShare));</span>
                 }
             }
-<span class="fc" id="L416">            phaseBudget = Math.min(phaseBudget, remaining);</span>
+<span class="fc" id="L800">            phaseBudget = Math.min(phaseBudget, remaining);</span>
 
-<span class="fc" id="L418">            logPhase(&quot;[blackbox] phase '%s' budget=%dms remaining=%dms&quot;</span>
-<span class="fc" id="L419">                    .formatted(phase.name, phaseBudget, remaining));</span>
-<span class="fc" id="L420">            executedPhaseNames.add(phase.name);</span>
-<span class="fc" id="L421">            SearchStatus status = phase.search.run(phaseBudget);</span>
-<span class="fc" id="L422">            logPhase(&quot;[blackbox] phase '%s' completed with status=%s&quot;.formatted(phase.name, status));</span>
-<span class="fc" id="L423">            globalStatus = mergeStatus(globalStatus, status);</span>
-<span class="pc bpc" id="L424" title="1 of 4 branches missed.">            if (objective == null &amp;&amp; bestSolution.isPresent()) {</span>
-<span class="fc" id="L425">                logPhase(&quot;[blackbox] stop early on first feasible solution&quot;);</span>
-<span class="fc" id="L426">                return SearchStatus.SAT;</span>
+<span class="fc" id="L802">            logPhase(&quot;[blackbox] phase '%s' budget=%dms remaining=%dms&quot;</span>
+<span class="fc" id="L803">                    .formatted(phase.name, phaseBudget, remaining));</span>
+<span class="fc" id="L804">            executedPhaseNames.add(phase.name);</span>
+<span class="fc" id="L805">            SearchStatus status = phase.search.run(phaseBudget);</span>
+<span class="fc" id="L806">            logPhase(&quot;[blackbox] phase '%s' completed with status=%s&quot;.formatted(phase.name, status));</span>
+<span class="fc" id="L807">            globalStatus = mergeStatus(globalStatus, status);</span>
+<span class="pc bpc" id="L808" title="1 of 4 branches missed.">            if (objective == null &amp;&amp; hasAnyIncumbent()) {</span>
+<span class="fc" id="L809">                logPhase(&quot;[blackbox] stop early on first feasible solution&quot;);</span>
+<span class="fc" id="L810">                lastStatus = SearchStatus.SAT;</span>
+<span class="fc" id="L811">                return SearchStatus.SAT;</span>
             }
-<span class="pc bpc" id="L428" title="1 of 4 branches missed.">            if (status == SearchStatus.PROVEN_OPTIMAL || status == SearchStatus.UNSAT) {</span>
-<span class="fc" id="L429">                logPhase(&quot;[blackbox] stop early with status=%s&quot;.formatted(status));</span>
-<span class="fc" id="L430">                return status;</span>
+<span class="pc bpc" id="L813" title="1 of 4 branches missed.">            if (status == SearchStatus.PROVEN_OPTIMAL || status == SearchStatus.UNSAT) {</span>
+<span class="fc" id="L814">                logPhase(&quot;[blackbox] stop early with status=%s&quot;.formatted(status));</span>
+<span class="fc" id="L815">                liveStats.setCompleted();</span>
+<span class="fc" id="L816">                lastStatus = status;</span>
+<span class="fc" id="L817">                return status;</span>
             }
-<span class="fc" id="L432">            phaseIndex++;</span>
-<span class="fc" id="L433">        }</span>
+<span class="fc" id="L819">            phaseIndex++;</span>
+<span class="fc" id="L820">        }</span>
 
-<span class="fc" id="L435">        logPhase(&quot;[blackbox] finished with status=%s&quot;.formatted(globalStatus));</span>
-<span class="fc" id="L436">        return globalStatus;</span>
+<span class="fc" id="L822">        logPhase(&quot;[blackbox] finished with status=%s&quot;.formatted(globalStatus));</span>
+<span class="fc" id="L823">        lastStatus = globalStatus;</span>
+<span class="fc" id="L824">        return globalStatus;</span>
+    }
+
+    private boolean hasAnyIncumbent() {
+<span class="pc bpc" id="L828" title="3 of 4 branches missed.">        return bestSolution.isPresent() || bestIntervalSolution.isPresent();</span>
+    }
+
+    // -------------------------------------------------------------------------
+    // SearchMethod Implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public SearchStatistics solve() {
+<span class="fc" id="L837">        return solve(stats -&gt; false);</span>
+    }
+
+    /**
+     * Solves the feasibility model under a wall-clock timeout in seconds.
+     *
+     * @param timeLimitInSeconds timeout in seconds
+     * @return aggregated search statistics
+     */
+    public SearchStatistics solve(int timeLimitInSeconds) {
+<span class="fc" id="L847">        setObjectiveInternal(null);</span>
+<span class="pc bpc" id="L848" title="1 of 2 branches missed.">        if (phases.isEmpty()) {</span>
+<span class="fc" id="L849">            withDefaultPhasePlan();</span>
+        }
+<span class="fc" id="L851">        resetRunMetrics();</span>
+<span class="fc" id="L852">        this.activeLimit = null;</span>
+<span class="fc" id="L853">        start(timeLimitInSeconds);</span>
+<span class="fc" id="L854">        syncLiveStats(null);</span>
+<span class="fc" id="L855">        return liveStats;</span>
+    }
+
+    @Override
+    public SearchStatistics solve(Predicate&lt;SearchStatistics&gt; limit) {
+<span class="fc" id="L860">        setObjectiveInternal(null);</span>
+<span class="fc" id="L861">        return runWithLimit(limit, null);</span>
+    }
+
+    @Override
+    public SearchStatistics solveSubjectTo(Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
+<span class="nc" id="L866">        setObjectiveInternal(null);</span>
+<span class="nc" id="L867">        return runWithLimit(limit, subjectTo);</span>
+    }
+
+    @Override
+    public SearchStatistics optimize(Objective obj) {
+<span class="nc" id="L872">        return optimize(obj, stats -&gt; false);</span>
+    }
+
+    /**
+     * Optimizes the given objective under a wall-clock timeout in seconds.
+     *
+     * @param obj                symbolic objective to minimize or maximize
+     * @param timeLimitInSeconds timeout in seconds
+     * @return aggregated search statistics
+     */
+    public SearchStatistics optimize(Objective obj, int timeLimitInSeconds) {
+<span class="fc" id="L883">        setObjectiveInternal(obj);</span>
+<span class="pc bpc" id="L884" title="1 of 2 branches missed.">        if (phases.isEmpty()) {</span>
+<span class="fc" id="L885">            withDefaultPhasePlan();</span>
+        }
+<span class="fc" id="L887">        resetRunMetrics();</span>
+<span class="fc" id="L888">        this.activeLimit = null;</span>
+<span class="fc" id="L889">        start(timeLimitInSeconds);</span>
+<span class="fc" id="L890">        syncLiveStats(null);</span>
+<span class="fc" id="L891">        return liveStats;</span>
+    }
+
+    @Override
+    public SearchStatistics optimize(Objective obj, Predicate&lt;SearchStatistics&gt; limit) {
+<span class="nc" id="L896">        setObjectiveInternal(obj);</span>
+<span class="nc" id="L897">        return runWithLimit(limit, null);</span>
+    }
+
+    @Override
+    public SearchStatistics optimizeSubjectTo(Objective objToTighten, Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
+<span class="fc" id="L902">        setObjectiveInternal(objToTighten);</span>
+<span class="fc" id="L903">        return runWithLimit(limit, subjectTo);</span>
+    }
+
+    @Override
+    public SearchStatistics optimize(org.maxicp.search.Objective obj) {
+<span class="fc" id="L908">        return optimize(obj, stats -&gt; false);</span>
+    }
+
+    /**
+     * Optimizes the given low-level objective within the specified time limit (in seconds).
+     */
+    public SearchStatistics optimize(org.maxicp.search.Objective obj, int timeLimitInSeconds) {
+<span class="fc" id="L915">        long budgetMillis = Math.max(1L, timeLimitInSeconds) * 1000L;</span>
+<span class="pc bpc" id="L916" title="1 of 2 branches missed.">        return optimize(obj, stats -&gt; stats.timeInMillis() &gt;= budgetMillis);</span>
+    }
+
+    @Override
+    public SearchStatistics optimize(org.maxicp.search.Objective toTighten, Predicate&lt;SearchStatistics&gt; limit) {
+<span class="fc" id="L921">        return optimizeSubjectTo(toTighten, limit, null);</span>
+    }
+
+    @Override
+    public SearchStatistics optimizeSubjectTo(
+            org.maxicp.search.Objective objToTighten,
+            Predicate&lt;SearchStatistics&gt; limit,
+            Runnable subjectTo) {
+<span class="pc bpc" id="L929" title="1 of 2 branches missed.">        if (objToTighten instanceof Minimize min) {</span>
+<span class="fc" id="L930">            return optimizeSubjectTo(new Minimization(min.getVar()), limit, subjectTo);</span>
+        }
+<span class="nc bnc" id="L932" title="All 2 branches missed.">        if (objToTighten instanceof Maximize max) {</span>
+<span class="nc" id="L933">            return optimizeSubjectTo(new Maximization(max.getVar()), limit, subjectTo);</span>
+        }
+<span class="nc bnc" id="L935" title="All 2 branches missed.">        if (!model.isConcrete()) {</span>
+<span class="nc" id="L936">            return model.runCP(() -&gt; executeLowLevelObjective(objToTighten, limit, subjectTo));</span>
+        }
+<span class="nc" id="L938">        return executeLowLevelObjective(objToTighten, limit, subjectTo);</span>
+    }
+
+    private SearchStatistics executeLowLevelObjective(
+            org.maxicp.search.Objective objToTighten,
+            Predicate&lt;SearchStatistics&gt; limit,
+            Runnable subjectTo) {
+<span class="nc" id="L945">        resetRunMetrics();</span>
+<span class="nc" id="L946">        this.activeLimit = limit;</span>
+<span class="nc" id="L947">        model.getConcreteModel().getStateManager().withNewState(() -&gt; {</span>
+            try {
+<span class="nc bnc" id="L949" title="All 2 branches missed.">                if (subjectTo != null) {</span>
+<span class="nc" id="L950">                    subjectTo.run();</span>
+                }
+<span class="nc" id="L952">                Supplier&lt;Runnable[]&gt; branching = tieredFdsBranching(new Random(42L));</span>
+<span class="nc" id="L953">                DFSearch dfs = createSubSearch(branching);</span>
+<span class="nc" id="L954">                dfs.onSolution(this::recordSolutionFromCurrentState);</span>
+<span class="nc" id="L955">                SearchStatistics st = dfs.optimize(objToTighten,</span>
+<span class="nc" id="L956">                        s -&gt; shouldAbortSubSearch(s, searchStartMillis, Long.MAX_VALUE, Integer.MAX_VALUE));</span>
+<span class="nc" id="L957">                accumulateSubSearchStats(st);</span>
+<span class="nc bnc" id="L958" title="All 4 branches missed.">                if (st.isCompleted() &amp;&amp; !isLimitReached()) {</span>
+<span class="nc" id="L959">                    liveStats.setCompleted();</span>
+                }
+<span class="nc" id="L961">            } catch (InconsistencyException ignored) {</span>
+<span class="nc" id="L962">                liveStats.setCompleted();</span>
+<span class="nc" id="L963">            }</span>
+<span class="nc" id="L964">        });</span>
+<span class="nc" id="L965">        syncLiveStats(null);</span>
+<span class="nc" id="L966">        return liveStats;</span>
+    }
+
+    private SearchStatistics runWithLimit(Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
+<span class="fc bfc" id="L970" title="All 2 branches covered.">        if (!model.isConcrete()) {</span>
+            try {
+<span class="fc" id="L972">                return model.runCP(() -&gt; runWithLimitInConcreteContext(limit, subjectTo));</span>
+<span class="nc" id="L973">            } catch (InconsistencyException e) {</span>
+<span class="nc" id="L974">                resetRunMetrics();</span>
+<span class="nc" id="L975">                lastStatus = SearchStatus.UNSAT;</span>
+<span class="nc" id="L976">                liveStats.setCompleted();</span>
+<span class="nc" id="L977">                return liveStats;</span>
+            }
+        }
+<span class="fc" id="L980">        return runWithLimitInConcreteContext(limit, subjectTo);</span>
+    }
+
+    private SearchStatistics runWithLimitInConcreteContext(Predicate&lt;SearchStatistics&gt; limit, Runnable subjectTo) {
+<span class="fc" id="L984">        resetRunMetrics();</span>
+<span class="fc" id="L985">        this.activeLimit = limit;</span>
+<span class="fc" id="L986">        model.getConcreteModel().getStateManager().withNewState(() -&gt; {</span>
+            try {
+<span class="pc bpc" id="L988" title="1 of 2 branches missed.">                if (subjectTo != null) {</span>
+<span class="nc" id="L989">                    subjectTo.run();</span>
+                }
+<span class="fc" id="L991">                ensureCpCache();</span>
+<span class="pc bpc" id="L992" title="1 of 4 branches missed.">                if (vars.isEmpty() &amp;&amp; intervals.isEmpty()) {</span>
+<span class="nc" id="L993">                    recordSolutionFromCurrentState();</span>
+<span class="nc" id="L994">                    liveStats.setCompleted();</span>
+<span class="nc bnc" id="L995" title="All 2 branches missed.">                    lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;</span>
+<span class="nc" id="L996">                    return;</span>
+                }
+<span class="pc bpc" id="L998" title="1 of 2 branches missed.">                if (phases.isEmpty()) {</span>
+<span class="fc" id="L999">                    withDefaultPhasePlan();</span>
+                }
+
+                // Execute iterative rounds with exponentially growing round budgets until proven optimal/SAT/UNSAT or limit
+<span class="fc" id="L1003">                long roundBudgetMillis = 250L;</span>
+<span class="fc" id="L1004">                SearchStatus globalStatus = SearchStatus.UNKNOWN;</span>
+<span class="pc bpc" id="L1005" title="1 of 2 branches missed.">                while (!isLimitReached()) {</span>
+<span class="pc bpc" id="L1006" title="1 of 2 branches missed.">                    for (Phase phase : phases) {</span>
+<span class="pc bpc" id="L1007" title="1 of 2 branches missed.">                        if (isLimitReached()) {</span>
+<span class="nc" id="L1008">                            break;</span>
+                        }
+<span class="pc bpc" id="L1010" title="3 of 4 branches missed.">                        if (phase.requiresFeasible &amp;&amp; !hasAnyIncumbent()) {</span>
+<span class="nc" id="L1011">                            continue;</span>
+                        }
+<span class="fc" id="L1013">                        long phaseBudget = Math.max(25L, Math.round(roundBudgetMillis * phase.timeShare));</span>
+<span class="fc" id="L1014">                        executedPhaseNames.add(phase.name);</span>
+<span class="fc" id="L1015">                        SearchStatus status = phase.search.run(phaseBudget);</span>
+<span class="fc" id="L1016">                        globalStatus = mergeStatus(globalStatus, status);</span>
+<span class="pc bpc" id="L1017" title="1 of 4 branches missed.">                        if (objective == null &amp;&amp; hasAnyIncumbent()) {</span>
+<span class="fc" id="L1018">                            lastStatus = SearchStatus.SAT;</span>
+<span class="fc" id="L1019">                            return;</span>
+                        }
+<span class="pc bpc" id="L1021" title="3 of 4 branches missed.">                        if (status == SearchStatus.PROVEN_OPTIMAL || status == SearchStatus.UNSAT) {</span>
+<span class="fc" id="L1022">                            liveStats.setCompleted();</span>
+<span class="fc" id="L1023">                            lastStatus = status;</span>
+<span class="fc" id="L1024">                            return;</span>
+                        }
+<span class="nc" id="L1026">                    }</span>
+<span class="nc" id="L1027">                    roundBudgetMillis = Math.min(8000L, roundBudgetMillis * 2L);</span>
+                }
+<span class="nc" id="L1029">                lastStatus = globalStatus;</span>
+<span class="nc" id="L1030">            } catch (InconsistencyException e) {</span>
+<span class="nc bnc" id="L1031" title="All 2 branches missed.">                lastStatus = hasAnyIncumbent() ? SearchStatus.PROVEN_OPTIMAL : SearchStatus.UNSAT;</span>
+<span class="nc" id="L1032">                liveStats.setCompleted();</span>
+<span class="nc" id="L1033">            }</span>
+<span class="nc" id="L1034">        });</span>
+<span class="fc" id="L1035">        syncLiveStats(null);</span>
+<span class="fc" id="L1036">        return liveStats;</span>
+    }
+
+    /** Returns the overall status of the most recent search run. */
+    public SearchStatus status() {
+<span class="fc" id="L1041">        return lastStatus;</span>
     }
 
     /** Returns the best incumbent solution found so far, if any. */
     public Optional&lt;List&lt;Integer&gt;&gt; bestSolution() {
-<span class="fc" id="L441">        return bestSolution.map(List::copyOf);</span>
+<span class="fc" id="L1046">        return bestSolution.map(List::copyOf);</span>
+    }
+
+    /** Returns the best incumbent interval snapshots found so far, if any. */
+    public Optional&lt;List&lt;IntervalSnapshot&gt;&gt; bestIntervalSolution() {
+<span class="fc" id="L1051">        return bestIntervalSolution;</span>
+    }
+
+    /**
+     * Returns the value of {@code var} in the best incumbent solution found so far, if available.
+     */
+    public Optional&lt;Integer&gt; bestValue(IntExpression var) {
+<span class="nc" id="L1058">        Integer v = bestVarValues.get(var);</span>
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">        if (v != null) {</span>
+<span class="nc" id="L1060">            return Optional.of(v);</span>
+        }
+<span class="nc bnc" id="L1062" title="All 4 branches missed.">        if (var != null &amp;&amp; var.isFixed()) {</span>
+<span class="nc" id="L1063">            return Optional.of(var.min());</span>
+        }
+<span class="nc" id="L1065">        return Optional.empty();</span>
+    }
+
+    /**
+     * Returns the values of the given expressions in the best incumbent solution found so far.
+     */
+    public Optional&lt;List&lt;Integer&gt;&gt; bestValues(IntExpression... targetVars) {
+<span class="nc bnc" id="L1072" title="All 4 branches missed.">        if (bestSolution.isEmpty() &amp;&amp; bestIntervalSolution.isEmpty()) {</span>
+<span class="nc" id="L1073">            return Optional.empty();</span>
+        }
+<span class="nc" id="L1075">        List&lt;Integer&gt; out = new ArrayList&lt;&gt;(targetVars.length);</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">        for (IntExpression expr : targetVars) {</span>
+<span class="nc" id="L1077">            Integer v = bestVarValues.get(expr);</span>
+<span class="nc bnc" id="L1078" title="All 2 branches missed.">            if (v != null) {</span>
+<span class="nc" id="L1079">                out.add(v);</span>
+<span class="nc bnc" id="L1080" title="All 2 branches missed.">            } else if (expr.isFixed()) {</span>
+<span class="nc" id="L1081">                out.add(expr.min());</span>
+            } else {
+<span class="nc" id="L1083">                return Optional.empty();</span>
+            }
+        }
+<span class="nc" id="L1086">        return Optional.of(Collections.unmodifiableList(out));</span>
+    }
+
+    /** Returns an unmodifiable view of the recorded variable values in the best solution. */
+    public Map&lt;IntExpression, Integer&gt; bestVarValuesMap() {
+<span class="fc" id="L1091">        return Collections.unmodifiableMap(bestVarValues);</span>
     }
 
     /** Returns the incumbent objective value, if any. */
     public Optional&lt;Integer&gt; bestObjectiveValue() {
-<span class="fc" id="L446">        return bestObjectiveValue;</span>
+<span class="fc" id="L1096">        return bestObjectiveValue;</span>
     }
 
     /** Returns phase names that were actually executed (in execution order). */
     public List&lt;String&gt; executedPhases() {
-<span class="fc" id="L451">        return List.copyOf(executedPhaseNames);</span>
+<span class="fc" id="L1101">        return List.copyOf(executedPhaseNames);</span>
     }
 
     Integer evaluateCurrentObjective() {
-<span class="fc" id="L455">        return evaluateObjective(objective);</span>
+<span class="fc" id="L1105">        CPIntVar objVar = currentObjCpVar();</span>
+<span class="fc bfc" id="L1106" title="All 2 branches covered.">        if (objVar != null) {</span>
+<span class="fc" id="L1107">            return objVar.min();</span>
+        }
+<span class="fc" id="L1109">        return evaluateObjective(objective);</span>
     }
 
     public void updateObjective(Integer objectiveValue) {
-<span class="fc bfc" id="L459" title="All 2 branches covered.">        if (objectiveValue == null) {</span>
-<span class="fc" id="L460">            return;</span>
+<span class="fc bfc" id="L1113" title="All 2 branches covered.">        if (objectiveValue == null) {</span>
+<span class="fc" id="L1114">            return;</span>
         }
-<span class="fc bfc" id="L462" title="All 2 branches covered.">        if (bestObjectiveValue.isEmpty()) {</span>
-<span class="fc" id="L463">            bestObjectiveValue = Optional.of(objectiveValue);</span>
-<span class="fc" id="L464">            logProgress(&quot;[blackbox] objective initialized to %d&quot;.formatted(objectiveValue));</span>
-<span class="fc" id="L465">            return;</span>
+<span class="fc bfc" id="L1116" title="All 2 branches covered.">        if (bestObjectiveValue.isEmpty()) {</span>
+<span class="fc" id="L1117">            bestObjectiveValue = Optional.of(objectiveValue);</span>
+<span class="fc" id="L1118">            logProgress(&quot;[blackbox] objective initialized to %d&quot;.formatted(objectiveValue));</span>
+<span class="fc" id="L1119">            return;</span>
         }
-<span class="fc" id="L467">        int incumbent = bestObjectiveValue.get();</span>
-<span class="pc bpc" id="L468" title="3 of 4 branches missed.">        if (objective instanceof Maximization &amp;&amp; objectiveValue &gt; incumbent) {</span>
-<span class="nc" id="L469">            bestObjectiveValue = Optional.of(objectiveValue);</span>
-<span class="nc" id="L470">            logProgress(&quot;[blackbox] objective improved %d -&gt; %d&quot;.formatted(incumbent, objectiveValue));</span>
+<span class="fc" id="L1121">        int incumbent = bestObjectiveValue.get();</span>
+<span class="pc bpc" id="L1122" title="2 of 6 branches missed.">        if ((objective instanceof Maximization || objective instanceof SharedMaximization) &amp;&amp; objectiveValue &gt; incumbent) {</span>
+<span class="fc" id="L1123">            bestObjectiveValue = Optional.of(objectiveValue);</span>
+<span class="fc" id="L1124">            logProgress(&quot;[blackbox] objective improved %d -&gt; %d&quot;.formatted(incumbent, objectiveValue));</span>
         }
-<span class="pc bpc" id="L472" title="2 of 4 branches missed.">        if (objective instanceof Minimization &amp;&amp; objectiveValue &lt; incumbent) {</span>
-<span class="fc" id="L473">            bestObjectiveValue = Optional.of(objectiveValue);</span>
-<span class="fc" id="L474">            logProgress(&quot;[blackbox] objective improved %d -&gt; %d&quot;.formatted(incumbent, objectiveValue));</span>
+<span class="pc bpc" id="L1126" title="2 of 6 branches missed.">        if ((objective instanceof Minimization || objective instanceof SharedMinimization) &amp;&amp; objectiveValue &lt; incumbent) {</span>
+<span class="fc" id="L1127">            bestObjectiveValue = Optional.of(objectiveValue);</span>
+<span class="fc" id="L1128">            logProgress(&quot;[blackbox] objective improved %d -&gt; %d&quot;.formatted(incumbent, objectiveValue));</span>
         }
-<span class="fc" id="L476">    }</span>
+<span class="fc" id="L1130">    }</span>
 
     void postIncumbentCut() {
-<span class="pc bpc" id="L479" title="1 of 4 branches missed.">        if (objective == null || bestObjectiveValue.isEmpty()) {</span>
-<span class="fc" id="L480">            return;</span>
+<span class="fc" id="L1133">        postIncumbentCut(true);</span>
+<span class="fc" id="L1134">    }</span>
+
+    void postIncumbentCut(boolean enforceFixPoint) {
+<span class="fc bfc" id="L1137" title="All 4 branches covered.">        if (objective == null || bestObjectiveValue.isEmpty()) {</span>
+<span class="fc" id="L1138">            return;</span>
         }
-<span class="fc" id="L482">        int incumbent = bestObjectiveValue.get();</span>
-<span class="pc bpc" id="L483" title="2 of 3 branches missed.">        switch (objective) {</span>
-<span class="fc" id="L484">            case Minimization min -&gt; model.add(Factory.lt(min.expr(), incumbent));</span>
-<span class="nc" id="L485">            case Maximization max -&gt; model.add(Factory.gt(max.expr(), incumbent));</span>
-<span class="nc" id="L486">            default -&gt; throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
+<span class="fc" id="L1140">        int incumbent = bestObjectiveValue.get();</span>
+<span class="fc" id="L1141">        CPIntVar objVar = currentObjCpVar();</span>
+<span class="pc bpc" id="L1142" title="2 of 4 branches missed.">        if (objVar != null &amp;&amp; cachedConcreteModel instanceof ConcreteCPModel cpm) {</span>
+<span class="pc bpc" id="L1143" title="1 of 4 branches missed.">            if (objective instanceof Minimization || objective instanceof SharedMinimization) {</span>
+<span class="fc" id="L1144">                objVar.removeAbove(incumbent - 1);</span>
+<span class="pc bpc" id="L1145" title="3 of 4 branches missed.">            } else if (objective instanceof Maximization || objective instanceof SharedMaximization) {</span>
+<span class="fc" id="L1146">                objVar.removeBelow(incumbent + 1);</span>
+            }
+<span class="fc bfc" id="L1148" title="All 2 branches covered.">            if (enforceFixPoint) {</span>
+<span class="fc" id="L1149">                cpm.solver.fixPoint();</span>
+            }
+<span class="fc" id="L1151">            return;</span>
         }
-<span class="fc" id="L488">    }</span>
+<span class="nc bnc" id="L1153" title="All 5 branches missed.">        switch (objective) {</span>
+<span class="nc" id="L1154">            case Minimization min -&gt; model.add(Factory.lt(min.expr(), incumbent), enforceFixPoint);</span>
+<span class="nc" id="L1155">            case SharedMinimization min -&gt; model.add(Factory.lt(min.expr, incumbent), enforceFixPoint);</span>
+<span class="nc" id="L1156">            case Maximization max -&gt; model.add(Factory.gt(max.expr(), incumbent), enforceFixPoint);</span>
+<span class="nc" id="L1157">            case SharedMaximization max -&gt; model.add(Factory.gt(max.expr, incumbent), enforceFixPoint);</span>
+<span class="nc" id="L1158">            default -&gt; throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
+        }
+<span class="nc" id="L1160">    }</span>
+
+    private static IntExpression extractObjectiveExpr(Objective objective) {
+<span class="fc bfc" id="L1163" title="All 2 branches covered.">        if (objective == null) {</span>
+<span class="fc" id="L1164">            return null;</span>
+        }
+<span class="pc bpc" id="L1166" title="3 of 5 branches missed.">        return switch (objective) {</span>
+<span class="fc" id="L1167">            case Minimization min -&gt; min.expr();</span>
+<span class="nc" id="L1168">            case SharedMinimization min -&gt; min.expr;</span>
+<span class="fc" id="L1169">            case Maximization max -&gt; max.expr();</span>
+<span class="nc" id="L1170">            case SharedMaximization max -&gt; max.expr;</span>
+<span class="nc" id="L1171">            default -&gt; throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
+        };
+    }
 
     static Integer evaluateObjective(Objective objective) {
-<span class="fc bfc" id="L491" title="All 2 branches covered.">        if (objective == null) {</span>
-<span class="fc" id="L492">            return null;</span>
+<span class="pc bpc" id="L1176" title="1 of 2 branches missed.">        if (objective == null) {</span>
+<span class="fc" id="L1177">            return null;</span>
         }
-<span class="pc bpc" id="L494" title="2 of 3 branches missed.">        IntExpression expr = switch (objective) {</span>
-<span class="fc" id="L495">            case Minimization min -&gt; min.expr();</span>
-<span class="nc" id="L496">            case Maximization max -&gt; max.expr();</span>
-<span class="pc" id="L497">            default -&gt; throw new IllegalStateException(&quot;Unsupported objective type: &quot; + objective.getClass());</span>
-        };
+<span class="nc" id="L1179">        IntExpression expr = extractObjectiveExpr(objective);</span>
         try {
-<span class="fc" id="L500">            return expr.evaluate();</span>
-<span class="nc" id="L501">        } catch (VariableNotFixedException e) {</span>
-<span class="nc" id="L502">            throw new IllegalStateException(&quot;Objective expression should be fixed on solution&quot;, e);</span>
+<span class="nc" id="L1181">            return expr.evaluate();</span>
+<span class="nc" id="L1182">        } catch (VariableNotFixedException e) {</span>
+<span class="nc" id="L1183">            throw new IllegalStateException(&quot;Objective expression should be fixed on solution&quot;, e);</span>
         }
     }
 
     private static SearchStatus mergeStatus(SearchStatus current, SearchStatus candidate) {
-<span class="pc bpc" id="L507" title="1 of 4 branches missed.">        if (candidate == SearchStatus.PROVEN_OPTIMAL || candidate == SearchStatus.UNSAT) {</span>
-<span class="fc" id="L508">            return candidate;</span>
+<span class="pc bpc" id="L1188" title="1 of 4 branches missed.">        if (candidate == SearchStatus.PROVEN_OPTIMAL || candidate == SearchStatus.UNSAT) {</span>
+<span class="fc" id="L1189">            return candidate;</span>
         }
-<span class="pc bpc" id="L510" title="2 of 4 branches missed.">        if (current == SearchStatus.PROVEN_OPTIMAL || current == SearchStatus.UNSAT) {</span>
-<span class="nc" id="L511">            return current;</span>
+<span class="pc bpc" id="L1191" title="2 of 4 branches missed.">        if (current == SearchStatus.PROVEN_OPTIMAL || current == SearchStatus.UNSAT) {</span>
+<span class="nc" id="L1192">            return current;</span>
         }
-<span class="fc" id="L513">        List&lt;SearchStatus&gt; ranking = List.of(</span>
+<span class="fc" id="L1194">        List&lt;SearchStatus&gt; ranking = List.of(</span>
                 SearchStatus.UNKNOWN,
                 SearchStatus.NOT_IMPROVED,
                 SearchStatus.SAT,
                 SearchStatus.IMPROVED);
-<span class="fc" id="L518">        int currentRank = ranking.indexOf(current);</span>
-<span class="fc" id="L519">        int candidateRank = ranking.indexOf(candidate);</span>
-<span class="fc bfc" id="L520" title="All 2 branches covered.">        if (candidateRank &gt; currentRank) {</span>
-<span class="fc" id="L521">            return candidate;</span>
+<span class="fc" id="L1199">        int currentRank = ranking.indexOf(current);</span>
+<span class="fc" id="L1200">        int candidateRank = ranking.indexOf(candidate);</span>
+<span class="fc bfc" id="L1201" title="All 2 branches covered.">        if (candidateRank &gt; currentRank) {</span>
+<span class="fc" id="L1202">            return candidate;</span>
         }
-<span class="fc" id="L523">        return current;</span>
+<span class="fc" id="L1204">        return current;</span>
     }
 
     public void updateSolution(List&lt;Integer&gt; solution) {
-<span class="fc" id="L527">        boolean first = bestSolution.isEmpty();</span>
-<span class="fc" id="L528">        solutionCount++;</span>
-<span class="fc" id="L529">        bestSolution = Optional.of(Collections.unmodifiableList(new ArrayList&lt;&gt;(solution)));</span>
-<span class="fc" id="L530">        logProgress(&quot;[blackbox] solution #%d found%s&quot;.formatted(solutionCount, formatSolutionPreview(solution)));</span>
-<span class="fc bfc" id="L531" title="All 2 branches covered.">        if (!first)</span>
-<span class="fc" id="L532">            logTrace(&quot;[blackbox] incumbent updated&quot;);</span>
-<span class="fc bfc" id="L533" title="All 2 branches covered.">        for (RunnableSearch search : registeredSearches()) {</span>
-<span class="fc" id="L534">            search.updateSolution(solution);</span>
-<span class="fc" id="L535">        }</span>
-<span class="fc" id="L536">    }</span>
+<span class="fc" id="L1208">        boolean first = bestSolution.isEmpty();</span>
+<span class="fc" id="L1209">        solutionCount++;</span>
+<span class="fc" id="L1210">        List&lt;Integer&gt; copy = Collections.unmodifiableList(new ArrayList&lt;&gt;(solution));</span>
+<span class="fc" id="L1211">        bestSolution = Optional.of(copy);</span>
+<span class="pc bpc" id="L1212" title="1 of 2 branches missed.">        if (copy.size() == vars.size()) {</span>
+<span class="fc bfc" id="L1213" title="All 2 branches covered.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L1214">                bestVarValues.put(vars.get(i), copy.get(i));</span>
+            }
+        }
+<span class="fc bfc" id="L1217" title="All 2 branches covered.">        if (sharedConflictBranching != null) {</span>
+<span class="fc" id="L1218">            sharedConflictBranching.updateIncumbent(copy);</span>
+        }
+<span class="fc" id="L1220">        logProgress(&quot;[blackbox] solution #%d found%s&quot;.formatted(solutionCount, formatSolutionPreview(solution)));</span>
+<span class="fc bfc" id="L1221" title="All 2 branches covered.">        if (!first)</span>
+<span class="fc" id="L1222">            logTrace(&quot;[blackbox] incumbent updated&quot;);</span>
+<span class="fc bfc" id="L1223" title="All 2 branches covered.">        for (RunnableSearch search : registeredSearches()) {</span>
+<span class="fc" id="L1224">            search.updateSolution(copy);</span>
+<span class="fc" id="L1225">        }</span>
+<span class="pc bpc" id="L1226" title="1 of 2 branches missed.">        if (incumbentListener != null) {</span>
+<span class="nc" id="L1227">            incumbentListener.accept(copy, bestObjectiveValue.orElse(null));</span>
+        }
+<span class="fc" id="L1229">    }</span>
 
     private Set&lt;RunnableSearch&gt; registeredSearches() {
-<span class="fc" id="L539">        Set&lt;RunnableSearch&gt; unique = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
-<span class="fc bfc" id="L540" title="All 2 branches covered.">        for (Phase phase : phases) {</span>
-<span class="fc" id="L541">            unique.add(phase.search);</span>
-<span class="fc" id="L542">        }</span>
-<span class="fc" id="L543">        return unique;</span>
+<span class="fc" id="L1232">        Set&lt;RunnableSearch&gt; unique = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc bfc" id="L1233" title="All 2 branches covered.">        for (Phase phase : phases) {</span>
+<span class="fc" id="L1234">            unique.add(phase.search);</span>
+<span class="fc" id="L1235">        }</span>
+<span class="fc" id="L1236">        return unique;</span>
     }
 
     void logPhase(String msg) {
-<span class="pc bpc" id="L547" title="1 of 2 branches missed.">        if (verbosity.ordinal() &gt;= Verbosity.PHASE.ordinal()) {</span>
-<span class="nc" id="L548">            System.out.println(msg);</span>
+<span class="pc bpc" id="L1240" title="1 of 2 branches missed.">        if (verbosity.ordinal() &gt;= Verbosity.PHASE.ordinal()) {</span>
+<span class="nc" id="L1241">            System.out.println(msg);</span>
         }
-<span class="fc" id="L550">    }</span>
+<span class="fc" id="L1243">    }</span>
 
     void logProgress(String msg) {
-<span class="fc bfc" id="L553" title="All 2 branches covered.">        if (verbosity.ordinal() &gt;= Verbosity.PROGRESS.ordinal()) {</span>
-<span class="fc" id="L554">            System.out.println(msg);</span>
+<span class="fc bfc" id="L1246" title="All 2 branches covered.">        if (verbosity.ordinal() &gt;= Verbosity.PROGRESS.ordinal()) {</span>
+<span class="fc" id="L1247">            System.out.println(msg);</span>
         }
-<span class="fc" id="L556">    }</span>
+<span class="fc" id="L1249">    }</span>
 
     void logTrace(String msg) {
-<span class="pc bpc" id="L559" title="1 of 2 branches missed.">        if (verbosity.ordinal() &gt;= Verbosity.TRACE.ordinal()) {</span>
-<span class="nc" id="L560">            System.out.println(msg);</span>
+<span class="pc bpc" id="L1252" title="1 of 2 branches missed.">        if (verbosity.ordinal() &gt;= Verbosity.TRACE.ordinal()) {</span>
+<span class="nc" id="L1253">            System.out.println(msg);</span>
         }
-<span class="fc" id="L562">    }</span>
+<span class="fc" id="L1255">    }</span>
 
     String formatStats(SearchStatistics stats) {
-<span class="fc" id="L565">        return &quot;nodes=%d fails=%d sols=%d completed=%s timeMs=%d&quot;</span>
-<span class="fc" id="L566">                .formatted(stats.numberOfNodes(), stats.numberOfFailures(), stats.numberOfSolutions(),</span>
-<span class="fc" id="L567">                        stats.isCompleted(), stats.timeInMillis());</span>
+<span class="fc" id="L1258">        return &quot;nodes=%d fails=%d sols=%d completed=%s timeMs=%d&quot;</span>
+<span class="fc" id="L1259">                .formatted(stats.numberOfNodes(), stats.numberOfFailures(), stats.numberOfSolutions(),</span>
+<span class="fc" id="L1260">                        stats.isCompleted(), stats.timeInMillis());</span>
     }
 
     private String formatSolutionPreview(List&lt;Integer&gt; solution) {
-<span class="fc" id="L571">        int maxLen = Math.min(8, solution.size());</span>
-<span class="fc bfc" id="L572" title="All 2 branches covered.">        return &quot; (first vars=&quot; + solution.subList(0, maxLen) + (solution.size() &gt; maxLen ? &quot;, ...&quot; : &quot;&quot;) + &quot;)&quot;;</span>
+<span class="fc" id="L1264">        int maxLen = Math.min(8, solution.size());</span>
+<span class="fc bfc" id="L1265" title="All 2 branches covered.">        return &quot; (first vars=&quot; + solution.subList(0, maxLen) + (solution.size() &gt; maxLen ? &quot;, ...&quot; : &quot;&quot;) + &quot;)&quot;;</span>
     }
 
     public List&lt;RunnableSearch&gt; getRunnableSearches() {
-<span class="nc" id="L576">        return phases.stream().map(p -&gt; p.search).toList();</span>
+<span class="fc" id="L1269">        return phases.stream().map(p -&gt; p.search).toList();</span>
     }
 
 }

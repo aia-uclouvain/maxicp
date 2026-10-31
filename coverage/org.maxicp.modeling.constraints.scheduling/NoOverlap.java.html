@@ -3,6 +3,11 @@
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
-<span class="fc" id="L6">public record NoOverlap(IntervalVar... intervals) implements ConstraintFromRecord {</span>
+/**
+ * Disjunctive scheduling constraint ensuring that no two present intervals in {@code intervals} overlap in time.
+ *
+ * @param intervals the interval variables that must not overlap
+ */
+<span class="fc" id="L11">public record NoOverlap(IntervalVar... intervals) implements ConstraintFromRecord {</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

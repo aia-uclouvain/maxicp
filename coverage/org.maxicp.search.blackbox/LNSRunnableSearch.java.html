@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LNSRunnableSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">LNSRunnableSearch.java</span></div><h1>LNSRunnableSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.Constraint;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.algebra.Expression;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.FDSModeling;
 import org.maxicp.search.SearchStatistics;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public class LNSRunnableSearch extends RunnableSearch {
 
@@ -31,15 +33,18 @@ public class LNSRunnableSearch extends RunnableSearch {
     private final double randomSwapProbability;
     private final FragmentSelector fragmentSelector;
 
+    private ConcreteModel cachedConcreteModel;
+    private CPIntVar[] cpVars;
+
     public LNSRunnableSearch(BlackBoxSearch blackBoxSearch, ModelDispatcher model, List&lt;IntExpression&gt; vars,
                              org.maxicp.modeling.symbolic.Objective objective,
                              int failureLimitPerRestart,
                              int freezeRatePercent,
                              double randomSwapProbability,
                              long randomSeed) {
-<span class="fc" id="L40">        this(blackBoxSearch, model, vars, objective, failureLimitPerRestart, freezeRatePercent,</span>
+<span class="fc" id="L45">        this(blackBoxSearch, model, vars, objective, failureLimitPerRestart, freezeRatePercent,</span>
                 randomSwapProbability, randomSeed, BlackBoxSearch.FragmentSelectionStrategy.RANDOM_UNIFORM);
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L47">    }</span>
 
     public LNSRunnableSearch(BlackBoxSearch blackBoxSearch, ModelDispatcher model, List&lt;IntExpression&gt; vars,
                              org.maxicp.modeling.symbolic.Objective objective,
@@ -48,19 +53,19 @@ public class LNSRunnableSearch extends RunnableSearch {
                              double randomSwapProbability,
                              long randomSeed,
                              BlackBoxSearch.FragmentSelectionStrategy fragmentSelectionStrategy) {
-<span class="fc" id="L51">        super(blackBoxSearch);</span>
-<span class="fc" id="L52">        this.model = model;</span>
-<span class="fc" id="L53">        this.vars = List.copyOf(vars);</span>
-<span class="fc" id="L54">        this.decisionVars = model.getDecisionVariables();</span>
-<span class="fc" id="L55">        this.decisionVarIndices = computeDecisionVarIndices();</span>
-<span class="fc" id="L56">        this.objective = objective;</span>
-<span class="fc" id="L57">        this.feasibleSolution = Optional.empty();</span>
-<span class="fc" id="L58">        this.failureLimitPerRestart = failureLimitPerRestart;</span>
-<span class="fc" id="L59">        this.freezeRatePercent = freezeRatePercent;</span>
-<span class="fc" id="L60">        this.randomSwapProbability = randomSwapProbability;</span>
-<span class="fc" id="L61">        this.random = new Random(randomSeed);</span>
-<span class="fc" id="L62">        this.fragmentSelector = buildFragmentSelector(fragmentSelectionStrategy);</span>
-<span class="fc" id="L63">    }</span>
+<span class="fc" id="L56">        super(blackBoxSearch);</span>
+<span class="fc" id="L57">        this.model = model;</span>
+<span class="fc" id="L58">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L59">        this.decisionVars = model.getDecisionVariables();</span>
+<span class="fc" id="L60">        this.decisionVarIndices = computeDecisionVarIndices();</span>
+<span class="fc" id="L61">        this.objective = objective;</span>
+<span class="fc" id="L62">        this.feasibleSolution = Optional.empty();</span>
+<span class="fc" id="L63">        this.failureLimitPerRestart = failureLimitPerRestart;</span>
+<span class="fc" id="L64">        this.freezeRatePercent = freezeRatePercent;</span>
+<span class="fc" id="L65">        this.randomSwapProbability = randomSwapProbability;</span>
+<span class="fc" id="L66">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L67">        this.fragmentSelector = buildFragmentSelector(fragmentSelectionStrategy);</span>
+<span class="fc" id="L68">    }</span>
 
     /**
      * Compute the indices (in 'vars') of each decision variable.
@@ -68,285 +73,545 @@ public class LNSRunnableSearch extends RunnableSearch {
      * in the incumbent solution list.
      */
     private List&lt;Integer&gt; computeDecisionVarIndices() {
-<span class="fc" id="L71">        List&lt;Integer&gt; indices = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L72">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.size(); i++) {</span>
-<span class="fc" id="L74">            varToIndex.put(vars.get(i), i);</span>
+<span class="fc" id="L76">        List&lt;Integer&gt; indices = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L77">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L79">            varToIndex.put(vars.get(i), i);</span>
         }
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (IntExpression dvar : decisionVars) {</span>
-<span class="fc" id="L77">            Integer idx = varToIndex.get(dvar);</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">            if (idx != null) {</span>
-<span class="fc" id="L79">                indices.add(idx);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (IntExpression dvar : decisionVars) {</span>
+<span class="fc" id="L82">            Integer idx = varToIndex.get(dvar);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (idx != null) {</span>
+<span class="fc" id="L84">                indices.add(idx);</span>
             }
-<span class="fc" id="L81">        }</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (indices.isEmpty()) {</span>
+<span class="fc" id="L86">        }</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        if (indices.isEmpty()) {</span>
             // Fallback: when inference misses this model shape, keep LNS operational on provided vars.
-<span class="fc bfc" id="L84" title="All 2 branches covered.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
-<span class="fc" id="L85">                indices.add(i);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="nc" id="L90">                indices.add(i);</span>
             }
         }
-<span class="fc" id="L88">        return List.copyOf(indices);</span>
+<span class="fc" id="L93">        return List.copyOf(indices);</span>
     }
+
+    private List&lt;Integer&gt; computePrimaryDecisionVarIndices(ModelStructureAnalyzer structure) {
+<span class="fc" id="L97">        List&lt;Integer&gt; primary = new ArrayList&lt;&gt;(decisionVarIndices.size());</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (int idx : decisionVarIndices) {</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (!structure.isSecondary(idx)) {</span>
+<span class="fc" id="L100">                primary.add(idx);</span>
+            }
+<span class="fc" id="L102">        }</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        return primary.isEmpty() ? decisionVarIndices : List.copyOf(primary);</span>
+    }
+
+    private void ensureCpCache() {
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">        if (!model.isConcrete()) {</span>
+<span class="nc" id="L108">            return;</span>
+        }
+<span class="fc" id="L110">        ConcreteModel cm = model.getConcreteModel();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (cm != cachedConcreteModel) {</span>
+<span class="fc" id="L112">            cachedConcreteModel = cm;</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (cm instanceof ConcreteCPModel cpm) {</span>
+<span class="fc" id="L114">                cpVars = new CPIntVar[vars.size()];</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L116">                    cpVars[i] = cpm.getCPVar(vars.get(i));</span>
+                }
+            } else {
+<span class="nc" id="L119">                cpVars = null;</span>
+            }
+        }
+<span class="fc" id="L122">    }</span>
 
     @Override
     void updateSolution(List&lt;Integer&gt; solution) {
-<span class="fc" id="L93">        feasibleSolution = Optional.of(solution);</span>
-<span class="fc" id="L94">    }</span>
+<span class="fc" id="L126">        feasibleSolution = Optional.of(solution);</span>
+<span class="fc" id="L127">    }</span>
 
     @Override
     public SearchStatus run(long timeLimitInMillis) {
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (feasibleSolution.isEmpty()) {</span>
-<span class="nc" id="L99">            return SearchStatus.UNKNOWN; // no feasible solution found yet to start LNS</span>
-        } else {
-<span class="fc" id="L101">            AtomicBoolean improved = new AtomicBoolean(false);</span>
-<span class="fc" id="L102">            long t0 = System.currentTimeMillis();</span>
-<span class="fc" id="L103">            List&lt;Integer&gt; best = new ArrayList&lt;&gt;(feasibleSolution.get());</span>
-<span class="fc" id="L104">            int iteration = 0;</span>
-<span class="fc" id="L105">            int adaptiveFreezeRatePercent = clampFreezeRatePercent(freezeRatePercent);</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            DFSearch deterministicDfs = randomSwapProbability &lt;= 0.0 ? createDfs(0.0, best, improved) : null;</span>
-<span class="fc" id="L107">            blackBoxSearch.logPhase(&quot;[phase lns-improvement] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (!blackBoxSearch.intervals().isEmpty()) {</span>
+<span class="nc" id="L132">            return new SchedulingLNSRunnableSearch(</span>
+<span class="nc" id="L133">                    blackBoxSearch, model, blackBoxSearch.intervals(), vars, objective,</span>
+<span class="nc" id="L134">                    failureLimitPerRestart, freezeRatePercent, random.nextLong())</span>
+<span class="nc" id="L135">                    .run(timeLimitInMillis);</span>
+        }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        if (feasibleSolution.isEmpty()) {</span>
+<span class="nc" id="L138">            return SearchStatus.UNKNOWN; // no feasible solution found yet to start LNS</span>
+        }
+<span class="fc" id="L140">        ensureCpCache();</span>
+<span class="fc" id="L141">        ModelStructureAnalyzer structure = blackBoxSearch.structureAnalyzer();</span>
+<span class="fc" id="L142">        List&lt;Integer&gt; primaryDecisionVars = computePrimaryDecisionVarIndices(structure);</span>
+<span class="fc" id="L143">        ConflictDrivenBranching cdBranching = blackBoxSearch.conflictDrivenBranching(random);</span>
+<span class="fc" id="L144">        ImpactBasedFragmentSelector impactSelector = new ImpactBasedFragmentSelector(</span>
+<span class="fc" id="L145">                random, computePrimaryStructuralImpacts(structure, primaryDecisionVars));</span>
 
-<span class="fc" id="L109">            SearchStatistics lastStats = null;</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">            while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis) {</span>
-<span class="fc" id="L111">                iteration++;</span>
-<span class="fc" id="L112">                final List&lt;Integer&gt; incumbent = new ArrayList&lt;&gt;(best);</span>
-<span class="fc" id="L113">                final int restartFreezeRatePercent = adaptiveFreezeRatePercent;</span>
-<span class="fc" id="L114">                final double restartSwapProbability = randomSwapProbabilityForIteration(iteration);</span>
-<span class="fc" id="L115">                FragmentSelector.FragmentSelectionContext selectionContext =</span>
-                        new FragmentSelector.FragmentSelectionContext(decisionVarIndices, restartFreezeRatePercent, iteration);
-<span class="fc" id="L117">                final List&lt;Integer&gt; frozenIndices = fragmentSelector.selectFrozenIndices(selectionContext);</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">                DFSearch dfs = deterministicDfs != null</span>
-<span class="fc" id="L119">                        ? deterministicDfs</span>
-<span class="pc" id="L120">                        : createDfs(restartSwapProbability, best, improved);</span>
+<span class="fc" id="L147">        AtomicBoolean improved = new AtomicBoolean(false);</span>
+<span class="fc" id="L148">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L149">        List&lt;Integer&gt; best = new ArrayList&lt;&gt;(feasibleSolution.get());</span>
+<span class="fc" id="L150">        int iteration = 0;</span>
+<span class="fc" id="L151">        int stagnationIterations = 0;</span>
+<span class="fc" id="L152">        int adaptiveFreezeRatePercent = clampFreezeRatePercent(freezeRatePercent, primaryDecisionVars.size());</span>
 
-<span class="fc bfc" id="L122" title="All 2 branches covered.">                if (shouldLogProgressIteration(iteration)) {</span>
-<span class="fc" id="L123">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d incumbentKnown=%s freezeRate=%d swapProb=%.3f selector=%s frozen=%d/%d&quot;</span>
-<span class="fc" id="L124">                            .formatted(iteration,</span>
-<span class="fc" id="L125">                                    blackBoxSearch.bestObjectiveValue().map(Object::toString).orElse(&quot;n/a&quot;),</span>
-<span class="fc" id="L126">                                    restartFreezeRatePercent,</span>
-<span class="fc" id="L127">                                    restartSwapProbability,</span>
-<span class="fc" id="L128">                                    fragmentSelector.name(),</span>
-<span class="fc" id="L129">                                    frozenIndices.size(),</span>
-<span class="fc" id="L130">                                    decisionVarIndices.size()));</span>
-                }
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">                if (objective == null) {</span>
-<span class="nc" id="L133">                    lastStats = dfs.solveSubjectTo(stats -&gt; {</span>
-<span class="nc" id="L134">                        long elapsed = System.currentTimeMillis() - t0;</span>
-<span class="nc bnc" id="L135" title="All 4 branches missed.">                        return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
-                    }, () -&gt; {
-                        // Only freeze decision variables
-<span class="nc bnc" id="L138" title="All 2 branches missed.">                        for (int idx : frozenIndices) {</span>
-<span class="nc" id="L139">                            model.add(Factory.eq(vars.get(idx), incumbent.get(idx)));</span>
-<span class="nc" id="L140">                        }</span>
-<span class="nc" id="L141">                    });</span>
-                } else {
-<span class="fc" id="L143">                    lastStats = dfs.optimizeSubjectTo(objective,</span>
-                            stats -&gt; {
-<span class="fc" id="L145">                                long elapsed = System.currentTimeMillis() - t0;</span>
-<span class="fc bfc" id="L146" title="All 4 branches covered.">                                return elapsed &gt;= timeLimitInMillis || stats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
-                            }, () -&gt; {
-<span class="fc" id="L148">                                blackBoxSearch.postIncumbentCut();</span>
-                                // Only freeze decision variables
-<span class="fc bfc" id="L150" title="All 2 branches covered.">                                for (int idx : frozenIndices) {</span>
-<span class="fc" id="L151">                                    model.add(Factory.eq(vars.get(idx), incumbent.get(idx)));</span>
-<span class="fc" id="L152">                                }</span>
-<span class="fc" id="L153">                            });</span>
-                    //System.out.println(lastStats);
-                }
-<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (lastStats != null) {</span>
-<span class="fc" id="L157">                    blackBoxSearch.logTrace(&quot;[phase lns-improvement] iteration=%d stats: %s&quot;</span>
-<span class="fc" id="L158">                            .formatted(iteration, blackBoxSearch.formatStats(lastStats)));</span>
-                }
-<span class="pc bpc" id="L160" title="1 of 4 branches missed.">                boolean restartImproved = lastStats != null &amp;&amp; lastStats.numberOfSolutions() &gt; 0;</span>
-<span class="pc bpc" id="L161" title="1 of 6 branches missed.">                boolean restartExhausted = lastStats != null &amp;&amp; lastStats.isCompleted() &amp;&amp; !restartImproved;</span>
-<span class="pc bpc" id="L162" title="1 of 4 branches missed.">                boolean reachedFailureLimit = lastStats != null</span>
-                        &amp;&amp; !restartImproved
-<span class="fc bfc" id="L164" title="All 2 branches covered.">                        &amp;&amp; lastStats.numberOfFailures() &gt;= failureLimitPerRestart;</span>
-<span class="fc" id="L165">                fragmentSelector.onRestartCompleted(new FragmentSelector.FragmentSelectionFeedback(</span>
-                        decisionVarIndices,
-                        frozenIndices,
-<span class="fc" id="L168">                        changedDecisionVarIndices(incumbent, best),</span>
-                        restartImproved,
-                        restartExhausted,
-                        reachedFailureLimit));
-<span class="fc bfc" id="L172" title="All 2 branches covered.">                if (restartExhausted) {</span>
-<span class="fc" id="L173">                    adaptiveFreezeRatePercent = Math.max(0, adaptiveFreezeRatePercent - ADAPTIVE_FREEZE_STEP);</span>
-<span class="fc" id="L174">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d exhausted without improvement, relaxing more vars (freezeRate=%d)&quot;</span>
-<span class="fc" id="L175">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
-<span class="fc bfc" id="L176" title="All 2 branches covered.">                } else if (reachedFailureLimit) {</span>
-<span class="fc" id="L177">                    adaptiveFreezeRatePercent = Math.min(maxUsefulFreezeRatePercent(),</span>
-                            adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP);
-<span class="fc" id="L179">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d reached failure limit, freezing more vars (freezeRate=%d)&quot;</span>
-<span class="fc" id="L180">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
-<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                } else if (lastStats != null &amp;&amp; restartImproved) {</span>
-<span class="fc" id="L182">                    adaptiveFreezeRatePercent = Math.min(clampFreezeRatePercent(freezeRatePercent),</span>
-                            adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP / 2);
-                }
+        // Bandit weights for [0: primarySelector, 1: impactSelector, 2: graphBall, 3: contiguousWindow]
+<span class="fc" id="L155">        double[] opWeights = new double[]{4.0, 2.0, 1.5, 1.5};</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        int minFreezeRate = primaryDecisionVars.size() &gt; 4 ? Math.min(freezeRatePercent, 45) : 0;</span>
 
-<span class="fc bfc" id="L186" title="All 2 branches covered.">                if (iteration % FREEZE_RESET_PERIOD == 0) {</span>
-<span class="fc" id="L187">                    adaptiveFreezeRatePercent = clampFreezeRatePercent(freezeRatePercent);</span>
-<span class="fc" id="L188">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d adaptive freeze reset (freezeRate=%d)&quot;</span>
-<span class="fc" id="L189">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
-                }
-<span class="fc" id="L191">            }</span>
+<span class="fc" id="L158">        blackBoxSearch.logPhase(&quot;[phase lns-improvement] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
 
-<span class="fc bfc" id="L193" title="All 2 branches covered.">            if (improved.get()) {</span>
-<span class="fc" id="L194">                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.IMPROVED));</span>
-<span class="fc" id="L195">                return SearchStatus.IMPROVED;</span>
-<span class="pc bpc" id="L196" title="2 of 4 branches missed.">            } else if (lastStats != null &amp;&amp; lastStats.isCompleted()) {</span>
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                SearchStatus status = lastStats.numberOfSolutions() &gt; 0 ? SearchStatus.SAT : SearchStatus.NOT_IMPROVED;</span>
-<span class="fc" id="L198">                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(status));</span>
-<span class="fc" id="L199">                return status;</span>
+<span class="fc" id="L160">        SearchStatistics lastStats = null;</span>
+<span class="pc bpc" id="L161" title="1 of 4 branches missed.">        while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L162">            iteration++;</span>
+<span class="fc" id="L163">            final List&lt;Integer&gt; incumbent = new ArrayList&lt;&gt;(best);</span>
+<span class="fc" id="L164">            final int restartFreezeRatePercent = adaptiveFreezeRatePercent;</span>
+<span class="fc" id="L165">            final double restartSwapProbability = randomSwapProbabilityForIteration(iteration);</span>
+
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            int op = iteration &lt;= 2 ? 0 : selectOperator(opWeights);</span>
+<span class="fc" id="L168">            final List&lt;Integer&gt; frozenIndices = selectPortfolioFrozenIndices(</span>
+                    op, primaryDecisionVars, structure, cdBranching, impactSelector, restartFreezeRatePercent, iteration);
+
+<span class="fc" id="L171">            final int currentFailLimit = computeIterationFailureLimit(iteration, stagnationIterations);</span>
+<span class="fc" id="L172">            DFSearch dfs = createIterationDfs(iteration, restartSwapProbability, cdBranching, best, improved);</span>
+
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (shouldLogProgressIteration(iteration)) {</span>
+<span class="fc" id="L175">                blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d incumbentKnown=%s freezeRate=%d swapProb=%.3f selector=%s frozen=%d/%d&quot;</span>
+<span class="fc" id="L176">                        .formatted(iteration,</span>
+<span class="fc" id="L177">                                blackBoxSearch.bestObjectiveValue().map(Object::toString).orElse(&quot;n/a&quot;),</span>
+<span class="fc" id="L178">                                restartFreezeRatePercent,</span>
+<span class="fc" id="L179">                                restartSwapProbability,</span>
+<span class="fc" id="L180">                                fragmentSelector.name(),</span>
+<span class="fc" id="L181">                                frozenIndices.size(),</span>
+<span class="fc" id="L182">                                primaryDecisionVars.size()));</span>
+            }
+<span class="pc bpc" id="L184" title="1 of 2 branches missed.">            if (objective == null) {</span>
+<span class="nc" id="L185">                lastStats = dfs.solveSubjectTo(</span>
+<span class="nc" id="L186">                        stats -&gt; blackBoxSearch.shouldAbortSubSearch(stats, t0, timeLimitInMillis, currentFailLimit),</span>
+<span class="nc" id="L187">                        () -&gt; freezeVariablesBatch(frozenIndices, incumbent, false));</span>
             } else {
-<span class="nc" id="L201">                blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.NOT_IMPROVED));</span>
-<span class="nc" id="L202">                return SearchStatus.NOT_IMPROVED;</span>
+<span class="fc" id="L189">                lastStats = dfs.optimizeSubjectTo(objective,</span>
+<span class="fc" id="L190">                        stats -&gt; blackBoxSearch.shouldAbortSubSearch(stats, t0, timeLimitInMillis, currentFailLimit),</span>
+<span class="fc" id="L191">                        () -&gt; freezeVariablesBatch(frozenIndices, incumbent, true));</span>
+            }
+<span class="fc" id="L193">            blackBoxSearch.accumulateSubSearchStats(lastStats);</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">            if (lastStats != null) {</span>
+<span class="fc" id="L195">                blackBoxSearch.logTrace(&quot;[phase lns-improvement] iteration=%d stats: %s&quot;</span>
+<span class="fc" id="L196">                        .formatted(iteration, blackBoxSearch.formatStats(lastStats)));</span>
+            }
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">            boolean restartImproved = lastStats != null &amp;&amp; lastStats.numberOfSolutions() &gt; 0;</span>
+<span class="pc bpc" id="L199" title="1 of 6 branches missed.">            boolean restartExhausted = lastStats != null &amp;&amp; lastStats.isCompleted() &amp;&amp; !restartImproved</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">                    &amp;&amp; lastStats.numberOfFailures() &lt; currentFailLimit;</span>
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">            boolean reachedFailureLimit = lastStats != null</span>
+                    &amp;&amp; !restartImproved
+<span class="fc bfc" id="L203" title="All 2 branches covered.">                    &amp;&amp; lastStats.numberOfFailures() &gt;= currentFailLimit;</span>
+
+<span class="fc bfc" id="L205" title="All 2 branches covered.">            Set&lt;Integer&gt; changed = restartImproved ? changedVarIndices(primaryDecisionVars, incumbent, best) : Set.of();</span>
+<span class="fc" id="L206">            FragmentSelector.FragmentSelectionFeedback feedback = new FragmentSelector.FragmentSelectionFeedback(</span>
+                    primaryDecisionVars,
+                    frozenIndices,
+                    changed,
+                    restartImproved,
+                    restartExhausted,
+                    reachedFailureLimit);
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            if (op == 0) {</span>
+<span class="fc" id="L214">                fragmentSelector.onRestartCompleted(feedback);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            } else if (op == 1) {</span>
+<span class="fc" id="L216">                impactSelector.onRestartCompleted(feedback);</span>
+            }
+<span class="fc" id="L218">            updateOperatorWeight(opWeights, op, restartImproved);</span>
+
+<span class="fc bfc" id="L220" title="All 2 branches covered.">            if (restartImproved) {</span>
+<span class="fc" id="L221">                stagnationIterations = 0;</span>
+<span class="fc" id="L222">                adaptiveFreezeRatePercent = Math.min(</span>
+<span class="fc" id="L223">                        clampFreezeRatePercent(freezeRatePercent, primaryDecisionVars.size()),</span>
+                        adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP / 2);
+            } else {
+<span class="fc" id="L226">                stagnationIterations++;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">                if (restartExhausted) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">                    int step = (lastStats.numberOfFailures() &lt;= Math.max(2, currentFailLimit / 5))</span>
+<span class="fc" id="L229">                            ? ADAPTIVE_FREEZE_STEP * 2</span>
+<span class="fc" id="L230">                            : ADAPTIVE_FREEZE_STEP;</span>
+<span class="fc" id="L231">                    adaptiveFreezeRatePercent = Math.max(minFreezeRate, adaptiveFreezeRatePercent - step);</span>
+<span class="fc" id="L232">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d exhausted without improvement, relaxing more vars (freezeRate=%d)&quot;</span>
+<span class="fc" id="L233">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">                } else if (reachedFailureLimit) {</span>
+<span class="fc" id="L235">                    adaptiveFreezeRatePercent = Math.min(</span>
+<span class="fc" id="L236">                            maxUsefulFreezeRatePercent(primaryDecisionVars.size()),</span>
+                            adaptiveFreezeRatePercent + ADAPTIVE_FREEZE_STEP);
+<span class="fc" id="L238">                    blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d reached failure limit, freezing more vars (freezeRate=%d)&quot;</span>
+<span class="fc" id="L239">                            .formatted(iteration, adaptiveFreezeRatePercent));</span>
+                }
+            }
+
+<span class="fc bfc" id="L243" title="All 4 branches covered.">            if (stagnationIterations &gt; 0 &amp;&amp; stagnationIterations % FREEZE_RESET_PERIOD == 0) {</span>
+<span class="fc" id="L244">                int targetReset = Math.min(freezeRatePercent, 85);</span>
+<span class="fc" id="L245">                adaptiveFreezeRatePercent = clampFreezeRatePercent(targetReset, primaryDecisionVars.size());</span>
+<span class="fc" id="L246">                blackBoxSearch.logProgress(&quot;[phase lns-improvement] iteration=%d adaptive freeze reset (freezeRate=%d)&quot;</span>
+<span class="fc" id="L247">                        .formatted(iteration, adaptiveFreezeRatePercent));</span>
+            }
+<span class="fc" id="L249">        }</span>
+
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (improved.get()) {</span>
+<span class="fc" id="L252">            blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.IMPROVED));</span>
+<span class="fc" id="L253">            return SearchStatus.IMPROVED;</span>
+<span class="pc bpc" id="L254" title="1 of 4 branches missed.">        } else if (lastStats != null &amp;&amp; lastStats.isCompleted()) {</span>
+<span class="pc bpc" id="L255" title="1 of 2 branches missed.">            SearchStatus status = lastStats.numberOfSolutions() &gt; 0 ? SearchStatus.SAT : SearchStatus.NOT_IMPROVED;</span>
+<span class="fc" id="L256">            blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(status));</span>
+<span class="fc" id="L257">            return status;</span>
+        } else {
+<span class="fc" id="L259">            blackBoxSearch.logPhase(&quot;[phase lns-improvement] end status=%s&quot;.formatted(SearchStatus.NOT_IMPROVED));</span>
+<span class="fc" id="L260">            return SearchStatus.NOT_IMPROVED;</span>
+        }
+    }
+
+    private void freezeVariablesBatch(List&lt;Integer&gt; frozenIndices, List&lt;Integer&gt; incumbent, boolean withIncumbentCut) {
+<span class="fc" id="L265">        ensureCpCache();</span>
+<span class="pc bpc" id="L266" title="2 of 4 branches missed.">        if (cpVars != null &amp;&amp; cachedConcreteModel instanceof ConcreteCPModel cpm) {</span>
+<span class="pc bpc" id="L267" title="1 of 2 branches missed.">            if (withIncumbentCut) {</span>
+<span class="fc" id="L268">                blackBoxSearch.postIncumbentCut(false);</span>
+            }
+<span class="fc bfc" id="L270" title="All 2 branches covered.">            for (int i = 0, n = frozenIndices.size(); i &lt; n; i++) {</span>
+<span class="fc" id="L271">                int idx = frozenIndices.get(i);</span>
+<span class="fc" id="L272">                cpVars[idx].fix(incumbent.get(idx));</span>
+            }
+<span class="fc" id="L274">            cpm.solver.fixPoint();</span>
+        } else {
+<span class="nc bnc" id="L276" title="All 2 branches missed.">            if (withIncumbentCut) {</span>
+<span class="nc" id="L277">                blackBoxSearch.postIncumbentCut(false);</span>
+            }
+<span class="nc bnc" id="L279" title="All 2 branches missed.">            for (int idx : frozenIndices) {</span>
+<span class="nc" id="L280">                model.add(Factory.eq(vars.get(idx), incumbent.get(idx)), false);</span>
+<span class="nc" id="L281">            }</span>
+<span class="nc" id="L282">            model.add(new org.maxicp.modeling.constraints.NoOpConstraint(), true);</span>
+        }
+<span class="fc" id="L284">    }</span>
+
+    private int computeIterationFailureLimit(int iteration, int stagnationIterations) {
+<span class="fc bfc" id="L287" title="All 4 branches covered.">        if (stagnationIterations &gt;= 20 &amp;&amp; iteration % 5 == 0) {</span>
+<span class="fc" id="L288">            return failureLimitPerRestart * 2;</span>
+        }
+<span class="fc" id="L290">        return failureLimitPerRestart;</span>
+    }
+
+    private int selectOperator(double[] weights) {
+<span class="fc" id="L294">        double sum = 0.0;</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">        for (double w : weights) {</span>
+<span class="fc" id="L296">            sum += w;</span>
+        }
+<span class="fc" id="L298">        double r = random.nextDouble() * sum;</span>
+<span class="fc" id="L299">        double acc = 0.0;</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">        for (int i = 0; i &lt; weights.length; i++) {</span>
+<span class="fc" id="L301">            acc += weights[i];</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            if (r &lt;= acc) {</span>
+<span class="fc" id="L303">                return i;</span>
+            }
+        }
+<span class="nc" id="L306">        return 0;</span>
+    }
+
+    private void updateOperatorWeight(double[] weights, int op, boolean improved) {
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        if (improved) {</span>
+<span class="fc" id="L311">            weights[op] = Math.min(25.0, weights[op] * 0.9 + 5.0);</span>
+        } else {
+<span class="fc" id="L313">            weights[op] = Math.max(0.3, weights[op] * 0.98);</span>
+        }
+<span class="fc" id="L315">    }</span>
+
+    private List&lt;Integer&gt; selectPortfolioFrozenIndices(
+            int op,
+            List&lt;Integer&gt; primaryVars,
+            ModelStructureAnalyzer structure,
+            ConflictDrivenBranching cdBranching,
+            ImpactBasedFragmentSelector impactSelector,
+            int ratePercent,
+            int iteration) {
+<span class="fc" id="L325">        int n = primaryVars.size();</span>
+<span class="pc bpc" id="L326" title="1 of 4 branches missed.">        if (n &lt;= 1 || ratePercent &lt;= 0) {</span>
+<span class="fc" id="L327">            return List.of();</span>
+        }
+<span class="fc bfc" id="L329" title="All 4 branches covered.">        List&lt;Integer&gt; rawFrozen = switch (op) {</span>
+            case 0 -&gt; {
+<span class="fc" id="L331">                FragmentSelector.FragmentSelectionContext ctx =</span>
+                        new FragmentSelector.FragmentSelectionContext(primaryVars, ratePercent, iteration);
+<span class="fc" id="L333">                List&lt;Integer&gt; selected = fragmentSelector.selectFrozenIndices(ctx);</span>
+<span class="fc" id="L334">                List&lt;Integer&gt; filtered = new ArrayList&lt;&gt;(selected.size());</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">                for (int idx : selected) {</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">                    if (!structure.isSecondary(idx)) {</span>
+<span class="fc" id="L337">                        filtered.add(idx);</span>
+                    }
+<span class="fc" id="L339">                }</span>
+<span class="fc" id="L340">                yield filtered;</span>
+            }
+            case 1 -&gt; {
+<span class="fc" id="L343">                FragmentSelector.FragmentSelectionContext ctx =</span>
+                        new FragmentSelector.FragmentSelectionContext(primaryVars, ratePercent, iteration);
+<span class="fc" id="L345">                yield impactSelector.selectFrozenIndices(ctx);</span>
+            }
+<span class="fc" id="L347">            case 2 -&gt; selectGraphNeighborhoodFrozen(primaryVars, structure, cdBranching, ratePercent);</span>
+<span class="fc" id="L348">            default -&gt; selectContiguousWindowFrozen(primaryVars, ratePercent);</span>
+        };
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        if (rawFrozen.size() &gt;= n) {</span>
+<span class="fc" id="L351">            List&lt;Integer&gt; copy = new ArrayList&lt;&gt;(rawFrozen);</span>
+<span class="fc" id="L352">            copy.remove(random.nextInt(copy.size()));</span>
+<span class="fc" id="L353">            return copy;</span>
+        }
+<span class="fc" id="L355">        return rawFrozen;</span>
+    }
+
+    private List&lt;Integer&gt; selectGraphNeighborhoodFrozen(
+            List&lt;Integer&gt; primaryVars,
+            ModelStructureAnalyzer structure,
+            ConflictDrivenBranching cdBranching,
+            int ratePercent) {
+<span class="fc" id="L363">        int n = primaryVars.size();</span>
+<span class="fc" id="L364">        int freezeCount = Math.max(0, Math.min(n - 1, (int) Math.round(n * (ratePercent / 100.0))));</span>
+<span class="fc" id="L365">        int relaxCount = n - freezeCount;</span>
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (relaxCount &gt;= n) {</span>
+<span class="nc" id="L367">            return List.of();</span>
+        }
+
+        // Choose a seed variable weighted by conflict weight
+<span class="fc" id="L371">        int seed = primaryVars.get(random.nextInt(n));</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">        for (int t = 0; t &lt; 3; t++) {</span>
+<span class="fc" id="L373">            int cand = primaryVars.get(random.nextInt(n));</span>
+<span class="fc bfc" id="L374" title="All 2 branches covered.">            if (cdBranching.getVarWeight(cand) &gt; cdBranching.getVarWeight(seed)) {</span>
+<span class="fc" id="L375">                seed = cand;</span>
             }
         }
 
+<span class="fc" id="L379">        boolean[] relaxed = new boolean[vars.size()];</span>
+<span class="fc" id="L380">        int relaxedSoFar = 0;</span>
+<span class="fc" id="L381">        ArrayDeque&lt;Integer&gt; queue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L382">        queue.add(seed);</span>
+<span class="fc" id="L383">        relaxed[seed] = true;</span>
+<span class="fc" id="L384">        relaxedSoFar++;</span>
 
+<span class="fc bfc" id="L386" title="All 4 branches covered.">        while (!queue.isEmpty() &amp;&amp; relaxedSoFar &lt; relaxCount) {</span>
+<span class="fc" id="L387">            int u = queue.poll();</span>
+<span class="fc" id="L388">            int[] adj = structure.neighbors(u);</span>
+<span class="pc bpc" id="L389" title="1 of 2 branches missed.">            if (adj.length &gt; 0) {</span>
+<span class="fc" id="L390">                int offset = random.nextInt(adj.length);</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">                for (int k = 0; k &lt; adj.length; k++) {</span>
+<span class="fc bfc" id="L392" title="All 2 branches covered.">                    if (relaxedSoFar &gt;= relaxCount) break;</span>
+<span class="fc" id="L393">                    int v = adj[(offset + k) % adj.length];</span>
+<span class="fc bfc" id="L394" title="All 4 branches covered.">                    if (!structure.isSecondary(v) &amp;&amp; !relaxed[v]) {</span>
+<span class="fc" id="L395">                        relaxed[v] = true;</span>
+<span class="fc" id="L396">                        relaxedSoFar++;</span>
+<span class="fc" id="L397">                        queue.add(v);</span>
+                    }
+                }
+            }
+<span class="fc" id="L401">        }</span>
+
+        // If graph component was smaller than relaxCount, relax additional random primary vars
+<span class="fc bfc" id="L404" title="All 2 branches covered.">        while (relaxedSoFar &lt; relaxCount) {</span>
+<span class="fc" id="L405">            int v = primaryVars.get(random.nextInt(n));</span>
+<span class="fc bfc" id="L406" title="All 2 branches covered.">            if (!relaxed[v]) {</span>
+<span class="fc" id="L407">                relaxed[v] = true;</span>
+<span class="fc" id="L408">                relaxedSoFar++;</span>
+            }
+<span class="fc" id="L410">        }</span>
+
+<span class="fc" id="L412">        List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;(freezeCount);</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        for (int idx : primaryVars) {</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">            if (!relaxed[idx]) {</span>
+<span class="fc" id="L415">                frozen.add(idx);</span>
+            }
+<span class="fc" id="L417">        }</span>
+<span class="fc" id="L418">        return frozen;</span>
+    }
+
+    private List&lt;Integer&gt; selectContiguousWindowFrozen(List&lt;Integer&gt; primaryVars, int ratePercent) {
+<span class="fc" id="L422">        int n = primaryVars.size();</span>
+<span class="fc" id="L423">        int freezeCount = Math.max(0, Math.min(n - 1, (int) Math.round(n * (ratePercent / 100.0))));</span>
+<span class="fc" id="L424">        int relaxCount = n - freezeCount;</span>
+<span class="pc bpc" id="L425" title="1 of 2 branches missed.">        if (relaxCount &gt;= n) {</span>
+<span class="nc" id="L426">            return List.of();</span>
+        }
+<span class="fc" id="L428">        int start = random.nextInt(n);</span>
+<span class="fc" id="L429">        boolean[] relaxedPos = new boolean[n];</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        for (int k = 0; k &lt; relaxCount; k++) {</span>
+<span class="fc" id="L431">            relaxedPos[(start + k) % n] = true;</span>
+        }
+<span class="fc" id="L433">        List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;(freezeCount);</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">            if (!relaxedPos[i]) {</span>
+<span class="fc" id="L436">                frozen.add(primaryVars.get(i));</span>
+            }
+        }
+<span class="fc" id="L439">        return frozen;</span>
     }
 
     static boolean shouldLogProgressIteration(int iteration) {
-<span class="pc bpc" id="L210" title="1 of 4 branches missed.">        return iteration &gt; 0 &amp;&amp; iteration % PROGRESS_LOG_PERIOD == 0;</span>
+<span class="pc bpc" id="L443" title="1 of 4 branches missed.">        return iteration &gt; 0 &amp;&amp; iteration % PROGRESS_LOG_PERIOD == 0;</span>
     }
 
-    private int clampFreezeRatePercent(int requestedRatePercent) {
-<span class="fc" id="L214">        return Math.max(0, Math.min(maxUsefulFreezeRatePercent(), requestedRatePercent));</span>
+    private int clampFreezeRatePercent(int requestedRatePercent, int nVars) {
+<span class="fc" id="L447">        return Math.max(0, Math.min(maxUsefulFreezeRatePercent(nVars), requestedRatePercent));</span>
     }
 
-    private int maxUsefulFreezeRatePercent() {
-<span class="fc" id="L218">        int n = decisionVarIndices.size();</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">        if (n == 0) {</span>
-<span class="nc" id="L220">            return 0;</span>
+    private int maxUsefulFreezeRatePercent(int n) {
+<span class="pc bpc" id="L451" title="1 of 2 branches missed.">        if (n == 0) {</span>
+<span class="nc" id="L452">            return 0;</span>
         }
-<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (n == 1) {</span>
-<span class="fc" id="L223">            return 100;</span>
+<span class="fc bfc" id="L454" title="All 2 branches covered.">        if (n == 1) {</span>
+<span class="fc" id="L455">            return 100;</span>
         }
         // Keep at least one relaxed variable under round(n * rate / 100).
-<span class="fc" id="L226">        return Math.max(0, (int) Math.floor((100.0 * (n - 0.5) / n) - 1e-9));</span>
+<span class="fc" id="L458">        return Math.max(0, (int) Math.floor((100.0 * (n - 0.5) / n) - 1e-9));</span>
     }
 
     private List&lt;List&lt;Integer&gt;&gt; computeGroupIndexLists() {
-<span class="fc" id="L230">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.size(); i++) {</span>
-<span class="fc" id="L232">            varToIndex.put(vars.get(i), i);</span>
+<span class="fc" id="L462">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L464">            varToIndex.put(vars.get(i), i);</span>
         }
 
-<span class="fc" id="L235">        List&lt;List&lt;Integer&gt;&gt; groupIndices = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L236" title="1 of 2 branches missed.">        for (List&lt;IntExpression&gt; group : model.getModel().getVariableGroups()) {</span>
-<span class="nc" id="L237">            List&lt;Integer&gt; indices = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L238" title="All 2 branches missed.">            for (IntExpression expr : group) {</span>
-<span class="nc" id="L239">                Integer idx = varToIndex.get(expr);</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">                if (idx != null) {</span>
-<span class="nc" id="L241">                    indices.add(idx);</span>
+<span class="fc" id="L467">        List&lt;List&lt;Integer&gt;&gt; groupIndices = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">        for (List&lt;IntExpression&gt; group : model.getModel().getVariableGroups()) {</span>
+<span class="fc" id="L469">            List&lt;Integer&gt; indices = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">            for (IntExpression expr : group) {</span>
+<span class="fc" id="L471">                Integer idx = varToIndex.get(expr);</span>
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                if (idx != null) {</span>
+<span class="fc" id="L473">                    indices.add(idx);</span>
                 }
-<span class="nc" id="L243">            }</span>
-<span class="nc bnc" id="L244" title="All 2 branches missed.">            if (!indices.isEmpty()) {</span>
-<span class="nc" id="L245">                groupIndices.add(List.copyOf(indices));</span>
+<span class="fc" id="L475">            }</span>
+<span class="pc bpc" id="L476" title="1 of 2 branches missed.">            if (!indices.isEmpty()) {</span>
+<span class="fc" id="L477">                groupIndices.add(List.copyOf(indices));</span>
             }
-<span class="nc" id="L247">        }</span>
-<span class="fc" id="L248">        return List.copyOf(groupIndices);</span>
+<span class="fc" id="L479">        }</span>
+<span class="fc" id="L480">        return List.copyOf(groupIndices);</span>
     }
 
     private FragmentSelector buildFragmentSelector(BlackBoxSearch.FragmentSelectionStrategy strategy) {
-<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        BlackBoxSearch.FragmentSelectionStrategy safeStrategy = strategy == null</span>
-<span class="nc" id="L253">                ? BlackBoxSearch.FragmentSelectionStrategy.RANDOM_UNIFORM</span>
-<span class="fc" id="L254">                : strategy;</span>
-<span class="fc" id="L255">        List&lt;List&lt;Integer&gt;&gt; groups = computeGroupIndexLists();</span>
-<span class="pc bpc" id="L256" title="3 of 4 branches missed.">        if (safeStrategy == BlackBoxSearch.FragmentSelectionStrategy.IMPACT_GUIDED &amp;&amp; !groups.isEmpty()) {</span>
-<span class="nc" id="L257">            safeStrategy = BlackBoxSearch.FragmentSelectionStrategy.GROUP_COHERENT;</span>
-<span class="pc bpc" id="L258" title="1 of 4 branches missed.">        } else if (safeStrategy == BlackBoxSearch.FragmentSelectionStrategy.GROUP_COHERENT &amp;&amp; groups.isEmpty()) {</span>
-<span class="fc" id="L259">            safeStrategy = BlackBoxSearch.FragmentSelectionStrategy.IMPACT_GUIDED;</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">        BlackBoxSearch.FragmentSelectionStrategy safeStrategy = strategy == null</span>
+<span class="nc" id="L485">                ? BlackBoxSearch.FragmentSelectionStrategy.RANDOM_UNIFORM</span>
+<span class="fc" id="L486">                : strategy;</span>
+<span class="fc" id="L487">        List&lt;List&lt;Integer&gt;&gt; groups = computeGroupIndexLists();</span>
+<span class="pc bpc" id="L488" title="3 of 4 branches missed.">        if (safeStrategy == BlackBoxSearch.FragmentSelectionStrategy.IMPACT_GUIDED &amp;&amp; !groups.isEmpty()) {</span>
+<span class="nc" id="L489">            safeStrategy = BlackBoxSearch.FragmentSelectionStrategy.GROUP_COHERENT;</span>
+<span class="fc bfc" id="L490" title="All 4 branches covered.">        } else if (safeStrategy == BlackBoxSearch.FragmentSelectionStrategy.GROUP_COHERENT &amp;&amp; groups.isEmpty()) {</span>
+<span class="fc" id="L491">            safeStrategy = BlackBoxSearch.FragmentSelectionStrategy.IMPACT_GUIDED;</span>
         }
-<span class="pc bpc" id="L261" title="1 of 3 branches missed.">        return switch (safeStrategy) {</span>
-<span class="fc" id="L262">            case IMPACT_GUIDED -&gt; new ImpactBasedFragmentSelector(random, computeStructuralImpactScores());</span>
-<span class="fc" id="L263">            case RANDOM_UNIFORM -&gt; new RandomFragmentSelector(random);</span>
-<span class="nc" id="L264">            case GROUP_COHERENT -&gt; new GroupCoherentFragmentSelector(random, groups);</span>
+<span class="fc bfc" id="L493" title="All 3 branches covered.">        return switch (safeStrategy) {</span>
+<span class="fc" id="L494">            case IMPACT_GUIDED -&gt; new ImpactBasedFragmentSelector(random, computeStructuralImpactScores());</span>
+<span class="fc" id="L495">            case RANDOM_UNIFORM -&gt; new RandomFragmentSelector(random);</span>
+<span class="fc" id="L496">            case GROUP_COHERENT -&gt; new GroupCoherentFragmentSelector(random, groups);</span>
         };
     }
 
-    private Map&lt;Integer, Double&gt; computeStructuralImpactScores() {
-<span class="fc" id="L269">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (int idx : decisionVarIndices) {</span>
-<span class="fc" id="L271">            varToIndex.put(vars.get(idx), idx);</span>
-<span class="fc" id="L272">        }</span>
+    private Map&lt;Integer, Double&gt; computePrimaryStructuralImpacts(
+            ModelStructureAnalyzer structure,
+            List&lt;Integer&gt; primaryVars) {
+<span class="fc" id="L503">        Map&lt;Integer, Double&gt; impact = new HashMap&lt;&gt;(primaryVars.size() * 2);</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">        for (int idx : primaryVars) {</span>
+<span class="fc" id="L505">            impact.put(idx, structure.structuralWeight(idx));</span>
+<span class="fc" id="L506">        }</span>
+<span class="fc" id="L507">        return impact;</span>
+    }
 
-<span class="fc" id="L274">        Map&lt;Integer, Double&gt; impact = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L275" title="All 2 branches covered.">        for (Constraint constraint : model.getConstraints()) {</span>
-<span class="fc" id="L276">            Set&lt;Integer&gt; involved = collectDecisionVarIndices(constraint.scope(), varToIndex);</span>
-<span class="pc bpc" id="L277" title="1 of 2 branches missed.">            if (involved.isEmpty()) {</span>
-<span class="nc" id="L278">                continue;</span>
+    private Map&lt;Integer, Double&gt; computeStructuralImpactScores() {
+<span class="fc" id="L511">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L512" title="All 2 branches covered.">        for (int idx : decisionVarIndices) {</span>
+<span class="fc" id="L513">            varToIndex.put(vars.get(idx), idx);</span>
+<span class="fc" id="L514">        }</span>
+
+<span class="fc" id="L516">        Map&lt;Integer, Double&gt; impact = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L517" title="All 2 branches covered.">        for (Constraint constraint : model.getConstraints()) {</span>
+<span class="fc" id="L518">            Set&lt;Integer&gt; involved = collectDecisionVarIndices(constraint.scope(), varToIndex);</span>
+<span class="pc bpc" id="L519" title="1 of 2 branches missed.">            if (involved.isEmpty()) {</span>
+<span class="nc" id="L520">                continue;</span>
             }
-<span class="fc" id="L280">            double weight = 1.0 / involved.size();</span>
-<span class="fc bfc" id="L281" title="All 2 branches covered.">            for (int idx : involved) {</span>
-<span class="fc" id="L282">                impact.merge(idx, weight, Double::sum);</span>
-<span class="fc" id="L283">            }</span>
-<span class="fc" id="L284">        }</span>
-<span class="fc" id="L285">        return impact;</span>
+<span class="fc" id="L522">            double weight = 1.0 / involved.size();</span>
+<span class="fc bfc" id="L523" title="All 2 branches covered.">            for (int idx : involved) {</span>
+<span class="fc" id="L524">                impact.merge(idx, weight, Double::sum);</span>
+<span class="fc" id="L525">            }</span>
+<span class="fc" id="L526">        }</span>
+<span class="fc" id="L527">        return impact;</span>
     }
 
     private Set&lt;Integer&gt; collectDecisionVarIndices(Collection&lt;? extends Expression&gt; expressions,
                                                    IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex) {
-<span class="fc" id="L290">        Set&lt;Integer&gt; involved = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L291">        IdentityHashMap&lt;Expression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc" id="L292">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(expressions);</span>
-<span class="fc bfc" id="L293" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
-<span class="fc" id="L294">            Expression expr = stack.removeLast();</span>
-<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (seen.putIfAbsent(expr, Boolean.TRUE) != null) {</span>
-<span class="nc" id="L296">                continue;</span>
+<span class="fc" id="L532">        Set&lt;Integer&gt; involved = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L533">        IdentityHashMap&lt;Expression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L534">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(expressions);</span>
+<span class="fc bfc" id="L535" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L536">            Expression expr = stack.removeLast();</span>
+<span class="pc bpc" id="L537" title="1 of 2 branches missed.">            if (seen.putIfAbsent(expr, Boolean.TRUE) != null) {</span>
+<span class="nc" id="L538">                continue;</span>
             }
-<span class="pc bpc" id="L298" title="1 of 2 branches missed.">            if (expr instanceof IntExpression intExpr) {</span>
-<span class="fc" id="L299">                Integer idx = varToIndex.get(intExpr);</span>
-<span class="pc bpc" id="L300" title="1 of 2 branches missed.">                if (idx != null) {</span>
-<span class="fc" id="L301">                    involved.add(idx);</span>
+<span class="pc bpc" id="L540" title="1 of 2 branches missed.">            if (expr instanceof IntExpression intExpr) {</span>
+<span class="fc" id="L541">                Integer idx = varToIndex.get(intExpr);</span>
+<span class="fc bfc" id="L542" title="All 2 branches covered.">                if (idx != null) {</span>
+<span class="fc" id="L543">                    involved.add(idx);</span>
                 }
             }
-<span class="pc bpc" id="L304" title="1 of 2 branches missed.">            for (Expression child : expr.subexpressions()) {</span>
-<span class="nc" id="L305">                stack.addLast(child);</span>
-<span class="nc" id="L306">            }</span>
-<span class="fc" id="L307">        }</span>
-<span class="fc" id="L308">        return involved;</span>
+<span class="fc bfc" id="L546" title="All 2 branches covered.">            for (Expression child : expr.subexpressions()) {</span>
+<span class="fc" id="L547">                stack.addLast(child);</span>
+<span class="fc" id="L548">            }</span>
+<span class="fc" id="L549">        }</span>
+<span class="fc" id="L550">        return involved;</span>
     }
 
-    private Set&lt;Integer&gt; changedDecisionVarIndices(List&lt;Integer&gt; incumbent, List&lt;Integer&gt; best) {
-<span class="fc" id="L312">        Set&lt;Integer&gt; changed = new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L313" title="All 2 branches covered.">        for (int idx : decisionVarIndices) {</span>
-<span class="fc bfc" id="L314" title="All 2 branches covered.">            if (!Objects.equals(incumbent.get(idx), best.get(idx))) {</span>
-<span class="fc" id="L315">                changed.add(idx);</span>
+    private Set&lt;Integer&gt; changedVarIndices(List&lt;Integer&gt; targetIndices, List&lt;Integer&gt; incumbent, List&lt;Integer&gt; best) {
+<span class="fc" id="L554">        Set&lt;Integer&gt; changed = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">        for (int idx : targetIndices) {</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">            if (!Objects.equals(incumbent.get(idx), best.get(idx))) {</span>
+<span class="fc" id="L557">                changed.add(idx);</span>
             }
-<span class="fc" id="L317">        }</span>
-<span class="fc" id="L318">        return changed;</span>
+<span class="fc" id="L559">        }</span>
+<span class="fc" id="L560">        return changed;</span>
     }
 
-    private DFSearch createDfs(double swapProbability, List&lt;Integer&gt; best, AtomicBoolean improved) {
-<span class="fc" id="L322">        Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
-<span class="pc bpc" id="L323" title="1 of 2 branches missed.">        if (swapProbability &gt; 0.0) {</span>
-<span class="nc" id="L324">            branching = new RandomizedBranching(branching, random, swapProbability);</span>
+    private DFSearch createIterationDfs(
+            int iteration,
+            double swapProbability,
+            ConflictDrivenBranching cdBranching,
+            List&lt;Integer&gt; best,
+            AtomicBoolean improved) {
+        Supplier&lt;Runnable[]&gt; branching;
+<span class="fc bfc" id="L570" title="All 2 branches covered.">        if (iteration % 4 == 3) {</span>
+<span class="fc" id="L571">            branching = blackBoxSearch.tieredFdsBranching(random);</span>
+<span class="fc bfc" id="L572" title="All 2 branches covered.">            if (swapProbability &gt; 0.0) {</span>
+<span class="fc" id="L573">                branching = new RandomizedBranching(branching, random, swapProbability);</span>
+            }
+        } else {
+<span class="fc bfc" id="L576" title="All 3 branches covered.">            ConflictDrivenBranching.ValueStrategy valStrat = switch (iteration % 3) {</span>
+<span class="fc" id="L577">                case 0 -&gt; ConflictDrivenBranching.ValueStrategy.OBJECTIVE_AND_PHASE;</span>
+<span class="fc" id="L578">                case 1 -&gt; ConflictDrivenBranching.ValueStrategy.SOLUTION_AND_OBJECTIVE;</span>
+<span class="fc" id="L579">                default -&gt; ConflictDrivenBranching.ValueStrategy.PHASE_SAVING;</span>
+            };
+<span class="fc bfc" id="L581" title="All 2 branches covered.">            double noise = swapProbability &gt; 0.0 ? Math.min(0.10, swapProbability * 0.15) : 0.01;</span>
+<span class="fc" id="L582">            cdBranching.configureRestart(valStrat, noise, true);</span>
+<span class="fc" id="L583">            branching = cdBranching;</span>
         }
-<span class="fc" id="L326">        DFSearch dfs = model.dfSearch(branching);</span>
-<span class="fc" id="L327">        dfs.onSolution(() -&gt; {</span>
-<span class="fc bfc" id="L328" title="All 2 branches covered.">            for (int i = 0; i &lt; vars.size(); i++) {</span>
-<span class="fc" id="L329">                best.set(i, vars.get(i).min());</span>
+<span class="fc" id="L585">        DFSearch dfs = blackBoxSearch.createSubSearch(branching);</span>
+<span class="fc" id="L586">        dfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L587">            ensureCpCache();</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">            if (cpVars != null) {</span>
+<span class="fc bfc" id="L589" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L590">                    best.set(i, cpVars[i].min());</span>
+                }
+            } else {
+<span class="nc bnc" id="L593" title="All 2 branches missed.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="nc" id="L594">                    best.set(i, vars.get(i).min());</span>
+                }
             }
-<span class="fc" id="L331">            blackBoxSearch.updateSolution(best);</span>
-<span class="fc" id="L332">            blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());</span>
-<span class="fc" id="L333">            improved.set(true);</span>
-<span class="fc" id="L334">        });</span>
-<span class="fc" id="L335">        return dfs;</span>
+<span class="fc" id="L597">            blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="fc" id="L598">            improved.set(true);</span>
+<span class="fc" id="L599">        });</span>
+<span class="fc" id="L600">        return dfs;</span>
     }
 
     // Alternate between aggressive randomization and near-deterministic branching across LNS restarts.
     double randomSwapProbabilityForIteration(int iteration) {
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        if (randomSwapProbability &lt;= 0.0) {</span>
-<span class="fc" id="L341">            return 0.0;</span>
+<span class="fc bfc" id="L605" title="All 2 branches covered.">        if (randomSwapProbability &lt;= 0.0) {</span>
+<span class="fc" id="L606">            return 0.0;</span>
         }
-<span class="nc" id="L343">        double low = Math.min(0.02, randomSwapProbability * 0.10);</span>
-<span class="nc" id="L344">        double high = Math.max(0.90, randomSwapProbability);</span>
-<span class="nc bnc" id="L345" title="All 2 branches missed.">        return iteration % 2 == 0 ? Math.min(1.0, high) : Math.max(0.0, low);</span>
+<span class="fc" id="L608">        double low = Math.min(0.02, randomSwapProbability * 0.10);</span>
+<span class="fc" id="L609">        double high = Math.max(0.90, randomSwapProbability);</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">        return iteration % 2 == 0 ? Math.min(1.0, high) : Math.max(0.0, low);</span>
     }
 
     public FragmentSelector getFragmentSelector() {
-<span class="nc" id="L349">        return fragmentSelector;</span>
+<span class="fc" id="L614">        return fragmentSelector;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

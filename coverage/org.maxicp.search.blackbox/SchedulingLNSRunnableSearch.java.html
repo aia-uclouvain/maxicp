@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SchedulingLNSRunnableSearch.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">SchedulingLNSRunnableSearch.java</span></div><h1>SchedulingLNSRunnableSearch.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+/**
+ * Large Neighborhood Search (LNS) improvement phase for scheduling and hybrid scheduling+integer models.
+ *
+ * &lt;p&gt;Rotates across three scheduling neighborhood operators:&lt;/p&gt;
+ * &lt;ol&gt;
+ *   &lt;li&gt;&lt;b&gt;Prefix time-window freeze&lt;/b&gt;: fixes tasks starting before a cutoff time {@code tCut}
+ *       while relaxing the suffix so later tasks can be re-sequenced and left-shifted.&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Random subset freeze with left-shift allowance&lt;/b&gt;: freezes a random subset of non-critical
+ *       tasks (either fixing {@code start == incStart} or bounding {@code start &lt;= incStart}).&lt;/li&gt;
+ *   &lt;li&gt;&lt;b&gt;Optional-presence / contiguous-block relaxation&lt;/b&gt;: for optional-interval models
+ *       (such as Flexible Job Shop), freezes the presence/machine assignment of most tasks while
+ *       re-optimizing the remaining alternatives and start times; for mandatory-interval models,
+ *       relaxes a contiguous block of tasks.&lt;/li&gt;
+ * &lt;/ol&gt;
+ */
+public class SchedulingLNSRunnableSearch extends RunnableSearch {
+
+<span class="fc" id="L36">    private static final double[] WINDOW_RATIOS = {0.35, 0.50, 0.65, 0.25, 0.75};</span>
+
+    private final ModelDispatcher model;
+    private final List&lt;IntervalVar&gt; intervals;
+    private final List&lt;IntExpression&gt; vars;
+    private final org.maxicp.modeling.symbolic.Objective objective;
+    private final int failureLimitPerRestart;
+    private final int initialFreezeRatePercent;
+    private final Random random;
+    private final boolean hasOptionalIntervals;
+
+    private ConcreteModel cachedConcreteModel;
+    private CPIntervalVar[] cpIntervals;
+    private CPIntVar[] cpVars;
+
+    public SchedulingLNSRunnableSearch(
+            BlackBoxSearch blackBoxSearch,
+            ModelDispatcher model,
+            List&lt;IntervalVar&gt; intervals,
+            List&lt;IntExpression&gt; vars,
+            org.maxicp.modeling.symbolic.Objective objective,
+            int failureLimitPerRestart,
+            int initialFreezeRatePercent,
+            long randomSeed) {
+<span class="fc" id="L60">        super(blackBoxSearch);</span>
+<span class="fc" id="L61">        this.model = model;</span>
+<span class="fc" id="L62">        this.intervals = List.copyOf(intervals);</span>
+<span class="fc" id="L63">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L64">        this.objective = objective;</span>
+<span class="fc" id="L65">        this.failureLimitPerRestart = Math.max(16, failureLimitPerRestart);</span>
+<span class="fc" id="L66">        this.initialFreezeRatePercent = Math.max(20, Math.min(90, initialFreezeRatePercent));</span>
+<span class="fc" id="L67">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L68">        boolean anyOpt = false;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (IntervalVar iv : this.intervals) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (iv.isOptional()) {</span>
+<span class="fc" id="L71">                anyOpt = true;</span>
+<span class="fc" id="L72">                break;</span>
+            }
+<span class="fc" id="L74">        }</span>
+<span class="fc" id="L75">        this.hasOptionalIntervals = anyOpt;</span>
+<span class="fc" id="L76">    }</span>
+
+    @Override
+    void updateSolution(List&lt;Integer&gt; solution) {
+        // Incumbent snapshots are queried from BlackBoxSearch
+<span class="fc" id="L81">    }</span>
+
+    private void ensureCpCache() {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (!model.isConcrete()) {</span>
+<span class="nc" id="L85">            return;</span>
+        }
+<span class="fc" id="L87">        ConcreteModel cm = model.getConcreteModel();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (cm != cachedConcreteModel) {</span>
+<span class="fc" id="L89">            cachedConcreteModel = cm;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">            if (cm instanceof ConcreteCPModel cpm) {</span>
+<span class="fc" id="L91">                cpIntervals = new CPIntervalVar[intervals.size()];</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                for (int i = 0; i &lt; intervals.size(); i++) {</span>
+<span class="fc" id="L93">                    cpIntervals[i] = cpm.getCPVar(intervals.get(i));</span>
+                }
+<span class="fc" id="L95">                cpVars = new CPIntVar[vars.size()];</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.size(); i++) {</span>
+<span class="fc" id="L97">                    cpVars[i] = cpm.getCPVar(vars.get(i));</span>
+                }
+            } else {
+<span class="nc" id="L100">                cpIntervals = null;</span>
+<span class="nc" id="L101">                cpVars = null;</span>
+            }
+        }
+<span class="fc" id="L104">    }</span>
+
+    @Override
+    public SearchStatus run(long timeLimitInMillis) {
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">        if (!hasFeasibleSolution() || blackBoxSearch.bestIntervalSolution().isEmpty()) {</span>
+<span class="nc" id="L109">            return SearchStatus.UNKNOWN;</span>
+        }
+<span class="fc" id="L111">        ensureCpCache();</span>
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        if (cpIntervals == null || !(cachedConcreteModel instanceof ConcreteCPModel cpm)) {</span>
+<span class="nc" id="L113">            return SearchStatus.UNKNOWN;</span>
+        }
+
+<span class="fc" id="L116">        AtomicBoolean improved = new AtomicBoolean(false);</span>
+<span class="fc" id="L117">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L118">        int iteration = 0;</span>
+<span class="fc" id="L119">        int freezeRate = initialFreezeRatePercent;</span>
+
+<span class="fc" id="L121">        blackBoxSearch.logPhase(&quot;[phase scheduling-lns] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
+
+<span class="fc bfc" id="L123" title="All 4 branches covered.">        while ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L124">            Optional&lt;List&lt;BlackBoxSearch.IntervalSnapshot&gt;&gt; optSnap = blackBoxSearch.bestIntervalSolution();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (optSnap.isEmpty()) {</span>
+<span class="nc" id="L126">                break;</span>
+            }
+<span class="fc" id="L128">            iteration++;</span>
+<span class="fc" id="L129">            final List&lt;BlackBoxSearch.IntervalSnapshot&gt; incIntervals = optSnap.get();</span>
+<span class="fc" id="L130">            final List&lt;Integer&gt; incVars = blackBoxSearch.bestSolution().orElse(List.of());</span>
+<span class="fc" id="L131">            final int iter = iteration;</span>
+<span class="fc" id="L132">            final int currentFreezeRate = freezeRate;</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            final int failLimit = (iteration % 6 == 0) ? failureLimitPerRestart * 2 : failureLimitPerRestart;</span>
+
+<span class="fc" id="L135">            Supplier&lt;Runnable[]&gt; branching = blackBoxSearch.schedulingFdsBranching(random);</span>
+<span class="fc" id="L136">            DFSearch dfs = blackBoxSearch.createSubSearch(branching);</span>
+<span class="fc" id="L137">            dfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L138">                improved.set(true);</span>
+<span class="fc" id="L139">                blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="fc" id="L140">            });</span>
+
+            SearchStatistics stats;
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">            if (objective == null) {</span>
+<span class="nc" id="L144">                stats = dfs.solveSubjectTo(</span>
+<span class="nc" id="L145">                        s -&gt; blackBoxSearch.shouldAbortSubSearch(s, t0, timeLimitInMillis, failLimit),</span>
+<span class="nc" id="L146">                        () -&gt; applySchedulingFragment(cpm, incIntervals, incVars, iter, currentFreezeRate, false));</span>
+            } else {
+<span class="fc" id="L148">                stats = dfs.optimizeSubjectTo(objective,</span>
+<span class="fc" id="L149">                        s -&gt; blackBoxSearch.shouldAbortSubSearch(s, t0, timeLimitInMillis, failLimit),</span>
+<span class="fc" id="L150">                        () -&gt; applySchedulingFragment(cpm, incIntervals, incVars, iter, currentFreezeRate, true));</span>
+            }
+<span class="fc" id="L152">            blackBoxSearch.accumulateSubSearchStats(stats);</span>
+
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">            boolean iterImproved = stats != null &amp;&amp; stats.numberOfSolutions() &gt; 0;</span>
+<span class="pc bpc" id="L155" title="2 of 6 branches missed.">            boolean iterExhausted = stats != null &amp;&amp; stats.isCompleted() &amp;&amp; !iterImproved</span>
+<span class="pc bnc" id="L156" title="All 2 branches missed.">                    &amp;&amp; stats.numberOfFailures() &lt; failLimit;</span>
+<span class="pc bpc" id="L157" title="4 of 6 branches missed.">            boolean hitFailLimit = stats != null &amp;&amp; !iterImproved &amp;&amp; stats.numberOfFailures() &gt;= failLimit;</span>
+
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">            if (iterImproved) {</span>
+<span class="fc" id="L160">                freezeRate = Math.min(85, freezeRate + 3);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">            } else if (iterExhausted) {</span>
+<span class="nc" id="L162">                freezeRate = Math.max(25, freezeRate - 8);</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            } else if (hitFailLimit) {</span>
+<span class="nc" id="L164">                freezeRate = Math.min(88, freezeRate + 5);</span>
+            }
+<span class="fc" id="L166">        }</span>
+
+<span class="fc bfc" id="L168" title="All 2 branches covered.">        return improved.get() ? SearchStatus.IMPROVED : SearchStatus.NOT_IMPROVED;</span>
+    }
+
+    private void applySchedulingFragment(
+            ConcreteCPModel cpm,
+            List&lt;BlackBoxSearch.IntervalSnapshot&gt; incIntervals,
+            List&lt;Integer&gt; incVars,
+            int iteration,
+            int freezeRatePercent,
+            boolean withIncumbentCut) {
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (withIncumbentCut) {</span>
+<span class="fc" id="L179">            blackBoxSearch.postIncumbentCut(false);</span>
+        }
+
+<span class="fc" id="L182">        int n = incIntervals.size();</span>
+<span class="fc" id="L183">        int minStart = Integer.MAX_VALUE;</span>
+<span class="fc" id="L184">        int maxEnd = Integer.MIN_VALUE;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int k = 0; k &lt; n; k++) {</span>
+<span class="fc" id="L186">            BlackBoxSearch.IntervalSnapshot snap = incIntervals.get(k);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">            if (snap.present()) {</span>
+<span class="fc" id="L188">                minStart = Math.min(minStart, snap.start());</span>
+<span class="fc" id="L189">                maxEnd = Math.max(maxEnd, snap.end());</span>
+            }
+        }
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (minStart &gt; maxEnd) {</span>
+<span class="nc" id="L193">            minStart = 0;</span>
+<span class="nc" id="L194">            maxEnd = 0;</span>
+        }
+
+<span class="fc" id="L197">        int op = (iteration - 1) % 3;</span>
+<span class="pc bpc" id="L198" title="1 of 4 branches missed.">        if (op == 0 &amp;&amp; maxEnd &gt; minStart) {</span>
+            // Operator 0: Prefix time-window freeze
+<span class="fc" id="L200">            double baseRatio = WINDOW_RATIOS[(iteration / 3) % WINDOW_RATIOS.length];</span>
+<span class="fc" id="L201">            double scaledRatio = Math.max(0.15, Math.min(0.85, baseRatio * (freezeRatePercent / 65.0)));</span>
+<span class="fc" id="L202">            int tCut = minStart + (int) Math.round((maxEnd - minStart) * scaledRatio);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            for (int k = 0; k &lt; n; k++) {</span>
+<span class="fc" id="L204">                BlackBoxSearch.IntervalSnapshot snap = incIntervals.get(k);</span>
+<span class="fc" id="L205">                CPIntervalVar iv = cpIntervals[k];</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">                if (snap.present()) {</span>
+<span class="fc bfc" id="L207" title="All 4 branches covered.">                    if (snap.start() &lt; tCut &amp;&amp; snap.end() &lt; maxEnd) {</span>
+<span class="fc" id="L208">                        iv.setPresent();</span>
+<span class="fc" id="L209">                        iv.setStart(snap.start());</span>
+<span class="fc" id="L210">                        iv.setLength(snap.length());</span>
+                    }
+<span class="nc bnc" id="L212" title="All 2 branches missed.">                } else if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="nc" id="L213">                    iv.setAbsent();</span>
+                }
+            }
+<span class="fc bfc" id="L216" title="All 2 branches covered.">        } else if (op == 1) {</span>
+            // Operator 1: Random subset freeze with left-shift allowance
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            boolean exactStart = (iteration % 2 == 0);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">            for (int k = 0; k &lt; n; k++) {</span>
+<span class="fc" id="L220">                BlackBoxSearch.IntervalSnapshot snap = incIntervals.get(k);</span>
+<span class="fc" id="L221">                CPIntervalVar iv = cpIntervals[k];</span>
+<span class="pc bpc" id="L222" title="1 of 4 branches missed.">                if (snap.present() &amp;&amp; snap.end() &gt;= maxEnd) {</span>
+                    // Always relax critical-end tasks so makespan can improve
+<span class="fc" id="L224">                    continue;</span>
+                }
+<span class="fc bfc" id="L226" title="All 2 branches covered.">                if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                    if (snap.present()) {</span>
+<span class="fc" id="L228">                        iv.setPresent();</span>
+<span class="fc" id="L229">                        iv.setLength(snap.length());</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">                        if (exactStart) {</span>
+<span class="fc" id="L231">                            iv.setStart(snap.start());</span>
+                        } else {
+<span class="fc" id="L233">                            iv.setStartMax(snap.start());</span>
+                        }
+                    } else {
+<span class="nc" id="L236">                        iv.setAbsent();</span>
+                    }
+                }
+            }
+<span class="fc" id="L240">        } else {</span>
+            // Operator 2: Optional-presence freeze or contiguous block relaxation
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">            if (hasOptionalIntervals) {</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                for (int k = 0; k &lt; n; k++) {</span>
+<span class="nc" id="L244">                    BlackBoxSearch.IntervalSnapshot snap = incIntervals.get(k);</span>
+<span class="nc" id="L245">                    CPIntervalVar iv = cpIntervals[k];</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                    if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">                        if (snap.present()) {</span>
+<span class="nc" id="L248">                            iv.setPresent();</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">                            if (snap.end() &lt; maxEnd &amp;&amp; random.nextBoolean()) {</span>
+<span class="nc" id="L250">                                iv.setStartMax(snap.start());</span>
+                            }
+                        } else {
+<span class="nc" id="L253">                            iv.setAbsent();</span>
+                        }
+                    }
+                }
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">            } else if (n &gt; 1) {</span>
+<span class="fc" id="L258">                int freezeCount = Math.max(0, Math.min(n - 1, (int) Math.round(n * (freezeRatePercent / 100.0))));</span>
+<span class="fc" id="L259">                int relaxCount = n - freezeCount;</span>
+<span class="fc" id="L260">                int startIdx = random.nextInt(n);</span>
+<span class="fc" id="L261">                boolean[] relaxed = new boolean[n];</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">                for (int r = 0; r &lt; relaxCount; r++) {</span>
+<span class="fc" id="L263">                    relaxed[(startIdx + r) % n] = true;</span>
+                }
+<span class="fc bfc" id="L265" title="All 2 branches covered.">                for (int k = 0; k &lt; n; k++) {</span>
+<span class="fc" id="L266">                    BlackBoxSearch.IntervalSnapshot snap = incIntervals.get(k);</span>
+<span class="pc bpc" id="L267" title="1 of 6 branches missed.">                    if (!relaxed[k] &amp;&amp; snap.present() &amp;&amp; snap.end() &lt; maxEnd) {</span>
+<span class="fc" id="L268">                        CPIntervalVar iv = cpIntervals[k];</span>
+<span class="fc" id="L269">                        iv.setPresent();</span>
+<span class="fc" id="L270">                        iv.setStart(snap.start());</span>
+<span class="fc" id="L271">                        iv.setLength(snap.length());</span>
+                    }
+                }
+            }
+        }
+
+        // Also freeze a subset of primary integer variables if present
+<span class="pc bpc" id="L278" title="4 of 6 branches missed.">        if (cpVars != null &amp;&amp; cpVars.length &gt; 0 &amp;&amp; incVars.size() == cpVars.length) {</span>
+<span class="nc" id="L279">            ModelStructureAnalyzer structure = blackBoxSearch.structureAnalyzer();</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">            for (int idx : structure.primaryIndices()) {</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">                if (random.nextInt(100) &lt; freezeRatePercent) {</span>
+<span class="nc" id="L282">                    cpVars[idx].fix(incVars.get(idx));</span>
+                }
+            }
+        }
+
+<span class="fc" id="L287">        cpm.solver.fixPoint();</span>
+<span class="fc" id="L288">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

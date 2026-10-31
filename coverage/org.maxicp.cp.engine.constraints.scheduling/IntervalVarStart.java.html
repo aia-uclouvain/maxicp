@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the start time of an interval variable {@code var} to an integer variable {@code start}.
  *
  * @author Pierre Schaus
  */
@@ -19,25 +19,31 @@ public class IntervalVarStart extends AbstractCPConstraint {
     CPIntervalVar var;
     CPIntVar start;
 
+    /**
+     * Creates a constraint linking {@code start(var)} to {@code start}.
+     *
+     * @param var   the interval variable
+     * @param start the integer variable representing the start of {@code var}
+     */
     public IntervalVarStart(CPIntervalVar var, CPIntVar start) {
-<span class="fc" id="L23">        super(var.getSolver());</span>
-<span class="fc" id="L24">        this.var = var;</span>
-<span class="fc" id="L25">        this.start = start;</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L29">        super(var.getSolver());</span>
+<span class="fc" id="L30">        this.var = var;</span>
+<span class="fc" id="L31">        this.start = start;</span>
+<span class="fc" id="L32">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L30">        var.propagateOnChange(this);</span>
-<span class="fc" id="L31">        start.propagateOnBoundChange(this);</span>
-<span class="fc" id="L32">        propagate();</span>
-<span class="fc" id="L33">    }</span>
+<span class="fc" id="L36">        var.propagateOnChange(this);</span>
+<span class="fc" id="L37">        start.propagateOnBoundChange(this);</span>
+<span class="fc" id="L38">        propagate();</span>
+<span class="fc" id="L39">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc" id="L37">        start.removeBelow(var.startMin());</span>
-<span class="fc" id="L38">        start.removeAbove(var.startMax());</span>
-<span class="fc" id="L39">        var.setStartMin(start.min());</span>
-<span class="fc" id="L40">        var.setStartMax(start.max());</span>
-<span class="fc" id="L41">    }</span>
+<span class="fc" id="L43">        start.removeBelow(var.startMin());</span>
+<span class="fc" id="L44">        start.removeAbove(var.startMax());</span>
+<span class="fc" id="L45">        var.setStartMin(start.min());</span>
+<span class="fc" id="L46">        var.setStartMax(start.max());</span>
+<span class="fc" id="L47">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

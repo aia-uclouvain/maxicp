@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LexLe.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.cp.engine.constraints</a> &gt; <span class="el_source">LexLe.java</span></div><h1>LexLe.java</h1><pre class="source lang-java linenums">/*
+ * MaxiCP is under MIT License
+ * Copyright (c)  2024 UCLouvain
+ *
+ */
+
+package org.maxicp.cp.engine.constraints;
+
+import org.maxicp.cp.engine.core.AbstractCPConstraint;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.state.StateInt;
+import org.maxicp.util.exception.InconsistencyException;
+
+/**
+ * Global lexicographic ordering constraint between two vectors x and y:
+ * enforces {@code x &lt;=_lex y} (when {@code strict == false}) or {@code x &lt;_lex y} (when {@code strict == true}).
+ * Achieves Generalized Arc Consistency (GAC) based on Frisch et al. (CP 2002).
+ */
+public class LexLe extends AbstractCPConstraint {
+
+    private final CPIntVar[] x;
+    private final CPIntVar[] y;
+    private final boolean strict;
+    private final int n;
+    private final StateInt alpha;
+
+    /**
+     * Creates a lexicographic ordering constraint between two arrays of variables {@code x} and {@code y}.
+     *
+     * @param x      the first array of variables
+     * @param y      the second array of variables (must have the same length as {@code x})
+     * @param strict if {@code true}, enforces {@code x &lt;_lex y}; otherwise enforces {@code x &lt;=_lex y}
+     */
+    public LexLe(CPIntVar[] x, CPIntVar[] y, boolean strict) {
+<span class="fc" id="L35">        super(x[0].getSolver());</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (x.length != y.length) {</span>
+<span class="nc" id="L37">            throw new IllegalArgumentException(&quot;LexLe requires arrays of equal length&quot;);</span>
+        }
+<span class="fc" id="L39">        this.x = x;</span>
+<span class="fc" id="L40">        this.y = y;</span>
+<span class="fc" id="L41">        this.strict = strict;</span>
+<span class="fc" id="L42">        this.n = x.length;</span>
+<span class="fc" id="L43">        this.alpha = getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L44">    }</span>
+
+    /**
+     * Creates a non-strict lexicographic ordering constraint {@code x &lt;=_lex y}.
+     *
+     * @param x the first array of variables
+     * @param y the second array of variables (must have the same length as {@code x})
+     */
+    public LexLe(CPIntVar[] x, CPIntVar[] y) {
+<span class="nc" id="L53">        this(x, y, false);</span>
+<span class="nc" id="L54">    }</span>
+
+    @Override
+    public void post() {
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L59">            x[i].propagateOnBoundChange(this);</span>
+<span class="fc" id="L60">            y[i].propagateOnBoundChange(this);</span>
+        }
+<span class="fc" id="L62">        propagate();</span>
+<span class="fc" id="L63">    }</span>
+
+    @Override
+    public void propagate() {
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (!isActive()) return;</span>
+
+<span class="fc" id="L69">        int a = alpha.value();</span>
+        while (true) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">            while (a &lt; n) {</span>
+<span class="fc bfc" id="L72" title="All 8 branches covered.">                if (x[a] == y[a] || (x[a].isFixed() &amp;&amp; y[a].isFixed() &amp;&amp; x[a].min() == y[a].min())) {</span>
+<span class="fc" id="L73">                    a++;</span>
+                } else {
+                    break;
+                }
+            }
+<span class="fc" id="L78">            alpha.setValue(a);</span>
+
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            if (a == n) {</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">                if (strict) {</span>
+<span class="nc" id="L82">                    throw InconsistencyException.INCONSISTENCY;</span>
+                }
+<span class="fc" id="L84">                setActive(false);</span>
+<span class="fc" id="L85">                return;</span>
+            }
+
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (x[a].max() &lt; y[a].min()) {</span>
+<span class="fc" id="L89">                setActive(false);</span>
+<span class="fc" id="L90">                return;</span>
+            }
+
+            // Determine whether the suffix (a + 1 .. n - 1) can be satisfied if x[a] == y[a]
+<span class="fc" id="L94">            int k = a + 1;</span>
+<span class="fc bfc" id="L95" title="All 4 branches covered.">            while (k &lt; n &amp;&amp; x[k].min() == y[k].max()) {</span>
+<span class="fc" id="L96">                k++;</span>
+            }
+<span class="fc bfc" id="L98" title="All 4 branches covered.">            boolean suffixViolated = (k == n) ? strict : (x[k].min() &gt; y[k].max());</span>
+
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (suffixViolated) {</span>
+                // Suffix cannot be satisfied when x[a] == y[a], so enforce x[a] &lt; y[a]
+<span class="fc" id="L102">                x[a].removeAbove(y[a].max() - 1);</span>
+<span class="fc" id="L103">                y[a].removeBelow(x[a].min() + 1);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                if (x[a].max() &lt; y[a].min()) {</span>
+<span class="fc" id="L105">                    setActive(false);</span>
+                }
+<span class="fc" id="L107">                return;</span>
+            } else {
+                // Suffix is satisfiable, so enforce x[a] &lt;= y[a]
+<span class="fc" id="L110">                x[a].removeAbove(y[a].max());</span>
+<span class="fc" id="L111">                y[a].removeBelow(x[a].min());</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                if (x[a].max() &lt; y[a].min()) {</span>
+<span class="fc" id="L113">                    setActive(false);</span>
+<span class="fc" id="L114">                    return;</span>
+                }
+<span class="pc bpc" id="L116" title="1 of 6 branches missed.">                if (x[a].isFixed() &amp;&amp; y[a].isFixed() &amp;&amp; x[a].min() == y[a].min()) {</span>
+<span class="fc" id="L117">                    a++;</span>
+<span class="fc" id="L118">                    alpha.setValue(a);</span>
+                } else {
+<span class="fc" id="L120">                    return;</span>
+                }
+            }
+<span class="fc" id="L123">        }</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

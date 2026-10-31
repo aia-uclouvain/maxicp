@@ -6,26 +6,22 @@ package org.maxicp.modeling;
 
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.integer.Constant;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.constraints.BinPacking;
+import org.maxicp.modeling.constraints.scheduling.Alternative;
+import org.maxicp.modeling.symbolic.IntervalStatus;
+import org.maxicp.modeling.symbolic.Maximization;
+import org.maxicp.modeling.symbolic.Minimization;
+import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.modeling.symbolic.SharedMaximization;
+import org.maxicp.modeling.symbolic.SharedMinimization;
 
 import java.util.*;
 
 /**
  * Walks the full constraint / expression graph of a {@link ModelDispatcher}
- * and collects all candidate decision variables declared by
- * {@link DecisionVarsProvider} nodes.
- *
- * &lt;p&gt;Walk strategy:&lt;/p&gt;
- * &lt;ol&gt;
- *   &lt;li&gt;For every {@link Constraint}: if it implements
- *       {@link DecisionVarsProvider}, harvest its {@code decisionVariables()}.
- *   &lt;/li&gt;
- *   &lt;li&gt;Descend the expression sub-tree of every scope expression via
- *       {@link Expression#subexpressions()}, collecting from any
- *       {@link DecisionVarsProvider} node found (e.g. an {@code Element1D}
- *       embedded inside a sum).
- *   &lt;/li&gt;
- * &lt;/ol&gt;
+ * and collects candidate decision variables ({@link IntExpression} and {@link IntervalVar}).
  *
  * &lt;p&gt;Results are deduplicated by identity, preserving first-seen order.&lt;/p&gt;
  *
@@ -36,44 +32,231 @@ public class DecisionVarCollector {
     private DecisionVarCollector() {}
 
     /**
-     * Collects all candidate decision variables inferred from the model's
+     * Collects all candidate integer/boolean decision variables inferred from the model's
      * constraint graph.
      *
      * @param model the model to inspect
      * @return ordered, identity-deduplicated, unmodifiable list of decision variables
      */
     public static List&lt;IntExpression&gt; collect(ModelDispatcher model) {
-<span class="fc" id="L46">        IdentityHashMap&lt;IntExpression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc" id="L47">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            if (c instanceof DecisionVarsProvider dvp) {</span>
-<span class="fc bfc" id="L50" title="All 2 branches covered.">                for (IntExpression v : dvp.decisionVariables())</span>
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">                    if (seen.putIfAbsent(v, Boolean.TRUE) == null)</span>
-<span class="fc" id="L52">                        result.add(v);</span>
+<span class="fc" id="L42">        IdentityHashMap&lt;IntExpression, Boolean&gt; derived = collectDerivedVars(model);</span>
+<span class="fc" id="L43">        IdentityHashMap&lt;IntExpression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L44">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
+
+        // Pass 1: Harvest explicitly declared decision variables from DecisionVarsProvider nodes
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (c instanceof DecisionVarsProvider dvp) {</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">                for (IntExpression v : dvp.decisionVariables()) {</span>
+<span class="pc bpc" id="L50" title="1 of 4 branches missed.">                    if (isCandidateDecisionVar(v, derived) &amp;&amp; seen.putIfAbsent(v, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L51">                        result.add(v);</span>
+                    }
+<span class="fc" id="L53">                }</span>
             }
-<span class="fc" id="L54">            walkExpressions(c.scope(), seen, result);</span>
-<span class="fc" id="L55">        }</span>
-<span class="fc" id="L56">        return Collections.unmodifiableList(result);</span>
+<span class="fc" id="L55">            walkDecisionVarProviders(c.scope(), derived, seen, result);</span>
+<span class="fc" id="L56">        }</span>
+
+        // Pass 2: Walk non-DecisionVarsProvider constraints for leaf IntVars
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (!(c instanceof DecisionVarsProvider)) {</span>
+<span class="fc" id="L61">                walkLeafIntVars(c.scope(), derived, seen, result);</span>
+            }
+<span class="fc" id="L63">        }</span>
+
+        // Pass 3: If no constraints provided decision variables and the model has no interval variables,
+        // fallback to registered model IntVars
+<span class="fc bfc" id="L67" title="All 4 branches covered.">        if (result.isEmpty() &amp;&amp; model.getRegisteredIntervalVars().isEmpty()) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">            for (IntVar v : model.getRegisteredIntVars()) {</span>
+<span class="pc bpc" id="L69" title="3 of 6 branches missed.">                if (isCandidateDecisionVar(v, derived) &amp;&amp; v.min() &lt; v.max() &amp;&amp; seen.putIfAbsent(v, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L70">                    result.add(v);</span>
+                }
+<span class="fc" id="L72">            }</span>
+        }
+
+<span class="fc" id="L75">        return Collections.unmodifiableList(result);</span>
+    }
+
+    /**
+     * Collects all integer/boolean variables relevant for black-box search on the model,
+     * starting with primary decision variables from {@link #collect(ModelDispatcher)},
+     * followed by any leaf {@link IntVar} in the objective and any remaining registered
+     * {@link IntVar} on the {@link ModelDispatcher}.
+     *
+     * @param model     the model to inspect
+     * @param objective optional objective
+     * @return ordered, identity-deduplicated, unmodifiable list of integer variables
+     */
+    public static List&lt;IntExpression&gt; collectAllIntVars(ModelDispatcher model, Objective objective) {
+<span class="fc" id="L89">        IdentityHashMap&lt;IntExpression, Boolean&gt; derived = collectDerivedVars(model);</span>
+<span class="fc" id="L90">        IdentityHashMap&lt;IntExpression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L91">        List&lt;IntExpression&gt; result = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (IntExpression v : collect(model)) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">            if (seen.putIfAbsent(v, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L95">                result.add(v);</span>
+            }
+<span class="fc" id="L97">        }</span>
+
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        boolean hasIntervals = !collectIntervals(model).isEmpty();</span>
+<span class="fc bfc" id="L100" title="All 4 branches covered.">        if (!hasIntervals &amp;&amp; !model.isRawSolver()) {</span>
+<span class="fc" id="L101">            IntExpression objExpr = extractObjectiveExpr(objective);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (objExpr != null) {</span>
+<span class="fc" id="L103">                walkLeafIntVars(List.of(objExpr), derived, seen, result);</span>
+            }
+        }
+
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (IntVar v : model.getRegisteredIntVars()) {</span>
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">            if (!(v instanceof IntervalStatus) &amp;&amp; seen.putIfAbsent(v, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L109">                result.add(v);</span>
+            }
+<span class="fc" id="L111">        }</span>
+
+<span class="fc" id="L113">        return Collections.unmodifiableList(result);</span>
+    }
+
+    /**
+     * Collects all {@link IntervalVar} instances from the model's constraint graph
+     * and registered interval variables.
+     *
+     * @param model the model to inspect
+     * @return ordered, identity-deduplicated, unmodifiable list of interval variables
+     */
+    public static List&lt;IntervalVar&gt; collectIntervals(ModelDispatcher model) {
+<span class="fc" id="L124">        IdentityHashMap&lt;IntervalVar, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L125">        List&lt;IntervalVar&gt; result = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (IntervalVar iv : model.getRegisteredIntervalVars()) {</span>
+<span class="pc bpc" id="L128" title="2 of 4 branches missed.">            if (!isDummyFixedStepInterval(iv) &amp;&amp; seen.putIfAbsent(iv, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L129">                result.add(iv);</span>
+            }
+<span class="fc" id="L131">        }</span>
+
+<span class="fc" id="L133">        IdentityHashMap&lt;Expression, Boolean&gt; visited = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="fc" id="L135">            Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(c.scope());</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            while (!stack.isEmpty()) {</span>
+<span class="fc" id="L137">                Expression node = stack.pop();</span>
+<span class="pc bpc" id="L138" title="1 of 4 branches missed.">                if (node == null || visited.putIfAbsent(node, Boolean.TRUE) != null) {</span>
+<span class="fc" id="L139">                    continue;</span>
+                }
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                if (node instanceof IntervalVar iv) {</span>
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">                    if (!isDummyFixedStepInterval(iv) &amp;&amp; seen.putIfAbsent(iv, Boolean.TRUE) == null) {</span>
+<span class="nc" id="L143">                        result.add(iv);</span>
+                    }
+<span class="pc bpc" id="L145" title="3 of 4 branches missed.">                } else if (node instanceof IntervalStatus is &amp;&amp; is.intervalVar != null) {</span>
+<span class="nc bnc" id="L146" title="All 4 branches missed.">                    if (!isDummyFixedStepInterval(is.intervalVar) &amp;&amp; seen.putIfAbsent(is.intervalVar, Boolean.TRUE) == null) {</span>
+<span class="nc" id="L147">                        result.add(is.intervalVar);</span>
+                    }
+                }
+<span class="fc" id="L150">                Collection&lt;? extends Expression&gt; children = node.subexpressions();</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                if (children != null) {</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                    for (Expression child : children) {</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">                        if (child != null) {</span>
+<span class="fc" id="L154">                            stack.push(child);</span>
+                        }
+<span class="fc" id="L156">                    }</span>
+                }
+<span class="fc" id="L158">            }</span>
+<span class="fc" id="L159">        }</span>
+
+<span class="fc" id="L161">        return Collections.unmodifiableList(result);</span>
+    }
+
+    private static boolean isDummyFixedStepInterval(IntervalVar iv) {
+<span class="pc bpc" id="L165" title="3 of 6 branches missed.">        return iv.isPresent() &amp;&amp; iv.isFixed() &amp;&amp; iv.lengthMin() &gt;= org.maxicp.Constants.HORIZON;</span>
+    }
+
+    private static IdentityHashMap&lt;IntExpression, Boolean&gt; collectDerivedVars(ModelDispatcher model) {
+<span class="fc" id="L169">        IdentityHashMap&lt;IntExpression, Boolean&gt; derived = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L170">        IdentityHashMap&lt;IntVar, Boolean&gt; registered = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        for (IntVar v : model.getRegisteredIntVars()) {</span>
+<span class="fc" id="L172">            registered.put(v, Boolean.TRUE);</span>
+<span class="fc" id="L173">        }</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">            if (c instanceof BinPacking bp &amp;&amp; bp.loads() != null) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">                for (IntExpression load : bp.loads()) {</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">                    if (load != null) {</span>
+<span class="fc" id="L178">                        derived.put(load, Boolean.TRUE);</span>
+                    }
+                }
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">            } else if (c instanceof Alternative alt &amp;&amp; alt.n() instanceof IntVar nv) {</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">                if (!registered.containsKey(nv)) {</span>
+<span class="fc" id="L183">                    derived.put(nv, Boolean.TRUE);</span>
+                }
+            }
+<span class="fc" id="L186">        }</span>
+<span class="fc" id="L187">        return derived;</span>
+    }
+
+    private static boolean isCandidateDecisionVar(IntExpression v, IdentityHashMap&lt;IntExpression, Boolean&gt; derived) {
+<span class="pc bpc" id="L191" title="3 of 6 branches missed.">        if (v == null || v instanceof Constant || v instanceof IntervalStatus) {</span>
+<span class="nc" id="L192">            return false;</span>
+        }
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        return !derived.containsKey(v);</span>
     }
 
     /** Iterative DFS over expression trees; harvests DecisionVarsProvider nodes. */
-    private static void walkExpressions(
+    private static void walkDecisionVarProviders(
             Collection&lt;? extends Expression&gt; roots,
+            IdentityHashMap&lt;IntExpression, Boolean&gt; derived,
             IdentityHashMap&lt;IntExpression, Boolean&gt; seen,
             List&lt;IntExpression&gt; result) {
-<span class="fc" id="L64">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(roots);</span>
-<span class="fc" id="L65">        IdentityHashMap&lt;Expression, Boolean&gt; visited = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L66" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
-<span class="fc" id="L67">            Expression node = stack.pop();</span>
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (visited.putIfAbsent(node, Boolean.TRUE) != null) continue;</span>
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            if (node instanceof DecisionVarsProvider dvp) {</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">                for (IntExpression v : dvp.decisionVariables())</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">                    if (seen.putIfAbsent(v, Boolean.TRUE) == null)</span>
-<span class="nc" id="L72">                        result.add(v);</span>
+<span class="pc bpc" id="L203" title="2 of 4 branches missed.">        if (roots == null || roots.isEmpty()) return;</span>
+<span class="fc" id="L204">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(roots);</span>
+<span class="fc" id="L205">        IdentityHashMap&lt;Expression, Boolean&gt; visited = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L207">            Expression node = stack.pop();</span>
+<span class="pc bpc" id="L208" title="1 of 4 branches missed.">            if (node == null || visited.putIfAbsent(node, Boolean.TRUE) != null) continue;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if (node instanceof DecisionVarsProvider dvp) {</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">                for (IntExpression v : dvp.decisionVariables()) {</span>
+<span class="pc bpc" id="L211" title="1 of 4 branches missed.">                    if (isCandidateDecisionVar(v, derived) &amp;&amp; seen.putIfAbsent(v, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L212">                        result.add(v);</span>
+                    }
+<span class="fc" id="L214">                }</span>
             }
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">            for (Expression child : node.subexpressions())</span>
-<span class="nc" id="L75">                stack.push(child);</span>
-<span class="fc" id="L76">        }</span>
-<span class="fc" id="L77">    }</span>
+<span class="fc" id="L216">            Collection&lt;? extends Expression&gt; children = node.subexpressions();</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            if (children != null) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">                for (Expression child : children) {</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">                    if (child != null) stack.push(child);</span>
+<span class="fc" id="L220">                }</span>
+            }
+<span class="fc" id="L222">        }</span>
+<span class="fc" id="L223">    }</span>
+
+    /** Iterative DFS over expression trees; harvests non-fixed leaf IntVar nodes. */
+    private static void walkLeafIntVars(
+            Collection&lt;? extends Expression&gt; roots,
+            IdentityHashMap&lt;IntExpression, Boolean&gt; derived,
+            IdentityHashMap&lt;IntExpression, Boolean&gt; seen,
+            List&lt;IntExpression&gt; result) {
+<span class="pc bpc" id="L231" title="2 of 4 branches missed.">        if (roots == null || roots.isEmpty()) return;</span>
+<span class="fc" id="L232">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(roots);</span>
+<span class="fc" id="L233">        IdentityHashMap&lt;Expression, Boolean&gt; visited = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L235">            Expression node = stack.pop();</span>
+<span class="pc bpc" id="L236" title="1 of 4 branches missed.">            if (node == null || visited.putIfAbsent(node, Boolean.TRUE) != null) continue;</span>
+<span class="fc bfc" id="L237" title="All 6 branches covered.">            if (node instanceof IntVar iv &amp;&amp; isCandidateDecisionVar(iv, derived) &amp;&amp; iv.min() &lt; iv.max()) {</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">                if (seen.putIfAbsent(iv, Boolean.TRUE) == null) {</span>
+<span class="fc" id="L239">                    result.add(iv);</span>
+                }
+            }
+<span class="fc" id="L242">            Collection&lt;? extends Expression&gt; children = node.subexpressions();</span>
+<span class="pc bpc" id="L243" title="1 of 2 branches missed.">            if (children != null) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                for (Expression child : children) {</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">                    if (child != null) stack.push(child);</span>
+<span class="fc" id="L246">                }</span>
+            }
+<span class="fc" id="L248">        }</span>
+<span class="fc" id="L249">    }</span>
+
+    private static IntExpression extractObjectiveExpr(Objective objective) {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (objective == null) return null;</span>
+<span class="pc bpc" id="L253" title="3 of 5 branches missed.">        return switch (objective) {</span>
+<span class="fc" id="L254">            case Minimization min -&gt; min.expr();</span>
+<span class="nc" id="L255">            case SharedMinimization min -&gt; min.expr;</span>
+<span class="fc" id="L256">            case Maximization max -&gt; max.expr();</span>
+<span class="nc" id="L257">            case SharedMaximization max -&gt; max.expr;</span>
+<span class="nc" id="L258">            default -&gt; null;</span>
+        };
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

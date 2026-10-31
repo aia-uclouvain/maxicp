@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-<span class="nc" id="L13">public record InSet(IntExpression a, Set&lt;Integer&gt; b) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
+<span class="fc" id="L13">public record InSet(IntExpression a, Set&lt;Integer&gt; b) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
     @Override
     public Collection&lt;? extends Expression&gt; computeSubexpressions() {
-<span class="nc" id="L16">        return List.of(a);</span>
+<span class="fc" id="L16">        return List.of(a);</span>
     }
 
     @Override

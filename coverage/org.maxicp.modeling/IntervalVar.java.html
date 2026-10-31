@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 public interface IntervalVar extends Var, IntervalExpression {
     default boolean isFixed() {
-<span class="pc bpc" id="L18" title="1 of 2 branches missed.">        return isAbsent() || (</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        return isAbsent() || (</span>
 <span class="fc bfc" id="L19" title="All 2 branches covered.">                startMin() == startMax() &amp;&amp;</span>
 <span class="pc bpc" id="L20" title="1 of 2 branches missed.">                endMin() == endMax() &amp;&amp;</span>
 <span class="pc bpc" id="L21" title="1 of 2 branches missed.">                lengthMin() == lengthMax()</span>

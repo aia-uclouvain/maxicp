@@ -154,11 +154,11 @@ public class ShortTableCT extends AbstractCPConstraint {
 <span class="fc" id="L154">            int idx = this.unbounded[i];</span>
 <span class="fc" id="L155">            CPIntVar var = this.offx[idx];</span>
 <span class="fc" id="L156">            this.filterDomain(var, supports[idx], starSupports[idx]);</span>
-<span class="pc bpc" id="L157" title="1 of 2 branches missed.">            if (var.isFixed()) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">            if (var.isFixed()) {</span>
                 // var is bound, removed from unbounded
-<span class="nc" id="L159">                nUnboundValue--;</span>
-<span class="nc" id="L160">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
-<span class="nc" id="L161">                this.unbounded[nUnboundValue] = idx;</span>
+<span class="fc" id="L159">                nUnboundValue--;</span>
+<span class="fc" id="L160">                this.unbounded[i] = this.unbounded[nUnboundValue];</span>
+<span class="fc" id="L161">                this.unbounded[nUnboundValue] = idx;</span>
             }
         }
 <span class="fc" id="L164">        this.nUnbound.setValue(nUnboundValue);</span>

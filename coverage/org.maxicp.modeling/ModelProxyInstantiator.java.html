@@ -32,16 +32,16 @@ public interface ModelProxyInstantiator extends ModelProxy {
     }
 
     default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Runnable fun) {
-<span class="nc" id="L35">        runAsConcrete(instantiator, getModel(), fun);</span>
-<span class="nc" id="L36">    }</span>
+<span class="fc" id="L35">        runAsConcrete(instantiator, getModel(), fun);</span>
+<span class="fc" id="L36">    }</span>
 
     default &lt;T extends ConcreteModel&gt; void runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Runnable fun) {
-<span class="nc" id="L39">        T m = instantiator.instantiate(bm);</span>
-<span class="nc" id="L40">        runWithModel(m, () -&gt; {</span>
-<span class="nc" id="L41">            fun.run();</span>
-<span class="nc" id="L42">            return null;</span>
+<span class="fc" id="L39">        T m = instantiator.instantiate(bm);</span>
+<span class="fc" id="L40">        runWithModel(m, () -&gt; {</span>
+<span class="fc" id="L41">            fun.run();</span>
+<span class="fc" id="L42">            return null;</span>
         });
-<span class="nc" id="L44">    }</span>
+<span class="fc" id="L44">    }</span>
 
     default &lt;T extends ConcreteModel, R&gt; R runAsConcrete(ModelInstantiator&lt;T&gt; instantiator, Model bm, Function&lt;T, R&gt; fun) {
 <span class="fc" id="L47">        T m = instantiator.instantiate(bm);</span>

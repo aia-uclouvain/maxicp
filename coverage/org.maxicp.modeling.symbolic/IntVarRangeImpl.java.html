@@ -29,8 +29,8 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
 
     @Override
     public int defaultEvaluate() throws VariableNotFixedException {
-<span class="nc bnc" id="L32" title="All 2 branches missed.">        if(defaultMin() == defaultMax()) return defaultMin();</span>
-<span class="nc" id="L33">        throw new VariableNotFixedException();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">        if(defaultMin() == defaultMax()) return defaultMin();</span>
+<span class="fc" id="L33">        throw new VariableNotFixedException();</span>
     }
 
     @Override
@@ -50,7 +50,7 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
 
     @Override
     public boolean defaultContains(int v) {
-<span class="nc bnc" id="L53" title="All 4 branches missed.">        return min &lt;= v &amp;&amp; v &lt;= max;</span>
+<span class="fc bfc" id="L53" title="All 4 branches covered.">        return min &lt;= v &amp;&amp; v &lt;= max;</span>
     }
 
     @Override
@@ -62,12 +62,12 @@ import org.maxicp.modeling.algebra.VariableNotFixedException;
 
     @Override
     public String toString() {
-<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (getModelProxy().isConcrete()) {</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete()) {</span>
 <span class="nc" id="L66">            return getModelProxy().getConcreteModel().getConcreteVar(this).toString();</span>
         }
-<span class="nc bnc" id="L68" title="All 2 branches missed.">        if(id != null)</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if(id != null)</span>
 <span class="nc" id="L69">            return id;</span>
-<span class="nc" id="L70">        return &quot;{&quot;+defaultMin()+&quot;..&quot;+defaultMax()+&quot;}&quot;;</span>
+<span class="fc" id="L70">        return &quot;{&quot;+defaultMin()+&quot;..&quot;+defaultMax()+&quot;}&quot;;</span>
     }
 
     @Override

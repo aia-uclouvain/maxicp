@@ -32,79 +32,78 @@ public class Sorted extends AbstractCPConstraint {
     int [] max;
 
     /**
-     * x is sorted in y according to permutation o
-     * y[0] &lt;= y[1] &lt;= ... &lt;= y[n-1]
-     * x[i] = y[o[i]] for all i
+     * {@code x} is sorted in {@code y} according to permutation {@code o}:
+     * {@code y[0] &lt;= y[1] &lt;= ... &lt;= y[n-1]} and {@code x[i] = y[o[i]]} for all {@code i}.
      *
      * @param x a set of n variables
-     * @param o a permutation of 0..n-1, so that x[i] = y[o[i]]
-     * @param y a set of n variables, y[i] is the ith smallest value of x
+     * @param o a permutation of 0..n-1, so that {@code x[i] = y[o[i]]}
+     * @param y a set of n variables, {@code y[i]} is the ith smallest value of x
      */
     public Sorted(CPIntVar[] x, CPIntVar[] o, CPIntVar[] y) {
-<span class="fc" id="L44">        super(x[0].getSolver());</span>
-<span class="fc" id="L45">        this. n = x.length;</span>
+<span class="fc" id="L43">        super(x[0].getSolver());</span>
+<span class="fc" id="L44">        this. n = x.length;</span>
         // check all size are n and throw  illigal argument
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (o.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
-<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (y.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
-<span class="fc" id="L49">        this.x = x;</span>
-<span class="fc" id="L50">        this.o = o;</span>
-<span class="fc" id="L51">        this.y = y;</span>
-<span class="fc" id="L52">        this.min = new int[n];</span>
-<span class="fc" id="L53">        this.max = new int[n];</span>
-<span class="fc" id="L54">    }</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (o.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (y.length != n) throw new IllegalArgumentException(&quot;size !=&quot; + n);</span>
+<span class="fc" id="L48">        this.x = x;</span>
+<span class="fc" id="L49">        this.o = o;</span>
+<span class="fc" id="L50">        this.y = y;</span>
+<span class="fc" id="L51">        this.min = new int[n];</span>
+<span class="fc" id="L52">        this.max = new int[n];</span>
+<span class="fc" id="L53">    }</span>
 
 
     @Override
     public void post() {
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L60">            o[i].removeAbove(n-1);</span>
-<span class="fc" id="L61">            o[i].removeBelow(0);</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L59">            o[i].removeAbove(n-1);</span>
+<span class="fc" id="L60">            o[i].removeBelow(0);</span>
         }
 
-<span class="fc" id="L64">        getSolver().post(new AllDifferentDC(o));</span>
+<span class="fc" id="L63">        getSolver().post(new AllDifferentDC(o));</span>
 
 
-<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L68">            getSolver().post(new Element1DVar(y, o[i], x[i]));</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L67">            getSolver().post(new Element1DVar(y, o[i], x[i]));</span>
         }
-<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (int i = 0; i &lt; n-1; i++) {</span>
-<span class="fc" id="L71">            getSolver().post(new LessOrEqual(y[i], y[i+1]));</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (int i = 0; i &lt; n-1; i++) {</span>
+<span class="fc" id="L70">            getSolver().post(new LessOrEqual(y[i], y[i+1]));</span>
         }
 
         // redundant constraints
-<span class="fc bfc" id="L75" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L76">            int i_ = i;</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L75">            int i_ = i;</span>
             // number of x_k's &lt;= y_i is at least i-1
-<span class="fc" id="L78">            CPIntVar [] b1 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isLe(x[k],y[i_]));</span>
-<span class="fc" id="L79">            getSolver().post(CPFactory.ge(CPFactory.sum(b1),i-1));</span>
+<span class="fc" id="L77">            CPIntVar [] b1 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isLe(x[k],y[i_]));</span>
+<span class="fc" id="L78">            getSolver().post(CPFactory.ge(CPFactory.sum(b1),i-1));</span>
             // number of x_k's &gt;= y_i is at least n-i
-<span class="fc" id="L81">            CPIntVar [] b2 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isGe(x[k],y[i_]));</span>
-<span class="fc" id="L82">            getSolver().post(CPFactory.ge(CPFactory.sum(b2),n-i));</span>
+<span class="fc" id="L80">            CPIntVar [] b2 = CPFactory.makeIntVarArray(n, k-&gt; CPFactory.isGe(x[k],y[i_]));</span>
+<span class="fc" id="L81">            getSolver().post(CPFactory.ge(CPFactory.sum(b2),n-i));</span>
         }
 
-<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L86">            x[i].propagateOnBoundChange(this);</span>
-<span class="fc" id="L87">            y[i].propagateOnBoundChange(this);</span>
-<span class="fc" id="L88">            o[i].propagateOnBoundChange(this);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L85">            x[i].propagateOnBoundChange(this);</span>
+<span class="fc" id="L86">            y[i].propagateOnBoundChange(this);</span>
+<span class="fc" id="L87">            o[i].propagateOnBoundChange(this);</span>
         }
-<span class="fc" id="L90">        propagate();</span>
-<span class="fc" id="L91">    }</span>
+<span class="fc" id="L89">        propagate();</span>
+<span class="fc" id="L90">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L96">            min[i] = x[i].min();</span>
-<span class="fc" id="L97">            max[i] = x[i].max();</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L95">            min[i] = x[i].min();</span>
+<span class="fc" id="L96">            max[i] = x[i].max();</span>
         }
-<span class="fc" id="L99">        Arrays.sort(min);</span>
-<span class="fc" id="L100">        Arrays.sort(max);</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
-<span class="fc" id="L102">            y[i].removeBelow(min[i]);</span>
-<span class="fc" id="L103">            y[i].removeAbove(max[i]);</span>
+<span class="fc" id="L98">        Arrays.sort(min);</span>
+<span class="fc" id="L99">        Arrays.sort(max);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L101">            y[i].removeBelow(min[i]);</span>
+<span class="fc" id="L102">            y[i].removeAbove(max[i]);</span>
         }
 
 
-<span class="fc" id="L107">    }</span>
+<span class="fc" id="L106">    }</span>
 
 
 }

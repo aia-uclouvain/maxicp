@@ -19,13 +19,17 @@ import java.util.Collection;
  * BinPacking constraint. {@code x[i]} is the bin assigned to item {@code i};
  * {@code loads[b]} is derived from the assignments and weights.
  * Only {@code x} is considered to contain decision variables.
+ *
+ * @param x       the bin assignment expression for each item
+ * @param weights the weight of each item
+ * @param loads   the load expression for each bin
  */
-<span class="nc" id="L23">public record BinPacking(IntExpression[] x, int[] weights, IntExpression[] loads) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
+<span class="fc" id="L27">public record BinPacking(IntExpression[] x, int[] weights, IntExpression[] loads) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {</span>
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
         // x[i] = bin assigned to item i (decision); loads are derived
-<span class="nc" id="L28">        return Arrays.stream(x).filter(IntVar.class::isInstance).toList();</span>
+<span class="fc" id="L32">        return Arrays.stream(x).filter(IntVar.class::isInstance).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

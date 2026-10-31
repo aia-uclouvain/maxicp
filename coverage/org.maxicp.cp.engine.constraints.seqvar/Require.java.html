@@ -19,48 +19,54 @@ public class Require extends AbstractCPConstraint {
     private final int node;
 <span class="fc" id="L20">    private boolean scheduled = false;</span>
 
+    /**
+     * Creates a constraint requiring {@code node} to be visited in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param node   the node to require
+     */
     public Require(CPSeqVar seqVar, int node) {
-<span class="fc" id="L23">        super(seqVar.getSolver());</span>
-<span class="fc" id="L24">        this.seqVar = seqVar;</span>
-<span class="fc" id="L25">        this.node = node;</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L29">        super(seqVar.getSolver());</span>
+<span class="fc" id="L30">        this.seqVar = seqVar;</span>
+<span class="fc" id="L31">        this.node = node;</span>
+<span class="fc" id="L32">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L30">        seqVar.require(node);</span>
-<span class="fc" id="L31">    }</span>
+<span class="fc" id="L36">        seqVar.require(node);</span>
+<span class="fc" id="L37">    }</span>
 
     @Override
     public void propagate() {
 
-<span class="nc" id="L36">    }</span>
+<span class="nc" id="L42">    }</span>
 
     public void setScheduled(boolean scheduled) {
-<span class="nc" id="L39">        this.scheduled = scheduled;</span>
-<span class="nc" id="L40">    }</span>
+<span class="nc" id="L45">        this.scheduled = scheduled;</span>
+<span class="nc" id="L46">    }</span>
 
     public boolean isScheduled() {
-<span class="nc" id="L43">        return scheduled;</span>
+<span class="nc" id="L49">        return scheduled;</span>
     }
 
     @Override
     public void setActive(boolean active) {
 
-<span class="nc" id="L49">    }</span>
+<span class="nc" id="L55">    }</span>
 
     @Override
     public boolean isActive() {
-<span class="nc" id="L53">        return true;</span>
+<span class="nc" id="L59">        return true;</span>
     }
 
     @Override
     public void registerDelta(Delta delta) {
 
-<span class="nc" id="L59">    }</span>
+<span class="nc" id="L65">    }</span>
 
     @Override
     public void updateDeltas() {
 
-<span class="nc" id="L64">    }</span>
+<span class="nc" id="L70">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

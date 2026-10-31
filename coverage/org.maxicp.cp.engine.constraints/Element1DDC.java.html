@@ -35,64 +35,71 @@ public class Element1DDC
     int offZ;
     private StateInt[] supportCounter;
 
+    /**
+     * Creates a domain-consistent element constraint {@code array[y] = z}.
+     *
+     * @param array the 1D array of values to index
+     * @param y     the index variable
+     * @param z     the result variable
+     */
     public Element1DDC(int[] array, CPIntVar y, CPIntVar z) {
-<span class="fc" id="L39">        super(y.getSolver());</span>
-<span class="fc" id="L40">        this.t = array;</span>
-<span class="fc" id="L41">        this.y = y;</span>
-<span class="fc" id="L42">        this.z = z;</span>
-<span class="fc" id="L43">    }</span>
+<span class="fc" id="L46">        super(y.getSolver());</span>
+<span class="fc" id="L47">        this.t = array;</span>
+<span class="fc" id="L48">        this.y = y;</span>
+<span class="fc" id="L49">        this.z = z;</span>
+<span class="fc" id="L50">    }</span>
 
     @Override
     public void post() {
 
-<span class="fc" id="L48">        y.removeBelow(0);</span>
-<span class="fc" id="L49">        y.removeAbove(this.t.length - 1);</span>
+<span class="fc" id="L55">        y.removeBelow(0);</span>
+<span class="fc" id="L56">        y.removeAbove(this.t.length - 1);</span>
 
-<span class="fc" id="L51">        z.removeAbove(Arrays.stream(t).max().getAsInt());</span>
-<span class="fc" id="L52">        z.removeBelow(Arrays.stream(t).min().getAsInt());</span>
+<span class="fc" id="L58">        z.removeAbove(Arrays.stream(t).max().getAsInt());</span>
+<span class="fc" id="L59">        z.removeBelow(Arrays.stream(t).min().getAsInt());</span>
 
-<span class="fc" id="L54">        y.propagateOnDomainChange(this);</span>
-<span class="fc" id="L55">        z.propagateOnDomainChange(this);</span>
+<span class="fc" id="L61">        y.propagateOnDomainChange(this);</span>
+<span class="fc" id="L62">        z.propagateOnDomainChange(this);</span>
 
-<span class="fc" id="L57">        yDelta = y.delta(this);</span>
-<span class="fc" id="L58">        yValues = new int[y.size()];</span>
-<span class="fc" id="L59">        zDelta = z.delta(this);</span>
-<span class="fc" id="L60">        zValues = new int[z.size()];</span>
+<span class="fc" id="L64">        yDelta = y.delta(this);</span>
+<span class="fc" id="L65">        yValues = new int[y.size()];</span>
+<span class="fc" id="L66">        zDelta = z.delta(this);</span>
+<span class="fc" id="L67">        zValues = new int[z.size()];</span>
 
         // if a value t[i] not present in D(z), i must be removed from D(y)
-<span class="fc" id="L63">        int sizeY = y.fillArray(yValues);</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeY; i++) {</span>
-<span class="fc" id="L65">            int val = yValues[i];</span>
-<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            if (!z.contains(t[val])) {</span>
-<span class="nc" id="L67">                y.remove(val);</span>
+<span class="fc" id="L70">        int sizeY = y.fillArray(yValues);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeY; i++) {</span>
+<span class="fc" id="L72">            int val = yValues[i];</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">            if (!z.contains(t[val])) {</span>
+<span class="nc" id="L74">                y.remove(val);</span>
             }
         }
 
         // init supports of z values
-<span class="fc" id="L72">        this.supportCounter = new StateInt[z.size()];</span>
-<span class="fc" id="L73">        offZ = z.min();</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; z.size(); i++) {</span>
-<span class="fc" id="L75">            supportCounter[i] = this.getSolver().getStateManager().makeStateInt(0);</span>
+<span class="fc" id="L79">        this.supportCounter = new StateInt[z.size()];</span>
+<span class="fc" id="L80">        offZ = z.min();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (int i = 0; i &lt; z.size(); i++) {</span>
+<span class="fc" id="L82">            supportCounter[i] = this.getSolver().getStateManager().makeStateInt(0);</span>
         }
 
-<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int i = 0; i &lt; this.t.length; i++) {</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">            if (y.contains(i)) {</span>
-<span class="fc" id="L80">                StateInt counter = this.supportCounter[t[i] - offZ];</span>
-<span class="fc" id="L81">                counter.increment();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        for (int i = 0; i &lt; this.t.length; i++) {</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            if (y.contains(i)) {</span>
+<span class="fc" id="L87">                StateInt counter = this.supportCounter[t[i] - offZ];</span>
+<span class="fc" id="L88">                counter.increment();</span>
             }
         }
 
         // if a value from D(z) is not present in t, it must be removed from D(z)
-<span class="fc" id="L86">        int sizeZ = z.fillArray(zValues);</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeZ; i++) {</span>
-<span class="fc" id="L88">            int val = zValues[i];</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">            if (supportCounter[val - offZ].value() == 0) {</span>
-<span class="fc" id="L90">                z.remove(val);</span>
+<span class="fc" id="L93">        int sizeZ = z.fillArray(zValues);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        for (int i = 0; i &lt; sizeZ; i++) {</span>
+<span class="fc" id="L95">            int val = zValues[i];</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (supportCounter[val - offZ].value() == 0) {</span>
+<span class="fc" id="L97">                z.remove(val);</span>
             }
         }
 
-<span class="fc" id="L94">        this.propagate();</span>
-<span class="fc" id="L95">    }</span>
+<span class="fc" id="L101">        this.propagate();</span>
+<span class="fc" id="L102">    }</span>
 
     @Override
     public void propagate() {
@@ -101,33 +108,33 @@ public class Element1DDC
         int i;
         int size;
 
-<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (zDelta.size() &gt; 0) {</span>
-<span class="fc" id="L105">            size = zDelta.fillArray(zValues);</span>
-<span class="fc bfc" id="L106" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (zDelta.size() &gt; 0) {</span>
+<span class="fc" id="L112">            size = zDelta.fillArray(zValues);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
                 // we could optimize this to maintain incrementally
                 // a struct with the indices(v) = {i in D(y) | T[i] = v}
-<span class="fc" id="L109">                val = this.zValues[i];</span>
-<span class="fc" id="L110">                int sizeY = y.fillArray(yValues);</span>
-<span class="fc bfc" id="L111" title="All 2 branches covered.">                for (int j = 0; j &lt; sizeY; j++) {</span>
-<span class="fc" id="L112">                    int yVal = yValues[j];</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">                    if (t[yVal] == val ) {</span>
-<span class="fc" id="L114">                        y.remove(yVal);</span>
+<span class="fc" id="L116">                val = this.zValues[i];</span>
+<span class="fc" id="L117">                int sizeY = y.fillArray(yValues);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                for (int j = 0; j &lt; sizeY; j++) {</span>
+<span class="fc" id="L119">                    int yVal = yValues[j];</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">                    if (t[yVal] == val ) {</span>
+<span class="fc" id="L121">                        y.remove(yVal);</span>
                     }
                 }
             }
         }
 
-<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (yDelta.size() &gt; 0) {</span>
-<span class="fc" id="L121">            size = yDelta.fillArray(this.yValues);</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
-<span class="fc" id="L123">                val = yValues[i];</span>
-<span class="fc" id="L124">                StateInt counter = supportCounter[t[val]-offZ];</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">                if (counter.decrement() == 0) {</span>
-<span class="fc" id="L126">                    z.remove(t[val]);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (yDelta.size() &gt; 0) {</span>
+<span class="fc" id="L128">            size = yDelta.fillArray(this.yValues);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            for (i = 0; i &lt; size; i++) {</span>
+<span class="fc" id="L130">                val = yValues[i];</span>
+<span class="fc" id="L131">                StateInt counter = supportCounter[t[val]-offZ];</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                if (counter.decrement() == 0) {</span>
+<span class="fc" id="L133">                    z.remove(t[val]);</span>
                 }
             }
         }
-<span class="fc" id="L130">    }</span>
+<span class="fc" id="L137">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

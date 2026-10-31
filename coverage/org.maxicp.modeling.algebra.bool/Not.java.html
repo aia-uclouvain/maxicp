@@ -12,7 +12,7 @@ import java.util.function.Function;
 <span class="fc" id="L12">public record Not(BoolExpression a) implements SymbolicBoolExpression, NonLeafExpressionNode {</span>
     @Override
     public Collection&lt;? extends Expression&gt; computeSubexpressions() {
-<span class="nc" id="L15">        return List.of(a);</span>
+<span class="fc" id="L15">        return List.of(a);</span>
     }
 
     @Override

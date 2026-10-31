@@ -14,22 +14,22 @@ public class GroupCoherentFragmentSelector implements FragmentSelector {
     private final Random random;
     private final List&lt;List&lt;Integer&gt;&gt; groups;
     private final double[] weights;
-<span class="nc" id="L17">    private int lastSelectedGroupIdx = -1;</span>
-<span class="nc" id="L18">    private final double explorationRate = 0.2;</span>
+<span class="fc" id="L17">    private int lastSelectedGroupIdx = -1;</span>
+<span class="fc" id="L18">    private final double explorationRate = 0.2;</span>
 
-<span class="nc" id="L20">    public GroupCoherentFragmentSelector(Random random, List&lt;List&lt;Integer&gt;&gt; groups) {</span>
-<span class="nc" id="L21">        this.random = random;</span>
-<span class="nc" id="L22">        this.groups = List.copyOf(groups);</span>
-<span class="nc" id="L23">        this.weights = new double[groups.size()];</span>
-<span class="nc bnc" id="L24" title="All 2 branches missed.">        for (int i = 0; i &lt; weights.length; i++) {</span>
-<span class="nc" id="L25">            weights[i] = 1.0;</span>
+<span class="fc" id="L20">    public GroupCoherentFragmentSelector(Random random, List&lt;List&lt;Integer&gt;&gt; groups) {</span>
+<span class="fc" id="L21">        this.random = random;</span>
+<span class="fc" id="L22">        this.groups = List.copyOf(groups);</span>
+<span class="fc" id="L23">        this.weights = new double[groups.size()];</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (int i = 0; i &lt; weights.length; i++) {</span>
+<span class="fc" id="L25">            weights[i] = 1.0;</span>
         }
-<span class="nc" id="L27">    }</span>
+<span class="fc" id="L27">    }</span>
 
     @Override
     public List&lt;Integer&gt; selectFrozenIndices(FragmentSelectionContext context) {
-<span class="nc" id="L31">        List&lt;Integer&gt; decisionVarIndices = context.decisionVarIndices();</span>
-<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (groups.isEmpty()) {</span>
+<span class="fc" id="L31">        List&lt;Integer&gt; decisionVarIndices = context.decisionVarIndices();</span>
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">        if (groups.isEmpty()) {</span>
             // Fallback: freeze at random
 <span class="nc" id="L34">            List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;();</span>
 <span class="nc bnc" id="L35" title="All 2 branches missed.">            for (int idx : decisionVarIndices) {</span>
@@ -42,43 +42,43 @@ public class GroupCoherentFragmentSelector implements FragmentSelector {
 
         // Select a group
         int selectedGroupIdx;
-<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (random.nextDouble() &lt; explorationRate) {</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (random.nextDouble() &lt; explorationRate) {</span>
             // Explore: select uniformly at random
-<span class="nc" id="L47">            selectedGroupIdx = random.nextInt(groups.size());</span>
+<span class="fc" id="L47">            selectedGroupIdx = random.nextInt(groups.size());</span>
         } else {
             // Exploit: roulette-wheel selection based on weights
-<span class="nc" id="L50">            selectedGroupIdx = selectRouletteWheel();</span>
+<span class="fc" id="L50">            selectedGroupIdx = selectRouletteWheel();</span>
         }
-<span class="nc" id="L52">        lastSelectedGroupIdx = selectedGroupIdx;</span>
+<span class="fc" id="L52">        lastSelectedGroupIdx = selectedGroupIdx;</span>
 
-<span class="nc" id="L54">        List&lt;Integer&gt; selectedGroup = groups.get(selectedGroupIdx);</span>
-<span class="nc" id="L55">        List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">        for (int idx : selectedGroup) {</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (random.nextInt(100) &lt; context.freezeRatePercent()) {</span>
-<span class="nc" id="L58">                frozen.add(idx);</span>
+<span class="fc" id="L54">        List&lt;Integer&gt; selectedGroup = groups.get(selectedGroupIdx);</span>
+<span class="fc" id="L55">        List&lt;Integer&gt; frozen = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (int idx : selectedGroup) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if (random.nextInt(100) &lt; context.freezeRatePercent()) {</span>
+<span class="fc" id="L58">                frozen.add(idx);</span>
             }
-<span class="nc" id="L60">        }</span>
-<span class="nc bnc" id="L61" title="All 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
+<span class="fc" id="L60">        }</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
             // Avoid degenerate neighborhoods: keep at least one decision variable relaxed.
 <span class="nc" id="L63">            frozen.remove(random.nextInt(frozen.size()));</span>
         }
-<span class="nc" id="L65">        return frozen;</span>
+<span class="fc" id="L65">        return frozen;</span>
     }
 
     private int selectRouletteWheel() {
-<span class="nc" id="L69">        double sum = 0.0;</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">        for (double w : weights) {</span>
-<span class="nc" id="L71">            sum += w;</span>
+<span class="fc" id="L69">        double sum = 0.0;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (double w : weights) {</span>
+<span class="fc" id="L71">            sum += w;</span>
         }
-<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (sum &lt;= 0.0) {</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (sum &lt;= 0.0) {</span>
 <span class="nc" id="L74">            return random.nextInt(groups.size());</span>
         }
-<span class="nc" id="L76">        double r = random.nextDouble() * sum;</span>
-<span class="nc" id="L77">        double running = 0.0;</span>
-<span class="nc bnc" id="L78" title="All 2 branches missed.">        for (int i = 0; i &lt; weights.length; i++) {</span>
-<span class="nc" id="L79">            running += weights[i];</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (r &lt;= running) {</span>
-<span class="nc" id="L81">                return i;</span>
+<span class="fc" id="L76">        double r = random.nextDouble() * sum;</span>
+<span class="fc" id="L77">        double running = 0.0;</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        for (int i = 0; i &lt; weights.length; i++) {</span>
+<span class="fc" id="L79">            running += weights[i];</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            if (r &lt;= running) {</span>
+<span class="fc" id="L81">                return i;</span>
             }
         }
 <span class="nc" id="L84">        return weights.length - 1;</span>
@@ -86,27 +86,27 @@ public class GroupCoherentFragmentSelector implements FragmentSelector {
 
     @Override
     public void onRestartCompleted(FragmentSelectionFeedback feedback) {
-<span class="nc bnc" id="L89" title="All 4 branches missed.">        if (groups.isEmpty() || lastSelectedGroupIdx == -1) {</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">        if (groups.isEmpty() || lastSelectedGroupIdx == -1) {</span>
 <span class="nc" id="L90">            return;</span>
         }
-<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (feedback.restartImproved()) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (feedback.restartImproved()) {</span>
             // Reward: exponential increase
-<span class="nc" id="L94">            weights[lastSelectedGroupIdx] = weights[lastSelectedGroupIdx] * 0.9 + 10.0;</span>
+<span class="fc" id="L94">            weights[lastSelectedGroupIdx] = weights[lastSelectedGroupIdx] * 0.9 + 10.0;</span>
         } else {
             // Decay
-<span class="nc" id="L97">            weights[lastSelectedGroupIdx] = weights[lastSelectedGroupIdx] * 0.95;</span>
+<span class="fc" id="L97">            weights[lastSelectedGroupIdx] = weights[lastSelectedGroupIdx] * 0.95;</span>
         }
         // Avoid weight dropping too close to 0
-<span class="nc" id="L100">        weights[lastSelectedGroupIdx] = Math.max(weights[lastSelectedGroupIdx], 0.01);</span>
-<span class="nc" id="L101">    }</span>
+<span class="fc" id="L100">        weights[lastSelectedGroupIdx] = Math.max(weights[lastSelectedGroupIdx], 0.01);</span>
+<span class="fc" id="L101">    }</span>
 
     public List&lt;List&lt;Integer&gt;&gt; getGroups() {
-<span class="nc" id="L104">        return groups;</span>
+<span class="fc" id="L104">        return groups;</span>
     }
 
     @Override
     public String name() {
-<span class="nc" id="L109">        return &quot;group-coherent&quot;;</span>
+<span class="fc" id="L109">        return &quot;group-coherent&quot;;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

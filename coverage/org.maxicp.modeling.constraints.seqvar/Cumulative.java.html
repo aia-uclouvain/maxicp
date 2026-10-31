@@ -7,7 +7,11 @@ import org.maxicp.modeling.algebra.Expression;
 import java.util.Collection;
 import java.util.List;
 
-<span class="nc" id="L10">public class Cumulative implements Constraint {</span>
+/**
+ * Modeling-level cumulative constraint on a sequence variable ({@link SeqVar}), ensuring that the total load
+ * of active activities along the sequence never exceeds {@code capacity}.
+ */
+<span class="fc" id="L14">public class Cumulative implements Constraint {</span>
 
     public final SeqVar seqVar;
     public final int[] starts;
@@ -24,18 +28,18 @@ import java.util.List;
      * @param load corresponding load of each activity
      * @param capacity capacity allowed for the sequence
      */
-<span class="nc" id="L27">    public Cumulative(SeqVar seqVar, int[] starts, int[] ends, int[] load, int capacity) {</span>
-<span class="nc bnc" id="L28" title="All 4 branches missed.">        assert starts.length == ends.length &amp;&amp; starts.length == load.length;</span>
-<span class="nc" id="L29">        this.seqVar = seqVar;</span>
-<span class="nc" id="L30">        this.starts = starts;</span>
-<span class="nc" id="L31">        this.ends = ends;</span>
-<span class="nc" id="L32">        this.load = load;</span>
-<span class="nc" id="L33">        this.capacity = capacity;</span>
-<span class="nc" id="L34">    }</span>
+<span class="fc" id="L31">    public Cumulative(SeqVar seqVar, int[] starts, int[] ends, int[] load, int capacity) {</span>
+<span class="pc bpc" id="L32" title="2 of 4 branches missed.">        assert starts.length == ends.length &amp;&amp; starts.length == load.length;</span>
+<span class="fc" id="L33">        this.seqVar = seqVar;</span>
+<span class="fc" id="L34">        this.starts = starts;</span>
+<span class="fc" id="L35">        this.ends = ends;</span>
+<span class="fc" id="L36">        this.load = load;</span>
+<span class="fc" id="L37">        this.capacity = capacity;</span>
+<span class="fc" id="L38">    }</span>
 
     @Override
     public Collection&lt;? extends Expression&gt; scope() {
-<span class="nc" id="L38">        return List.of(seqVar);</span>
+<span class="nc" id="L42">        return List.of(seqVar);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

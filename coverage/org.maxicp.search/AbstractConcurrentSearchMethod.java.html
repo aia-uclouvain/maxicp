@@ -46,11 +46,11 @@ public abstract class AbstractConcurrentSearchMethod extends AbstractSearchMetho
     };
 
     public AbstractConcurrentSearchMethod(StateManager sm, Supplier&lt;SymbolicModel[]&gt; branching) {
-<span class="nc" id="L49">        super(sm, branching);</span>
-<span class="nc" id="L50">        statistics = null;</span>
-<span class="nc" id="L51">        onNodeVisit = null;</span>
-<span class="nc" id="L52">        queue = new LinkedBlockingQueue&lt;&gt;();</span>
-<span class="nc" id="L53">    }</span>
+<span class="fc" id="L49">        super(sm, branching);</span>
+<span class="fc" id="L50">        statistics = null;</span>
+<span class="fc" id="L51">        onNodeVisit = null;</span>
+<span class="fc" id="L52">        queue = new LinkedBlockingQueue&lt;&gt;();</span>
+<span class="fc" id="L53">    }</span>
 
     /**
      * @return true if there are no more nodes to visit
@@ -103,7 +103,7 @@ public abstract class AbstractConcurrentSearchMethod extends AbstractSearchMetho
     }
 
     private void processQueue() {
-<span class="nc bnc" id="L106" title="All 2 branches missed.">        while (!queue.isEmpty()) {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">        while (!queue.isEmpty()) {</span>
 <span class="nc" id="L107">            Message message = queue.poll();</span>
 <span class="nc bnc" id="L108" title="All 2 branches missed.">            switch (message) {</span>
 <span class="nc" id="L109">                case StealMessage stealMessage -&gt; stealMessage.future.complete(extractModel());</span>
@@ -117,25 +117,25 @@ public abstract class AbstractConcurrentSearchMethod extends AbstractSearchMetho
                 }
             }
 <span class="nc" id="L119">        }</span>
-<span class="nc" id="L120">    }</span>
+<span class="fc" id="L120">    }</span>
 
     @Override
     protected void startSolve(SearchStatistics statistics, Predicate&lt;SearchStatistics&gt; limit, Runnable onNodeVisit) {
-<span class="nc" id="L124">        this.statistics = statistics;</span>
-<span class="nc" id="L125">        this.onNodeVisit = onNodeVisit;</span>
-<span class="nc" id="L126">        sm.withNewState(() -&gt; {</span>
-<span class="nc" id="L127">            initSolve();</span>
+<span class="fc" id="L124">        this.statistics = statistics;</span>
+<span class="fc" id="L125">        this.onNodeVisit = onNodeVisit;</span>
+<span class="fc" id="L126">        sm.withNewState(() -&gt; {</span>
+<span class="fc" id="L127">            initSolve();</span>
             try {
-<span class="nc bnc" id="L129" title="All 2 branches missed.">                while(!done()) {</span>
-<span class="nc bnc" id="L130" title="All 2 branches missed.">                    if (limit.test(statistics)) throw new StopSearchException();</span>
-<span class="nc" id="L131">                    processQueue();</span>
-<span class="nc" id="L132">                    processNextStep();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">                while(!done()) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                    if (limit.test(statistics)) throw new StopSearchException();</span>
+<span class="fc" id="L131">                    processQueue();</span>
+<span class="fc" id="L132">                    processNextStep();</span>
                 }
             }
             finally {
-<span class="nc" id="L136">                finishSolve();</span>
+<span class="fc" id="L136">                finishSolve();</span>
             }
-<span class="nc" id="L138">        });</span>
-<span class="nc" id="L139">    }</span>
+<span class="fc" id="L138">        });</span>
+<span class="fc" id="L139">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

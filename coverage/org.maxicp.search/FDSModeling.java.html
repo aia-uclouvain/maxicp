@@ -1,13 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDSModeling.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">FDSModeling.java</span></div><h1>FDSModeling.java</h1><pre class="source lang-java linenums">/*
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FDSModeling.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search</a> &gt; <span class="el_source">FDSModeling.java</span></div><h1>FDSModeling.java</h1><pre class="source lang-java linenums">                                                                                                                                            /*
  * MaxiCP is under MIT License
  * Copyright (c)  2024 UCLouvain
  */
 
 package org.maxicp.search;
 
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -47,8 +52,8 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
     // ------- Choice types -------
 
     /** Type of a binary choice. */
-<span class="fc" id="L50">    private enum ChoiceType {</span>
-<span class="fc" id="L51">        PRESENCE, START, LENGTH, INT</span>
+<span class="fc" id="L55">    private enum ChoiceType {</span>
+<span class="fc" id="L56">        PRESENCE, START, LENGTH, INT</span>
     }
 
     /**
@@ -65,41 +70,41 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
         final int varIndex;
         final int splitValue; // only used for START and LENGTH choices
 
-<span class="fc" id="L68">        double ratingPos = 1.0; // rating for positive branch</span>
-<span class="fc" id="L69">        double ratingNeg = 1.0; // rating for negative branch</span>
+<span class="fc" id="L73">        double ratingPos = 1.0; // rating for positive branch</span>
+<span class="fc" id="L74">        double ratingNeg = 1.0; // rating for negative branch</span>
 
-<span class="fc" id="L71">        Choice(ChoiceType type, int varIndex, int splitValue) {</span>
-<span class="fc" id="L72">            this.type = type;</span>
-<span class="fc" id="L73">            this.varIndex = varIndex;</span>
-<span class="fc" id="L74">            this.splitValue = splitValue;</span>
-<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">        Choice(ChoiceType type, int varIndex, int splitValue) {</span>
+<span class="fc" id="L77">            this.type = type;</span>
+<span class="fc" id="L78">            this.varIndex = varIndex;</span>
+<span class="fc" id="L79">            this.splitValue = splitValue;</span>
+<span class="fc" id="L80">        }</span>
 
         /** Rating of the choice = sum of both branch ratings (lower is better). */
         double rating() {
-<span class="fc" id="L79">            return ratingPos + ratingNeg;</span>
+<span class="fc" id="L84">            return ratingPos + ratingNeg;</span>
         }
 
         /**
          * Check if this choice is resolved (already decided by propagation).
          */
         boolean isResolved(IntervalVar var) {
-<span class="pc bpc" id="L86" title="3 of 4 branches missed.">            return switch (type) {</span>
-<span class="nc bnc" id="L87" title="All 4 branches missed.">                case PRESENCE -&gt; var.isPresent() || var.isAbsent();</span>
+<span class="nc bnc" id="L91" title="All 4 branches missed.">            return switch (type) {</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">                case PRESENCE -&gt; var.isPresent() || var.isAbsent();</span>
                 case START -&gt; {
-<span class="pc bpc" id="L89" title="1 of 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    if (var.isPresent()) {</span>
-<span class="fc bfc" id="L91" title="All 4 branches covered.">                        yield var.startMax() &lt;= splitValue || var.startMin() &gt; splitValue;</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">                    if (var.isPresent()) {</span>
+<span class="nc bnc" id="L96" title="All 4 branches missed.">                        yield var.startMax() &lt;= splitValue || var.startMin() &gt; splitValue;</span>
                     }
-<span class="nc" id="L93">                    yield false;</span>
+<span class="nc" id="L98">                    yield false;</span>
                 }
                 case LENGTH -&gt; {
-<span class="nc bnc" id="L96" title="All 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
-<span class="nc bnc" id="L97" title="All 2 branches missed.">                    if (var.isPresent()) {</span>
-<span class="nc bnc" id="L98" title="All 4 branches missed.">                        yield var.lengthMax() &lt;= splitValue || var.lengthMin() &gt; splitValue;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                    if (var.isAbsent()) yield true;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                    if (var.isPresent()) {</span>
+<span class="nc bnc" id="L103" title="All 4 branches missed.">                        yield var.lengthMax() &lt;= splitValue || var.lengthMin() &gt; splitValue;</span>
                     }
-<span class="nc" id="L100">                    yield false;</span>
+<span class="nc" id="L105">                    yield false;</span>
                 }
-<span class="nc" id="L102">                case INT -&gt; false;</span>
+<span class="nc" id="L107">                case INT -&gt; false;</span>
             };
         }
 
@@ -108,10 +113,10 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
          * Start and length choices wait until the variable is present.
          */
         boolean isWaiting(IntervalVar var) {
-<span class="pc bpc" id="L111" title="2 of 3 branches missed.">            return switch (type) {</span>
-<span class="nc" id="L112">                case PRESENCE -&gt; false;</span>
-<span class="fc" id="L113">                case START, LENGTH -&gt; var.isOptional();</span>
-<span class="nc" id="L114">                case INT -&gt; false;</span>
+<span class="nc bnc" id="L116" title="All 3 branches missed.">            return switch (type) {</span>
+<span class="nc" id="L117">                case PRESENCE -&gt; false;</span>
+<span class="nc" id="L118">                case START, LENGTH -&gt; var.isOptional();</span>
+<span class="nc" id="L119">                case INT -&gt; false;</span>
             };
         }
 
@@ -119,33 +124,33 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
          * Apply the positive branch.
          */
         void applyPositive(IntervalVar var, ModelProxy model) {
-<span class="pc bpc" id="L122" title="4 of 5 branches missed.">            switch (type) {</span>
-<span class="nc" id="L123">                case PRESENCE -&gt; model.add(present(var));</span>
-<span class="fc" id="L124">                case START -&gt; model.add(startBefore(var, splitValue));   // start &lt;= splitValue</span>
-<span class="nc" id="L125">                case LENGTH -&gt; model.add(le(length(var), splitValue));   // length &lt;= splitValue</span>
-<span class="nc" id="L126">                case INT -&gt; throw new IllegalStateException(&quot;INT choice must be applied with IntExpression&quot;);</span>
+<span class="nc bnc" id="L127" title="All 5 branches missed.">            switch (type) {</span>
+<span class="nc" id="L128">                case PRESENCE -&gt; model.add(present(var));</span>
+<span class="nc" id="L129">                case START -&gt; model.add(startBefore(var, splitValue));   // start &lt;= splitValue</span>
+<span class="nc" id="L130">                case LENGTH -&gt; model.add(le(length(var), splitValue));   // length &lt;= splitValue</span>
+<span class="nc" id="L131">                case INT -&gt; throw new IllegalStateException(&quot;INT choice must be applied with IntExpression&quot;);</span>
             }
-<span class="fc" id="L128">        }</span>
+<span class="nc" id="L133">        }</span>
 
         /**
          * Apply the negative branch.
          */
         void applyNegative(IntervalVar var, ModelProxy model) {
-<span class="pc bpc" id="L134" title="4 of 5 branches missed.">            switch (type) {</span>
-<span class="nc" id="L135">                case PRESENCE -&gt; model.add(not(present(var)));</span>
-<span class="fc" id="L136">                case START -&gt; model.add(startAfter(var, splitValue + 1));    // start &gt; splitValue</span>
-<span class="nc" id="L137">                case LENGTH -&gt; model.add(lt(splitValue, length(var)));   // splitValue &lt; length, i.e. length &gt; splitValue</span>
-<span class="nc" id="L138">                case INT -&gt; throw new IllegalStateException(&quot;INT choice must be applied with IntExpression&quot;);</span>
+<span class="nc bnc" id="L139" title="All 5 branches missed.">            switch (type) {</span>
+<span class="nc" id="L140">                case PRESENCE -&gt; model.add(not(present(var)));</span>
+<span class="nc" id="L141">                case START -&gt; model.add(startAfter(var, splitValue + 1));    // start &gt; splitValue</span>
+<span class="nc" id="L142">                case LENGTH -&gt; model.add(lt(splitValue, length(var)));   // splitValue &lt; length, i.e. length &gt; splitValue</span>
+<span class="nc" id="L143">                case INT -&gt; throw new IllegalStateException(&quot;INT choice must be applied with IntExpression&quot;);</span>
             }
-<span class="fc" id="L140">        }</span>
+<span class="nc" id="L145">        }</span>
 
         @Override
         public String toString() {
-<span class="nc bnc" id="L144" title="All 4 branches missed.">            return switch (type) {</span>
-<span class="nc" id="L145">                case PRESENCE -&gt; &quot;Presence(var=&quot; + varIndex + &quot;)&quot;;</span>
-<span class="nc" id="L146">                case START -&gt; &quot;Start(var=&quot; + varIndex + &quot;,t=&quot; + splitValue + &quot;)&quot;;</span>
-<span class="nc" id="L147">                case LENGTH -&gt; &quot;Length(var=&quot; + varIndex + &quot;,l=&quot; + splitValue + &quot;)&quot;;</span>
-<span class="nc" id="L148">                case INT -&gt; &quot;Int(var=&quot; + varIndex + &quot;,v=&quot; + splitValue + &quot;)&quot;;</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">            return switch (type) {</span>
+<span class="nc" id="L150">                case PRESENCE -&gt; &quot;Presence(var=&quot; + varIndex + &quot;)&quot;;</span>
+<span class="nc" id="L151">                case START -&gt; &quot;Start(var=&quot; + varIndex + &quot;,t=&quot; + splitValue + &quot;)&quot;;</span>
+<span class="nc" id="L152">                case LENGTH -&gt; &quot;Length(var=&quot; + varIndex + &quot;,l=&quot; + splitValue + &quot;)&quot;;</span>
+<span class="nc" id="L153">                case INT -&gt; &quot;Int(var=&quot; + varIndex + &quot;,v=&quot; + splitValue + &quot;)&quot;;</span>
             };
         }
     }
@@ -162,12 +167,26 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
     /** Average rating per depth level, used for normalization. */
     private final Map&lt;Integer, double[]&gt; avgRatingByDepth; // [0]=avg, [1]=count
 
-    /** All choices generated for this search. */
-    private final List&lt;Choice&gt; allChoices;
+    /** Choices grouped by interval variable index. */
+    private final List&lt;Choice&gt;[] intervalChoices;
+
+    /** Choices grouped by integer variable index. */
+    private final List&lt;Choice&gt;[] intChoices;
+
+    /** Reusable buffer for domain size snapshots before branching. */
+    private final long[] domBeforeBuffer;
+
+    /** Cached concrete model and direct CP variable references to avoid ThreadLocal/StateMap overhead per node. */
+    private ConcreteModel cachedConcreteModel;
+    private CPSolver cpSolver;
+    private CPIntervalVar[] cpIntervals;
+    private CPIntVar[] cpIntVars;
 
     /** State manager for depth tracking. */
-    private final StateManager sm;
-    private final int baseLevel;
+    private StateManager sm;
+    private int baseLevel;
+    private boolean initializedChoices;
+    private boolean lastSelectHadUnfixed;
 
     /**
      * Creates a Failure-Directed Search for the given interval variables.
@@ -175,8 +194,17 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * @param intervals the interval variables to decide
      */
     public FDSModeling(IntervalVar... intervals) {
-<span class="fc" id="L178">        this(0.95, intervals, new IntExpression[0]);</span>
-<span class="fc" id="L179">    }</span>
+<span class="fc" id="L197">        this(0.95, intervals, new IntExpression[0]);</span>
+<span class="fc" id="L198">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDSModeling(IntervalVar[][] intervals) {
+<span class="fc" id="L206">        this(0.95, flatten(intervals), new IntExpression[0]);</span>
+<span class="fc" id="L207">    }</span>
 
     /**
      * Creates a Failure-Directed Search for the given interval variables.
@@ -185,64 +213,192 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * @param intervals the interval variables to decide
      */
     public FDSModeling(double alpha, IntervalVar... intervals) {
-<span class="nc" id="L188">        this(alpha, intervals, new IntExpression[0]);</span>
-<span class="nc" id="L189">    }</span>
+<span class="nc" id="L216">        this(alpha, intervals, new IntExpression[0]);</span>
+<span class="nc" id="L217">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param alpha     decay factor for rating updates (typical: 0.9 to 0.99)
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDSModeling(double alpha, IntervalVar[][] intervals) {
+<span class="nc" id="L226">        this(alpha, flatten(intervals), new IntExpression[0]);</span>
+<span class="nc" id="L227">    }</span>
 
     /**
      * Creates a Failure-Directed Search for integer expressions.
      */
     public FDSModeling(IntExpression... intExpressions) {
-<span class="fc" id="L195">        this(0.95, new IntervalVar[0], intExpressions);</span>
-<span class="fc" id="L196">    }</span>
+<span class="fc" id="L233">        this(0.95, new IntervalVar[0], intExpressions);</span>
+<span class="fc" id="L234">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer expressions.
+     */
+    public FDSModeling(IntExpression[][] intExpressions) {
+<span class="fc" id="L240">        this(0.95, new IntervalVar[0], flatten(intExpressions));</span>
+<span class="fc" id="L241">    }</span>
 
     /**
      * Creates a Failure-Directed Search for integer expressions.
      */
     public FDSModeling(double alpha, IntExpression... intExpressions) {
-<span class="nc" id="L202">        this(alpha, new IntervalVar[0], intExpressions);</span>
-<span class="nc" id="L203">    }</span>
+<span class="nc" id="L247">        this(alpha, new IntervalVar[0], intExpressions);</span>
+<span class="nc" id="L248">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer expressions.
+     */
+    public FDSModeling(double alpha, IntExpression[][] intExpressions) {
+<span class="nc" id="L254">        this(alpha, new IntervalVar[0], flatten(intExpressions));</span>
+<span class="nc" id="L255">    }</span>
 
     /**
      * Creates a Failure-Directed Search for mixed interval and integer decisions.
      */
     public FDSModeling(IntervalVar[] intervals, IntExpression... intExpressions) {
-<span class="fc" id="L209">        this(0.95, intervals, intExpressions);</span>
-<span class="fc" id="L210">    }</span>
+<span class="fc" id="L261">        this(0.95, intervals, intExpressions);</span>
+<span class="fc" id="L262">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDSModeling(IntervalVar[][] intervals, IntExpression... intExpressions) {
+<span class="fc" id="L268">        this(0.95, flatten(intervals), intExpressions);</span>
+<span class="fc" id="L269">    }</span>
+
+    /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDSModeling(double alpha, IntervalVar[][] intervals, IntExpression... intExpressions) {
+<span class="nc" id="L275">        this(alpha, flatten(intervals), intExpressions);</span>
+<span class="nc" id="L276">    }</span>
+
+    private static IntervalVar[] flatten(IntervalVar[][] intervals) {
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">        if (intervals == null) return new IntervalVar[0];</span>
+<span class="fc" id="L280">        return Arrays.stream(intervals)</span>
+<span class="fc" id="L281">                .filter(Objects::nonNull)</span>
+<span class="fc" id="L282">                .flatMap(Arrays::stream)</span>
+<span class="fc" id="L283">                .filter(Objects::nonNull)</span>
+<span class="fc" id="L284">                .toArray(IntervalVar[]::new);</span>
+    }
+
+    private static IntExpression[] flatten(IntExpression[][] intExpressions) {
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">        if (intExpressions == null) return new IntExpression[0];</span>
+<span class="fc" id="L289">        return Arrays.stream(intExpressions)</span>
+<span class="fc" id="L290">                .filter(Objects::nonNull)</span>
+<span class="fc" id="L291">                .flatMap(Arrays::stream)</span>
+<span class="fc" id="L292">                .filter(Objects::nonNull)</span>
+<span class="fc" id="L293">                .toArray(IntExpression[]::new);</span>
+    }
 
     /**
      * Creates a Failure-Directed Search for mixed interval and integer decisions.
      */
-<span class="fc" id="L215">    public FDSModeling(double alpha, IntervalVar[] intervals, IntExpression... intExpressions) {</span>
-<span class="pc bpc" id="L216" title="1 of 2 branches missed.">        this.intervals = intervals == null ? new IntervalVar[0] : intervals;</span>
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        this.intExpressions = intExpressions == null ? new IntExpression[0] : intExpressions;</span>
-<span class="pc bpc" id="L218" title="1 of 4 branches missed.">        if (this.intervals.length == 0 &amp;&amp; this.intExpressions.length == 0) {</span>
-<span class="nc" id="L219">            throw new IllegalArgumentException(&quot;FDSModeling requires at least one decision variable&quot;);</span>
+    @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L300">    public FDSModeling(double alpha, IntervalVar[] intervals, IntExpression... intExpressions) {</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">        this.intervals = intervals == null ? new IntervalVar[0] : intervals;</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">        this.intExpressions = intExpressions == null ? new IntExpression[0] : intExpressions;</span>
+<span class="pc bpc" id="L303" title="1 of 4 branches missed.">        if (this.intervals.length == 0 &amp;&amp; this.intExpressions.length == 0) {</span>
+<span class="nc" id="L304">            throw new IllegalArgumentException(&quot;FDSModeling requires at least one decision variable&quot;);</span>
         }
-<span class="fc" id="L221">        this.model = resolveModelProxy(this.intervals, this.intExpressions);</span>
-<span class="fc" id="L222">        this.sm = model.getConcreteModel().getStateManager();</span>
-<span class="fc" id="L223">        this.alpha = alpha;</span>
-<span class="fc" id="L224">        this.baseLevel = sm.getLevel();</span>
-<span class="fc" id="L225">        this.avgRatingByDepth = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L226">        this.allChoices = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L306">        this.model = resolveModelProxy(this.intervals, this.intExpressions);</span>
+<span class="fc" id="L307">        this.alpha = alpha;</span>
+<span class="fc" id="L308">        this.avgRatingByDepth = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L309">        this.intervalChoices = new List[this.intervals.length];</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        for (int i = 0; i &lt; this.intervals.length; i++) {</span>
+<span class="fc" id="L311">            this.intervalChoices[i] = new ArrayList&lt;&gt;();</span>
+        }
+<span class="fc" id="L313">        this.intChoices = new List[this.intExpressions.length];</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        for (int i = 0; i &lt; this.intExpressions.length; i++) {</span>
+<span class="fc" id="L315">            this.intChoices[i] = new ArrayList&lt;&gt;();</span>
+        }
+<span class="fc" id="L317">        this.domBeforeBuffer = new long[this.intervals.length + this.intExpressions.length];</span>
 
-<span class="fc" id="L228">        generateInitialChoices();</span>
-<span class="fc" id="L229">    }</span>
+<span class="pc bpc" id="L319" title="2 of 4 branches missed.">        if (this.model == null || this.model.isConcrete()) {</span>
+<span class="fc" id="L320">            ensureConcreteCache();</span>
+<span class="fc" id="L321">            generateInitialChoices();</span>
+<span class="fc" id="L322">            this.initializedChoices = true;</span>
+        }
+<span class="fc" id="L324">    }</span>
+
+    /**
+     * Resets the depth base level to the current solver level while keeping learned choice ratings.
+     */
+    public void resetLevel() {
+<span class="fc" id="L330">        ensureConcreteCache();</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">        if (sm != null) {</span>
+<span class="fc" id="L332">            this.baseLevel = sm.getLevel();</span>
+        }
+<span class="fc" id="L334">    }</span>
+
+    private void ensureConcreteCache() {
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">        if (model == null) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">            if (cpSolver == null) {</span>
+<span class="nc" id="L339">                cpIntervals = new CPIntervalVar[intervals.length];</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="nc" id="L341">                    cpIntervals[i] = (CPIntervalVar) intervals[i];</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">                    if (cpSolver == null) cpSolver = cpIntervals[i].getSolver();</span>
+                }
+<span class="nc" id="L344">                cpIntVars = new CPIntVar[intExpressions.length];</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">                for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="nc" id="L346">                    cpIntVars[i] = (CPIntVar) intExpressions[i];</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">                    if (cpSolver == null) cpSolver = cpIntVars[i].getSolver();</span>
+                }
+<span class="nc bnc" id="L349" title="All 2 branches missed.">                if (cpSolver != null) {</span>
+<span class="nc" id="L350">                    sm = cpSolver.getStateManager();</span>
+<span class="nc" id="L351">                    baseLevel = sm.getLevel();</span>
+                }
+            }
+<span class="nc bnc" id="L354" title="All 2 branches missed.">            if (!initializedChoices) {</span>
+<span class="nc" id="L355">                generateInitialChoices();</span>
+<span class="nc" id="L356">                initializedChoices = true;</span>
+            }
+<span class="nc" id="L358">            return;</span>
+        }
+<span class="fc" id="L360">        ConcreteModel cm = model.getConcreteModel();</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">        if (cm != cachedConcreteModel) {</span>
+<span class="fc" id="L362">            cachedConcreteModel = cm;</span>
+<span class="fc" id="L363">            sm = cm.getStateManager();</span>
+<span class="fc" id="L364">            baseLevel = sm.getLevel();</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">            if (cm instanceof ConcreteCPModel cpm) {</span>
+<span class="fc" id="L366">                cpSolver = cpm.solver;</span>
+<span class="fc" id="L367">                cpIntervals = new CPIntervalVar[intervals.length];</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">                for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L369">                    cpIntervals[i] = cpm.getCPVar(intervals[i]);</span>
+                }
+<span class="fc" id="L371">                cpIntVars = new CPIntVar[intExpressions.length];</span>
+<span class="fc bfc" id="L372" title="All 2 branches covered.">                for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="fc" id="L373">                    cpIntVars[i] = cpm.getCPVar(intExpressions[i]);</span>
+                }
+            } else {
+<span class="nc" id="L376">                cpSolver = null;</span>
+<span class="nc" id="L377">                cpIntervals = null;</span>
+<span class="nc" id="L378">                cpIntVars = null;</span>
+            }
+        }
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if (!initializedChoices) {</span>
+<span class="fc" id="L382">            generateInitialChoices();</span>
+<span class="fc" id="L383">            initializedChoices = true;</span>
+        }
+<span class="fc" id="L385">    }</span>
 
     private static ModelProxy resolveModelProxy(IntervalVar[] intervals, IntExpression[] intExpressions) {
-<span class="fc" id="L232">        ModelProxy proxy = null;</span>
-<span class="fc bfc" id="L233" title="All 2 branches covered.">        for (IntervalVar var : intervals) {</span>
-<span class="fc bfc" id="L234" title="All 2 branches covered.">            if (proxy == null) proxy = var.getModelProxy();</span>
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            else if (proxy != var.getModelProxy()) {</span>
-<span class="nc" id="L236">                throw new IllegalArgumentException(&quot;All variables must belong to the same model&quot;);</span>
+<span class="fc" id="L388">        ModelProxy proxy = null;</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        for (IntervalVar var : intervals) {</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">            if (proxy == null) proxy = var.getModelProxy();</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">            else if (proxy != var.getModelProxy()) {</span>
+<span class="nc" id="L392">                throw new IllegalArgumentException(&quot;All variables must belong to the same model&quot;);</span>
             }
         }
-<span class="fc bfc" id="L239" title="All 2 branches covered.">        for (IntExpression expr : intExpressions) {</span>
-<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (proxy == null) proxy = expr.getModelProxy();</span>
-<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            else if (proxy != expr.getModelProxy()) {</span>
-<span class="nc" id="L242">                throw new IllegalArgumentException(&quot;All variables must belong to the same model&quot;);</span>
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        for (IntExpression expr : intExpressions) {</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">            if (proxy == null) proxy = expr.getModelProxy();</span>
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">            else if (proxy != expr.getModelProxy()) {</span>
+<span class="nc" id="L398">                throw new IllegalArgumentException(&quot;All variables must belong to the same model&quot;);</span>
             }
         }
-<span class="fc" id="L245">        return proxy;</span>
+<span class="fc" id="L401">        return proxy;</span>
     }
 
     /**
@@ -261,30 +417,31 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * We limit the number of choices to O(log(domainSize)) per variable.
      */
     private void generateInitialChoices() {
-<span class="fc bfc" id="L264" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
-<span class="fc" id="L265">            IntervalVar var = intervals[i];</span>
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L421">            IntervalVar var = intervals[i];</span>
 
             // Presence choice for optional variables
-<span class="pc bpc" id="L268" title="1 of 2 branches missed.">            if (var.isOptional()) {</span>
-<span class="nc" id="L269">                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">            if (var.isOptional()) {</span>
+<span class="fc" id="L425">                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
             }
 
             // Start time choices via binary splitting
-<span class="fc" id="L273">            addBinarySplitChoices(ChoiceType.START, i, var.startMin(), var.startMax());</span>
+<span class="fc" id="L429">            addBinarySplitChoices(intervalChoices[i], ChoiceType.START, i, var.startMin(), var.startMax());</span>
 
             // Length choices via binary splitting (if not fixed)
-<span class="pc bpc" id="L276" title="1 of 2 branches missed.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
-<span class="nc" id="L277">                addBinarySplitChoices(ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
+<span class="fc" id="L433">                addBinarySplitChoices(intervalChoices[i], ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());</span>
             }
         }
 
-<span class="fc bfc" id="L281" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
-<span class="fc" id="L282">            IntExpression x = intExpressions[i];</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">            if (x.min() &lt; x.max()) {</span>
-<span class="fc" id="L284">                addBinarySplitChoices(ChoiceType.INT, i, x.min(), x.max());</span>
+<span class="fc bfc" id="L437" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="pc bpc" id="L438" title="1 of 2 branches missed.">            int min = cpIntVars != null ? cpIntVars[i].min() : intExpressions[i].min();</span>
+<span class="pc bpc" id="L439" title="1 of 2 branches missed.">            int max = cpIntVars != null ? cpIntVars[i].max() : intExpressions[i].max();</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">            if (min &lt; max) {</span>
+<span class="fc" id="L441">                addBinarySplitChoices(intChoices[i], ChoiceType.INT, i, min, max);</span>
             }
         }
-<span class="fc" id="L287">    }</span>
+<span class="fc" id="L444">    }</span>
 
     /**
      * Maximum number of initial choices per variable per type.
@@ -299,28 +456,28 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * (up to {@link #MAX_INITIAL_CHOICES_PER_VAR} choices), ensuring O(log(domainSize))
      * choices per variable. More choices are generated on demand when needed.
      */
-    private void addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
-<span class="pc bpc" id="L303" title="1 of 2 branches missed.">        if (lo &gt;= hi) return;</span>
-<span class="fc" id="L304">        int count = 0;</span>
-<span class="fc" id="L305">        Deque&lt;int[]&gt; queue = new ArrayDeque&lt;&gt;();</span>
-<span class="fc" id="L306">        queue.add(new int[]{lo, hi});</span>
-<span class="fc bfc" id="L307" title="All 4 branches covered.">        while (!queue.isEmpty() &amp;&amp; count &lt; MAX_INITIAL_CHOICES_PER_VAR) {</span>
-<span class="fc" id="L308">            int[] range = queue.poll();</span>
-<span class="fc" id="L309">            int l = range[0], h = range[1];</span>
-<span class="fc bfc" id="L310" title="All 2 branches covered.">            if (l &gt;= h) continue;</span>
-<span class="fc" id="L311">            int mid = l + (h - l) / 2;</span>
-<span class="fc" id="L312">            allChoices.add(new Choice(type, varIndex, mid));</span>
-<span class="fc" id="L313">            count++;</span>
-<span class="fc" id="L314">            queue.add(new int[]{l, mid});</span>
-<span class="fc" id="L315">            queue.add(new int[]{mid + 1, h});</span>
-<span class="fc" id="L316">        }</span>
-<span class="fc" id="L317">    }</span>
+    private void addBinarySplitChoices(List&lt;Choice&gt; target, ChoiceType type, int varIndex, int lo, int hi) {
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">        if (lo &gt;= hi) return;</span>
+<span class="fc" id="L461">        int count = 0;</span>
+<span class="fc" id="L462">        Deque&lt;int[]&gt; queue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L463">        queue.add(new int[]{lo, hi});</span>
+<span class="fc bfc" id="L464" title="All 4 branches covered.">        while (!queue.isEmpty() &amp;&amp; count &lt; MAX_INITIAL_CHOICES_PER_VAR) {</span>
+<span class="fc" id="L465">            int[] range = queue.poll();</span>
+<span class="fc" id="L466">            int l = range[0], h = range[1];</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (l &gt;= h) continue;</span>
+<span class="fc" id="L468">            int mid = l + ((h - l) &gt;&gt;&gt; 1);</span>
+<span class="fc" id="L469">            target.add(new Choice(type, varIndex, mid));</span>
+<span class="fc" id="L470">            count++;</span>
+<span class="fc" id="L471">            queue.add(new int[]{l, mid});</span>
+<span class="fc" id="L472">            queue.add(new int[]{mid + 1, h});</span>
+<span class="fc" id="L473">        }</span>
+<span class="fc" id="L474">    }</span>
 
     /**
      * Get current depth relative to the base level when FDS was created.
      */
     private int currentDepth() {
-<span class="fc" id="L323">        return Math.max(0, sm.getLevel() - baseLevel);</span>
+<span class="fc" id="L480">        return Math.max(0, sm.getLevel() - baseLevel);</span>
     }
 
     /**
@@ -328,58 +485,73 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * Returns a double[2] where [0] = running average, [1] = count.
      */
     private double[] getAvgRating(int depth) {
-<span class="fc" id="L331">        return avgRatingByDepth.computeIfAbsent(depth, k -&gt; new double[]{1.0, 0.0});</span>
+<span class="fc" id="L488">        return avgRatingByDepth.computeIfAbsent(depth, k -&gt; new double[]{1.0, 0.0});</span>
     }
 
     /**
      * Estimate domain size for an interval variable.
      */
-    private long domainSize(IntervalVar var) {
-<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        if (var.isAbsent()) return 1;</span>
-<span class="fc" id="L339">        long startRange = Math.max(1, (long) var.startMax() - var.startMin() + 1);</span>
-<span class="fc" id="L340">        long lengthRange = Math.max(1, (long) var.lengthMax() - var.lengthMin() + 1);</span>
-<span class="pc bpc" id="L341" title="1 of 2 branches missed.">        if (var.isOptional()) startRange++; // +1 for the absent possibility</span>
-<span class="fc" id="L342">        return startRange * lengthRange;</span>
+    private long intervalDomainSize(int i) {
+<span class="pc bpc" id="L495" title="1 of 2 branches missed.">        if (cpIntervals != null) {</span>
+<span class="fc" id="L496">            CPIntervalVar var = cpIntervals[i];</span>
+<span class="fc bfc" id="L497" title="All 2 branches covered.">            if (var.isAbsent()) return 1L;</span>
+<span class="fc" id="L498">            long startRange = Math.max(1L, (long) var.startMax() - var.startMin() + 1L);</span>
+<span class="fc" id="L499">            long lengthRange = Math.max(1L, (long) var.lengthMax() - var.lengthMin() + 1L);</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">            if (var.isOptional()) startRange++;</span>
+<span class="fc" id="L501">            return startRange * lengthRange;</span>
+        }
+<span class="nc" id="L503">        IntervalVar var = intervals[i];</span>
+<span class="nc bnc" id="L504" title="All 2 branches missed.">        if (var.isAbsent()) return 1L;</span>
+<span class="nc" id="L505">        long startRange = Math.max(1L, (long) var.startMax() - var.startMin() + 1L);</span>
+<span class="nc" id="L506">        long lengthRange = Math.max(1L, (long) var.lengthMax() - var.lengthMin() + 1L);</span>
+<span class="nc bnc" id="L507" title="All 2 branches missed.">        if (var.isOptional()) startRange++; // +1 for the absent possibility</span>
+<span class="nc" id="L508">        return startRange * lengthRange;</span>
     }
 
     /**
      * Estimate domain size for an integer expression.
      */
-    private long domainSize(IntExpression x) {
-<span class="fc" id="L349">        return Math.max(1L, x.size());</span>
+    private long intDomainSize(int i) {
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">        int sz = cpIntVars != null ? cpIntVars[i].size() : intExpressions[i].size();</span>
+<span class="fc" id="L516">        return Math.max(1L, sz);</span>
     }
 
     /**
      * Snapshot domain sizes for all decision variables (before a branch).
      */
     private long[] snapshotDomainSizes() {
-<span class="fc" id="L356">        long[] sizes = new long[intervals.length + intExpressions.length];</span>
-<span class="fc" id="L357">        int p = 0;</span>
-<span class="fc bfc" id="L358" title="All 2 branches covered.">        for (IntervalVar interval : intervals) {</span>
-<span class="fc" id="L359">            sizes[p++] = domainSize(interval);</span>
+<span class="fc" id="L523">        int p = 0;</span>
+<span class="fc bfc" id="L524" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L525">            domBeforeBuffer[p++] = intervalDomainSize(i);</span>
         }
-<span class="fc bfc" id="L361" title="All 2 branches covered.">        for (IntExpression x : intExpressions) {</span>
-<span class="fc" id="L362">            sizes[p++] = domainSize(x);</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="fc" id="L528">            domBeforeBuffer[p++] = intDomainSize(i);</span>
         }
-<span class="fc" id="L364">        return sizes;</span>
+<span class="fc" id="L530">        return domBeforeBuffer;</span>
     }
 
     private double computeSearchSpaceReduction(long[] domainSizesBefore) {
-<span class="fc" id="L368">        double ratio = 1.0;</span>
-<span class="fc" id="L369">        int p = 0;</span>
-<span class="fc bfc" id="L370" title="All 2 branches covered.">        for (IntervalVar interval : intervals) {</span>
-<span class="fc" id="L371">            long before = domainSizesBefore[p++];</span>
-<span class="pc bpc" id="L372" title="1 of 2 branches missed.">            if (before &gt; 0) {</span>
-<span class="fc" id="L373">                ratio *= (double) domainSize(interval) / (double) before;</span>
+<span class="fc" id="L534">        double ratio = 1.0;</span>
+<span class="fc" id="L535">        int p = 0;</span>
+<span class="fc bfc" id="L536" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L537">            long before = domainSizesBefore[p++];</span>
+<span class="fc bfc" id="L538" title="All 2 branches covered.">            if (before &gt; 1L) {</span>
+<span class="fc" id="L539">                long after = intervalDomainSize(i);</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">                if (after != before) {</span>
+<span class="fc" id="L541">                    ratio *= (double) after / (double) before;</span>
+                }
             }
         }
-<span class="fc bfc" id="L376" title="All 2 branches covered.">        for (IntExpression x : intExpressions) {</span>
-<span class="fc" id="L377">            long before = domainSizesBefore[p++];</span>
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">            if (before &gt; 0) {</span>
-<span class="fc" id="L379">                ratio *= (double) domainSize(x) / (double) before;</span>
+<span class="fc bfc" id="L545" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="fc" id="L546">            long before = domainSizesBefore[p++];</span>
+<span class="fc bfc" id="L547" title="All 2 branches covered.">            if (before &gt; 1L) {</span>
+<span class="fc" id="L548">                long after = intDomainSize(i);</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">                if (after != before) {</span>
+<span class="fc" id="L550">                    ratio *= (double) after / (double) before;</span>
+                }
             }
         }
-<span class="fc" id="L382">        return Math.min(ratio, 1.0);</span>
+<span class="fc" id="L554">        return Math.min(ratio, 1.0);</span>
     }
 
     /**
@@ -397,109 +569,146 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * @param R          the search space reduction ratio (used if branch did not fail)
      */
     private void updateRating(Choice choice, boolean isPositive, boolean failed, double R) {
-<span class="fc bfc" id="L400" title="All 2 branches covered.">        double localRating = failed ? 0.0 : 1.0 + R;</span>
+<span class="fc bfc" id="L572" title="All 2 branches covered.">        double localRating = failed ? 0.0 : 1.0 + R;</span>
 
-<span class="fc" id="L402">        int d = currentDepth();</span>
-<span class="fc" id="L403">        double[] avg = getAvgRating(d);</span>
-<span class="fc bfc" id="L404" title="All 2 branches covered.">        double avgVal = avg[0] &gt; 0 ? avg[0] : 1.0;</span>
-<span class="fc" id="L405">        double normalizedRating = localRating / avgVal;</span>
+<span class="fc" id="L574">        int d = currentDepth();</span>
+<span class="fc" id="L575">        double[] avg = getAvgRating(d);</span>
+<span class="fc bfc" id="L576" title="All 2 branches covered.">        double avgVal = avg[0] &gt; 0 ? avg[0] : 1.0;</span>
+<span class="fc" id="L577">        double normalizedRating = localRating / avgVal;</span>
 
         // Update the branch rating with exponential decay
-<span class="fc bfc" id="L408" title="All 2 branches covered.">        if (isPositive) {</span>
-<span class="fc" id="L409">            choice.ratingPos = alpha * choice.ratingPos + (1.0 - alpha) * normalizedRating;</span>
+<span class="fc bfc" id="L580" title="All 2 branches covered.">        if (isPositive) {</span>
+<span class="fc" id="L581">            choice.ratingPos = alpha * choice.ratingPos + (1.0 - alpha) * normalizedRating;</span>
         } else {
-<span class="fc" id="L411">            choice.ratingNeg = alpha * choice.ratingNeg + (1.0 - alpha) * normalizedRating;</span>
+<span class="fc" id="L583">            choice.ratingNeg = alpha * choice.ratingNeg + (1.0 - alpha) * normalizedRating;</span>
         }
 
         // Update average rating for this depth (incremental mean)
-<span class="fc" id="L415">        avg[1] += 1.0;</span>
-<span class="fc" id="L416">        avg[0] += (localRating - avg[0]) / avg[1];</span>
-<span class="fc" id="L417">    }</span>
+<span class="fc" id="L587">        avg[1] += 1.0;</span>
+<span class="fc" id="L588">        avg[0] += (localRating - avg[0]) / avg[1];</span>
+<span class="fc" id="L589">    }</span>
 
-    /**
-     * Check if all interval variables are fixed.
-     */
-    private boolean allFixed() {
-<span class="fc bfc" id="L423" title="All 2 branches covered.">        for (IntervalVar var : intervals) {</span>
-<span class="fc bfc" id="L424" title="All 2 branches covered.">            if (!var.isFixed()) return false;</span>
-        }
-<span class="fc bfc" id="L426" title="All 2 branches covered.">        for (IntExpression x : intExpressions) {</span>
-<span class="fc bfc" id="L427" title="All 2 branches covered.">            if (!x.isFixed()) return false;</span>
-        }
-<span class="fc" id="L429">        return true;</span>
-    }
-
-    /**
-     * The FDS branching strategy, implementing the {@code Supplier&lt;Runnable[]&gt;} interface.
-     * &lt;p&gt;
-     * This method implements the core FDS algorithm from Algorithm 1 in the paper.
-     * At each branching point:
-     * &lt;ol&gt;
-     *   &lt;li&gt;Select the applicable choice with the best (lowest) rating.&lt;/li&gt;
-     *   &lt;li&gt;Skip waiting and resolved choices.&lt;/li&gt;
-     *   &lt;li&gt;Return two branches: the better-rated branch first (heading into conflict).&lt;/li&gt;
-     * &lt;/ol&gt;
-     * If all initial choices are resolved but variables remain unfixed,
-     * additional choices are generated dynamically.
-     *
-     * @return array of branching closures, or EMPTY if all tasks are fixed
-     */
     @Override
     public Runnable[] get() {
-<span class="fc bfc" id="L449" title="All 2 branches covered.">        if (allFixed()) {</span>
-<span class="fc" id="L450">            return EMPTY;</span>
+<span class="fc" id="L593">        ensureConcreteCache();</span>
+
+<span class="fc" id="L595">        Choice bestChoice = selectBestChoice();</span>
+<span class="fc bfc" id="L596" title="All 2 branches covered.">        if (bestChoice == null) {</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">            if (!lastSelectHadUnfixed) {</span>
+<span class="fc" id="L598">                return EMPTY;</span>
+            }
+<span class="pc bpc" id="L600" title="1 of 2 branches missed.">            if (generateAdditionalChoices()) {</span>
+<span class="fc" id="L601">                bestChoice = selectBestChoice();</span>
+            }
+<span class="pc bpc" id="L603" title="1 of 2 branches missed.">            if (bestChoice == null) {</span>
+<span class="nc" id="L604">                return EMPTY;</span>
+            }
         }
 
-        // Pick: find the best applicable choice (lowest rating)
-<span class="fc" id="L454">        Choice bestChoice = null;</span>
-<span class="fc" id="L455">        double bestRating = Double.MAX_VALUE;</span>
-
-<span class="fc bfc" id="L457" title="All 2 branches covered.">        for (Choice c : allChoices) {</span>
-<span class="fc bfc" id="L458" title="All 2 branches covered.">            if (c.type == ChoiceType.INT) {</span>
-<span class="fc" id="L459">                IntExpression x = intExpressions[c.varIndex];</span>
-<span class="fc bfc" id="L460" title="All 6 branches covered.">                if (x.isFixed() || x.max() &lt;= c.splitValue || x.min() &gt; c.splitValue) {</span>
-<span class="fc" id="L461">                    continue;</span>
-                }
-<span class="fc" id="L463">            } else {</span>
-<span class="fc" id="L464">                IntervalVar var = intervals[c.varIndex];</span>
-<span class="pc bpc" id="L465" title="1 of 4 branches missed.">                if (c.isWaiting(var) || c.isResolved(var)) {</span>
-<span class="fc" id="L466">                    continue;</span>
-                }
-            }
-<span class="fc" id="L469">            double r = c.rating();</span>
-<span class="fc bfc" id="L470" title="All 2 branches covered.">            if (r &lt; bestRating) {</span>
-<span class="fc" id="L471">                bestRating = r;</span>
-<span class="fc" id="L472">                bestChoice = c;</span>
-            }
-<span class="fc" id="L474">        }</span>
-
-<span class="fc bfc" id="L476" title="All 2 branches covered.">        if (bestChoice == null) {</span>
-            // No applicable choice found — generate more if needed
-<span class="pc bpc" id="L478" title="1 of 2 branches missed.">            if (!allFixed()) {</span>
-<span class="fc" id="L479">                int before = allChoices.size();</span>
-<span class="fc" id="L480">                generateAdditionalChoices();</span>
-<span class="pc bpc" id="L481" title="1 of 2 branches missed.">                if (allChoices.size() &gt; before) {</span>
-<span class="fc" id="L482">                    return get(); // retry with newly generated choices</span>
-                }
-            }
-<span class="nc" id="L485">            return EMPTY;</span>
-        }
-
-<span class="fc" id="L488">        final Choice chosen = bestChoice;</span>
+<span class="fc" id="L608">        final Choice chosen = bestChoice;</span>
         // Determine which branch to explore first (better rating = lower value → heads into conflict)
-<span class="fc bfc" id="L490" title="All 2 branches covered.">        boolean positiveFirst = chosen.ratingPos &lt;= chosen.ratingNeg;</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">        boolean positiveFirst = chosen.ratingPos &lt;= chosen.ratingNeg;</span>
 
-<span class="fc bfc" id="L492" title="All 2 branches covered.">        if (positiveFirst) {</span>
-<span class="fc" id="L493">            return branch(</span>
-<span class="fc" id="L494">                    makeBranch(chosen, true),</span>
-<span class="fc" id="L495">                    makeBranch(chosen, false)</span>
+<span class="fc bfc" id="L612" title="All 2 branches covered.">        if (positiveFirst) {</span>
+<span class="fc" id="L613">            return branch(</span>
+<span class="fc" id="L614">                    makeBranch(chosen, true),</span>
+<span class="fc" id="L615">                    makeBranch(chosen, false)</span>
             );
         } else {
-<span class="fc" id="L498">            return branch(</span>
-<span class="fc" id="L499">                    makeBranch(chosen, false),</span>
-<span class="fc" id="L500">                    makeBranch(chosen, true)</span>
+<span class="fc" id="L618">            return branch(</span>
+<span class="fc" id="L619">                    makeBranch(chosen, false),</span>
+<span class="fc" id="L620">                    makeBranch(chosen, true)</span>
             );
         }
+    }
+
+    private Choice selectBestChoice() {
+<span class="fc" id="L626">        Choice bestChoice = null;</span>
+<span class="fc" id="L627">        double bestRating = Double.MAX_VALUE;</span>
+<span class="fc" id="L628">        boolean anyUnfixed = false;</span>
+
+<span class="fc bfc" id="L630" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+            boolean fixed;
+            boolean absent;
+            boolean optional;
+            int sMin, sMax, lMin, lMax;
+<span class="pc bpc" id="L635" title="1 of 2 branches missed.">            if (cpIntervals != null) {</span>
+<span class="fc" id="L636">                CPIntervalVar var = cpIntervals[i];</span>
+<span class="fc" id="L637">                fixed = var.isFixed();</span>
+<span class="fc bfc" id="L638" title="All 2 branches covered.">                if (fixed) continue;</span>
+<span class="fc" id="L639">                anyUnfixed = true;</span>
+<span class="fc" id="L640">                absent = var.isAbsent();</span>
+<span class="pc bpc" id="L641" title="1 of 2 branches missed.">                if (absent) continue;</span>
+<span class="fc" id="L642">                optional = var.isOptional();</span>
+<span class="fc" id="L643">                sMin = var.startMin();</span>
+<span class="fc" id="L644">                sMax = var.startMax();</span>
+<span class="fc" id="L645">                lMin = var.lengthMin();</span>
+<span class="fc" id="L646">                lMax = var.lengthMax();</span>
+<span class="fc" id="L647">            } else {</span>
+<span class="nc" id="L648">                IntervalVar var = intervals[i];</span>
+<span class="nc" id="L649">                fixed = var.isFixed();</span>
+<span class="nc bnc" id="L650" title="All 2 branches missed.">                if (fixed) continue;</span>
+<span class="nc" id="L651">                anyUnfixed = true;</span>
+<span class="nc" id="L652">                absent = var.isAbsent();</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">                if (absent) continue;</span>
+<span class="nc" id="L654">                optional = var.isOptional();</span>
+<span class="nc" id="L655">                sMin = var.startMin();</span>
+<span class="nc" id="L656">                sMax = var.startMax();</span>
+<span class="nc" id="L657">                lMin = var.lengthMin();</span>
+<span class="nc" id="L658">                lMax = var.lengthMax();</span>
+            }
+
+<span class="fc" id="L661">            List&lt;Choice&gt; choices = intervalChoices[i];</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">            for (int k = 0, n = choices.size(); k &lt; n; k++) {</span>
+<span class="fc" id="L663">                Choice c = choices.get(k);</span>
+<span class="pc bpc" id="L664" title="1 of 4 branches missed.">                boolean applicable = switch (c.type) {</span>
+<span class="fc" id="L665">                    case PRESENCE -&gt; optional;</span>
+<span class="fc bfc" id="L666" title="All 6 branches covered.">                    case START -&gt; !optional &amp;&amp; sMin &lt;= c.splitValue &amp;&amp; sMax &gt; c.splitValue;</span>
+<span class="pc bpc" id="L667" title="1 of 6 branches missed.">                    case LENGTH -&gt; !optional &amp;&amp; lMin &lt;= c.splitValue &amp;&amp; lMax &gt; c.splitValue;</span>
+<span class="pc" id="L668">                    case INT -&gt; false;</span>
+                };
+<span class="fc bfc" id="L670" title="All 2 branches covered.">                if (applicable) {</span>
+<span class="fc" id="L671">                    double r = c.rating();</span>
+<span class="fc bfc" id="L672" title="All 2 branches covered.">                    if (r &lt; bestRating) {</span>
+<span class="fc" id="L673">                        bestRating = r;</span>
+<span class="fc" id="L674">                        bestChoice = c;</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc bfc" id="L680" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+            int min, max, size;
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">            if (cpIntVars != null) {</span>
+<span class="fc" id="L683">                CPIntVar v = cpIntVars[i];</span>
+<span class="fc" id="L684">                min = v.min();</span>
+<span class="fc" id="L685">                max = v.max();</span>
+<span class="fc bfc" id="L686" title="All 2 branches covered.">                if (min == max) continue;</span>
+<span class="fc" id="L687">                size = v.size();</span>
+<span class="fc" id="L688">            } else {</span>
+<span class="nc" id="L689">                IntExpression x = intExpressions[i];</span>
+<span class="nc" id="L690">                min = x.min();</span>
+<span class="nc" id="L691">                max = x.max();</span>
+<span class="nc bnc" id="L692" title="All 2 branches missed.">                if (min == max) continue;</span>
+<span class="nc" id="L693">                size = x.size();</span>
+            }
+<span class="fc" id="L695">            anyUnfixed = true;</span>
+<span class="fc" id="L696">            double mid = (min + max - 1) * 0.5;</span>
+<span class="fc" id="L697">            List&lt;Choice&gt; choices = intChoices[i];</span>
+<span class="fc bfc" id="L698" title="All 2 branches covered.">            for (int k = 0, n = choices.size(); k &lt; n; k++) {</span>
+<span class="fc" id="L699">                Choice c = choices.get(k);</span>
+<span class="fc bfc" id="L700" title="All 4 branches covered.">                if (min &lt;= c.splitValue &amp;&amp; max &gt; c.splitValue) {</span>
+<span class="fc" id="L701">                    double r = c.rating() + size * 1e-9 + Math.abs(c.splitValue - mid) * 1e-12;</span>
+<span class="fc bfc" id="L702" title="All 2 branches covered.">                    if (r &lt; bestRating) {</span>
+<span class="fc" id="L703">                        bestRating = r;</span>
+<span class="fc" id="L704">                        bestChoice = c;</span>
+                    }
+                }
+            }
+        }
+
+<span class="fc" id="L710">        lastSelectHadUnfixed = anyUnfixed;</span>
+<span class="fc bfc" id="L711" title="All 2 branches covered.">        return anyUnfixed ? bestChoice : null;</span>
     }
 
     /**
@@ -511,28 +720,56 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * @return a Runnable that applies the branch
      */
     private Runnable makeBranch(Choice choice, boolean isPositive) {
-<span class="fc" id="L514">        return () -&gt; {</span>
-<span class="fc" id="L515">            long[] domBefore = snapshotDomainSizes();</span>
+<span class="fc" id="L723">        return () -&gt; {</span>
+<span class="fc" id="L724">            long[] domBefore = snapshotDomainSizes();</span>
             try {
-<span class="fc bfc" id="L517" title="All 2 branches covered.">                if (choice.type == ChoiceType.INT) {</span>
-<span class="fc" id="L518">                    IntExpression x = intExpressions[choice.varIndex];</span>
-<span class="fc bfc" id="L519" title="All 2 branches covered.">                    if (isPositive) {</span>
-<span class="fc" id="L520">                        model.add(le(x, choice.splitValue));</span>
+<span class="fc bfc" id="L726" title="All 2 branches covered.">                if (choice.type == ChoiceType.INT) {</span>
+<span class="pc bpc" id="L727" title="1 of 2 branches missed.">                    if (cpIntVars != null) {</span>
+<span class="fc" id="L728">                        CPIntVar v = cpIntVars[choice.varIndex];</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">                        if (isPositive) {</span>
+<span class="fc" id="L730">                            v.removeAbove(choice.splitValue);</span>
+                        } else {
+<span class="fc" id="L732">                            v.removeBelow(choice.splitValue + 1);</span>
+                        }
+<span class="fc" id="L734">                        cpSolver.fixPoint();</span>
+<span class="fc" id="L735">                    } else {</span>
+<span class="nc" id="L736">                        IntExpression x = intExpressions[choice.varIndex];</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">                        if (isPositive) {</span>
+<span class="nc" id="L738">                            model.add(le(x, choice.splitValue));</span>
+                        } else {
+<span class="nc" id="L740">                            model.add(lt(choice.splitValue, x));</span>
+                        }
+<span class="nc" id="L742">                    }</span>
+<span class="pc bpc" id="L743" title="1 of 2 branches missed.">                } else if (cpIntervals != null) {</span>
+<span class="fc" id="L744">                    CPIntervalVar var = cpIntervals[choice.varIndex];</span>
+<span class="fc bfc" id="L745" title="All 2 branches covered.">                    if (isPositive) {</span>
+<span class="pc bpc" id="L746" title="3 of 5 branches missed.">                        switch (choice.type) {</span>
+<span class="fc" id="L747">                            case PRESENCE -&gt; var.setPresent();</span>
+<span class="fc" id="L748">                            case START -&gt; var.setStartMax(choice.splitValue);</span>
+<span class="nc" id="L749">                            case LENGTH -&gt; var.setLengthMax(choice.splitValue);</span>
+<span class="pc" id="L750">                            case INT -&gt; throw new IllegalStateException();</span>
+                        }
                     } else {
-<span class="fc" id="L522">                        model.add(lt(choice.splitValue, x));</span>
+<span class="pc bpc" id="L753" title="3 of 5 branches missed.">                        switch (choice.type) {</span>
+<span class="fc" id="L754">                            case PRESENCE -&gt; var.setAbsent();</span>
+<span class="fc" id="L755">                            case START -&gt; var.setStartMin(choice.splitValue + 1);</span>
+<span class="nc" id="L756">                            case LENGTH -&gt; var.setLengthMin(choice.splitValue + 1);</span>
+<span class="nc" id="L757">                            case INT -&gt; throw new IllegalStateException();</span>
+                        }
                     }
-<span class="fc bfc" id="L524" title="All 2 branches covered.">                } else if (isPositive) {</span>
-<span class="fc" id="L525">                    choice.applyPositive(intervals[choice.varIndex], model);</span>
+<span class="fc" id="L760">                    cpSolver.fixPoint();</span>
+<span class="pc bnc" id="L761" title="All 2 branches missed.">                } else if (isPositive) {</span>
+<span class="nc" id="L762">                    choice.applyPositive(intervals[choice.varIndex], model);</span>
                 } else {
-<span class="fc" id="L527">                    choice.applyNegative(intervals[choice.varIndex], model);</span>
+<span class="nc" id="L764">                    choice.applyNegative(intervals[choice.varIndex], model);</span>
                 }
-<span class="fc" id="L529">            } catch (InconsistencyException e) {</span>
-<span class="fc" id="L530">                updateRating(choice, isPositive, true, 0);</span>
-<span class="fc" id="L531">                throw e;</span>
-<span class="fc" id="L532">            }</span>
-<span class="fc" id="L533">            double R = computeSearchSpaceReduction(domBefore);</span>
-<span class="fc" id="L534">            updateRating(choice, isPositive, false, R);</span>
-<span class="fc" id="L535">        };</span>
+<span class="fc" id="L766">            } catch (InconsistencyException e) {</span>
+<span class="fc" id="L767">                updateRating(choice, isPositive, true, 0);</span>
+<span class="fc" id="L768">                throw e;</span>
+<span class="fc" id="L769">            }</span>
+<span class="fc" id="L770">            double R = computeSearchSpaceReduction(domBefore);</span>
+<span class="fc" id="L771">            updateRating(choice, isPositive, false, R);</span>
+<span class="fc" id="L772">        };</span>
     }
 
     /**
@@ -540,39 +777,45 @@ public class FDSModeling implements Supplier&lt;Runnable[]&gt; {
      * This is called when all initial choices are resolved but some variables remain unfixed
      * (as described in Section 6.1 of the paper).
      */
-    private void generateAdditionalChoices() {
-<span class="fc bfc" id="L544" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
-<span class="fc" id="L545">            IntervalVar var = intervals[i];</span>
-<span class="pc bpc" id="L546" title="1 of 4 branches missed.">            if (var.isFixed() || var.isAbsent()) continue;</span>
+    private boolean generateAdditionalChoices() {
+<span class="fc" id="L781">        boolean added = false;</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">        for (int i = 0; i &lt; intervals.length; i++) {</span>
+<span class="fc" id="L783">            IntervalVar var = intervals[i];</span>
+<span class="pc bpc" id="L784" title="1 of 4 branches missed.">            if (var.isFixed() || var.isAbsent()) continue;</span>
 
             // Presence choice for still-optional variables
-<span class="pc bpc" id="L549" title="1 of 2 branches missed.">            if (var.isOptional()) {</span>
-<span class="nc" id="L550">                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
-<span class="nc" id="L551">                continue; // presence must be decided first</span>
+<span class="pc bpc" id="L787" title="1 of 2 branches missed.">            if (var.isOptional()) {</span>
+<span class="nc" id="L788">                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));</span>
+<span class="nc" id="L789">                added = true;</span>
+<span class="nc" id="L790">                continue; // presence must be decided first</span>
             }
 
             // Start time choices for the remaining start domain
-<span class="pc bpc" id="L555" title="1 of 2 branches missed.">            if (var.startMin() &lt; var.startMax()) {</span>
-<span class="fc" id="L556">                int mid = var.startMin() + (var.startMax() - var.startMin()) / 2;</span>
-<span class="fc" id="L557">                allChoices.add(new Choice(ChoiceType.START, i, mid));</span>
+<span class="pc bpc" id="L794" title="1 of 2 branches missed.">            if (var.startMin() &lt; var.startMax()) {</span>
+<span class="fc" id="L795">                int mid = var.startMin() + ((var.startMax() - var.startMin()) &gt;&gt;&gt; 1);</span>
+<span class="fc" id="L796">                intervalChoices[i].add(new Choice(ChoiceType.START, i, mid));</span>
+<span class="fc" id="L797">                added = true;</span>
             }
 
             // Length choices for the remaining length domain
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
-<span class="nc" id="L562">                int mid = var.lengthMin() + (var.lengthMax() - var.lengthMin()) / 2;</span>
-<span class="nc" id="L563">                allChoices.add(new Choice(ChoiceType.LENGTH, i, mid));</span>
+<span class="pc bpc" id="L801" title="1 of 2 branches missed.">            if (var.lengthMin() &lt; var.lengthMax()) {</span>
+<span class="nc" id="L802">                int mid = var.lengthMin() + ((var.lengthMax() - var.lengthMin()) &gt;&gt;&gt; 1);</span>
+<span class="nc" id="L803">                intervalChoices[i].add(new Choice(ChoiceType.LENGTH, i, mid));</span>
+<span class="nc" id="L804">                added = true;</span>
             }
         }
 
-<span class="pc bpc" id="L567" title="1 of 2 branches missed.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
-<span class="nc" id="L568">            IntExpression x = intExpressions[i];</span>
-<span class="nc bnc" id="L569" title="All 2 branches missed.">            if (x.isFixed()) continue;</span>
-<span class="nc bnc" id="L570" title="All 2 branches missed.">            if (x.min() &lt; x.max()) {</span>
-<span class="nc" id="L571">                int mid = x.min() + (x.max() - x.min()) / 2;</span>
-<span class="nc" id="L572">                allChoices.add(new Choice(ChoiceType.INT, i, mid));</span>
+<span class="fc bfc" id="L808" title="All 2 branches covered.">        for (int i = 0; i &lt; intExpressions.length; i++) {</span>
+<span class="pc bpc" id="L809" title="1 of 2 branches missed.">            int min = cpIntVars != null ? cpIntVars[i].min() : intExpressions[i].min();</span>
+<span class="pc bpc" id="L810" title="1 of 2 branches missed.">            int max = cpIntVars != null ? cpIntVars[i].max() : intExpressions[i].max();</span>
+<span class="fc bfc" id="L811" title="All 2 branches covered.">            if (min &lt; max) {</span>
+<span class="fc" id="L812">                int mid = min + ((max - min) &gt;&gt;&gt; 1);</span>
+<span class="fc" id="L813">                intChoices[i].add(new Choice(ChoiceType.INT, i, mid));</span>
+<span class="fc" id="L814">                added = true;</span>
             }
         }
-<span class="fc" id="L575">    }</span>
+<span class="fc" id="L817">        return added;</span>
+    }
 }
 
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

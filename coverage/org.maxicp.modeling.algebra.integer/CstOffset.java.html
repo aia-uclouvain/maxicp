@@ -41,10 +41,10 @@ import java.util.function.Function;
 
     @Override
     public int defaultFillArray(int[] array) {
-<span class="nc" id="L44">        int v = expr.fillArray(array);</span>
-<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (int i = 0; i &lt; v; i++)</span>
-<span class="nc" id="L46">            array[i] = array[i]+v;</span>
-<span class="nc" id="L47">        return v;</span>
+<span class="nc" id="L44">        int size = expr.fillArray(array);</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        for (int i = 0; i &lt; size; i++)</span>
+<span class="nc" id="L46">            array[i] = array[i] + this.v;</span>
+<span class="nc" id="L47">        return size;</span>
     }
 
     @Override

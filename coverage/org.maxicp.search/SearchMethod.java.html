@@ -43,8 +43,8 @@ public interface SearchMethod {
      *                 the search need to backtrack
      */
     default void onFailure(Runnable listener) {
-<span class="nc" id="L46">        onFailure(s -&gt; listener.run());</span>
-<span class="nc" id="L47">    }</span>
+<span class="fc" id="L46">        onFailure(s -&gt; listener.run());</span>
+<span class="fc" id="L47">    }</span>
 
     /**
      * Start the solving process

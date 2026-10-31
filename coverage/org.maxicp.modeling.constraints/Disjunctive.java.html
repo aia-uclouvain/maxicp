@@ -2,18 +2,44 @@
 
 import org.maxicp.modeling.DecisionVarsProvider;
 import org.maxicp.modeling.IntVar;
+import org.maxicp.modeling.ModelProxy;
+import org.maxicp.modeling.algebra.integer.Constant;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
-<span class="nc" id="L11">public record Disjunctive(IntExpression[] start, int[] duration) implements ConstraintFromRecord, DecisionVarsProvider {</span>
+/**
+ * Disjunctive scheduling constraint ensuring that no two activities overlap in time.
+ *
+ * @param start    the start time expressions of the activities
+ * @param duration the duration expressions of the activities
+ */
+<span class="fc" id="L21">public record Disjunctive(IntExpression[] start, IntExpression[] duration) implements ConstraintFromRecord, DecisionVarsProvider {</span>
+
+    /**
+     * Creates a Disjunctive constraint with constant activity durations.
+     *
+     * @param start    the start time expressions of the activities
+     * @param duration the constant durations of the activities
+     */
+    public Disjunctive(IntExpression[] start, int[] duration) {
+<span class="fc" id="L30">        this(start, toConstants(start[0].getModelProxy(), duration));</span>
+<span class="fc" id="L31">    }</span>
+
+    private static IntExpression[] toConstants(ModelProxy mp, int[] values) {
+<span class="fc" id="L34">        return Arrays.stream(values).mapToObj(v -&gt; new Constant(mp, v)).toArray(IntExpression[]::new);</span>
+    }
 
     @Override
     public Collection&lt;IntExpression&gt; decisionVariables() {
-        // start times are the decisions; durations are constants
-<span class="nc" id="L16">        return Arrays.stream(start).filter(IntVar.class::isInstance).toList();</span>
+<span class="fc" id="L39">        List&lt;IntExpression&gt; vars = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L40" title="1 of 4 branches missed.">        for (IntExpression s : start) if (s instanceof IntVar) vars.add(s);</span>
+<span class="pc bpc" id="L41" title="1 of 4 branches missed.">        for (IntExpression d : duration) if (d instanceof IntVar) vars.add(d);</span>
+<span class="fc" id="L42">        return vars;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

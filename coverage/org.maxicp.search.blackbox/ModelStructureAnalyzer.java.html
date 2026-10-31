@@ -1,0 +1,738 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ModelStructureAnalyzer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">ModelStructureAnalyzer.java</span></div><h1>ModelStructureAnalyzer.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.modeling.Constraint;
+import org.maxicp.modeling.IntVar;
+import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.bool.Eq;
+import org.maxicp.modeling.algebra.bool.GreaterOrEq;
+import org.maxicp.modeling.algebra.bool.LessOrEq;
+import org.maxicp.modeling.algebra.integer.CstMul;
+import org.maxicp.modeling.algebra.integer.CstOffset;
+import org.maxicp.modeling.algebra.integer.Element1D;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.algebra.integer.Max;
+import org.maxicp.modeling.algebra.integer.Min;
+import org.maxicp.modeling.algebra.integer.Sum;
+import org.maxicp.modeling.algebra.integer.UnaryMinus;
+import org.maxicp.modeling.algebra.integer.WeightedSum;
+import org.maxicp.modeling.constraints.BinPacking;
+import org.maxicp.modeling.constraints.ExpressionIsTrue;
+import org.maxicp.modeling.constraints.Table;
+import org.maxicp.modeling.symbolic.Maximization;
+import org.maxicp.modeling.symbolic.Minimization;
+import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.modeling.symbolic.SharedMaximization;
+import org.maxicp.modeling.symbolic.SharedMinimization;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Generic, problem-independent structural analyzer for a constraint model.
+ *
+ * &lt;p&gt;Inspects the constraint hypergraph, functional equality definitions, and objective AST to derive:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Primary vs. secondary (functionally defined or degree-&amp;le;1 objective-slack) decision variables,&lt;/li&gt;
+ *   &lt;li&gt;Initial structural variable weights and primal constraint-graph adjacency lists,&lt;/li&gt;
+ *   &lt;li&gt;Per-variable objective polarities ({@code -1} prefer min, {@code +1} prefer max, {@code 0} neutral),&lt;/li&gt;
+ *   &lt;li&gt;Dominated degree-&amp;le;1 table-slack variables that can be assigned their optimal bound once primary variables are fixed.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+public final class ModelStructureAnalyzer {
+
+    private static final int MAX_NEIGHBORS_PER_VAR = 48;
+
+    private final int nVars;
+    private final int[] primaryIndices;
+    private final int[] secondaryIndices;
+    private final boolean[] isSecondary;
+    private final int[] dominantSlackIndices;
+    private final int[] constraintDegree;
+    private final double[] structuralWeights;
+    private final int[] objectivePolarity;
+    private final long[][] objectiveValueCosts;
+    private final int[][] neighbors;
+
+    private ModelStructureAnalyzer(
+            int nVars,
+            int[] primaryIndices,
+            int[] secondaryIndices,
+            boolean[] isSecondary,
+            int[] dominantSlackIndices,
+            int[] constraintDegree,
+            double[] structuralWeights,
+            int[] objectivePolarity,
+            long[][] objectiveValueCosts,
+<span class="fc" id="L76">            int[][] neighbors) {</span>
+<span class="fc" id="L77">        this.nVars = nVars;</span>
+<span class="fc" id="L78">        this.primaryIndices = primaryIndices;</span>
+<span class="fc" id="L79">        this.secondaryIndices = secondaryIndices;</span>
+<span class="fc" id="L80">        this.isSecondary = isSecondary;</span>
+<span class="fc" id="L81">        this.dominantSlackIndices = dominantSlackIndices;</span>
+<span class="fc" id="L82">        this.constraintDegree = constraintDegree;</span>
+<span class="fc" id="L83">        this.structuralWeights = structuralWeights;</span>
+<span class="fc" id="L84">        this.objectivePolarity = objectivePolarity;</span>
+<span class="fc" id="L85">        this.objectiveValueCosts = objectiveValueCosts;</span>
+<span class="fc" id="L86">        this.neighbors = neighbors;</span>
+<span class="fc" id="L87">    }</span>
+
+    public static ModelStructureAnalyzer analyze(ModelDispatcher model, List&lt;IntExpression&gt; vars, Objective objective) {
+<span class="fc" id="L90">        int n = vars.size();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (n == 0) {</span>
+<span class="fc" id="L92">            return new ModelStructureAnalyzer(</span>
+                    0, new int[0], new int[0], new boolean[0], new int[0],
+                    new int[0], new double[0], new int[0], new long[0][], new int[0][]);
+        }
+
+<span class="fc" id="L97">        IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex = new IdentityHashMap&lt;&gt;(n * 2);</span>
+<span class="fc" id="L98">        Map&lt;IntExpression, Integer&gt; eqVarToIndex = new HashMap&lt;&gt;(n * 2);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L100">            IntExpression v = vars.get(i);</span>
+<span class="fc" id="L101">            varToIndex.put(v, i);</span>
+<span class="fc" id="L102">            eqVarToIndex.putIfAbsent(v, i);</span>
+        }
+
+<span class="fc" id="L105">        int[] ctrDegree = new int[n];</span>
+<span class="fc" id="L106">        double[] structWeights = new double[n];</span>
+<span class="fc" id="L107">        Arrays.fill(structWeights, 1.0);</span>
+
+<span class="fc" id="L109">        Constraint[] singleConstraintOfVar = new Constraint[n];</span>
+<span class="fc" id="L110">        List&lt;int[]&gt; functionalDefs = new ArrayList&lt;&gt;(); // [0] = targetVar, [1..k] = dependency vars</span>
+<span class="fc" id="L111">        boolean[] hasCandidateDef = new boolean[n];</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L114">        Map&lt;Integer, Double&gt;[] neighborWeights = new Map[n];</span>
+
+        // Also record Eq/Le/Ge links for objective polarity propagation
+<span class="fc" id="L117">        List&lt;Expression&gt; equalityExpressions = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (Constraint c : model.getConstraints()) {</span>
+<span class="fc" id="L120">            int[] scope = extractConstraintScope(c, varToIndex, eqVarToIndex);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">            if (scope.length == 0) {</span>
+<span class="fc" id="L122">                continue;</span>
+            }
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (scope.length == 1) {</span>
+                // Unary constraint filters domain at root; does not couple variables
+<span class="fc" id="L126">                continue;</span>
+            }
+<span class="fc" id="L128">            double w = 1.0 / Math.max(1, scope.length - 1);</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            for (int idx : scope) {</span>
+<span class="fc" id="L130">                ctrDegree[idx]++;</span>
+<span class="fc" id="L131">                structWeights[idx] += w;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">                if (ctrDegree[idx] == 1) {</span>
+<span class="fc" id="L133">                    singleConstraintOfVar[idx] = c;</span>
+                } else {
+<span class="fc" id="L135">                    singleConstraintOfVar[idx] = null;</span>
+                }
+            }
+
+            // Record adjacency for moderate-arity constraints to avoid O(n^2) blowup on global constraints
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            if (scope.length &lt;= 32) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">                for (int i = 0; i &lt; scope.length; i++) {</span>
+<span class="fc" id="L142">                    int u = scope[i];</span>
+<span class="fc" id="L143">                    Map&lt;Integer, Double&gt; map = neighborWeights[u];</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                    if (map == null) {</span>
+<span class="fc" id="L145">                        map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L146">                        neighborWeights[u] = map;</span>
+                    }
+<span class="fc bfc" id="L148" title="All 2 branches covered.">                    for (int j = 0; j &lt; scope.length; j++) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">                        if (i == j) continue;</span>
+<span class="fc" id="L150">                        int v = scope[j];</span>
+<span class="fc bfc" id="L151" title="All 4 branches covered.">                        if (map.size() &lt; MAX_NEIGHBORS_PER_VAR * 2 || map.containsKey(v)) {</span>
+<span class="fc" id="L152">                            map.merge(v, w, Double::sum);</span>
+                        }
+                    }
+                }
+            }
+
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            if (c instanceof ExpressionIsTrue eit) {</span>
+<span class="fc" id="L159">                Expression boolExpr = eit.expr();</span>
+<span class="fc bfc" id="L160" title="All 6 branches covered.">                if (boolExpr instanceof Eq || boolExpr instanceof LessOrEq || boolExpr instanceof GreaterOrEq) {</span>
+<span class="fc" id="L161">                    equalityExpressions.add(boolExpr);</span>
+                }
+<span class="fc bfc" id="L163" title="All 2 branches covered.">                if (boolExpr instanceof Eq eq) {</span>
+<span class="fc" id="L164">                    tryExtractFunctionalDefinition(eq.a(), eq.b(), varToIndex, eqVarToIndex, hasCandidateDef, functionalDefs);</span>
+                }
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            } else if (c instanceof BinPacking bp) {</span>
+<span class="fc" id="L167">                tryExtractBinPackingDefinitions(bp, varToIndex, eqVarToIndex, hasCandidateDef, functionalDefs);</span>
+<span class="fc bfc" id="L168" title="All 4 branches covered.">            } else if (c instanceof Table table &amp;&amp; table.starred().isEmpty()) {</span>
+<span class="fc" id="L169">                tryExtractTableFunctionalDefinition(table, varToIndex, eqVarToIndex, hasCandidateDef, functionalDefs);</span>
+            }
+<span class="fc" id="L171">        }</span>
+
+        // Objective polarity analysis
+<span class="fc" id="L174">        boolean[] inObjective = new boolean[n];</span>
+<span class="fc" id="L175">        boolean[] positiveInObj = new boolean[n];</span>
+<span class="fc" id="L176">        boolean[] negativeInObj = new boolean[n];</span>
+<span class="fc" id="L177">        long[] objSignSum = new long[n];</span>
+<span class="fc" id="L178">        long[][] objValCosts = new long[n][];</span>
+<span class="fc" id="L179">        boolean isLinearObjective = false;</span>
+
+<span class="fc" id="L181">        IntExpression objExpr = extractObjectiveExpression(objective);</span>
+<span class="fc" id="L182">        int objDir = extractObjectiveDirection(objective);</span>
+<span class="pc bpc" id="L183" title="1 of 4 branches missed.">        if (objExpr != null &amp;&amp; objDir != 0) {</span>
+<span class="fc" id="L184">            isLinearObjective = analyzeObjectiveExpression(</span>
+                    objExpr, objDir, varToIndex, eqVarToIndex,
+                    inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+
+            // If objective is a single variable (or has proxy variables), propagate polarity through Eq/Le/Ge
+<span class="fc bfc" id="L189" title="All 2 branches covered.">            for (Expression rel : equalityExpressions) {</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">                if (rel instanceof Eq eq) {</span>
+<span class="fc" id="L191">                    Integer idxA = lookupVar(eq.a(), varToIndex, eqVarToIndex);</span>
+<span class="fc" id="L192">                    Integer idxB = lookupVar(eq.b(), varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L193" title="1 of 8 branches missed.">                    if (idxA != null &amp;&amp; inObjective[idxA] &amp;&amp; objSignSum[idxA] != 0 &amp;&amp; idxB == null) {</span>
+<span class="fc" id="L194">                        int dir = Long.signum(objSignSum[idxA]);</span>
+<span class="fc" id="L195">                        analyzeObjectiveExpression(eq.b(), dir, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="pc bpc" id="L197" title="1 of 8 branches missed.">                    } else if (idxB != null &amp;&amp; inObjective[idxB] &amp;&amp; objSignSum[idxB] != 0 &amp;&amp; idxA == null) {</span>
+<span class="fc" id="L198">                        int dir = Long.signum(objSignSum[idxB]);</span>
+<span class="fc" id="L199">                        analyzeObjectiveExpression(eq.a(), dir, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                    }
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                } else if (rel instanceof LessOrEq le) {</span>
+                    // le.a() &lt;= le.b()
+<span class="fc" id="L204">                    Integer idxB = lookupVar(le.b(), varToIndex, eqVarToIndex);</span>
+<span class="fc" id="L205">                    Integer idxA = lookupVar(le.a(), varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L206" title="3 of 8 branches missed.">                    if (idxB != null &amp;&amp; inObjective[idxB] &amp;&amp; objSignSum[idxB] &lt; 0 &amp;&amp; idxA == null) {</span>
+                        // Minimizing b where a &lt;= b -&gt; smaller a helps smaller b
+<span class="nc" id="L208">                        analyzeObjectiveExpression(le.a(), -1, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="pc bpc" id="L210" title="3 of 8 branches missed.">                    } else if (idxA != null &amp;&amp; inObjective[idxA] &amp;&amp; objSignSum[idxA] &gt; 0 &amp;&amp; idxB == null) {</span>
+                        // Maximizing a where a &lt;= b -&gt; larger b helps larger a
+<span class="nc" id="L212">                        analyzeObjectiveExpression(le.b(), 1, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                    }
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">                } else if (rel instanceof GreaterOrEq ge) {</span>
+                    // ge.a() &gt;= ge.b()
+<span class="fc" id="L217">                    Integer idxA = lookupVar(ge.a(), varToIndex, eqVarToIndex);</span>
+<span class="fc" id="L218">                    Integer idxB = lookupVar(ge.b(), varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L219" title="7 of 8 branches missed.">                    if (idxA != null &amp;&amp; inObjective[idxA] &amp;&amp; objSignSum[idxA] &lt; 0 &amp;&amp; idxB == null) {</span>
+<span class="nc" id="L220">                        analyzeObjectiveExpression(ge.b(), -1, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="pc bpc" id="L222" title="7 of 8 branches missed.">                    } else if (idxB != null &amp;&amp; inObjective[idxB] &amp;&amp; objSignSum[idxB] &gt; 0 &amp;&amp; idxA == null) {</span>
+<span class="nc" id="L223">                        analyzeObjectiveExpression(ge.a(), 1, varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                    }
+                }
+<span class="fc" id="L227">            }</span>
+        }
+
+<span class="fc" id="L230">        int[] polarity = new int[n];</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L232">            polarity[i] = Long.signum(objSignSum[i]);</span>
+        }
+
+        // Identify acyclic functionally defined variables
+<span class="fc" id="L236">        boolean[] defined = computeAcyclicDefinedVariables(n, functionalDefs);</span>
+
+        // Identify degree-&lt;=1 objective slack variables (only if there exist higher-degree primary variables)
+<span class="fc" id="L239">        boolean hasHighDegreeNonDefined = false;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L241" title="All 4 branches covered.">            if (!defined[i] &amp;&amp; ctrDegree[i] &gt; 1) {</span>
+<span class="fc" id="L242">                hasHighDegreeNonDefined = true;</span>
+<span class="fc" id="L243">                break;</span>
+            }
+        }
+
+<span class="fc" id="L247">        boolean[] secondary = new boolean[n];</span>
+<span class="fc" id="L248">        int primaryCount = 0;</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (defined[i]) {</span>
+<span class="fc" id="L251">                secondary[i] = true;</span>
+<span class="fc bfc" id="L252" title="All 6 branches covered.">            } else if (hasHighDegreeNonDefined &amp;&amp; ctrDegree[i] &lt;= 1 &amp;&amp; inObjective[i]) {</span>
+<span class="fc" id="L253">                secondary[i] = true;</span>
+<span class="fc bfc" id="L254" title="All 4 branches covered.">            } else if (hasHighDegreeNonDefined &amp;&amp; ctrDegree[i] == 0) {</span>
+<span class="fc" id="L255">                secondary[i] = true;</span>
+            } else {
+<span class="fc" id="L257">                primaryCount++;</span>
+            }
+        }
+
+        // Guard: never allow all variables to be secondary
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        if (primaryCount == 0) {</span>
+<span class="nc" id="L263">            Arrays.fill(secondary, false);</span>
+<span class="nc" id="L264">            primaryCount = n;</span>
+        }
+
+<span class="fc" id="L267">        int[] primary = new int[primaryCount];</span>
+<span class="fc" id="L268">        int[] sec = new int[n - primaryCount];</span>
+<span class="fc" id="L269">        int pIdx = 0;</span>
+<span class="fc" id="L270">        int sIdx = 0;</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">            if (secondary[i]) {</span>
+<span class="fc" id="L273">                sec[sIdx++] = i;</span>
+            } else {
+<span class="fc" id="L275">                primary[pIdx++] = i;</span>
+            }
+        }
+
+        // Identify strictly dominated degree-&lt;=1 Table/unconstrained objective slack variables
+<span class="fc" id="L280">        List&lt;Integer&gt; domSlacks = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">        if (sec.length &gt; 0) {</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            for (int idx : sec) {</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                if (defined[idx]) continue;</span>
+<span class="pc bpc" id="L284" title="4 of 8 branches missed.">                if (ctrDegree[idx] == 0 &amp;&amp; objValCosts[idx] == null &amp;&amp; !(positiveInObj[idx] &amp;&amp; negativeInObj[idx])) {</span>
+<span class="fc" id="L285">                    domSlacks.add(idx);</span>
+<span class="fc" id="L286">                    continue;</span>
+                }
+<span class="pc bpc" id="L288" title="2 of 4 branches missed.">                if (objective == null || !isLinearObjective) continue;</span>
+<span class="pc bpc" id="L289" title="2 of 6 branches missed.">                if (!inObjective[idx] || polarity[idx] == 0 || objValCosts[idx] != null) continue;</span>
+<span class="pc bpc" id="L290" title="3 of 4 branches missed.">                if (positiveInObj[idx] &amp;&amp; negativeInObj[idx]) continue;</span>
+<span class="pc bpc" id="L291" title="1 of 6 branches missed.">                if (ctrDegree[idx] == 1 &amp;&amp; singleConstraintOfVar[idx] instanceof Table table &amp;&amp; table.starred().isEmpty()) {</span>
+                    // Check that idx appears once in table.x() and all other vars in table.x() are primary variables
+<span class="fc" id="L293">                    IntExpression[] tx = table.x();</span>
+<span class="fc" id="L294">                    int occurrences = 0;</span>
+<span class="fc" id="L295">                    boolean allOthersPrimary = true;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">                    for (IntExpression expr : tx) {</span>
+<span class="fc" id="L297">                        Integer vIdx = lookupVar(expr, varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L298" title="1 of 2 branches missed.">                        if (vIdx == null) {</span>
+<span class="nc" id="L299">                            allOthersPrimary = false;</span>
+<span class="nc" id="L300">                            break;</span>
+                        }
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                        if (vIdx == idx) {</span>
+<span class="fc" id="L303">                            occurrences++;</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">                        } else if (secondary[vIdx]) {</span>
+<span class="fc" id="L305">                            allOthersPrimary = false;</span>
+<span class="fc" id="L306">                            break;</span>
+                        }
+                    }
+<span class="pc bpc" id="L309" title="1 of 4 branches missed.">                    if (occurrences == 1 &amp;&amp; allOthersPrimary) {</span>
+<span class="fc" id="L310">                        domSlacks.add(idx);</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L315">        int[] domSlackArray = domSlacks.stream().mapToInt(Integer::intValue).toArray();</span>
+
+        // Build compact neighbor arrays sorted by descending coupling weight
+<span class="fc" id="L318">        int[][] adj = new int[n][];</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L320">            Map&lt;Integer, Double&gt; map = neighborWeights[i];</span>
+<span class="pc bpc" id="L321" title="1 of 4 branches missed.">            if (map == null || map.isEmpty()) {</span>
+<span class="fc" id="L322">                adj[i] = new int[0];</span>
+            } else {
+<span class="fc" id="L324">                List&lt;Map.Entry&lt;Integer, Double&gt;&gt; entries = new ArrayList&lt;&gt;(map.entrySet());</span>
+<span class="fc" id="L325">                entries.sort((a, b) -&gt; Double.compare(b.getValue(), a.getValue()));</span>
+<span class="fc" id="L326">                int limit = Math.min(MAX_NEIGHBORS_PER_VAR, entries.size());</span>
+<span class="fc" id="L327">                int[] arr = new int[limit];</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">                for (int k = 0; k &lt; limit; k++) {</span>
+<span class="fc" id="L329">                    arr[k] = entries.get(k).getKey();</span>
+                }
+<span class="fc" id="L331">                adj[i] = arr;</span>
+            }
+        }
+
+<span class="fc" id="L335">        return new ModelStructureAnalyzer(</span>
+                n, primary, sec, secondary, domSlackArray,
+                ctrDegree, structWeights, polarity, objValCosts, adj);
+    }
+
+    private static void tryExtractBinPackingDefinitions(
+            BinPacking bp,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex,
+            boolean[] hasCandidateDef,
+            List&lt;int[]&gt; functionalDefs) {
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">        if (bp.loads() == null || bp.x() == null) return;</span>
+<span class="fc" id="L347">        int[] deps = collectDecisionVarIndices(Arrays.asList(bp.x()), varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">        if (deps.length == 0) return;</span>
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        for (IntExpression load : bp.loads()) {</span>
+<span class="fc" id="L350">            Integer target = lookupVar(load, varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L351" title="3 of 6 branches missed.">            if (target != null &amp;&amp; !hasCandidateDef[target] &amp;&amp; !contains(deps, target)) {</span>
+<span class="fc" id="L352">                hasCandidateDef[target] = true;</span>
+<span class="fc" id="L353">                int[] record = new int[deps.length + 1];</span>
+<span class="fc" id="L354">                record[0] = target;</span>
+<span class="fc" id="L355">                System.arraycopy(deps, 0, record, 1, deps.length);</span>
+<span class="fc" id="L356">                functionalDefs.add(record);</span>
+            }
+        }
+<span class="fc" id="L359">    }</span>
+
+    private static void tryExtractTableFunctionalDefinition(
+            Table table,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex,
+            boolean[] hasCandidateDef,
+            List&lt;int[]&gt; functionalDefs) {
+<span class="fc" id="L367">        IntExpression[] tx = table.x();</span>
+<span class="fc" id="L368">        int[][] tuples = table.array();</span>
+<span class="pc bpc" id="L369" title="5 of 12 branches missed.">        if (tx == null || tuples == null || tx.length &lt; 2 || tx.length &gt; 3 || tuples.length == 0 || tuples.length &gt; 50_000) {</span>
+<span class="fc" id="L370">            return;</span>
+        }
+<span class="fc" id="L372">        int arity = tx.length;</span>
+<span class="fc" id="L373">        Integer target = lookupVar(tx[arity - 1], varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L374" title="2 of 4 branches missed.">        if (target == null || hasCandidateDef[target]) {</span>
+<span class="nc" id="L375">            return;</span>
+        }
+<span class="fc" id="L377">        List&lt;Integer&gt; depList = new ArrayList&lt;&gt;(arity - 1);</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">        for (int i = 0; i &lt; arity - 1; i++) {</span>
+<span class="fc" id="L379">            Integer depIdx = lookupVar(tx[i], varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">            if (depIdx != null) {</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">                if (depIdx.equals(target)) return;</span>
+<span class="fc" id="L382">                depList.add(depIdx);</span>
+            } else {
+<span class="nc" id="L384">                int[] subDeps = extractExpressionVars(tx[i], varToIndex, eqVarToIndex);</span>
+<span class="nc bnc" id="L385" title="All 4 branches missed.">                if (subDeps.length == 0 &amp;&amp; !tx[i].isFixed()) return;</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                for (int sd : subDeps) {</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                    if (sd == target) return;</span>
+<span class="nc" id="L388">                    depList.add(sd);</span>
+                }
+            }
+        }
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">        if (depList.isEmpty()) return;</span>
+
+        // Verify that (col_0, ..., col_{arity-2}) uniquely determines col_{arity-1}
+<span class="fc bfc" id="L395" title="All 2 branches covered.">        if (arity == 2) {</span>
+<span class="fc" id="L396">            Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;(tuples.length * 2);</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">            for (int[] row : tuples) {</span>
+<span class="fc" id="L398">                Integer prev = map.putIfAbsent(row[0], row[1]);</span>
+<span class="pc bpc" id="L399" title="1 of 4 branches missed.">                if (prev != null &amp;&amp; prev != row[1]) {</span>
+<span class="fc" id="L400">                    return;</span>
+                }
+            }
+<span class="fc" id="L403">        } else {</span>
+<span class="fc" id="L404">            Map&lt;Long, Integer&gt; map = new HashMap&lt;&gt;(tuples.length * 2);</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">            for (int[] row : tuples) {</span>
+<span class="fc" id="L406">                long key = (((long) row[0]) &lt;&lt; 32) | (row[1] &amp; 0xffffffffL);</span>
+<span class="fc" id="L407">                Integer prev = map.putIfAbsent(key, row[2]);</span>
+<span class="pc bpc" id="L408" title="3 of 4 branches missed.">                if (prev != null &amp;&amp; prev != row[2]) {</span>
+<span class="nc" id="L409">                    return;</span>
+                }
+            }
+        }
+
+<span class="fc" id="L414">        hasCandidateDef[target] = true;</span>
+<span class="fc" id="L415">        int[] record = new int[depList.size() + 1];</span>
+<span class="fc" id="L416">        record[0] = target;</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">        for (int i = 0; i &lt; depList.size(); i++) {</span>
+<span class="fc" id="L418">            record[i + 1] = depList.get(i);</span>
+        }
+<span class="fc" id="L420">        functionalDefs.add(record);</span>
+<span class="fc" id="L421">    }</span>
+
+    private static void tryExtractFunctionalDefinition(
+            IntExpression a,
+            IntExpression b,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex,
+            boolean[] hasCandidateDef,
+            List&lt;int[]&gt; functionalDefs) {
+<span class="fc" id="L430">        Integer idxA = lookupVar(a, varToIndex, eqVarToIndex);</span>
+<span class="fc" id="L431">        Integer idxB = lookupVar(b, varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L432" title="1 of 6 branches missed.">        if (idxA != null &amp;&amp; idxB == null &amp;&amp; isCompoundFunctionalExpr(b)) {</span>
+<span class="fc" id="L433">            int target = idxA;</span>
+<span class="pc bpc" id="L434" title="1 of 2 branches missed.">            if (!hasCandidateDef[target]) {</span>
+<span class="fc" id="L435">                int[] deps = extractExpressionVars(b, varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L436" title="2 of 4 branches missed.">                if (deps.length &gt; 0 &amp;&amp; !contains(deps, target)) {</span>
+<span class="fc" id="L437">                    hasCandidateDef[target] = true;</span>
+<span class="fc" id="L438">                    int[] record = new int[deps.length + 1];</span>
+<span class="fc" id="L439">                    record[0] = target;</span>
+<span class="fc" id="L440">                    System.arraycopy(deps, 0, record, 1, deps.length);</span>
+<span class="fc" id="L441">                    functionalDefs.add(record);</span>
+                }
+            }
+<span class="pc bpc" id="L444" title="1 of 6 branches missed.">        } else if (idxB != null &amp;&amp; idxA == null &amp;&amp; isCompoundFunctionalExpr(a)) {</span>
+<span class="fc" id="L445">            int target = idxB;</span>
+<span class="fc bfc" id="L446" title="All 2 branches covered.">            if (!hasCandidateDef[target]) {</span>
+<span class="fc" id="L447">                int[] deps = extractExpressionVars(a, varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L448" title="1 of 4 branches missed.">                if (deps.length &gt; 0 &amp;&amp; !contains(deps, target)) {</span>
+<span class="fc" id="L449">                    hasCandidateDef[target] = true;</span>
+<span class="fc" id="L450">                    int[] record = new int[deps.length + 1];</span>
+<span class="fc" id="L451">                    record[0] = target;</span>
+<span class="fc" id="L452">                    System.arraycopy(deps, 0, record, 1, deps.length);</span>
+<span class="fc" id="L453">                    functionalDefs.add(record);</span>
+                }
+            }
+        }
+<span class="fc" id="L457">    }</span>
+
+    private static boolean isCompoundFunctionalExpr(IntExpression expr) {
+<span class="pc bpc" id="L460" title="3 of 6 branches missed.">        return !(expr instanceof IntVar)</span>
+                &amp;&amp; !(expr instanceof CstOffset)
+                &amp;&amp; !(expr instanceof UnaryMinus);
+    }
+
+    private static boolean contains(int[] arr, int val) {
+<span class="fc bfc" id="L466" title="All 2 branches covered.">        for (int x : arr) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">            if (x == val) return true;</span>
+        }
+<span class="fc" id="L469">        return false;</span>
+    }
+
+    private static boolean[] computeAcyclicDefinedVariables(int n, List&lt;int[]&gt; functionalDefs) {
+<span class="fc" id="L473">        boolean[] isDefined = new boolean[n];</span>
+<span class="fc bfc" id="L474" title="All 2 branches covered.">        if (functionalDefs.isEmpty()) {</span>
+<span class="fc" id="L475">            return isDefined;</span>
+        }
+<span class="fc" id="L477">        int[][] depsOf = new int[n][];</span>
+<span class="fc" id="L478">        boolean[] candidate = new boolean[n];</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">        for (int[] def : functionalDefs) {</span>
+<span class="fc" id="L480">            int target = def[0];</span>
+<span class="fc" id="L481">            candidate[target] = true;</span>
+<span class="fc" id="L482">            depsOf[target] = Arrays.copyOfRange(def, 1, def.length);</span>
+<span class="fc" id="L483">        }</span>
+
+        // Iteratively resolve variables whose dependencies are either non-candidates or already resolved
+<span class="fc" id="L486">        boolean[] resolved = new boolean[n];</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">            if (!candidate[i]) {</span>
+<span class="fc" id="L489">                resolved[i] = true;</span>
+            }
+        }
+
+<span class="fc" id="L493">        boolean progress = true;</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">        while (progress) {</span>
+<span class="fc" id="L495">            progress = false;</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">            for (int[] def : functionalDefs) {</span>
+<span class="fc" id="L497">                int target = def[0];</span>
+<span class="fc bfc" id="L498" title="All 2 branches covered.">                if (resolved[target]) continue;</span>
+<span class="fc" id="L499">                boolean allDepsReady = true;</span>
+<span class="fc bfc" id="L500" title="All 2 branches covered.">                for (int k = 1; k &lt; def.length; k++) {</span>
+<span class="fc bfc" id="L501" title="All 2 branches covered.">                    if (!resolved[def[k]]) {</span>
+<span class="fc" id="L502">                        allDepsReady = false;</span>
+<span class="fc" id="L503">                        break;</span>
+                    }
+                }
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                if (allDepsReady) {</span>
+<span class="fc" id="L507">                    resolved[target] = true;</span>
+<span class="fc" id="L508">                    isDefined[target] = true;</span>
+<span class="fc" id="L509">                    progress = true;</span>
+                }
+<span class="fc" id="L511">            }</span>
+        }
+<span class="fc" id="L513">        return isDefined;</span>
+    }
+
+    private static IntExpression extractObjectiveExpression(Objective objective) {
+<span class="fc bfc" id="L517" title="All 2 branches covered.">        if (objective == null) return null;</span>
+<span class="pc bpc" id="L518" title="3 of 5 branches missed.">        return switch (objective) {</span>
+<span class="fc" id="L519">            case Minimization min -&gt; min.expr();</span>
+<span class="fc" id="L520">            case Maximization max -&gt; max.expr();</span>
+<span class="nc" id="L521">            case SharedMinimization min -&gt; min.expr;</span>
+<span class="nc" id="L522">            case SharedMaximization max -&gt; max.expr;</span>
+<span class="nc" id="L523">            default -&gt; null;</span>
+        };
+    }
+
+    private static int extractObjectiveDirection(Objective objective) {
+<span class="fc bfc" id="L528" title="All 2 branches covered.">        if (objective == null) return 0;</span>
+<span class="pc bpc" id="L529" title="3 of 5 branches missed.">        return switch (objective) {</span>
+<span class="fc" id="L530">            case Minimization ignored -&gt; -1;</span>
+<span class="nc" id="L531">            case SharedMinimization ignored -&gt; -1;</span>
+<span class="fc" id="L532">            case Maximization ignored -&gt; 1;</span>
+<span class="nc" id="L533">            case SharedMaximization ignored -&gt; 1;</span>
+<span class="nc" id="L534">            default -&gt; 0;</span>
+        };
+    }
+
+    private static boolean analyzeObjectiveExpression(
+            IntExpression expr,
+            long weightSign,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex,
+            boolean[] inObjective,
+            boolean[] positiveInObj,
+            boolean[] negativeInObj,
+            long[] objSignSum,
+            long[][] objValCosts) {
+<span class="pc bpc" id="L548" title="2 of 4 branches missed.">        if (expr == null || weightSign == 0) {</span>
+<span class="nc" id="L549">            return true;</span>
+        }
+<span class="fc" id="L551">        Integer leafIdx = lookupVar(expr, varToIndex, eqVarToIndex);</span>
+<span class="fc bfc" id="L552" title="All 2 branches covered.">        if (leafIdx != null) {</span>
+<span class="fc" id="L553">            inObjective[leafIdx] = true;</span>
+<span class="fc" id="L554">            objSignSum[leafIdx] += weightSign;</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">            if (weightSign &gt; 0) positiveInObj[leafIdx] = true;</span>
+<span class="fc bfc" id="L556" title="All 2 branches covered.">            if (weightSign &lt; 0) negativeInObj[leafIdx] = true;</span>
+<span class="fc" id="L557">            return true;</span>
+        }
+<span class="pc bpc" id="L559" title="3 of 9 branches missed.">        return switch (expr) {</span>
+<span class="fc" id="L560">            case Sum s -&gt; {</span>
+<span class="fc" id="L561">                boolean linear = true;</span>
+<span class="fc bfc" id="L562" title="All 2 branches covered.">                for (IntExpression sub : s.subexprs()) {</span>
+<span class="fc" id="L563">                    linear &amp;= analyzeObjectiveExpression(sub, weightSign, varToIndex, eqVarToIndex,</span>
+                            inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                }
+<span class="fc" id="L566">                yield linear;</span>
+            }
+<span class="fc" id="L568">            case WeightedSum ws -&gt; {</span>
+<span class="fc" id="L569">                boolean linear = true;</span>
+<span class="fc" id="L570">                IntExpression[] subs = ws.subexprs();</span>
+<span class="fc" id="L571">                int[] w = ws.weights();</span>
+<span class="fc bfc" id="L572" title="All 2 branches covered.">                for (int i = 0; i &lt; subs.length; i++) {</span>
+<span class="fc bfc" id="L573" title="All 2 branches covered.">                    if (w[i] != 0) {</span>
+<span class="fc" id="L574">                        linear &amp;= analyzeObjectiveExpression(subs[i], weightSign * w[i], varToIndex, eqVarToIndex,</span>
+                                inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                    }
+                }
+<span class="fc" id="L578">                yield linear;</span>
+            }
+<span class="fc" id="L580">            case CstMul cm -&gt; analyzeObjectiveExpression(cm.expr(), weightSign * cm.mul(), varToIndex, eqVarToIndex,</span>
+                    inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="nc" id="L582">            case UnaryMinus um -&gt; analyzeObjectiveExpression(um.expr(), -weightSign, varToIndex, eqVarToIndex,</span>
+                    inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="nc" id="L584">            case CstOffset co -&gt; analyzeObjectiveExpression(co.expr(), weightSign, varToIndex, eqVarToIndex,</span>
+                    inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+<span class="fc" id="L586">            case Element1D el -&gt; {</span>
+<span class="fc" id="L587">                Integer idx = lookupVar(el.index(), varToIndex, eqVarToIndex);</span>
+<span class="pc bpc" id="L588" title="1 of 2 branches missed.">                if (idx != null) {</span>
+<span class="fc" id="L589">                    inObjective[idx] = true;</span>
+<span class="fc" id="L590">                    int[] table = el.array();</span>
+<span class="pc bpc" id="L591" title="1 of 2 branches missed.">                    if (objValCosts[idx] == null) {</span>
+<span class="fc" id="L592">                        objValCosts[idx] = new long[table.length];</span>
+                    }
+<span class="fc" id="L594">                    long[] costs = objValCosts[idx];</span>
+<span class="fc" id="L595">                    int len = Math.min(costs.length, table.length);</span>
+                    // Lower cost in objValCosts means better for the objective
+<span class="fc bfc" id="L597" title="All 2 branches covered.">                    for (int v = 0; v &lt; len; v++) {</span>
+<span class="fc" id="L598">                        costs[v] += (-weightSign) * (long) table[v];</span>
+                    }
+<span class="fc" id="L600">                } else {</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">                    for (int vIdx : extractExpressionVars(el, varToIndex, eqVarToIndex)) {</span>
+<span class="nc" id="L602">                        inObjective[vIdx] = true;</span>
+                    }
+                }
+<span class="pc bpc" id="L605" title="1 of 2 branches missed.">                yield idx != null;</span>
+            }
+<span class="fc" id="L607">            case Max m -&gt; {</span>
+<span class="fc bfc" id="L608" title="All 2 branches covered.">                for (IntExpression sub : m.exprs()) {</span>
+<span class="fc" id="L609">                    analyzeObjectiveExpression(sub, weightSign, varToIndex, eqVarToIndex,</span>
+                            inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                }
+<span class="fc" id="L612">                yield false;</span>
+            }
+<span class="nc" id="L614">            case Min m -&gt; {</span>
+<span class="nc bnc" id="L615" title="All 2 branches missed.">                for (IntExpression sub : m.exprs()) {</span>
+<span class="nc" id="L616">                    analyzeObjectiveExpression(sub, weightSign, varToIndex, eqVarToIndex,</span>
+                            inObjective, positiveInObj, negativeInObj, objSignSum, objValCosts);
+                }
+<span class="nc" id="L619">                yield false;</span>
+            }
+            default -&gt; {
+<span class="fc" id="L622">                int[] varsInExpr = extractExpressionVars(expr, varToIndex, eqVarToIndex);</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">                for (int vIdx : varsInExpr) {</span>
+<span class="fc" id="L624">                    inObjective[vIdx] = true;</span>
+                }
+<span class="fc" id="L626">                yield false;</span>
+            }
+        };
+    }
+
+    private static Integer lookupVar(
+            Expression expr,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex) {
+<span class="fc bfc" id="L635" title="All 2 branches covered.">        if (!(expr instanceof IntExpression ie)) {</span>
+<span class="fc" id="L636">            return null;</span>
+        }
+<span class="fc" id="L638">        Integer idx = varToIndex.get(ie);</span>
+<span class="fc bfc" id="L639" title="All 2 branches covered.">        if (idx != null) {</span>
+<span class="fc" id="L640">            return idx;</span>
+        }
+<span class="fc" id="L642">        return eqVarToIndex.get(ie);</span>
+    }
+
+    private static int[] extractConstraintScope(
+            Constraint c,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex) {
+<span class="fc" id="L649">        return collectDecisionVarIndices(c.scope(), varToIndex, eqVarToIndex);</span>
+    }
+
+    private static int[] extractExpressionVars(
+            Expression root,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex) {
+<span class="fc" id="L656">        return collectDecisionVarIndices(List.of(root), varToIndex, eqVarToIndex);</span>
+    }
+
+    private static int[] collectDecisionVarIndices(
+            Collection&lt;? extends Expression&gt; roots,
+            IdentityHashMap&lt;IntExpression, Integer&gt; varToIndex,
+            Map&lt;IntExpression, Integer&gt; eqVarToIndex) {
+<span class="pc bpc" id="L663" title="2 of 4 branches missed.">        if (roots == null || roots.isEmpty()) {</span>
+<span class="nc" id="L664">            return new int[0];</span>
+        }
+<span class="fc" id="L666">        Set&lt;Integer&gt; involved = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L667">        IdentityHashMap&lt;Expression, Boolean&gt; seen = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L668">        Deque&lt;Expression&gt; stack = new ArrayDeque&lt;&gt;(roots);</span>
+<span class="fc bfc" id="L669" title="All 2 branches covered.">        while (!stack.isEmpty()) {</span>
+<span class="fc" id="L670">            Expression expr = stack.removeLast();</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">            if (seen.putIfAbsent(expr, Boolean.TRUE) != null) {</span>
+<span class="fc" id="L672">                continue;</span>
+            }
+<span class="fc" id="L674">            Integer idx = lookupVar(expr, varToIndex, eqVarToIndex);</span>
+<span class="fc bfc" id="L675" title="All 2 branches covered.">            if (idx != null) {</span>
+<span class="fc" id="L676">                involved.add(idx);</span>
+            }
+<span class="fc" id="L678">            Collection&lt;? extends Expression&gt; children = expr.subexpressions();</span>
+<span class="pc bpc" id="L679" title="1 of 2 branches missed.">            if (children != null) {</span>
+<span class="fc bfc" id="L680" title="All 2 branches covered.">                for (Expression child : children) {</span>
+<span class="pc bpc" id="L681" title="1 of 2 branches missed.">                    if (child != null) {</span>
+<span class="fc" id="L682">                        stack.addLast(child);</span>
+                    }
+<span class="fc" id="L684">                }</span>
+            }
+<span class="fc" id="L686">        }</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">        if (involved.isEmpty()) {</span>
+<span class="fc" id="L688">            return new int[0];</span>
+        }
+<span class="fc" id="L690">        int[] res = new int[involved.size()];</span>
+<span class="fc" id="L691">        int p = 0;</span>
+<span class="fc bfc" id="L692" title="All 2 branches covered.">        for (int v : involved) {</span>
+<span class="fc" id="L693">            res[p++] = v;</span>
+<span class="fc" id="L694">        }</span>
+<span class="fc" id="L695">        return res;</span>
+    }
+
+    public int nVars() {
+<span class="nc" id="L699">        return nVars;</span>
+    }
+
+    public int[] primaryIndices() {
+<span class="fc" id="L703">        return primaryIndices;</span>
+    }
+
+    public int[] secondaryIndices() {
+<span class="fc" id="L707">        return secondaryIndices;</span>
+    }
+
+    public boolean isSecondary(int varIndex) {
+<span class="fc" id="L711">        return isSecondary[varIndex];</span>
+    }
+
+    public int[] dominantSlackIndices() {
+<span class="fc" id="L715">        return dominantSlackIndices;</span>
+    }
+
+    public int constraintDegree(int varIndex) {
+<span class="nc" id="L719">        return constraintDegree[varIndex];</span>
+    }
+
+    public double structuralWeight(int varIndex) {
+<span class="fc" id="L723">        return structuralWeights[varIndex];</span>
+    }
+
+    public int objectivePolarity(int varIndex) {
+<span class="fc" id="L727">        return objectivePolarity[varIndex];</span>
+    }
+
+    public long[] objectiveValueCosts(int varIndex) {
+<span class="fc" id="L731">        return objectiveValueCosts[varIndex];</span>
+    }
+
+    public int[] neighbors(int varIndex) {
+<span class="fc" id="L735">        return neighbors[varIndex];</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

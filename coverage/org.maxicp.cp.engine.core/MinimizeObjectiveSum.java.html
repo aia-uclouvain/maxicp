@@ -31,27 +31,27 @@ public class MinimizeObjectiveSum implements Objective {
      * Create a new objective to minimize x[0] + x[1] + ... + x[n-1]
      * @param x
      */
-<span class="nc" id="L34">    public MinimizeObjectiveSum(CPIntVar ... x) {</span>
+<span class="fc" id="L34">    public MinimizeObjectiveSum(CPIntVar ... x) {</span>
 
-<span class="nc" id="L36">        this.variables = x;</span>
-<span class="nc" id="L37">        CPSolver cp = variables[0].getSolver();</span>
+<span class="fc" id="L36">        this.variables = x;</span>
+<span class="fc" id="L37">        CPSolver cp = variables[0].getSolver();</span>
 
 
         // the terms update the bounds but are not filtered
         // and must not improve
-<span class="nc" id="L42">        ox = new IntObjective[variables.length];</span>
-<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (int i = 0; i &lt; variables.length; i++) {</span>
-<span class="nc" id="L44">            ox[i] = cp.minimize(variables[i]);</span>
-<span class="nc" id="L45">            ox[i].setDelta(0);</span>
-<span class="nc" id="L46">            ox[i].setFilter(false);</span>
+<span class="fc" id="L42">        ox = new IntObjective[variables.length];</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        for (int i = 0; i &lt; variables.length; i++) {</span>
+<span class="fc" id="L44">            ox[i] = cp.minimize(variables[i]);</span>
+<span class="fc" id="L45">            ox[i].setDelta(0);</span>
+<span class="fc" id="L46">            ox[i].setFilter(false);</span>
         }
 
         // the sum must improve and is filtered
-<span class="nc" id="L50">        sumx = CPFactory.sum(x);</span>
-<span class="nc" id="L51">        osumx = cp.minimize(sumx);</span>
-<span class="nc" id="L52">        osumx.setDelta(1);</span>
-<span class="nc" id="L53">        osumx.setFilter(true);</span>
-<span class="nc" id="L54">    }</span>
+<span class="fc" id="L50">        sumx = CPFactory.sum(x);</span>
+<span class="fc" id="L51">        osumx = cp.minimize(sumx);</span>
+<span class="fc" id="L52">        osumx.setDelta(1);</span>
+<span class="fc" id="L53">        osumx.setFilter(true);</span>
+<span class="fc" id="L54">    }</span>
 
     /**
      * Set all the terms, including the sum in Weak tighten mode.
@@ -60,13 +60,13 @@ public class MinimizeObjectiveSum implements Objective {
      * the bounds for each term and the sum.
      */
     public void weakTightenAll() {
-<span class="nc bnc" id="L63" title="All 2 branches missed.">        for (int i = 0; i &lt; variables.length; i++) {</span>
-<span class="nc" id="L64">            ox[i].setDelta(0);</span>
-<span class="nc" id="L65">            ox[i].setFilter(true);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (int i = 0; i &lt; variables.length; i++) {</span>
+<span class="fc" id="L64">            ox[i].setDelta(0);</span>
+<span class="fc" id="L65">            ox[i].setFilter(true);</span>
         }
-<span class="nc" id="L67">        osumx.setDelta(0);</span>
-<span class="nc" id="L68">        osumx.setFilter(true);</span>
-<span class="nc" id="L69">    }</span>
+<span class="fc" id="L67">        osumx.setDelta(0);</span>
+<span class="fc" id="L68">        osumx.setFilter(true);</span>
+<span class="fc" id="L69">    }</span>
 
     /**
      * Strong tighten the sum
@@ -74,9 +74,9 @@ public class MinimizeObjectiveSum implements Objective {
      * solution and the next solution must strictly improve the sum.
      */
     public void strongTightenSum() {
-<span class="nc" id="L77">        osumx.setDelta(1); // the sum must improve</span>
-<span class="nc" id="L78">        osumx.setFilter(true);</span>
-<span class="nc" id="L79">    }</span>
+<span class="fc" id="L77">        osumx.setDelta(1); // the sum must improve</span>
+<span class="fc" id="L78">        osumx.setFilter(true);</span>
+<span class="fc" id="L79">    }</span>
 
     /**
      * Strong tighten the worse term
@@ -84,17 +84,17 @@ public class MinimizeObjectiveSum implements Objective {
      * solution and the next solution must strictly improve this worse term.
      */
     public void strongTigthenWorseTerm() {
-<span class="nc" id="L87">        int [] bounds = Arrays.stream(ox).mapToInt(o -&gt; o.getBound()).toArray();</span>
-<span class="nc" id="L88">        int i = org.maxicp.util.Arrays.argMax(bounds); // index of worse term</span>
-<span class="nc" id="L89">        ox[i].setDelta(1);</span>
-<span class="nc" id="L90">    }</span>
+<span class="fc" id="L87">        int [] bounds = Arrays.stream(ox).mapToInt(o -&gt; o.getBound()).toArray();</span>
+<span class="fc" id="L88">        int i = org.maxicp.util.Arrays.argMax(bounds); // index of worse term</span>
+<span class="fc" id="L89">        ox[i].setDelta(1);</span>
+<span class="fc" id="L90">    }</span>
 
     /**
      * Bound of the sum objective
      * @return the bound of the sum objective
      */
     public int getBound() {
-<span class="nc" id="L97">        return osumx.getBound();</span>
+<span class="fc" id="L97">        return osumx.getBound();</span>
     }
 
 
@@ -108,11 +108,11 @@ public class MinimizeObjectiveSum implements Objective {
      */
     @Override
     public void tighten() {
-<span class="nc bnc" id="L111" title="All 2 branches missed.">        for (Objective o : ox) {</span>
-<span class="nc" id="L112">            o.tighten();</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        for (Objective o : ox) {</span>
+<span class="fc" id="L112">            o.tighten();</span>
         }
-<span class="nc" id="L114">        osumx.tighten();</span>
-<span class="nc" id="L115">    }</span>
+<span class="fc" id="L114">        osumx.tighten();</span>
+<span class="fc" id="L115">    }</span>
 
     /**
      * Relax all the objectives bound so that they
@@ -120,18 +120,18 @@ public class MinimizeObjectiveSum implements Objective {
      */
     @Override
     public void relax() {
-<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (Objective o : ox) {</span>
-<span class="nc" id="L124">            o.relax();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        for (Objective o : ox) {</span>
+<span class="fc" id="L124">            o.relax();</span>
         }
-<span class="nc" id="L126">        osumx.relax();</span>
-<span class="nc" id="L127">    }</span>
+<span class="fc" id="L126">        osumx.relax();</span>
+<span class="fc" id="L127">    }</span>
 
     @Override
     public void filter() {
-<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (Objective o : ox) {</span>
-<span class="nc" id="L132">            o.filter();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        for (Objective o : ox) {</span>
+<span class="fc" id="L132">            o.filter();</span>
         }
-<span class="nc" id="L134">        osumx.filter();</span>
-<span class="nc" id="L135">    }</span>
+<span class="fc" id="L134">        osumx.filter();</span>
+<span class="fc" id="L135">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -3,12 +3,11 @@
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.FDSModeling;
 import org.maxicp.search.SearchStatistics;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public class DFSRunnableSearch extends RunnableSearch {
@@ -23,71 +22,188 @@ public class DFSRunnableSearch extends RunnableSearch {
                              org.maxicp.modeling.symbolic.Objective objective,
                              double randomSwapProbability,
                              long randomSeed) {
-<span class="fc" id="L26">        super(blackBoxSearch);</span>
-<span class="fc" id="L27">        this.model = model;</span>
-<span class="fc" id="L28">        this.vars = List.copyOf(vars);</span>
-<span class="fc" id="L29">        this.objective = objective;</span>
-<span class="fc" id="L30">        this.randomSwapProbability = randomSwapProbability;</span>
-<span class="fc" id="L31">        this.random = new Random(randomSeed);</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L25">        super(blackBoxSearch);</span>
+<span class="fc" id="L26">        this.model = model;</span>
+<span class="fc" id="L27">        this.vars = List.copyOf(vars);</span>
+<span class="fc" id="L28">        this.objective = objective;</span>
+<span class="fc" id="L29">        this.randomSwapProbability = randomSwapProbability;</span>
+<span class="fc" id="L30">        this.random = new Random(randomSeed);</span>
+<span class="fc" id="L31">    }</span>
 
     @Override
     void updateSolution(List&lt;Integer&gt; solution) {
         // nothing to maintain locally
-<span class="fc" id="L37">    }</span>
+<span class="fc" id="L36">    }</span>
 
     @Override
     public SearchStatus run(long timeLimitInMillis) {
-<span class="fc" id="L41">        long t0 = System.currentTimeMillis();</span>
-<span class="fc" id="L42">        blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
-<span class="fc" id="L43">        Supplier&lt;Runnable[]&gt; branching = new FDSModeling(vars.toArray(IntExpression[]::new));</span>
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (randomSwapProbability &gt; 0.0) {</span>
-<span class="nc" id="L45">            branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (!blackBoxSearch.intervals().isEmpty()) {</span>
+<span class="nc" id="L41">            return new SchedulingRunnableSearch(</span>
+<span class="nc" id="L42">                    blackBoxSearch, model, blackBoxSearch.intervals(), vars, objective, random.nextLong())</span>
+<span class="nc" id="L43">                    .run(timeLimitInMillis);</span>
         }
 
-<span class="fc" id="L48">        DFSearch dfs = model.dfSearch(branching);</span>
-<span class="fc" id="L49">        dfs.onSolution(() -&gt; {</span>
-<span class="fc" id="L50">            List&lt;Integer&gt; solution = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">            for (IntExpression var : vars) {</span>
-<span class="fc" id="L52">                solution.add(var.min());</span>
-<span class="fc" id="L53">            }</span>
-<span class="fc" id="L54">            blackBoxSearch.updateSolution(solution);</span>
-<span class="fc" id="L55">            blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());</span>
-<span class="fc" id="L56">        });</span>
+<span class="fc" id="L46">        long t0 = System.currentTimeMillis();</span>
+<span class="fc" id="L47">        blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] start budget=%dms&quot;.formatted(timeLimitInMillis));</span>
 
-        SearchStatistics stats;
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (objective == null) {</span>
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">            stats = dfs.solve(s -&gt; (System.currentTimeMillis() - t0) &gt;= timeLimitInMillis);</span>
-        } else {
-<span class="fc" id="L62">            stats = dfs.optimizeSubjectTo(objective,</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                    s -&gt; (System.currentTimeMillis() - t0) &gt;= timeLimitInMillis,</span>
-<span class="fc" id="L64">                    blackBoxSearch::postIncumbentCut);</span>
-        }
-<span class="fc" id="L66">        blackBoxSearch.logProgress(&quot;[phase exhaustive-fds] stats: %s&quot;.formatted(blackBoxSearch.formatStats(stats)));</span>
+<span class="fc" id="L49">        AtomicBoolean improvedInPhase = new AtomicBoolean(false);</span>
+<span class="fc" id="L50">        ConflictDrivenBranching cdBranching = blackBoxSearch.conflictDrivenBranching(random);</span>
 
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (stats.isCompleted()) {</span>
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">            if (stats.numberOfSolutions() &gt; 0) {</span>
-<span class="fc" id="L70">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">                        .formatted(objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL));</span>
-<span class="fc bfc" id="L72" title="All 2 branches covered.">                return objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;</span>
+        // Stage 1: Constructive conflict-driven search (dom/wdeg + Last-Conflict + Objective Polarity)
+        // Gives a fast primal solution and closes small/constructive trees immediately.
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        long stage1Budget = timeLimitInMillis &gt;= 60 ? Math.max(25L, (timeLimitInMillis * 45L) / 100L) : timeLimitInMillis;</span>
+<span class="fc" id="L55">        int restart = 1;</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">        while ((System.currentTimeMillis() - t0) &lt; stage1Budget &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc bfc" id="L57" title="All 3 branches covered.">            ConflictDrivenBranching.ValueStrategy valStrat = switch ((restart - 1) % 3) {</span>
+<span class="fc" id="L58">                case 0 -&gt; ConflictDrivenBranching.ValueStrategy.OBJECTIVE_AND_PHASE;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                case 1 -&gt; hasFeasibleSolution()</span>
+<span class="fc" id="L60">                        ? ConflictDrivenBranching.ValueStrategy.SOLUTION_AND_OBJECTIVE</span>
+<span class="fc" id="L61">                        : ConflictDrivenBranching.ValueStrategy.PHASE_SAVING;</span>
+<span class="fc" id="L62">                default -&gt; ConflictDrivenBranching.ValueStrategy.RANDOM_BOUND;</span>
+            };
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            double noise = restart == 1 ? 0.0 : (0.02 + 0.01 * (restart % 4));</span>
+<span class="fc" id="L65">            cdBranching.configureRestart(valStrat, noise, true);</span>
+
+<span class="fc" id="L67">            Supplier&lt;Runnable[]&gt; branching = cdBranching;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">            if (randomSwapProbability &gt; 0.0) {</span>
+<span class="nc" id="L69">                branching = new RandomizedBranching(branching, random, randomSwapProbability);</span>
+            }
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            final int failCutoff = restart == 1 ? 512 : 256 * luby(restart);</span>
+<span class="fc" id="L73">            DFSearch cdDfs = blackBoxSearch.createSubSearch(branching);</span>
+<span class="fc" id="L74">            cdDfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L75">                improvedInPhase.set(true);</span>
+<span class="fc" id="L76">                blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="fc" id="L77">            });</span>
+
+            SearchStatistics stage1Stats;
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            if (objective == null) {</span>
+<span class="fc" id="L81">                stage1Stats = cdDfs.solve(s -&gt;</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                        blackBoxSearch.shouldAbortSubSearch(s, t0, stage1Budget, failCutoff)</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                                || hasFeasibleSolution());</span>
             } else {
-<span class="nc bnc" id="L74" title="All 4 branches missed.">                if (objective != null &amp;&amp; hasFeasibleSolution()) {</span>
-<span class="nc" id="L75">                    blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.PROVEN_OPTIMAL));</span>
-<span class="nc" id="L76">                    return SearchStatus.PROVEN_OPTIMAL;</span>
+<span class="fc" id="L85">                stage1Stats = cdDfs.optimizeSubjectTo(objective,</span>
+<span class="fc" id="L86">                        s -&gt; blackBoxSearch.shouldAbortSubSearch(s, t0, stage1Budget, failCutoff),</span>
+<span class="fc" id="L87">                        blackBoxSearch::postIncumbentCut);</span>
+            }
+<span class="fc" id="L89">            blackBoxSearch.accumulateSubSearchStats(stage1Stats);</span>
+<span class="fc" id="L90">            blackBoxSearch.logProgress(&quot;[phase exhaustive-fds] cd-restart=%d stats: %s&quot;</span>
+<span class="fc" id="L91">                    .formatted(restart, blackBoxSearch.formatStats(stage1Stats)));</span>
+
+<span class="pc bpc" id="L93" title="1 of 4 branches missed.">            if (objective == null &amp;&amp; hasFeasibleSolution()) {</span>
+<span class="fc" id="L94">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.SAT));</span>
+<span class="fc" id="L95">                return SearchStatus.SAT;</span>
+            }
+
+<span class="pc bpc" id="L98" title="2 of 6 branches missed.">            if (stage1Stats.isCompleted() &amp;&amp; stage1Stats.numberOfFailures() &lt; failCutoff &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L99">                SearchStatus endStatus = completedStatus(improvedInPhase.get());</span>
+<span class="fc" id="L100">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(endStatus));</span>
+<span class="fc" id="L101">                return endStatus;</span>
+            }
+<span class="fc" id="L103">            restart++;</span>
+<span class="fc" id="L104">        }</span>
+
+        // Stage 2: Unbounded exhaustive search until phase budget expires
+<span class="fc" id="L107">        long elapsed = System.currentTimeMillis() - t0;</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">        if (elapsed &lt; timeLimitInMillis &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L109">            long remaining = timeLimitInMillis - elapsed;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            long fdsBudget = elapsed + (remaining &gt;= 100 ? (remaining * 60L) / 100L : remaining);</span>
+
+<span class="fc" id="L112">            Supplier&lt;Runnable[]&gt; fdsBranching = blackBoxSearch.tieredFdsBranching(random);</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            if (randomSwapProbability &gt; 0.0) {</span>
+<span class="nc" id="L114">                fdsBranching = new RandomizedBranching(fdsBranching, random, randomSwapProbability);</span>
+            }
+<span class="fc" id="L116">            cdBranching.configureRestart(ConflictDrivenBranching.ValueStrategy.OBJECTIVE_AND_PHASE, 0.0, true);</span>
+
+<span class="fc" id="L118">            DFSearch fdsDfs = blackBoxSearch.createSubSearch(fdsBranching);</span>
+<span class="fc" id="L119">            fdsDfs.onSolution(() -&gt; {</span>
+<span class="fc" id="L120">                improvedInPhase.set(true);</span>
+<span class="fc" id="L121">                blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="fc" id="L122">            });</span>
+
+            SearchStatistics fdsStats;
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (objective == null) {</span>
+<span class="nc" id="L126">                fdsStats = fdsDfs.solve(s -&gt;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                        blackBoxSearch.shouldAbortSubSearch(s, t0, fdsBudget, Integer.MAX_VALUE)</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                                || hasFeasibleSolution());</span>
+            } else {
+<span class="fc" id="L130">                fdsStats = fdsDfs.optimizeSubjectTo(objective,</span>
+<span class="fc" id="L131">                        s -&gt; blackBoxSearch.shouldAbortSubSearch(s, t0, fdsBudget, Integer.MAX_VALUE),</span>
+<span class="fc" id="L132">                        blackBoxSearch::postIncumbentCut);</span>
+            }
+<span class="fc" id="L134">            blackBoxSearch.accumulateSubSearchStats(fdsStats);</span>
+<span class="fc" id="L135">            blackBoxSearch.logProgress(&quot;[phase exhaustive-fds] fds stats: %s&quot;.formatted(blackBoxSearch.formatStats(fdsStats)));</span>
+
+<span class="pc bpc" id="L137" title="3 of 4 branches missed.">            if (objective == null &amp;&amp; hasFeasibleSolution()) {</span>
+<span class="nc" id="L138">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.SAT));</span>
+<span class="nc" id="L139">                return SearchStatus.SAT;</span>
+            }
+<span class="pc bpc" id="L141" title="1 of 4 branches missed.">            if (fdsStats.isCompleted() &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L142">                SearchStatus endStatus = completedStatus(improvedInPhase.get());</span>
+<span class="fc" id="L143">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(endStatus));</span>
+<span class="fc" id="L144">                return endStatus;</span>
+            }
+
+            // Stage 3: Final unbounded conflict-driven search for any remaining time
+<span class="pc bpc" id="L148" title="2 of 4 branches missed.">            if ((System.currentTimeMillis() - t0) &lt; timeLimitInMillis &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="fc" id="L149">                cdBranching.configureRestart(ConflictDrivenBranching.ValueStrategy.OBJECTIVE_AND_PHASE, 0.0, true);</span>
+<span class="fc" id="L150">                Supplier&lt;Runnable[]&gt; finalBranching = cdBranching;</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">                if (randomSwapProbability &gt; 0.0) {</span>
+<span class="nc" id="L152">                    finalBranching = new RandomizedBranching(finalBranching, random, randomSwapProbability);</span>
                 }
-<span class="nc" id="L78">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.UNSAT));</span>
-<span class="nc" id="L79">                return SearchStatus.UNSAT;</span>
-            }
-        } else {
-<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (stats.numberOfSolutions() &gt; 0) {</span>
-<span class="nc" id="L83">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.IMPROVED));</span>
-<span class="nc" id="L84">                return SearchStatus.IMPROVED;</span>
-            } else {
-<span class="nc" id="L86">                blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.NOT_IMPROVED));</span>
-<span class="nc" id="L87">                return SearchStatus.NOT_IMPROVED;</span>
+<span class="fc" id="L154">                DFSearch finalDfs = blackBoxSearch.createSubSearch(finalBranching);</span>
+<span class="fc" id="L155">                finalDfs.onSolution(() -&gt; {</span>
+<span class="nc" id="L156">                    improvedInPhase.set(true);</span>
+<span class="nc" id="L157">                    blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="nc" id="L158">                });</span>
+
+                SearchStatistics finalStats;
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">                if (objective == null) {</span>
+<span class="nc" id="L162">                    finalStats = finalDfs.solve(s -&gt;</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">                            blackBoxSearch.shouldAbortSubSearch(s, t0, timeLimitInMillis, Integer.MAX_VALUE)</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                                    || hasFeasibleSolution());</span>
+                } else {
+<span class="fc" id="L166">                    finalStats = finalDfs.optimizeSubjectTo(objective,</span>
+<span class="fc" id="L167">                            s -&gt; blackBoxSearch.shouldAbortSubSearch(s, t0, timeLimitInMillis, Integer.MAX_VALUE),</span>
+<span class="fc" id="L168">                            blackBoxSearch::postIncumbentCut);</span>
+                }
+<span class="fc" id="L170">                blackBoxSearch.accumulateSubSearchStats(finalStats);</span>
+<span class="fc" id="L171">                blackBoxSearch.logProgress(&quot;[phase exhaustive-fds] final-cd stats: %s&quot;</span>
+<span class="fc" id="L172">                        .formatted(blackBoxSearch.formatStats(finalStats)));</span>
+
+<span class="pc bpc" id="L174" title="3 of 4 branches missed.">                if (objective == null &amp;&amp; hasFeasibleSolution()) {</span>
+<span class="nc" id="L175">                    blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(SearchStatus.SAT));</span>
+<span class="nc" id="L176">                    return SearchStatus.SAT;</span>
+                }
+<span class="pc bpc" id="L178" title="3 of 4 branches missed.">                if (finalStats.isCompleted() &amp;&amp; !blackBoxSearch.isLimitReached()) {</span>
+<span class="nc" id="L179">                    SearchStatus endStatus = completedStatus(improvedInPhase.get());</span>
+<span class="nc" id="L180">                    blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(endStatus));</span>
+<span class="nc" id="L181">                    return endStatus;</span>
+                }
             }
         }
+
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        SearchStatus endStatus = improvedInPhase.get() ? SearchStatus.IMPROVED : SearchStatus.NOT_IMPROVED;</span>
+<span class="fc" id="L187">        blackBoxSearch.logPhase(&quot;[phase exhaustive-fds] end status=%s&quot;.formatted(endStatus));</span>
+<span class="fc" id="L188">        return endStatus;</span>
     }
 
+    private SearchStatus completedStatus(boolean foundInPhase) {
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (objective == null) {</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">            return (foundInPhase || hasFeasibleSolution()) ? SearchStatus.SAT : SearchStatus.UNSAT;</span>
+        }
+<span class="pc bpc" id="L195" title="3 of 4 branches missed.">        return (foundInPhase || hasFeasibleSolution()) ? SearchStatus.PROVEN_OPTIMAL : SearchStatus.UNSAT;</span>
+    }
+
+    private static int luby(int i) {
+<span class="fc" id="L199">        int k = 1;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        while ((1 &lt;&lt; k) - 1 &lt; i) {</span>
+<span class="fc" id="L201">            k++;</span>
+        }
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (i == (1 &lt;&lt; k) - 1) {</span>
+<span class="fc" id="L204">            return 1 &lt;&lt; (k - 1);</span>
+        }
+<span class="fc" id="L206">        return luby(i - (1 &lt;&lt; (k - 1)) + 1);</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

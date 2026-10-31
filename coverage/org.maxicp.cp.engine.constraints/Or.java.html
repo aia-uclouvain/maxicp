@@ -56,9 +56,9 @@ import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
 <span class="fc" id="L56">        wL.setValue(i);</span>
 <span class="fc" id="L57">        i = wR.value();</span>
 <span class="pc bpc" id="L58" title="1 of 6 branches missed.">        while (i &gt;= 0 &amp;&amp; x[i].isFixed() &amp;&amp; i &gt;= wL.value()) {</span>
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">            if (x[i].isTrue()) {</span>
-<span class="nc" id="L60">                setActive(false);</span>
-<span class="nc" id="L61">                return;</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            if (x[i].isTrue()) {</span>
+<span class="fc" id="L60">                setActive(false);</span>
+<span class="fc" id="L61">                return;</span>
             }
 <span class="fc" id="L63">            i -= 1;</span>
         }

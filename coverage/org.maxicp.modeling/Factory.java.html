@@ -22,37 +22,73 @@ import org.maxicp.modeling.symbolic.*;
 import static org.maxicp.cp.CPFactory.makeIntervalVar;
 
 import java.util.Optional;
+import java.util.Set;
 
+/**
+ * Modeling factory providing static helper methods to create model dispatchers, objectives,
+ * symbolic integer/boolean/cumulative expressions, and high-level modeling constraints.
+ */
 public final class Factory {
     private Factory() {
     }
 
     // -------------- instantiation of the model -----------------------
 
+    /**
+     * Creates a new {@link ModelDispatcher} to build and solve constraint programming models.
+     *
+     * @return a new {@link ModelDispatcher} instance
+     */
     static public ModelDispatcher makeModelDispatcher() {
-<span class="fc" id="L33">        return new ModelDispatcher();</span>
+<span class="fc" id="L43">        return new ModelDispatcher();</span>
     }
 
     // -------------- objectives -----------------------
 
+    /**
+     * Creates a minimization objective for the given integer expression.
+     *
+     * @param x      the expression to minimize
+     * @param shared {@code true} if the objective bound should be shared across parallel searches
+     * @return the minimization {@link Objective}
+     */
     public static Objective minimize(IntExpression x, boolean shared) {
-<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (shared)</span>
-<span class="nc" id="L40">            return new SharedMinimization(x);</span>
-<span class="fc" id="L41">        return new Minimization(x);</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (shared)</span>
+<span class="nc" id="L57">            return new SharedMinimization(x);</span>
+<span class="fc" id="L58">        return new Minimization(x);</span>
     }
 
+    /**
+     * Creates a minimization objective for the given integer expression.
+     *
+     * @param x the expression to minimize
+     * @return the minimization {@link Objective}
+     */
     public static Objective minimize(IntExpression x) {
-<span class="fc" id="L45">        return minimize(x, false);</span>
+<span class="fc" id="L68">        return minimize(x, false);</span>
     }
 
+    /**
+     * Creates a maximization objective for the given integer expression.
+     *
+     * @param x      the expression to maximize
+     * @param shared {@code true} if the objective bound should be shared across parallel searches
+     * @return the maximization {@link Objective}
+     */
     public static Objective maximize(IntExpression x, boolean shared) {
-<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (shared)</span>
-<span class="nc" id="L50">            return new SharedMaximization(x);</span>
-<span class="nc" id="L51">        return new Maximization(x);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (shared)</span>
+<span class="nc" id="L80">            return new SharedMaximization(x);</span>
+<span class="nc" id="L81">        return new Maximization(x);</span>
     }
 
+    /**
+     * Creates a maximization objective for the given integer expression.
+     *
+     * @param x the expression to maximize
+     * @return the maximization {@link Objective}
+     */
     public static Objective maximize(IntExpression x) {
-<span class="nc" id="L55">        return maximize(x, false);</span>
+<span class="nc" id="L91">        return maximize(x, false);</span>
     }
 
     // -------------- constraints -----------------------
@@ -61,148 +97,380 @@ public final class Factory {
     // Arithmetic constraints (+, -, *, abs)
     // ********************
 
+    /**
+     * Creates a constant integer expression with value {@code v}.
+     *
+     * @param modelProxy the model proxy
+     * @param v          the constant integer value
+     * @return a constant {@link IntExpression} equal to {@code v}
+     */
     public static IntExpression cst(ModelProxy modelProxy, int v) {
-<span class="fc" id="L65">        return new Constant(modelProxy, v);</span>
+<span class="fc" id="L108">        return new Constant(modelProxy, v);</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code a + v}.
+     *
+     * @param a an integer expression
+     * @param v a constant offset
+     * @return the expression {@code a + v}
+     */
     static public IntExpression plus(IntExpression a, int v) {
-<span class="fc" id="L69">        return new Sum(a, new Constant(a.getModelProxy(), v));</span>
+<span class="fc" id="L119">        return new Sum(a, new Constant(a.getModelProxy(), v));</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code a + b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return the expression {@code a + b}
+     */
     static public IntExpression plus(IntExpression a, IntExpression b) {
-<span class="nc" id="L73">        return new Sum(a, b);</span>
+<span class="fc" id="L130">        return new Sum(a, b);</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code a - v}.
+     *
+     * @param a an integer expression
+     * @param v a constant offset to subtract
+     * @return the expression {@code a - v}
+     */
     static public IntExpression minus(IntExpression a, int v) {
-<span class="fc" id="L77">        return new Sum(a, new Constant(a.getModelProxy(), -v));</span>
+<span class="fc" id="L141">        return new Sum(a, new Constant(a.getModelProxy(), -v));</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code a - b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return the expression {@code a - b}
+     */
     static public IntExpression minus(IntExpression a, IntExpression b) {
-<span class="nc" id="L81">        return new Sum(a, minus(b));</span>
+<span class="fc" id="L152">        return new Sum(a, minus(b));</span>
     }
 
+    /**
+     * Returns an integer expression representing the unary negation {@code -a}.
+     *
+     * @param a an integer expression
+     * @return the expression {@code -a}
+     */
     static public IntExpression minus(IntExpression a) {
-<span class="fc" id="L85">        return new UnaryMinus(a);</span>
+<span class="fc" id="L162">        return new UnaryMinus(a);</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code a * b}.
+     *
+     * @param a an integer expression
+     * @param b a constant multiplier
+     * @return the expression {@code a * b}
+     */
     static public IntExpression mul(IntExpression a, int b) {
-<span class="fc" id="L89">        return new CstMul(a, b);</span>
+<span class="fc" id="L173">        return new CstMul(a, b);</span>
     }
 
+    /**
+     * Returns an integer expression representing the integer division {@code a / b}.
+     *
+     * @param a the dividend expression
+     * @param b the constant divisor
+     * @return the expression {@code a / b}
+     */
     static public IntExpression div(IntExpression a, int b) {
-<span class="nc" id="L93">        return div(a, new Constant(a.getModelProxy(), b));</span>
+<span class="fc" id="L184">        return div(a, new Constant(a.getModelProxy(), b));</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code b * a}.
+     *
+     * @param b a constant multiplier
+     * @param a an integer expression
+     * @return the expression {@code b * a}
+     */
     static public IntExpression mul(int b, IntExpression a) {
-<span class="fc" id="L97">        return new CstMul(a, b);</span>
+<span class="fc" id="L195">        return new CstMul(a, b);</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code x * b} where {@code b} is a boolean expression.
+     *
+     * @param x an integer expression
+     * @param b a boolean expression (0 or 1)
+     * @return the expression {@code x * b}
+     */
     static public IntExpression mul(IntExpression x, BoolExpression b) {
-<span class="fc" id="L101">        return new MulBinary(x, b);</span>
+<span class="fc" id="L206">        return new MulBinary(x, b);</span>
     }
 
+    /**
+     * Returns an integer expression representing the product of the given expressions.
+     *
+     * @param x the integer expressions to multiply
+     * @return the product expression {@code x[0] * x[1] * ... * x[n-1]}
+     */
     static public IntExpression mul(IntExpression... x) {
-<span class="fc" id="L105">        return new Mul(x);</span>
+<span class="fc" id="L216">        return new Mul(x);</span>
     }
 
+    /**
+     * Returns an integer expression representing the absolute value {@code |x|}.
+     *
+     * @param x an integer expression
+     * @return the expression {@code |x|}
+     */
     public static IntExpression abs(IntExpression x) {
-<span class="nc" id="L109">        return new Abs(x);</span>
+<span class="nc" id="L226">        return new Abs(x);</span>
     }
 
+    /**
+     * Returns an integer expression representing the integer division {@code x / y}.
+     *
+     * @param x the dividend expression
+     * @param y the divisor expression
+     * @return the expression {@code x / y}
+     */
     public static IntExpression div(IntExpression x, IntExpression y) {
-<span class="nc" id="L113">        return new Div(x, y);</span>
+<span class="fc" id="L237">        return new Div(x, y);</span>
     }
 
     // ********************
     // Arithmetic constraints (sum, min, max)
     // ********************
 
+    /**
+     * Returns an integer expression representing the sum of the given expressions.
+     *
+     * @param x the integer expressions to sum
+     * @return the sum expression {@code x[0] + x[1] + ... + x[n-1]}
+     */
     static public IntExpression sum(IntExpression... x) {
-<span class="fc" id="L121">        return new Sum(x);</span>
+<span class="fc" id="L251">        return new Sum(x);</span>
     }
 
+    /**
+     * Returns an integer expression representing the maximum of the given expressions.
+     *
+     * @param x the integer expressions
+     * @return the maximum expression {@code max(x)}
+     */
     public static IntExpression max(IntExpression... x) {
-<span class="fc" id="L125">        return new Max(x);</span>
+<span class="fc" id="L261">        return new Max(x);</span>
     }
 
+    /**
+     * Returns an integer expression representing the minimum of the given expressions.
+     *
+     * @param x the integer expressions
+     * @return the minimum expression {@code min(x)}
+     */
     public static IntExpression min(IntExpression... x) {
-<span class="nc" id="L129">        return new Min(x);</span>
+<span class="nc" id="L271">        return new Min(x);</span>
     }
 
     // ********************
     // Comon constraints (=, !=, &lt;=, &lt;, &gt;=, &gt;)
     // ********************
 
+    /**
+     * Returns a boolean expression representing {@code a == b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a == b}
+     */
     static public BoolExpression eq(IntExpression a, int b) {
-<span class="fc" id="L137">        return new Eq(a, new Constant(a.getModelProxy(), b));</span>
+<span class="fc" id="L286">        return new Eq(a, new Constant(a.getModelProxy(), b));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a == b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a == b}
+     */
     static public BoolExpression eq(int a, IntExpression b) {
-<span class="fc" id="L141">        return new Eq(a, b);</span>
+<span class="fc" id="L297">        return new Eq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a == b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a == b}
+     */
     static public BoolExpression eq(IntExpression a, IntExpression b) {
-<span class="fc" id="L145">        return new Eq(a, b);</span>
+<span class="fc" id="L308">        return new Eq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a != b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a != b}
+     */
     static public BoolExpression neq(IntExpression a, int b) {
-<span class="fc" id="L149">        return new NotEq(a, new Constant(a.getModelProxy(), b));</span>
+<span class="fc" id="L319">        return new NotEq(a, new Constant(a.getModelProxy(), b));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a != b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a != b}
+     */
     static public BoolExpression neq(int a, IntExpression b) {
-<span class="fc" id="L153">        return new NotEq(a, b);</span>
+<span class="fc" id="L330">        return new NotEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a != b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a != b}
+     */
     static public BoolExpression neq(IntExpression a, IntExpression b) {
-<span class="nc" id="L157">        return new NotEq(a, b);</span>
+<span class="fc" id="L341">        return new NotEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt;= b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a &lt;= b}
+     */
     static public BoolExpression le(IntExpression a, int b) {
-<span class="fc" id="L161">        return new LessOrEq(a, new Constant(a.getModelProxy(), b));</span>
+<span class="fc" id="L352">        return new LessOrEq(a, new Constant(a.getModelProxy(), b));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt;= b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a &lt;= b}
+     */
     static public BoolExpression le(int a, IntExpression b) {
-<span class="nc" id="L165">        return new LessOrEq(a, b);</span>
+<span class="nc" id="L363">        return new LessOrEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt;= b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a &lt;= b}
+     */
     static public BoolExpression le(IntExpression a, IntExpression b) {
-<span class="nc" id="L169">        return new LessOrEq(a, b);</span>
+<span class="fc" id="L374">        return new LessOrEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt; b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a &lt; b}
+     */
     static public BoolExpression lt(int a, IntExpression b) {
-<span class="fc" id="L173">        return new LessOrEq(a, Factory.minus(b, 1));</span>
+<span class="nc" id="L385">        return new LessOrEq(new Constant(b.getModelProxy(), a + 1), b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt; b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a &lt; b}
+     */
     static public BoolExpression lt(IntExpression a, int b) {
-<span class="fc" id="L177">        return new LessOrEq(a, new Constant(a.getModelProxy(), b - 1));</span>
+<span class="fc" id="L396">        return new LessOrEq(a, new Constant(a.getModelProxy(), b - 1));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &lt; b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a &lt; b}
+     */
     static public BoolExpression lt(IntExpression a, IntExpression b) {
-<span class="nc" id="L181">        return new LessOrEq(a, Factory.minus(b, 1));</span>
+<span class="fc" id="L407">        return new LessOrEq(a, Factory.minus(b, 1));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt;= b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a &gt;= b}
+     */
     static public BoolExpression ge(IntExpression a, int b) {
-<span class="nc" id="L185">        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b));</span>
+<span class="fc" id="L418">        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt;= b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a &gt;= b}
+     */
     static public BoolExpression ge(int a, IntExpression b) {
-<span class="nc" id="L189">        return new GreaterOrEq(a, b);</span>
+<span class="nc" id="L429">        return new GreaterOrEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt;= b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a &gt;= b}
+     */
     static public BoolExpression ge(IntExpression a, IntExpression b) {
-<span class="nc" id="L193">        return new GreaterOrEq(a, b);</span>
+<span class="fc" id="L440">        return new GreaterOrEq(a, b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt; b}.
+     *
+     * @param a an integer expression
+     * @param b a constant value
+     * @return a boolean expression true iff {@code a &gt; b}
+     */
     static public BoolExpression gt(IntExpression a, int b) {
-<span class="nc" id="L197">        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b + 1));</span>
+<span class="nc" id="L451">        return new GreaterOrEq(a, new Constant(a.getModelProxy(), b + 1));</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt; b}.
+     *
+     * @param a a constant value
+     * @param b an integer expression
+     * @return a boolean expression true iff {@code a &gt; b}
+     */
     static public BoolExpression gt(int a, IntExpression b) {
-<span class="nc" id="L201">        return new GreaterOrEq(a, Factory.plus(b, 1));</span>
+<span class="nc" id="L462">        return new GreaterOrEq(new Constant(b.getModelProxy(), a - 1), b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing {@code a &gt; b}.
+     *
+     * @param a the first integer expression
+     * @param b the second integer expression
+     * @return a boolean expression true iff {@code a &gt; b}
+     */
     static public BoolExpression gt(IntExpression a, IntExpression b) {
-<span class="nc" id="L205">        return new GreaterOrEq(a, Factory.plus(b, 1));</span>
+<span class="fc" id="L473">        return new GreaterOrEq(a, Factory.plus(b, 1));</span>
     }
 
     // ********************
@@ -215,16 +483,34 @@ public final class Factory {
     // Logical constraints (not, and, or, implies)
     // ********************
 
+    /**
+     * Returns the logical negation {@code !a}.
+     *
+     * @param a a boolean expression
+     * @return the negated boolean expression {@code !a}
+     */
     public static BoolExpression not(BoolExpression a) {
-<span class="fc" id="L219">        return new Not(a);</span>
+<span class="fc" id="L493">        return new Not(a);</span>
     }
 
+    /**
+     * Returns the logical conjunction (AND) of the given boolean expressions.
+     *
+     * @param t the boolean expressions
+     * @return a boolean expression true iff all expressions in {@code t} are true
+     */
     public static BoolExpression and(BoolExpression... t) {
-<span class="nc" id="L223">        return new And(t);</span>
+<span class="nc" id="L503">        return new And(t);</span>
     }
 
+    /**
+     * Returns the logical disjunction (OR) of the given boolean expressions.
+     *
+     * @param t the boolean expressions
+     * @return a boolean expression true iff at least one expression in {@code t} is true
+     */
     public static BoolExpression or(BoolExpression... t) {
-<span class="nc" id="L227">        return new Or(t);</span>
+<span class="fc" id="L513">        return new Or(t);</span>
     }
 
     /**
@@ -232,34 +518,141 @@ public final class Factory {
      * 
      * @param a a boolean expression
      * @param b a boolean expression
-     * @return a =&gt; b
+     * @return {@code a =&gt; b}
      */
     public static BoolExpression implies(BoolExpression a, BoolExpression b) {
-<span class="nc" id="L238">        return or(not(a), b);</span>
+<span class="nc" id="L524">        return or(not(a), b);</span>
     }
 
+    /**
+     * Returns a boolean expression representing whether interval {@code a} ends at or before the start of {@code b}.
+     *
+     * @param a the first interval variable
+     * @param b the second interval variable
+     * @return a boolean expression true iff {@code end(a) &lt;= start(b)} when both are present
+     */
     public static BoolExpression endBeforeStart(IntervalVar a, IntervalVar b) {
-<span class="fc" id="L242">        return new EndBeforeStart(a, b);</span>
+<span class="fc" id="L535">        return new EndBeforeStart(a, b);</span>
     }
 
     // ********************
     // Element constraints
     // ********************
 
+    /**
+     * Returns an integer expression representing {@code T[y]}.
+     *
+     * @param T the array of constant values
+     * @param y the index expression
+     * @return the element expression {@code T[y]}
+     */
     public static IntExpression get(int[] T, IntExpression y) {
-<span class="fc" id="L250">        return new Element1D(T, y);</span>
+<span class="fc" id="L550">        return new Element1D(T, y);</span>
     }
 
+    /**
+     * Returns an integer expression representing {@code T[y]}.
+     *
+     * @param T the array of integer expressions
+     * @param y the index expression
+     * @return the element expression {@code T[y]}
+     */
     public static IntExpression get(IntExpression[] T, IntExpression y) {
-<span class="nc" id="L254">        return new Element1DVar(T, y);</span>
+<span class="fc" id="L561">        return new Element1DVar(T, y);</span>
     }
 
-    public static IntExpression get(int[][] T, IntVar x, IntVar y) {
-<span class="nc" id="L258">        return new Element2D(T, x, y);</span>
+    /**
+     * Returns an integer expression representing {@code T[x][y]}.
+     *
+     * @param T the 2D matrix of constant values
+     * @param x the row index expression
+     * @param y the column index expression
+     * @return the element expression {@code T[x][y]}
+     */
+    public static IntExpression get(int[][] T, IntExpression x, IntExpression y) {
+<span class="fc" id="L573">        return new Element2D(T, x, y);</span>
     }
 
-    public static IntExpression get(IntExpression[][] T, IntVar x, IntVar y) {
-<span class="nc" id="L262">        return new Element2DVar(T, x, y);</span>
+    /**
+     * Returns an integer expression representing {@code T[x][y]}.
+     *
+     * @param T the 2D matrix of integer expressions
+     * @param x the row index expression
+     * @param y the column index expression
+     * @return the element expression {@code T[x][y]}
+     */
+    public static IntExpression get(IntExpression[][] T, IntExpression x, IntExpression y) {
+<span class="fc" id="L585">        return new Element2DVar(T, x, y);</span>
+    }
+
+    /**
+     * Creates a non-strict lexicographic ordering constraint {@code x &lt;=_lex y}.
+     *
+     * @param x the first array of integer expressions
+     * @param y the second array of integer expressions
+     * @return a {@link LexLe} constraint enforcing {@code x &lt;=_lex y}
+     */
+    public static Constraint lexLe(IntExpression[] x, IntExpression[] y) {
+<span class="fc" id="L596">        return new LexLe(x, y, false);</span>
+    }
+
+    /**
+     * Creates a strict lexicographic ordering constraint {@code x &lt;_lex y}.
+     *
+     * @param x the first array of integer expressions
+     * @param y the second array of integer expressions
+     * @return a {@link LexLe} constraint enforcing {@code x &lt;_lex y}
+     */
+    public static Constraint lexLt(IntExpression[] x, IntExpression[] y) {
+<span class="fc" id="L607">        return new LexLe(x, y, true);</span>
+    }
+
+    /**
+     * Creates an {@link Among} constraint ensuring that {@code count} expressions in {@code x}
+     * take a value in {@code values}.
+     *
+     * @param x      the array of integer expressions
+     * @param values the set of target values
+     * @param count  the expression counting how many elements of {@code x} belong to {@code values}
+     * @return an {@link Among} constraint
+     */
+    public static Constraint among(IntExpression[] x, Set&lt;Integer&gt; values, IntExpression count) {
+<span class="nc" id="L620">        return new Among(x, values, count);</span>
+    }
+
+    /**
+     * Creates a {@link SubCircuit} constraint ensuring that the successor array {@code x}
+     * forms at most one circuit.
+     *
+     * @param x the array of successor expressions
+     * @return a {@link SubCircuit} constraint
+     */
+    public static Constraint subCircuit(IntExpression... x) {
+<span class="nc" id="L631">        return new SubCircuit(x);</span>
+    }
+
+    /**
+     * Creates a {@link CardinalityMin} constraint ensuring that each value {@code v} appears
+     * at least {@code minCard[v]} times in {@code x}.
+     *
+     * @param x       the array of integer expressions
+     * @param minCard the minimum number of occurrences for each value {@code 0..minCard.length - 1}
+     * @return a {@link CardinalityMin} constraint
+     */
+    public static Constraint cardinalityMin(IntExpression[] x, int[] minCard) {
+<span class="fc" id="L643">        return new CardinalityMin(x, minCard);</span>
+    }
+
+    /**
+     * Creates a {@link CardinalityMax} constraint ensuring that each value {@code v} appears
+     * at most {@code maxCard[v]} times in {@code x}.
+     *
+     * @param x       the array of integer expressions
+     * @param maxCard the maximum number of occurrences for each value {@code 0..maxCard.length - 1}
+     * @return a {@link CardinalityMax} constraint
+     */
+    public static Constraint cardinalityMax(IntExpression[] x, int[] maxCard) {
+<span class="fc" id="L655">        return new CardinalityMax(x, maxCard);</span>
     }
 
     // ********************
@@ -267,32 +660,73 @@ public final class Factory {
     // values)
     // ********************
 
+    /**
+     * Creates an {@link AllDifferent} constraint ensuring that all expressions in {@code x}
+     * take pairwise distinct values.
+     *
+     * @param x the integer expressions that must be pairwise distinct
+     * @return an {@link AllDifferent} constraint
+     */
     public static Constraint allDifferent(IntExpression... x) {
-<span class="fc" id="L271">        return new AllDifferent(x);</span>
+<span class="fc" id="L671">        return new AllDifferent(x);</span>
     }
 
+    /**
+     * Creates a {@link BinPacking} constraint linking item bin assignments {@code x} and item {@code weights}
+     * to bin {@code loads}.
+     *
+     * @param x       the bin assignment expression for each item
+     * @param weights the weight of each item
+     * @param loads   the total load expression for each bin
+     * @return a {@link BinPacking} constraint
+     */
     public static Constraint binPacking(IntExpression[] x, int[] weights, IntExpression[] loads) {
-<span class="nc" id="L275">        return new BinPacking(x, weights, loads);</span>
+<span class="nc" id="L684">        return new BinPacking(x, weights, loads);</span>
     }
 
     // ********************
     // Circuit constraints
     // ********************
 
+    /**
+     * Creates a {@link Circuit} constraint ensuring that the successor array {@code x}
+     * forms a single Hamiltonian circuit.
+     *
+     * @param x the array of successor expressions
+     * @return a {@link Circuit} constraint
+     */
     public static Constraint circuit(IntExpression... x) {
-<span class="fc" id="L283">        return new Circuit(x);</span>
+<span class="fc" id="L699">        return new Circuit(x);</span>
     }
 
     // ********************
     // Extensional constraints
     // ********************
 
+    /**
+     * Creates a positive {@link Table} constraint ensuring that the tuple assigned to {@code x}
+     * belongs to {@code array}.
+     *
+     * @param x       the array of integer expressions
+     * @param array   the table of allowed tuples
+     * @param starred optional wildcard value representing any value in a tuple
+     * @return a {@link Table} constraint
+     */
     public static Constraint table(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) {
-<span class="nc" id="L291">        return new Table(x, array, starred);</span>
+<span class="nc" id="L716">        return new Table(x, array, starred);</span>
     }
 
+    /**
+     * Creates a negative {@link NegTable} constraint ensuring that the tuple assigned to {@code x}
+     * does not match any tuple in {@code array}.
+     *
+     * @param x       the array of integer expressions
+     * @param array   the table of forbidden tuples
+     * @param starred optional wildcard value representing any value in a tuple
+     * @return a {@link NegTable} constraint
+     */
     public static Constraint negTable(IntExpression[] x, int[][] array, Optional&lt;Integer&gt; starred) {
-<span class="nc" id="L295">        return new NegTable(x, array, starred);</span>
+<span class="nc" id="L729">        return new NegTable(x, array, starred);</span>
     }
 
     // ********************
@@ -305,48 +739,167 @@ public final class Factory {
     // Scheduling constraints
     // ********************
 
+    /**
+     * Creates a {@link org.maxicp.modeling.constraints.Cumulative} scheduling constraint with constant durations,
+     * demands, and capacity.
+     *
+     * @param start    the start time expressions of the activities
+     * @param duration the durations of the activities
+     * @param demand   the resource demands of the activities
+     * @param capa     the resource capacity
+     * @return a {@link org.maxicp.modeling.constraints.Cumulative} constraint
+     */
     public static Constraint cumulative(IntExpression[] start, int[] duration, int[] demand, int capa) {
-<span class="nc" id="L309">        return new org.maxicp.modeling.constraints.Cumulative(start, duration, demand, capa);</span>
+<span class="nc" id="L753">        return new org.maxicp.modeling.constraints.Cumulative(start, duration, demand, capa);</span>
     }
 
+    /**
+     * Creates a {@link org.maxicp.modeling.constraints.Cumulative} scheduling constraint with variable durations,
+     * ends, demands, and capacity.
+     *
+     * @param start    the start time expressions of the activities
+     * @param duration the duration expressions of the activities
+     * @param end      the end time expressions of the activities
+     * @param demand   the resource demand expressions of the activities
+     * @param capa     the resource capacity expression
+     * @return a {@link org.maxicp.modeling.constraints.Cumulative} constraint
+     */
+    public static Constraint cumulative(IntExpression[] start, IntExpression[] duration, IntExpression[] end,
+            IntExpression[] demand, IntExpression capa) {
+<span class="nc" id="L769">        return new org.maxicp.modeling.constraints.Cumulative(start, duration, end, demand, capa);</span>
+    }
+
+    /**
+     * Creates a {@link Disjunctive} scheduling constraint with constant activity durations.
+     *
+     * @param start    the start time expressions of the activities
+     * @param duration the durations of the activities
+     * @return a {@link Disjunctive} constraint
+     */
     public static Constraint disjunctive(IntExpression[] start, int[] duration) {
-<span class="nc" id="L313">        return new Disjunctive(start, duration);</span>
+<span class="nc" id="L780">        return new Disjunctive(start, duration);</span>
     }
 
+    /**
+     * Creates a {@link Disjunctive} scheduling constraint with variable activity durations.
+     *
+     * @param start    the start time expressions of the activities
+     * @param duration the duration expressions of the activities
+     * @return a {@link Disjunctive} constraint
+     */
+    public static Constraint disjunctive(IntExpression[] start, IntExpression[] duration) {
+<span class="nc" id="L791">        return new Disjunctive(start, duration);</span>
+    }
+
+    /**
+     * Creates a {@link Distance} constraint on a sequence variable maintaining the total travel distance.
+     *
+     * @param seqVar         the sequence variable
+     * @param distanceMatrix the distance matrix between nodes
+     * @param distance       the total distance expression
+     * @return a {@link Distance} constraint
+     */
     public static Constraint distance(SeqVar seqVar, int[][] distanceMatrix, IntExpression distance) {
-<span class="nc" id="L317">        return new Distance(seqVar, distanceMatrix, distance);</span>
+<span class="fc" id="L803">        return new Distance(seqVar, distanceMatrix, distance);</span>
     }
 
+    /**
+     * Creates a {@link Require} constraint forcing {@code node} to be visited in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param node   the node to require
+     * @return a {@link Require} constraint
+     */
     public static Constraint require(SeqVar seqVar, int node) {
-<span class="nc" id="L321">        return new Require(seqVar, node);</span>
+<span class="fc" id="L814">        return new Require(seqVar, node);</span>
     }
 
+    /**
+     * Creates an {@link Insert} constraint inserting {@code node} immediately after {@code prev} in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param prev   the predecessor node
+     * @param node   the node to insert
+     * @return an {@link Insert} constraint
+     */
     public static Constraint insert(SeqVar seqVar, int prev, int node) {
-<span class="fc" id="L325">        return new Insert(seqVar, prev, node);</span>
+<span class="fc" id="L826">        return new Insert(seqVar, prev, node);</span>
     }
 
+    /**
+     * Creates an {@link Exclude} constraint excluding {@code node} from {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param node   the node to exclude
+     * @return an {@link Exclude} constraint
+     */
     public static Constraint exclude(SeqVar seqVar, int node) {
-<span class="fc" id="L329">        return new Exclude(seqVar, node);</span>
+<span class="fc" id="L837">        return new Exclude(seqVar, node);</span>
     }
 
+    /**
+     * Creates a {@link NotBetween} constraint forbidding {@code node} from being placed immediately between
+     * {@code pred} and {@code succ} in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param pred   the predecessor node
+     * @param node   the node whose insertion is forbidden
+     * @param succ   the successor node
+     * @return a {@link NotBetween} constraint
+     */
     public static Constraint notBetween(SeqVar seqVar, int pred, int node, int succ) {
-<span class="nc" id="L333">        return new NotBetween(seqVar, pred, node, succ);</span>
+<span class="fc" id="L851">        return new NotBetween(seqVar, pred, node, succ);</span>
     }
 
+    /**
+     * Creates a {@link TransitionTimes} constraint linking visit times with transition distances in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param time   the visit time expression for each node
+     * @param dist   the transition distance matrix between nodes
+     * @return a {@link TransitionTimes} constraint
+     */
     public static Constraint transitionTimes(SeqVar seqVar, IntExpression[] time, int[][] dist) {
-<span class="nc" id="L337">        return new TransitionTimes(seqVar, time, dist);</span>
+<span class="nc" id="L863">        return new TransitionTimes(seqVar, time, dist);</span>
     }
 
+    /**
+     * Creates a {@link TransitionTimes} constraint linking visit times with transition distances and service durations
+     * in {@code seqVar}.
+     *
+     * @param seqVar      the sequence variable
+     * @param time        the visit time expression for each node
+     * @param dist        the transition distance matrix between nodes
+     * @param serviceTime the service duration at each node
+     * @return a {@link TransitionTimes} constraint
+     */
     public static Constraint transitionTimes(SeqVar seqVar, IntExpression[] time, int[][] dist, int[] serviceTime) {
-<span class="nc" id="L341">        return new TransitionTimes(seqVar, time, dist, serviceTime);</span>
+<span class="fc" id="L877">        return new TransitionTimes(seqVar, time, dist, serviceTime);</span>
     }
 
+    /**
+     * Creates a {@link org.maxicp.modeling.constraints.seqvar.Cumulative} constraint on a sequence variable.
+     *
+     * @param seqVar   the sequence variable
+     * @param starts   the start nodes of the activities
+     * @param ends     the end nodes of the activities
+     * @param load     the load of each activity
+     * @param capacity the maximum resource capacity along the sequence
+     * @return a sequence {@link org.maxicp.modeling.constraints.seqvar.Cumulative} constraint
+     */
     public static Constraint cumulative(SeqVar seqVar, int[] starts, int[] ends, int[] load, int capacity) {
-<span class="nc" id="L345">        return new org.maxicp.modeling.constraints.seqvar.Cumulative(seqVar, starts, ends, load, capacity);</span>
+<span class="fc" id="L891">        return new org.maxicp.modeling.constraints.seqvar.Cumulative(seqVar, starts, ends, load, capacity);</span>
     }
 
+    /**
+     * Creates a {@link org.maxicp.modeling.constraints.scheduling.NoOverlap} constraint ensuring that
+     * the given interval variables do not overlap in time.
+     *
+     * @param intervals the interval variables
+     * @return a {@link org.maxicp.modeling.constraints.scheduling.NoOverlap} constraint
+     */
     public static Constraint noOverlap(IntervalVar... intervals) {
-<span class="fc" id="L349">        return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);</span>
+<span class="fc" id="L902">        return new org.maxicp.modeling.constraints.scheduling.NoOverlap(intervals);</span>
     }
 
     /**
@@ -360,7 +913,7 @@ public final class Factory {
      */
     public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval,
             IntExpression[] intervalInPos) {
-<span class="fc" id="L363">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,</span>
+<span class="fc" id="L916">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,</span>
                 intervalInPos, null);
     }
 
@@ -376,21 +929,21 @@ public final class Factory {
      */
     public static Constraint noOverlap(IntervalVar[] intervals, IntExpression[] posOfInterval,
             IntExpression[] intervalInPos, int[][] minTransition) {
-<span class="fc" id="L379">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,</span>
+<span class="fc" id="L932">        return new org.maxicp.modeling.constraints.scheduling.NoOverlapWithPosition(intervals, posOfInterval,</span>
                 intervalInPos, minTransition);
     }
 
     public static Constraint alternative(IntervalVar real, IntervalVar... alternatives) {
-<span class="nc" id="L384">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real,</span>
-<span class="nc" id="L385">                new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);</span>
+<span class="fc" id="L937">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real,</span>
+<span class="fc" id="L938">                new IntVarRangeImpl(real.getModelProxy(), 0, 1), alternatives);</span>
     }
 
     public static Constraint alternative(IntervalVar real, IntExpression n, IntervalVar... alternatives) {
-<span class="nc" id="L389">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);</span>
+<span class="nc" id="L942">        return new org.maxicp.modeling.constraints.scheduling.Alternative(real, n, alternatives);</span>
     }
 
     public static Constraint length(IntervalVar var, int length) {
-<span class="fc" id="L393">        return new org.maxicp.modeling.constraints.scheduling.Length(var, length);</span>
+<span class="fc" id="L946">        return new org.maxicp.modeling.constraints.scheduling.Length(var, length);</span>
     }
 
     // public static Constraint present(IntervalVar var) {
@@ -398,11 +951,11 @@ public final class Factory {
     // }
 
     public static BoolExpression present(IntervalVar var) {
-<span class="fc" id="L401">        return new org.maxicp.modeling.algebra.bool.Present(var);</span>
+<span class="fc" id="L954">        return new org.maxicp.modeling.algebra.bool.Present(var);</span>
     }
 
     public static Constraint start(IntervalVar var, int start) {
-<span class="fc" id="L405">        return new org.maxicp.modeling.constraints.scheduling.Start(var, start);</span>
+<span class="fc" id="L958">        return new org.maxicp.modeling.constraints.scheduling.Start(var, start);</span>
     }
 
     /*
@@ -413,104 +966,108 @@ public final class Factory {
      */
 
     public static IntExpression startOr(IntervalVar interval, int v) {
-<span class="nc" id="L416">        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);</span>
+<span class="fc" id="L969">        return new org.maxicp.modeling.algebra.integer.IntervalStartOrValue(interval, v);</span>
     }
 
     public static IntExpression start(IntervalVar interval) {
-<span class="fc" id="L420">        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);</span>
+<span class="fc" id="L973">        return new org.maxicp.modeling.algebra.integer.IntervalStart(interval);</span>
     }
 
     public static IntExpression endOr(IntervalVar interval, int v) {
-<span class="fc" id="L424">        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);</span>
+<span class="fc" id="L977">        return new org.maxicp.modeling.algebra.integer.IntervalEndOrValue(interval, v);</span>
     }
 
     public static IntExpression end(IntervalVar interval) {
-<span class="fc" id="L428">        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);</span>
+<span class="fc" id="L981">        return new org.maxicp.modeling.algebra.integer.IntervalEnd(interval);</span>
     }
 
     public static IntExpression length(IntervalVar interval) {
-<span class="fc" id="L432">        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);</span>
+<span class="fc" id="L985">        return new org.maxicp.modeling.algebra.integer.IntervalLength(interval);</span>
     }
 
     public static IntExpression lengthOr(IntervalVar interval, int v) {
-<span class="nc" id="L436">        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);</span>
+<span class="fc" id="L989">        return new org.maxicp.modeling.algebra.integer.IntervalLengthOrValue(interval, v);</span>
     }
 
     public static BoolExpression endBefore(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L440">        return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);</span>
+<span class="fc" id="L993">        return new org.maxicp.modeling.algebra.bool.EndBefore(intervalVar, value);</span>
     }
 
     public static BoolExpression endAfter(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L444">        return new EndAfter(intervalVar, value);</span>
+<span class="nc" id="L997">        return new EndAfter(intervalVar, value);</span>
     }
 
     public static BoolExpression endAfter(IntervalVar intervalVar, int value) {
-<span class="nc" id="L448">        return new EndAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="fc" id="L1001">        return new EndAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static BoolExpression startBefore(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L452">        return new StartBefore(intervalVar, value);</span>
+<span class="fc" id="L1005">        return new StartBefore(intervalVar, value);</span>
     }
 
     public static BoolExpression startBefore(IntervalVar intervalVar, int value) {
-<span class="fc" id="L456">        return new StartBefore(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="fc" id="L1009">        return new StartBefore(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static BoolExpression startAfter(IntervalVar intervalVar, IntExpression value) {
-<span class="nc" id="L460">        return new StartAfter(intervalVar, value);</span>
+<span class="nc" id="L1013">        return new StartAfter(intervalVar, value);</span>
     }
 
     public static BoolExpression startAfter(IntervalVar intervalVar, int value) {
-<span class="fc" id="L464">        return new StartAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
+<span class="fc" id="L1017">        return new StartAfter(intervalVar, cst(intervalVar.getModelProxy(), value));</span>
     }
 
     public static CumulFunction flat() {
-<span class="fc" id="L468">        return new org.maxicp.modeling.algebra.scheduling.FlatCumulFunction();</span>
+<span class="fc" id="L1021">        return new org.maxicp.modeling.algebra.scheduling.FlatCumulFunction();</span>
     }
 
     public static CumulFunction pulse(IntervalVar interval, int height) {
-<span class="fc" id="L472">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
+<span class="fc" id="L1025">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
     }
 
     public static CumulFunction pulse(IntervalVar interval, int hMin, int hMax) {
-<span class="fc" id="L476">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);</span>
+<span class="fc" id="L1029">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, hMin, hMax);</span>
+    }
+
+    public static CumulFunction pulse(IntervalVar interval, IntExpression height) {
+<span class="nc" id="L1033">        return new org.maxicp.modeling.algebra.scheduling.PulseCumulFunction(interval, height);</span>
     }
 
     public static CumulFunction sum(CumulFunction... functions) {
-<span class="fc" id="L480">        return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);</span>
+<span class="fc" id="L1037">        return new org.maxicp.modeling.algebra.scheduling.SumCumulFunction(functions);</span>
     }
 
     public static CumulFunction minus(CumulFunction left, CumulFunction right) {
-<span class="nc" id="L484">        return new org.maxicp.modeling.algebra.scheduling.MinusCumulFunction(left, right);</span>
+<span class="nc" id="L1041">        return new org.maxicp.modeling.algebra.scheduling.MinusCumulFunction(left, right);</span>
     }
 
     public static CumulFunction stepAtEnd(IntervalVar interval, int hMin, int hMax) {
-<span class="nc" id="L488">        return new org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction(interval, hMin, hMax);</span>
+<span class="nc" id="L1045">        return new org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction(interval, hMin, hMax);</span>
     }
 
     public static CumulFunction stepAtEnd(IntervalVar interval, int height) {
-<span class="nc" id="L492">        return stepAtEnd(interval, height, height);</span>
+<span class="nc" id="L1049">        return stepAtEnd(interval, height, height);</span>
     }
 
     public static CumulFunction step(ModelDispatcher m, int from, int h) {
-<span class="nc" id="L496">        IntervalVar dummy = m.intervalVar(from, Constants.HORIZON, Constants.HORIZON, true);</span>
-<span class="nc" id="L497">        return pulse(dummy, h);</span>
+<span class="nc" id="L1053">        IntervalVar dummy = m.intervalVar(from, Constants.HORIZON, Constants.HORIZON, true);</span>
+<span class="nc" id="L1054">        return pulse(dummy, h);</span>
     }
 
     public static CumulFunction stepAtStart(IntervalVar interval, int hMin, int hMax) {
-<span class="nc" id="L501">        return new org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction(interval, hMin, hMax);</span>
+<span class="nc" id="L1058">        return new org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction(interval, hMin, hMax);</span>
     }
 
     public static CumulFunction stepAtStart(IntervalVar interval, int height) {
-<span class="nc" id="L505">        return stepAtStart(interval, height, height);</span>
+<span class="nc" id="L1062">        return stepAtStart(interval, height, height);</span>
     }
 
     public static Constraint le(CumulFunction function, int limit) {
-<span class="fc" id="L509">        return new LessOrEqual(function, limit);</span>
+<span class="fc" id="L1066">        return new LessOrEqual(function, limit);</span>
     }
 
     public static Constraint alwaysIn(CumulFunction expression, int heightMin, int heightMax) {
-<span class="nc" id="L513">        return new AlwaysIn(expression, heightMin, heightMax);</span>
+<span class="nc" id="L1070">        return new AlwaysIn(expression, heightMin, heightMax);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

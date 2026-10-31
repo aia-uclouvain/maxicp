@@ -33,7 +33,7 @@ import java.util.List;
     }
 
     public static SymbolicModel emptyModel(ModelProxy modelProxy) {
-<span class="fc" id="L36">        return new SymbolicModel(null, null, modelProxy, List.of());</span>
+<span class="fc" id="L36">        return new SymbolicModel(null, null, modelProxy, new ArrayList&lt;&gt;());</span>
     }
 
     public boolean isEmpty() {
@@ -50,22 +50,21 @@ import java.util.List;
     }
 
     public SymbolicModel addVariableGroup(List&lt;IntExpression&gt; group) {
-<span class="nc" id="L53">        List&lt;List&lt;IntExpression&gt;&gt; newGroups = new ArrayList&lt;&gt;(this.variableGroups);</span>
-<span class="nc" id="L54">        newGroups.add(group);</span>
-<span class="nc" id="L55">        return new SymbolicModel(this.constraint, this.parent, this.modelProxy, newGroups);</span>
+<span class="fc" id="L53">        this.variableGroups.add(group);</span>
+<span class="fc" id="L54">        return this;</span>
     }
 
     public Objective minimize(Expression expr) {
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">        return switch (expr) {</span>
-<span class="fc" id="L60">            case IntExpression iexpr -&gt; new Minimization(iexpr);</span>
-<span class="nc" id="L61">            default -&gt; throw new NotImplementedException();</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        return switch (expr) {</span>
+<span class="fc" id="L59">            case IntExpression iexpr -&gt; new Minimization(iexpr);</span>
+<span class="nc" id="L60">            default -&gt; throw new NotImplementedException();</span>
         };
     }
 
     public Objective maximize(Expression expr) {
-<span class="nc bnc" id="L66" title="All 2 branches missed.">        return switch (expr) {</span>
-<span class="nc" id="L67">            case IntExpression iexpr -&gt; new Maximization(iexpr);</span>
-<span class="nc" id="L68">            default -&gt; throw new NotImplementedException();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        return switch (expr) {</span>
+<span class="fc" id="L66">            case IntExpression iexpr -&gt; new Maximization(iexpr);</span>
+<span class="nc" id="L67">            default -&gt; throw new NotImplementedException();</span>
         };
     }
 
@@ -73,37 +72,37 @@ import java.util.List;
      * Returns the SymbolicModels that would be created by branching on the constraints given in parameters
      */
     public SymbolicModel[] branch(Constraint... constraints) {
-<span class="nc" id="L76">        SymbolicModel[] out = new SymbolicModel[constraints.length];</span>
-<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (int i = 0; i &lt; constraints.length; i++) {</span>
-<span class="nc" id="L78">            out[i] = add(constraints[i]);</span>
+<span class="nc" id="L75">        SymbolicModel[] out = new SymbolicModel[constraints.length];</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (int i = 0; i &lt; constraints.length; i++) {</span>
+<span class="nc" id="L77">            out[i] = add(constraints[i]);</span>
         }
-<span class="nc" id="L80">        return out;</span>
+<span class="nc" id="L79">        return out;</span>
     }
 
     private static class ConstraintIterator implements Iterator&lt;Constraint&gt; {
 
         private SymbolicModel cur;
 
-<span class="fc" id="L87">        public ConstraintIterator(SymbolicModel start) {</span>
-<span class="fc" id="L88">            cur = start;</span>
-<span class="fc" id="L89">        }</span>
+<span class="fc" id="L86">        public ConstraintIterator(SymbolicModel start) {</span>
+<span class="fc" id="L87">            cur = start;</span>
+<span class="fc" id="L88">        }</span>
 
         @Override
         public boolean hasNext() {
-<span class="fc bfc" id="L93" title="All 2 branches covered.">            return cur.parent != null;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            return cur.parent != null;</span>
         }
 
         @Override
         public Constraint next() {
-<span class="fc" id="L98">            Constraint c = cur.constraint;</span>
-<span class="fc" id="L99">            cur = cur.parent;</span>
-<span class="fc" id="L100">            return c;</span>
+<span class="fc" id="L97">            Constraint c = cur.constraint;</span>
+<span class="fc" id="L98">            cur = cur.parent;</span>
+<span class="fc" id="L99">            return c;</span>
         }
     }
 
     @Override
     public Iterator&lt;Constraint&gt; iterator() {
-<span class="fc" id="L106">        return new ConstraintIterator(this);</span>
+<span class="fc" id="L105">        return new ConstraintIterator(this);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

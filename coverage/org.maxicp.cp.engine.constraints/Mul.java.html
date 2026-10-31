@@ -20,53 +20,54 @@ public class Mul extends AbstractCPConstraint {
     private final CPIntVar y;
 
     /**
-     * Creates the constraint x * b = y
+     * Creates the constraint {@code x * b = y}.
      *
-     * @param x the variable on which the maximum is to be found
-     * @param y the variable that is equal to the maximum on x
+     * @param x the integer variable
+     * @param b the boolean variable (0 or 1)
+     * @param y the variable equal to {@code x * b}
      */
     public Mul(CPIntVar x, CPBoolVar b, CPIntVar y) {
-<span class="fc" id="L29">        super(x.getSolver());</span>
-<span class="fc" id="L30">        this.x = x;</span>
-<span class="fc" id="L31">        this.b = b;</span>
-<span class="fc" id="L32">        this.y = y;</span>
-<span class="fc" id="L33">    }</span>
+<span class="fc" id="L30">        super(x.getSolver());</span>
+<span class="fc" id="L31">        this.x = x;</span>
+<span class="fc" id="L32">        this.b = b;</span>
+<span class="fc" id="L33">        this.y = y;</span>
+<span class="fc" id="L34">    }</span>
 
 
     @Override
     public void post() {
-<span class="fc" id="L38">        x.propagateOnBoundChange(this);</span>
-<span class="fc" id="L39">        b.propagateOnFix(this);</span>
-<span class="fc" id="L40">        y.propagateOnBoundChange(this);</span>
-<span class="fc" id="L41">        propagate();</span>
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L39">        x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L40">        b.propagateOnFix(this);</span>
+<span class="fc" id="L41">        y.propagateOnBoundChange(this);</span>
+<span class="fc" id="L42">        propagate();</span>
+<span class="fc" id="L43">    }</span>
 
 
     @Override
     public void propagate() {
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        if (x.max() &gt; 0) {</span>
-<span class="fc" id="L48">            y.removeAbove(x.max());</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">        if (x.max() &gt; 0) {</span>
+<span class="fc" id="L49">            y.removeAbove(x.max());</span>
         }
-<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (x.min() &lt; 0) {</span>
-<span class="nc" id="L51">            y.removeBelow(x.min());</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">        if (x.min() &lt; 0) {</span>
+<span class="nc" id="L52">            y.removeBelow(x.min());</span>
         }
 
 
-<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (b.isTrue()) {</span>
-<span class="fc" id="L56">            y.removeAbove(x.max());</span>
-<span class="fc" id="L57">            y.removeBelow(x.min());</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (b.isTrue()) {</span>
+<span class="fc" id="L57">            y.removeAbove(x.max());</span>
+<span class="fc" id="L58">            y.removeBelow(x.min());</span>
         }
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (b.isFalse()) {</span>
-<span class="fc" id="L60">            y.fix(0);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (b.isFalse()) {</span>
+<span class="fc" id="L61">            y.fix(0);</span>
         }
-<span class="pc bpc" id="L62" title="1 of 4 branches missed.">        if (y.min() &gt; 0 || y.max() &lt; 0) {</span>
-<span class="fc" id="L63">            b.fix(1);</span>
-<span class="fc" id="L64">            x.removeAbove(y.max());</span>
-<span class="fc" id="L65">            x.removeBelow(y.min());</span>
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">        if (y.min() &gt; 0 || y.max() &lt; 0) {</span>
+<span class="fc" id="L64">            b.fix(1);</span>
+<span class="fc" id="L65">            x.removeAbove(y.max());</span>
+<span class="fc" id="L66">            x.removeBelow(y.min());</span>
         }
-<span class="pc bpc" id="L67" title="1 of 6 branches missed.">        if (y.isFixed() &amp;&amp; y.min() == 0 &amp;&amp; !x.contains(0)) {</span>
-<span class="fc" id="L68">            b.fix(0);</span>
+<span class="pc bpc" id="L68" title="1 of 6 branches missed.">        if (y.isFixed() &amp;&amp; y.min() == 0 &amp;&amp; !x.contains(0)) {</span>
+<span class="fc" id="L69">            b.fix(0);</span>
         }
-<span class="fc" id="L70">    }</span>
+<span class="fc" id="L71">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

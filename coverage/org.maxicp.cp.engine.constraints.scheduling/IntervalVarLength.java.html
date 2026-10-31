@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the length (duration) of an interval variable {@code var} to an integer variable {@code length}.
  *
  * @author Charles Thomas
  */
@@ -19,25 +19,31 @@ public class IntervalVarLength extends AbstractCPConstraint {
     CPIntervalVar var;
     CPIntVar length;
 
+    /**
+     * Creates a constraint linking {@code length(var)} to {@code length}.
+     *
+     * @param var    the interval variable
+     * @param length the integer variable representing the length of {@code var}
+     */
     public IntervalVarLength(CPIntervalVar var, CPIntVar length) {
-<span class="fc" id="L23">        super(var.getSolver());</span>
-<span class="fc" id="L24">        this.var = var;</span>
-<span class="fc" id="L25">        this.length = length;</span>
-<span class="fc" id="L26">    }</span>
+<span class="fc" id="L29">        super(var.getSolver());</span>
+<span class="fc" id="L30">        this.var = var;</span>
+<span class="fc" id="L31">        this.length = length;</span>
+<span class="fc" id="L32">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L30">        var.propagateOnChange(this);</span>
-<span class="fc" id="L31">        length.propagateOnBoundChange(this);</span>
-<span class="fc" id="L32">        propagate();</span>
-<span class="fc" id="L33">    }</span>
+<span class="fc" id="L36">        var.propagateOnChange(this);</span>
+<span class="fc" id="L37">        length.propagateOnBoundChange(this);</span>
+<span class="fc" id="L38">        propagate();</span>
+<span class="fc" id="L39">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc" id="L37">        length.removeBelow(var.lengthMin());</span>
-<span class="fc" id="L38">        length.removeAbove(var.lengthMax());</span>
-<span class="fc" id="L39">        var.setLengthMin(length.min());</span>
-<span class="fc" id="L40">        var.setLengthMax(length.max());</span>
-<span class="fc" id="L41">    }</span>
+<span class="fc" id="L43">        length.removeBelow(var.lengthMin());</span>
+<span class="fc" id="L44">        length.removeAbove(var.lengthMax());</span>
+<span class="fc" id="L45">        var.setLengthMin(length.min());</span>
+<span class="fc" id="L46">        var.setLengthMax(length.max());</span>
+<span class="fc" id="L47">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

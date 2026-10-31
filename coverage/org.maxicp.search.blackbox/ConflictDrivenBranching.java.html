@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ConflictDrivenBranching.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">org.maxicp:maxicp</a> &gt; <a href="index.source.html" class="el_package">org.maxicp.search.blackbox</a> &gt; <span class="el_source">ConflictDrivenBranching.java</span></div><h1>ConflictDrivenBranching.java</h1><pre class="source lang-java linenums">package org.maxicp.search.blackbox;
+
+import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.Factory;
+import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
+import org.maxicp.util.exception.InconsistencyException;
+
+import java.util.List;
+import java.util.Random;
+import java.util.function.Supplier;
+
+import static org.maxicp.search.Searches.EMPTY;
+import static org.maxicp.search.Searches.branch;
+
+/**
+ * Conflict-driven adaptive branching strategy ({@code dom/wdeg} + {@code Last-Conflict} +
+ * objective-polarity / phase-saving / solution-guided value selection + primary/secondary variable tiering).
+ *
+ * &lt;p&gt;Learned conflict weights, phase-saved values, and incumbent solution values persist across restarts.&lt;/p&gt;
+ */
+public final class ConflictDrivenBranching implements Supplier&lt;Runnable[]&gt; {
+
+<span class="fc" id="L27">    public enum ValueStrategy {</span>
+<span class="fc" id="L28">        OBJECTIVE_AND_PHASE,</span>
+<span class="fc" id="L29">        SOLUTION_AND_OBJECTIVE,</span>
+<span class="fc" id="L30">        PHASE_SAVING,</span>
+<span class="fc" id="L31">        MIN_FIRST,</span>
+<span class="fc" id="L32">        MAX_FIRST,</span>
+<span class="fc" id="L33">        RANDOM_BOUND</span>
+    }
+
+    private static final int DOMAIN_SPLIT_THRESHOLD = 64;
+    private static final int DECAY_PERIOD = 500;
+    private static final double WEIGHT_DECAY = 0.95;
+
+    private final ModelDispatcher model;
+    private final IntExpression[] vars;
+    private final ModelStructureAnalyzer structure;
+    private final Random random;
+
+    private final double[] varWeights;
+    private final int[] savedPhase;
+    private final boolean[] hasSavedPhase;
+    private final int[] incumbentValues;
+    private boolean hasIncumbent;
+
+<span class="fc" id="L51">    private int lastConflictVar = -1;</span>
+<span class="fc" id="L52">    private long conflictCount = 0;</span>
+
+<span class="fc" id="L54">    private ValueStrategy valueStrategy = ValueStrategy.OBJECTIVE_AND_PHASE;</span>
+<span class="fc" id="L55">    private double noise = 0.0;</span>
+<span class="fc" id="L56">    private boolean useLastConflict = true;</span>
+<span class="fc" id="L57">    private double solutionGuideProbability = 0.65;</span>
+
+    private ConcreteModel cachedConcreteModel;
+    private CPSolver cpSolver;
+    private CPIntVar[] cpVars;
+
+    public ConflictDrivenBranching(
+            ModelDispatcher model,
+            List&lt;IntExpression&gt; vars,
+            ModelStructureAnalyzer structure,
+<span class="fc" id="L67">            Random random) {</span>
+<span class="fc" id="L68">        this.model = model;</span>
+<span class="fc" id="L69">        this.vars = vars.toArray(IntExpression[]::new);</span>
+<span class="fc" id="L70">        this.structure = structure;</span>
+<span class="fc" id="L71">        this.random = random;</span>
+<span class="fc" id="L72">        int n = this.vars.length;</span>
+<span class="fc" id="L73">        this.varWeights = new double[n];</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (int i = 0; i &lt; n; i++) {</span>
+<span class="fc" id="L75">            this.varWeights[i] = Math.max(1.0, structure.structuralWeight(i));</span>
+        }
+<span class="fc" id="L77">        this.savedPhase = new int[n];</span>
+<span class="fc" id="L78">        this.hasSavedPhase = new boolean[n];</span>
+<span class="fc" id="L79">        this.incumbentValues = new int[n];</span>
+<span class="fc" id="L80">    }</span>
+
+    public void configureRestart(ValueStrategy strategy, double noise, boolean useLastConflict) {
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        this.valueStrategy = strategy == null ? ValueStrategy.OBJECTIVE_AND_PHASE : strategy;</span>
+<span class="fc" id="L84">        this.noise = Math.max(0.0, noise);</span>
+<span class="fc" id="L85">        this.useLastConflict = useLastConflict;</span>
+<span class="fc" id="L86">        this.lastConflictVar = -1;</span>
+<span class="fc" id="L87">    }</span>
+
+    public void updateIncumbent(List&lt;Integer&gt; solution) {
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">        if (solution == null || solution.size() != vars.length) {</span>
+<span class="nc" id="L91">            return;</span>
+        }
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="fc" id="L94">            incumbentValues[i] = solution.get(i);</span>
+        }
+<span class="fc" id="L96">        hasIncumbent = true;</span>
+<span class="fc" id="L97">    }</span>
+
+    public double getVarWeight(int varIndex) {
+<span class="fc" id="L100">        return varWeights[varIndex];</span>
+    }
+
+    private void ensureConcreteCache() {
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        if (!model.isConcrete()) {</span>
+<span class="nc" id="L105">            return;</span>
+        }
+<span class="fc" id="L107">        ConcreteModel cm = model.getConcreteModel();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        if (cm != cachedConcreteModel) {</span>
+<span class="fc" id="L109">            cachedConcreteModel = cm;</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">            if (cm instanceof ConcreteCPModel cpm) {</span>
+<span class="fc" id="L111">                cpSolver = cpm.solver;</span>
+<span class="fc" id="L112">                cpVars = new CPIntVar[vars.length];</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">                for (int i = 0; i &lt; vars.length; i++) {</span>
+<span class="fc" id="L114">                    cpVars[i] = cpm.getCPVar(vars[i]);</span>
+                }
+            } else {
+<span class="nc" id="L117">                cpSolver = null;</span>
+<span class="nc" id="L118">                cpVars = null;</span>
+            }
+        }
+<span class="fc" id="L121">    }</span>
+
+    @Override
+    public Runnable[] get() {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (vars.length == 0) {</span>
+<span class="nc" id="L126">            return EMPTY;</span>
+        }
+<span class="fc" id="L128">        ensureConcreteCache();</span>
+
+        // Tier 1: Select among unfixed primary decision variables
+<span class="fc" id="L131">        int chosen = selectPrimaryVariable();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (chosen &gt;= 0) {</span>
+<span class="fc" id="L133">            return buildBranches(chosen);</span>
+        }
+
+        // All primary variables are fixed.
+        // Fast-path: if any dominated degree-&lt;=1 Table/unconstrained slack variables are unfixed, fix them to their optimal bound
+<span class="fc" id="L138">        int[] domSlacks = structure.dominantSlackIndices();</span>
+<span class="fc bfc" id="L139" title="All 4 branches covered.">        if (domSlacks.length &gt; 0 &amp;&amp; hasUnfixedIn(domSlacks)) {</span>
+<span class="fc" id="L140">            return branch(this::assignDominantSlacks);</span>
+        }
+
+        // Tier 2: Select among remaining unfixed secondary variables
+<span class="fc" id="L144">        chosen = selectSecondaryVariable();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        if (chosen &gt;= 0) {</span>
+<span class="fc" id="L146">            return buildBranches(chosen);</span>
+        }
+
+<span class="fc" id="L149">        return EMPTY;</span>
+    }
+
+    private int selectPrimaryVariable() {
+<span class="pc bpc" id="L153" title="2 of 6 branches missed.">        if (useLastConflict &amp;&amp; lastConflictVar &gt;= 0 &amp;&amp; !structure.isSecondary(lastConflictVar)) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (!isFixed(lastConflictVar)) {</span>
+<span class="fc" id="L155">                return lastConflictVar;</span>
+            }
+<span class="fc" id="L157">            lastConflictVar = -1;</span>
+        }
+
+<span class="fc" id="L160">        int[] primary = structure.primaryIndices();</span>
+<span class="fc" id="L161">        int bestVar = -1;</span>
+<span class="fc" id="L162">        double bestScore = Double.POSITIVE_INFINITY;</span>
+
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (int i = 0; i &lt; primary.length; i++) {</span>
+<span class="fc" id="L165">            int idx = primary[i];</span>
+<span class="fc" id="L166">            int size = size(idx);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            if (size &lt;= 1) {</span>
+<span class="fc" id="L168">                continue;</span>
+            }
+<span class="fc" id="L170">            double score = (double) size / varWeights[idx];</span>
+<span class="fc bfc" id="L171" title="All 2 branches covered.">            if (noise &gt; 0.0) {</span>
+<span class="fc" id="L172">                score *= (1.0 + noise * random.nextDouble());</span>
+            }
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (score &lt; bestScore) {</span>
+<span class="fc" id="L175">                bestScore = score;</span>
+<span class="fc" id="L176">                bestVar = idx;</span>
+            }
+        }
+<span class="fc" id="L179">        return bestVar;</span>
+    }
+
+    private int selectSecondaryVariable() {
+<span class="fc" id="L183">        int[] secondary = structure.secondaryIndices();</span>
+<span class="fc" id="L184">        int bestVar = -1;</span>
+<span class="fc" id="L185">        double bestScore = Double.POSITIVE_INFINITY;</span>
+
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (int i = 0; i &lt; secondary.length; i++) {</span>
+<span class="fc" id="L188">            int idx = secondary[i];</span>
+<span class="fc" id="L189">            int size = size(idx);</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (size &lt;= 1) {</span>
+<span class="fc" id="L191">                continue;</span>
+            }
+<span class="fc" id="L193">            double score = (double) size / varWeights[idx];</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (score &lt; bestScore) {</span>
+<span class="fc" id="L195">                bestScore = score;</span>
+<span class="fc" id="L196">                bestVar = idx;</span>
+            }
+        }
+<span class="fc" id="L199">        return bestVar;</span>
+    }
+
+    private boolean hasUnfixedIn(int[] indices) {
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (cpVars != null) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            for (int idx : indices) {</span>
+<span class="fc bfc" id="L205" title="All 2 branches covered.">                if (!cpVars[idx].isFixed()) {</span>
+<span class="fc" id="L206">                    return true;</span>
+                }
+            }
+<span class="fc" id="L209">            return false;</span>
+        }
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        for (int idx : indices) {</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">            if (!vars[idx].isFixed()) {</span>
+<span class="nc" id="L213">                return true;</span>
+            }
+        }
+<span class="nc" id="L216">        return false;</span>
+    }
+
+    private void assignDominantSlacks() {
+<span class="fc" id="L220">        int[] domSlacks = structure.dominantSlackIndices();</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (cpVars != null) {</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            for (int idx : domSlacks) {</span>
+<span class="fc" id="L223">                CPIntVar v = cpVars[idx];</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                if (!v.isFixed()) {</span>
+<span class="fc" id="L225">                    int pol = structure.objectivePolarity(idx);</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">                    v.fix(pol &gt; 0 ? v.max() : v.min());</span>
+                }
+            }
+<span class="fc" id="L229">            cpSolver.fixPoint();</span>
+        } else {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            for (int idx : domSlacks) {</span>
+<span class="nc" id="L232">                IntExpression v = vars[idx];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                if (!v.isFixed()) {</span>
+<span class="nc" id="L234">                    int pol = structure.objectivePolarity(idx);</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">                    model.add(Factory.eq(v, pol &gt; 0 ? v.max() : v.min()), false);</span>
+                }
+            }
+<span class="nc" id="L238">            model.add(new org.maxicp.modeling.constraints.NoOpConstraint(), true);</span>
+        }
+<span class="fc" id="L240">    }</span>
+
+    private Runnable[] buildBranches(int varIdx) {
+<span class="fc" id="L243">        int min = min(varIdx);</span>
+<span class="fc" id="L244">        int max = max(varIdx);</span>
+<span class="fc" id="L245">        int sz = size(varIdx);</span>
+
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (sz &gt; DOMAIN_SPLIT_THRESHOLD) {</span>
+<span class="fc" id="L248">            int mid = min + ((max - min) &gt;&gt;&gt; 1);</span>
+<span class="fc" id="L249">            boolean lowerFirst = chooseLowerHalfFirst(varIdx, min, max, mid);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (lowerFirst) {</span>
+<span class="fc" id="L251">                return branch(</span>
+<span class="fc" id="L252">                        () -&gt; applySplitBranch(varIdx, mid, true),</span>
+<span class="fc" id="L253">                        () -&gt; applySplitBranch(varIdx, mid, false)</span>
+                );
+            } else {
+<span class="fc" id="L256">                return branch(</span>
+<span class="fc" id="L257">                        () -&gt; applySplitBranch(varIdx, mid, false),</span>
+<span class="nc" id="L258">                        () -&gt; applySplitBranch(varIdx, mid, true)</span>
+                );
+            }
+        }
+
+<span class="fc" id="L263">        int val = selectValue(varIdx, min, max);</span>
+<span class="fc" id="L264">        return branch(</span>
+<span class="fc" id="L265">                () -&gt; applyValueBranch(varIdx, val, true),</span>
+<span class="fc" id="L266">                () -&gt; applyValueBranch(varIdx, val, false)</span>
+        );
+    }
+
+    private boolean chooseLowerHalfFirst(int varIdx, int min, int max, int mid) {
+<span class="fc" id="L271">        int pol = structure.objectivePolarity(varIdx);</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">        if (pol &lt; 0) return true;</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        if (pol &gt; 0) return false;</span>
+<span class="fc bfc" id="L274" title="All 4 branches covered.">        if (hasIncumbent &amp;&amp; valueStrategy == ValueStrategy.SOLUTION_AND_OBJECTIVE) {</span>
+<span class="fc" id="L275">            int inc = incumbentValues[varIdx];</span>
+<span class="pc bpc" id="L276" title="2 of 4 branches missed.">            if (inc &gt;= min &amp;&amp; inc &lt;= max) {</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">                return inc &lt;= mid;</span>
+            }
+        }
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (hasSavedPhase[varIdx]) {</span>
+<span class="fc" id="L281">            int saved = savedPhase[varIdx];</span>
+<span class="pc bpc" id="L282" title="1 of 4 branches missed.">            if (saved &gt;= min &amp;&amp; saved &lt;= max) {</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                return saved &lt;= mid;</span>
+            }
+        }
+<span class="fc" id="L286">        return true;</span>
+    }
+
+    private int selectValue(int varIdx, int min, int max) {
+<span class="fc" id="L290">        int pol = structure.objectivePolarity(varIdx);</span>
+<span class="fc" id="L291">        long[] valCosts = structure.objectiveValueCosts(varIdx);</span>
+<span class="pc bpc" id="L292" title="3 of 7 branches missed.">        switch (valueStrategy) {</span>
+            case MIN_FIRST -&gt; {
+<span class="nc" id="L294">                return min;</span>
+            }
+            case MAX_FIRST -&gt; {
+<span class="nc" id="L297">                return max;</span>
+            }
+            case RANDOM_BOUND -&gt; {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">                return random.nextBoolean() ? min : max;</span>
+            }
+            case PHASE_SAVING -&gt; {
+<span class="fc bfc" id="L303" title="All 4 branches covered.">                if (hasSavedPhase[varIdx] &amp;&amp; contains(varIdx, savedPhase[varIdx])) {</span>
+<span class="fc" id="L304">                    return savedPhase[varIdx];</span>
+                }
+<span class="fc bfc" id="L306" title="All 2 branches covered.">                if (valCosts != null) {</span>
+<span class="fc" id="L307">                    return selectMinCostValue(varIdx, min, max, valCosts);</span>
+                }
+<span class="fc bfc" id="L309" title="All 2 branches covered.">                if (pol &lt; 0) return min;</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">                if (pol &gt; 0) return max;</span>
+<span class="fc" id="L311">                return min;</span>
+            }
+            case SOLUTION_AND_OBJECTIVE -&gt; {
+<span class="pc bpc" id="L314" title="1 of 4 branches missed.">                if (hasIncumbent &amp;&amp; contains(varIdx, incumbentValues[varIdx])) {</span>
+<span class="fc bfc" id="L315" title="All 6 branches covered.">                    if ((pol == 0 &amp;&amp; valCosts == null) || random.nextDouble() &lt; solutionGuideProbability) {</span>
+<span class="fc" id="L316">                        return incumbentValues[varIdx];</span>
+                    }
+                }
+<span class="fc bfc" id="L319" title="All 2 branches covered.">                if (valCosts != null) {</span>
+<span class="fc" id="L320">                    return selectMinCostValue(varIdx, min, max, valCosts);</span>
+                }
+<span class="fc bfc" id="L322" title="All 2 branches covered.">                if (pol &lt; 0) return min;</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                if (pol &gt; 0) return max;</span>
+<span class="pc bpc" id="L324" title="1 of 4 branches missed.">                if (hasSavedPhase[varIdx] &amp;&amp; contains(varIdx, savedPhase[varIdx])) {</span>
+<span class="fc" id="L325">                    return savedPhase[varIdx];</span>
+                }
+<span class="fc" id="L327">                return min;</span>
+            }
+            case OBJECTIVE_AND_PHASE -&gt; {
+<span class="fc bfc" id="L330" title="All 2 branches covered.">                if (valCosts != null) {</span>
+<span class="fc" id="L331">                    return selectMinCostValue(varIdx, min, max, valCosts);</span>
+                }
+<span class="fc bfc" id="L333" title="All 2 branches covered.">                if (pol &lt; 0) return min;</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">                if (pol &gt; 0) return max;</span>
+<span class="fc bfc" id="L335" title="All 4 branches covered.">                if (hasSavedPhase[varIdx] &amp;&amp; contains(varIdx, savedPhase[varIdx])) {</span>
+<span class="fc" id="L336">                    return savedPhase[varIdx];</span>
+                }
+<span class="fc" id="L338">                return min;</span>
+            }
+        }
+<span class="nc" id="L341">        return min;</span>
+    }
+
+    private int selectMinCostValue(int varIdx, int min, int max, long[] valCosts) {
+<span class="fc" id="L345">        int bestVal = min;</span>
+<span class="pc bpc" id="L346" title="2 of 4 branches missed.">        long bestCost = (min &gt;= 0 &amp;&amp; min &lt; valCosts.length) ? valCosts[min] : Long.MAX_VALUE;</span>
+<span class="fc" id="L347">        int upper = Math.min(max, valCosts.length - 1);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        for (int v = Math.max(0, min); v &lt;= upper; v++) {</span>
+<span class="fc" id="L349">            long c = valCosts[v];</span>
+<span class="fc bfc" id="L350" title="All 4 branches covered.">            if (c &lt; bestCost &amp;&amp; contains(varIdx, v)) {</span>
+<span class="fc" id="L351">                bestCost = c;</span>
+<span class="fc" id="L352">                bestVal = v;</span>
+            }
+        }
+<span class="fc" id="L355">        return bestVal;</span>
+    }
+
+    private void applyValueBranch(int varIdx, int val, boolean positive) {
+        try {
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">            if (cpVars != null) {</span>
+<span class="fc" id="L361">                CPIntVar v = cpVars[varIdx];</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">                if (positive) {</span>
+<span class="fc" id="L363">                    v.fix(val);</span>
+                } else {
+<span class="fc" id="L365">                    v.remove(val);</span>
+                }
+<span class="fc" id="L367">                cpSolver.fixPoint();</span>
+<span class="fc" id="L368">            } else {</span>
+<span class="nc" id="L369">                IntExpression v = vars[varIdx];</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">                if (positive) {</span>
+<span class="nc" id="L371">                    model.add(Factory.eq(v, val));</span>
+                } else {
+<span class="nc" id="L373">                    model.add(Factory.neq(v, val));</span>
+                }
+            }
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            if (positive) {</span>
+<span class="fc" id="L377">                savedPhase[varIdx] = val;</span>
+<span class="fc" id="L378">                hasSavedPhase[varIdx] = true;</span>
+            }
+<span class="fc" id="L380">        } catch (InconsistencyException e) {</span>
+<span class="fc" id="L381">            recordConflict(varIdx);</span>
+<span class="fc" id="L382">            throw e;</span>
+<span class="fc" id="L383">        }</span>
+<span class="fc" id="L384">    }</span>
+
+    private void applySplitBranch(int varIdx, int mid, boolean lowerHalf) {
+        try {
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">            if (cpVars != null) {</span>
+<span class="fc" id="L389">                CPIntVar v = cpVars[varIdx];</span>
+<span class="fc bfc" id="L390" title="All 2 branches covered.">                if (lowerHalf) {</span>
+<span class="fc" id="L391">                    v.removeAbove(mid);</span>
+                } else {
+<span class="fc" id="L393">                    v.removeBelow(mid + 1);</span>
+                }
+<span class="fc" id="L395">                cpSolver.fixPoint();</span>
+<span class="fc" id="L396">            } else {</span>
+<span class="nc" id="L397">                IntExpression v = vars[varIdx];</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">                if (lowerHalf) {</span>
+<span class="nc" id="L399">                    model.add(Factory.le(v, mid));</span>
+                } else {
+<span class="nc" id="L401">                    model.add(Factory.lt(mid, v));</span>
+                }
+            }
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            if (isFixed(varIdx)) {</span>
+<span class="nc" id="L405">                savedPhase[varIdx] = min(varIdx);</span>
+<span class="nc" id="L406">                hasSavedPhase[varIdx] = true;</span>
+            }
+<span class="fc" id="L408">        } catch (InconsistencyException e) {</span>
+<span class="fc" id="L409">            recordConflict(varIdx);</span>
+<span class="fc" id="L410">            throw e;</span>
+<span class="fc" id="L411">        }</span>
+<span class="fc" id="L412">    }</span>
+
+    private void recordConflict(int varIdx) {
+<span class="fc" id="L415">        lastConflictVar = varIdx;</span>
+<span class="fc" id="L416">        varWeights[varIdx] += 1.0;</span>
+
+        // Also bump unfixed frontier neighbors (and any neighbor whose domain wiped out)
+<span class="fc" id="L419">        int[] adj = structure.neighbors(varIdx);</span>
+<span class="fc" id="L420">        int limit = Math.min(8, adj.length);</span>
+<span class="fc bfc" id="L421" title="All 2 branches covered.">        for (int i = 0; i &lt; limit; i++) {</span>
+<span class="fc" id="L422">            int nb = adj[i];</span>
+<span class="fc" id="L423">            int sz = size(nb);</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">            if (sz == 0) {</span>
+<span class="fc" id="L425">                varWeights[nb] += 1.0;</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">            } else if (sz &gt; 1) {</span>
+<span class="fc" id="L427">                varWeights[nb] += 0.25;</span>
+            }
+        }
+
+<span class="fc" id="L431">        conflictCount++;</span>
+<span class="fc bfc" id="L432" title="All 2 branches covered.">        if (conflictCount % DECAY_PERIOD == 0) {</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">            for (int i = 0; i &lt; varWeights.length; i++) {</span>
+<span class="fc" id="L434">                varWeights[i] = Math.max(1.0, varWeights[i] * WEIGHT_DECAY);</span>
+            }
+        }
+<span class="fc" id="L437">    }</span>
+
+    private boolean isFixed(int idx) {
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">        return cpVars != null ? cpVars[idx].isFixed() : vars[idx].isFixed();</span>
+    }
+
+    private int size(int idx) {
+<span class="pc bpc" id="L444" title="1 of 2 branches missed.">        return cpVars != null ? cpVars[idx].size() : vars[idx].size();</span>
+    }
+
+    private int min(int idx) {
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">        return cpVars != null ? cpVars[idx].min() : vars[idx].min();</span>
+    }
+
+    private int max(int idx) {
+<span class="pc bpc" id="L452" title="1 of 2 branches missed.">        return cpVars != null ? cpVars[idx].max() : vars[idx].max();</span>
+    }
+
+    private boolean contains(int idx, int val) {
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">        return cpVars != null ? cpVars[idx].contains(val) : vars[idx].contains(val);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

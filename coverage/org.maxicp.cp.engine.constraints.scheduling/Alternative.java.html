@@ -25,110 +25,117 @@ public class Alternative extends AbstractCPConstraint {
 
     private final int nAlts;
 
+    /**
+     * Creates an Alternative constraint with cardinality {@code c}.
+     *
+     * @param a    the main interval variable
+     * @param alts the array of alternative interval variables
+     * @param c    the cardinality variable specifying how many intervals in {@code alts} are present when {@code a} is present
+     */
     public Alternative(CPIntervalVar a, CPIntervalVar[] alts, CPIntVar c) {
-<span class="fc" id="L29">        super(a.getSolver());</span>
-<span class="fc" id="L30">        this.a = a;</span>
-<span class="fc" id="L31">        this.alts = alts;</span>
-<span class="fc" id="L32">        this.c = c;</span>
-<span class="fc" id="L33">        nAlts = alts.length;</span>
-<span class="fc" id="L34">    }</span>
+<span class="fc" id="L36">        super(a.getSolver());</span>
+<span class="fc" id="L37">        this.a = a;</span>
+<span class="fc" id="L38">        this.alts = alts;</span>
+<span class="fc" id="L39">        this.c = c;</span>
+<span class="fc" id="L40">        nAlts = alts.length;</span>
+<span class="fc" id="L41">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L38">        a.propagateOnChange(this);</span>
-<span class="fc" id="L39">        c.propagateOnBoundChange(this);</span>
-<span class="fc bfc" id="L40" title="All 2 branches covered.">        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);</span>
-<span class="fc" id="L41">        propagate();</span>
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L45">        a.propagateOnChange(this);</span>
+<span class="fc" id="L46">        c.propagateOnBoundChange(this);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);</span>
+<span class="fc" id="L48">        propagate();</span>
+<span class="fc" id="L49">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L46" title="All 2 branches covered.">        if(a.isAbsent()){</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if(a.isAbsent()){</span>
             //If a is absent: setting alts absent and deactivating constraint
-<span class="fc bfc" id="L48" title="All 2 branches covered.">            for(CPIntervalVar alt : alts) {</span>
-<span class="fc" id="L49">                alt.setAbsent();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            for(CPIntervalVar alt : alts) {</span>
+<span class="fc" id="L56">                alt.setAbsent();</span>
             }
-<span class="fc" id="L51">            setActive(false);</span>
+<span class="fc" id="L58">            setActive(false);</span>
         } else {
-<span class="fc" id="L53">            int minStartMinAlts = Constants.HORIZON;</span>
-<span class="fc" id="L54">            int maxStartMaxAlts = 0;</span>
-<span class="fc" id="L55">            int minEndMinAlts = Constants.HORIZON;</span>
-<span class="fc" id="L56">            int maxEndMaxAlts = 0;</span>
-<span class="fc" id="L57">            int minLengthMinAlts = Constants.HORIZON;</span>
-<span class="fc" id="L58">            int maxLengthMaxAlts = 0;</span>
-<span class="fc" id="L59">            int nPresent = 0;</span>
-<span class="fc" id="L60">            int nAbsent = 0;</span>
+<span class="fc" id="L60">            int minStartMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L61">            int maxStartMaxAlts = 0;</span>
+<span class="fc" id="L62">            int minEndMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L63">            int maxEndMaxAlts = 0;</span>
+<span class="fc" id="L64">            int minLengthMinAlts = Constants.HORIZON;</span>
+<span class="fc" id="L65">            int maxLengthMaxAlts = 0;</span>
+<span class="fc" id="L66">            int nPresent = 0;</span>
+<span class="fc" id="L67">            int nAbsent = 0;</span>
 
-<span class="fc bfc" id="L62" title="All 2 branches covered.">            for(CPIntervalVar alt : alts) {</span>
-<span class="fc bfc" id="L63" title="All 2 branches covered.">                if(alt.isAbsent()){</span>
-<span class="fc" id="L64">                    nAbsent ++;</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">            for(CPIntervalVar alt : alts) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                if(alt.isAbsent()){</span>
+<span class="fc" id="L71">                    nAbsent ++;</span>
                     //If there are not enough alternative intervals present for the min cardinality: setting a as absent
-<span class="fc bfc" id="L66" title="All 2 branches covered.">                    if(nAlts - nAbsent &lt; c.min()){</span>
-<span class="fc" id="L67">                        a.setAbsent();</span>
-<span class="fc" id="L68">                        break;</span>
-<span class="fc" id="L69">                    } else c.removeAbove(nAlts - nAbsent);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                    if(nAlts - nAbsent &lt; c.min()){</span>
+<span class="fc" id="L74">                        a.setAbsent();</span>
+<span class="fc" id="L75">                        break;</span>
+<span class="fc" id="L76">                    } else c.removeAbove(nAlts - nAbsent);</span>
                 } else {
-<span class="fc bfc" id="L71" title="All 2 branches covered.">                    if(alt.isPresent()){</span>
-<span class="fc" id="L72">                        nPresent++;</span>
-<span class="fc" id="L73">                        c.removeBelow(nPresent);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                    if(alt.isPresent()){</span>
+<span class="fc" id="L79">                        nPresent++;</span>
+<span class="fc" id="L80">                        c.removeBelow(nPresent);</span>
 
                         //If the alternative is present, then the start min and end max of a can be constrained:
-<span class="fc" id="L76">                        a.setStartMin(alt.startMin());</span>
-<span class="fc" id="L77">                        a.setStartMax(alt.startMax());</span>
-<span class="fc" id="L78">                        a.setEndMin(alt.endMin());</span>
-<span class="fc" id="L79">                        a.setEndMax(alt.endMax());</span>
-<span class="fc" id="L80">                        a.setLengthMin(alt.lengthMin());</span>
-<span class="fc" id="L81">                        a.setLengthMax(alt.lengthMax());</span>
+<span class="fc" id="L83">                        a.setStartMin(alt.startMin());</span>
+<span class="fc" id="L84">                        a.setStartMax(alt.startMax());</span>
+<span class="fc" id="L85">                        a.setEndMin(alt.endMin());</span>
+<span class="fc" id="L86">                        a.setEndMax(alt.endMax());</span>
+<span class="fc" id="L87">                        a.setLengthMin(alt.lengthMin());</span>
+<span class="fc" id="L88">                        a.setLengthMax(alt.lengthMax());</span>
                     }
 
                     //Updating and checking start min:
-<span class="fc" id="L85">                    alt.setStartMin(a.startMin());</span>
-<span class="fc" id="L86">                    minStartMinAlts = Math.min(alt.startMin(), minStartMinAlts);</span>
+<span class="fc" id="L92">                    alt.setStartMin(a.startMin());</span>
+<span class="fc" id="L93">                    minStartMinAlts = Math.min(alt.startMin(), minStartMinAlts);</span>
                     //Updating and checking start max:
-<span class="fc" id="L88">                    alt.setStartMax(a.startMax());</span>
-<span class="fc" id="L89">                    maxStartMaxAlts = Math.max(alt.startMax(), maxStartMaxAlts);</span>
+<span class="fc" id="L95">                    alt.setStartMax(a.startMax());</span>
+<span class="fc" id="L96">                    maxStartMaxAlts = Math.max(alt.startMax(), maxStartMaxAlts);</span>
                     //Updating and checking end min:
-<span class="fc" id="L91">                    alt.setEndMin(a.endMin());</span>
-<span class="fc" id="L92">                    minEndMinAlts = Math.min(alt.endMin(), minEndMinAlts);</span>
+<span class="fc" id="L98">                    alt.setEndMin(a.endMin());</span>
+<span class="fc" id="L99">                    minEndMinAlts = Math.min(alt.endMin(), minEndMinAlts);</span>
                     //Updating and checking end max:
-<span class="fc" id="L94">                    alt.setEndMax(a.endMax());</span>
-<span class="fc" id="L95">                    maxEndMaxAlts = Math.max(alt.endMax(), maxEndMaxAlts);</span>
+<span class="fc" id="L101">                    alt.setEndMax(a.endMax());</span>
+<span class="fc" id="L102">                    maxEndMaxAlts = Math.max(alt.endMax(), maxEndMaxAlts);</span>
                     //Updating and checking length min:
-<span class="fc" id="L97">                    alt.setLengthMin(a.lengthMin());</span>
-<span class="fc" id="L98">                    minLengthMinAlts = Math.min(alt.lengthMin(), minLengthMinAlts);</span>
+<span class="fc" id="L104">                    alt.setLengthMin(a.lengthMin());</span>
+<span class="fc" id="L105">                    minLengthMinAlts = Math.min(alt.lengthMin(), minLengthMinAlts);</span>
                     //Updating and checking length max:
-<span class="fc" id="L100">                    alt.setLengthMax(a.lengthMax());</span>
-<span class="fc" id="L101">                    maxLengthMaxAlts = Math.max(alt.lengthMax(), maxLengthMaxAlts);</span>
+<span class="fc" id="L107">                    alt.setLengthMax(a.lengthMax());</span>
+<span class="fc" id="L108">                    maxLengthMaxAlts = Math.max(alt.lengthMax(), maxLengthMaxAlts);</span>
                 }
             }
 
             //If no alternative is present: updating starts and ends based on max and min values:
-<span class="fc bfc" id="L106" title="All 2 branches covered.">            if(nPresent == 0){</span>
-<span class="fc" id="L107">                a.setStartMin(minStartMinAlts);</span>
-<span class="fc" id="L108">                a.setStartMax(maxStartMaxAlts);</span>
-<span class="fc" id="L109">                a.setEndMin(minEndMinAlts);</span>
-<span class="fc" id="L110">                a.setEndMax(maxEndMaxAlts);</span>
-<span class="fc" id="L111">                a.setLengthMin(minLengthMinAlts);</span>
-<span class="fc" id="L112">                a.setLengthMax(maxLengthMaxAlts);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if(nPresent == 0){</span>
+<span class="fc" id="L114">                a.setStartMin(minStartMinAlts);</span>
+<span class="fc" id="L115">                a.setStartMax(maxStartMaxAlts);</span>
+<span class="fc" id="L116">                a.setEndMin(minEndMinAlts);</span>
+<span class="fc" id="L117">                a.setEndMax(maxEndMaxAlts);</span>
+<span class="fc" id="L118">                a.setLengthMin(minLengthMinAlts);</span>
+<span class="fc" id="L119">                a.setLengthMax(maxLengthMaxAlts);</span>
             }
 
             //If at least one alternative activity is present, setting a present:
-<span class="fc bfc" id="L116" title="All 2 branches covered.">            if(nPresent &gt; 0) a.setPresent();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            if(nPresent &gt; 0) a.setPresent();</span>
 
-<span class="fc bfc" id="L118" title="All 2 branches covered.">            if(a.isPresent()){</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">            if(a.isPresent()){</span>
                 //If the number of undecided and present alternative activity is equal to the min cardinality:
                 //Setting undecided acts as present:
-<span class="fc bfc" id="L121" title="All 2 branches covered.">                if(nAlts - nAbsent == c.min()){</span>
-<span class="fc bfc" id="L122" title="All 4 branches covered.">                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setPresent();</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">                if(nAlts - nAbsent == c.min()){</span>
+<span class="fc bfc" id="L129" title="All 4 branches covered.">                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setPresent();</span>
                 }
 
                 //If the number of present alternative activities is equal to the max cardinality:
                 //Setting undecided acts as absent:
-<span class="fc bfc" id="L127" title="All 2 branches covered.">                if(nPresent == c.max()){</span>
-<span class="fc bfc" id="L128" title="All 4 branches covered.">                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setAbsent();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if(nPresent == c.max()){</span>
+<span class="fc bfc" id="L135" title="All 4 branches covered.">                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setAbsent();</span>
                 }
             }
         }
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L139">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

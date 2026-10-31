@@ -23,24 +23,25 @@ public class MulCte extends AbstractCPConstraint {
     private int c;
 
     /**
-     * x * c == z
-     * @param x
-     * @param c
-     * @param z
+     * Creates a multiplication constraint {@code x * c == z}.
+     *
+     * @param x the variable factor
+     * @param c the constant factor
+     * @param z the product variable
      */
     public MulCte(CPIntVar x, int c, CPIntVar z) {
-<span class="fc" id="L32">        super(x.getSolver());</span>
-<span class="fc" id="L33">        this.x = x;</span>
-<span class="fc" id="L34">        this.z = z;</span>
-<span class="fc" id="L35">        this.c = c;</span>
-<span class="fc" id="L36">    }</span>
+<span class="fc" id="L33">        super(x.getSolver());</span>
+<span class="fc" id="L34">        this.x = x;</span>
+<span class="fc" id="L35">        this.z = z;</span>
+<span class="fc" id="L36">        this.c = c;</span>
+<span class="fc" id="L37">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L40">        propagate();</span>
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (isActive()) {</span>
-<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (!x.isFixed()) x.propagateOnBoundChange(this);</span>
-<span class="fc bfc" id="L43" title="All 2 branches covered.">            if (!z.isFixed()) z.propagateOnBoundChange(this);</span>
+<span class="fc" id="L41">        propagate();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (isActive()) {</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">            if (!x.isFixed()) x.propagateOnBoundChange(this);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if (!z.isFixed()) z.propagateOnBoundChange(this);</span>
         }
 		/*
 		if (l == CPPropagStrength.Strong) {
@@ -52,24 +53,24 @@ public class MulCte extends AbstractCPConstraint {
 				}
 			}
 		}*/
-<span class="fc" id="L55">    }</span>
+<span class="fc" id="L56">    }</span>
 
     @Override
     public void propagate() {
-<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (x.isFixed()) {</span>
-<span class="fc" id="L60">            z.fix(NumberUtils.safeMul(c , x.min()));</span>
-<span class="fc" id="L61">            setActive(false);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (x.isFixed()) {</span>
+<span class="fc" id="L61">            z.fix(NumberUtils.safeMul(c , x.min()));</span>
+<span class="fc" id="L62">            setActive(false);</span>
         }
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        else if (c == 0) {</span>
-<span class="fc" id="L64">            z.fix(0);</span>
-<span class="fc" id="L65">            setActive(false);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        else if (c == 0) {</span>
+<span class="fc" id="L65">            z.fix(0);</span>
+<span class="fc" id="L66">            setActive(false);</span>
         }
         else {
-<span class="fc" id="L68">            z.removeBelow(Math.min(NumberUtils.safeMul(c , x.min()), NumberUtils.safeMul(c , x.max())));</span>
-<span class="fc" id="L69">            z.removeAbove(Math.max(NumberUtils.safeMul(c , x.min()), NumberUtils.safeMul(c , x.max())));</span>
-<span class="fc" id="L70">            x.removeBelow(Math.min(NumberUtils.ceilDiv(z.min(), c),  NumberUtils.ceilDiv(z.max(), c)));</span>
-<span class="fc" id="L71">            x.removeAbove(Math.max(NumberUtils.floorDiv(z.min(), c), NumberUtils.floorDiv(z.max(), c)));</span>
+<span class="fc" id="L69">            z.removeBelow(Math.min(NumberUtils.safeMul(c , x.min()), NumberUtils.safeMul(c , x.max())));</span>
+<span class="fc" id="L70">            z.removeAbove(Math.max(NumberUtils.safeMul(c , x.min()), NumberUtils.safeMul(c , x.max())));</span>
+<span class="fc" id="L71">            x.removeBelow(Math.min(NumberUtils.ceilDiv(z.min(), c),  NumberUtils.ceilDiv(z.max(), c)));</span>
+<span class="fc" id="L72">            x.removeAbove(Math.max(NumberUtils.floorDiv(z.min(), c), NumberUtils.floorDiv(z.max(), c)));</span>
         }
-<span class="fc" id="L73">    }</span>
+<span class="fc" id="L74">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

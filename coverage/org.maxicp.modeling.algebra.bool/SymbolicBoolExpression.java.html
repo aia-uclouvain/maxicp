@@ -62,8 +62,8 @@ import org.maxicp.modeling.algebra.integer.SymbolicIntExpression;
     boolean defaultEvaluateBool() throws VariableNotFixedException;
 
     default boolean evaluateBool() throws VariableNotFixedException {
-<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (getModelProxy().isConcrete())</span>
-<span class="nc" id="L66">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluateBool();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (getModelProxy().isConcrete())</span>
+<span class="fc" id="L66">            return getModelProxy().getConcreteModel().getConcreteVar(this).evaluateBool();</span>
 <span class="nc" id="L67">        return defaultEvaluateBool();</span>
     }
 }

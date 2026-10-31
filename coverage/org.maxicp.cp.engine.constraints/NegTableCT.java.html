@@ -88,7 +88,7 @@ import static org.maxicp.cp.CPFactory.minus;
         // Set values in supports, which contains all the tuples supported by each var-val pair
 <span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; table.length; i++) { //i is the index of the tuple (in table)</span>
 <span class="fc bfc" id="L90" title="All 2 branches covered.">            for (int j = 0; j &lt; this.scpSize; j++) { //j is the index of the current variable (in x)</span>
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">                if (x[j].contains(table[i][j])) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">                if (x[j].contains(table[i][j])) {</span>
 <span class="fc" id="L92">                    supports[j][table[i][j] - offset[j]].set(i);</span>
                 }
             }

@@ -19,78 +19,79 @@ public class Square extends AbstractCPConstraint {
     private CPIntVar y;
 
     /**
-     * x*x == y
-     * @param x
-     * @param y
+     * Creates a square constraint {@code x * x == y}.
+     *
+     * @param x the input variable to be squared
+     * @param y the variable equal to {@code x * x}
      */
     public Square(CPIntVar x, CPIntVar y) {
-<span class="fc" id="L27">        super(x.getSolver());</span>
-<span class="fc" id="L28">        this.x = x;</span>
-<span class="fc" id="L29">        this.y = y;</span>
-<span class="fc" id="L30">    }</span>
+<span class="fc" id="L28">        super(x.getSolver());</span>
+<span class="fc" id="L29">        this.x = x;</span>
+<span class="fc" id="L30">        this.y = y;</span>
+<span class="fc" id="L31">    }</span>
 
     @Override
     public void post() {
-<span class="fc" id="L34">        y.removeBelow(0);</span>
-<span class="fc" id="L35">        propagate();</span>
-<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (isActive()) {</span>
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">            if (!x.isFixed()) {</span>
-<span class="fc" id="L38">                x.propagateOnDomainChange(this);</span>
+<span class="fc" id="L35">        y.removeBelow(0);</span>
+<span class="fc" id="L36">        propagate();</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (isActive()) {</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">            if (!x.isFixed()) {</span>
+<span class="fc" id="L39">                x.propagateOnDomainChange(this);</span>
             }
-<span class="pc bpc" id="L40" title="1 of 2 branches missed.">            if (!y.isFixed()) {</span>
-<span class="fc" id="L41">                y.propagateOnBoundChange(this);</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            if (!y.isFixed()) {</span>
+<span class="fc" id="L42">                y.propagateOnBoundChange(this);</span>
             }
         }
-<span class="fc" id="L44">    }</span>
+<span class="fc" id="L45">    }</span>
 
     @Override
     public void propagate() {
         // propagation of y
-<span class="fc" id="L49">        int mx = x.min();</span>
-<span class="fc" id="L50">        int Mx = x.max();</span>
-<span class="fc" id="L51">        int mx2 = mx * mx;</span>
-<span class="fc" id="L52">        int Mx2 = Mx * Mx;</span>
+<span class="fc" id="L50">        int mx = x.min();</span>
+<span class="fc" id="L51">        int Mx = x.max();</span>
+<span class="fc" id="L52">        int mx2 = mx * mx;</span>
+<span class="fc" id="L53">        int Mx2 = Mx * Mx;</span>
 
         // propagate y (which is not bound)
-<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (mx &gt;= 0) { // x will be positive</span>
-<span class="fc" id="L56">            y.removeBelow(mx2);</span>
-<span class="fc" id="L57">            y.removeAbove(Mx2);</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">        } else if (Mx &lt;= 0) { // x is non-positive</span>
-<span class="fc" id="L59">            y.removeBelow(Mx2);</span>
-<span class="fc" id="L60">            y.removeAbove(mx2);</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">        } else if (x.contains(0)) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (mx &gt;= 0) { // x will be positive</span>
+<span class="fc" id="L57">            y.removeBelow(mx2);</span>
+<span class="fc" id="L58">            y.removeAbove(Mx2);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        } else if (Mx &lt;= 0) { // x is non-positive</span>
+<span class="fc" id="L60">            y.removeBelow(Mx2);</span>
+<span class="fc" id="L61">            y.removeAbove(mx2);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        } else if (x.contains(0)) {</span>
             // y min is already &gt;= 0 (post does it)
-<span class="fc" id="L63">            y.removeAbove(Math.max(mx2, Mx2));</span>
+<span class="fc" id="L64">            y.removeAbove(Math.max(mx2, Mx2));</span>
         } else {
-<span class="fc" id="L65">            int a = x.before(0);</span>
-<span class="fc" id="L66">            int b = x.after(0);</span>
-<span class="fc" id="L67">            int a2 = a * a;</span>
-<span class="fc" id="L68">            int b2 = b * b;</span>
-<span class="fc" id="L69">            y.removeBelow(Math.min(a2, b2));</span>
-<span class="fc" id="L70">            y.removeAbove(Math.max(a2, b2));</span>
+<span class="fc" id="L66">            int a = x.before(0);</span>
+<span class="fc" id="L67">            int b = x.after(0);</span>
+<span class="fc" id="L68">            int a2 = a * a;</span>
+<span class="fc" id="L69">            int b2 = b * b;</span>
+<span class="fc" id="L70">            y.removeBelow(Math.min(a2, b2));</span>
+<span class="fc" id="L71">            y.removeAbove(Math.max(a2, b2));</span>
         }
         //propagate x (which is not bound)
-<span class="fc" id="L73">        int my = y.min();</span>
-<span class="fc" id="L74">        int My = y.max();</span>
+<span class="fc" id="L74">        int my = y.min();</span>
+<span class="fc" id="L75">        int My = y.max();</span>
 
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        int rootm = (int) (Mx &lt;= 0 ? Math.ceil(Math.sqrt(my)) : Math.sqrt(my));</span>
-<span class="fc" id="L77">        int rootM = (int) Math.sqrt(My);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        int rootm = (int) (Mx &lt;= 0 ? Math.ceil(Math.sqrt(my)) : Math.sqrt(my));</span>
+<span class="fc" id="L78">        int rootM = (int) Math.sqrt(My);</span>
 
-<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (mx &gt;= 0) {</span>
-<span class="fc" id="L80">            x.removeBelow(rootm);</span>
-<span class="fc" id="L81">            x.removeAbove(rootM);</span>
-<span class="fc bfc" id="L82" title="All 2 branches covered.">        } else if (Mx &lt;= 0) {</span>
-<span class="fc" id="L83">            x.removeAbove(-rootm);</span>
-<span class="fc" id="L84">            x.removeBelow(-rootM);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (mx &gt;= 0) {</span>
+<span class="fc" id="L81">            x.removeBelow(rootm);</span>
+<span class="fc" id="L82">            x.removeAbove(rootM);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        } else if (Mx &lt;= 0) {</span>
+<span class="fc" id="L84">            x.removeAbove(-rootm);</span>
+<span class="fc" id="L85">            x.removeBelow(-rootM);</span>
         } else {
-<span class="fc" id="L86">            x.removeBelow(-rootM);</span>
-<span class="fc" id="L87">            x.removeAbove(rootM);</span>
+<span class="fc" id="L87">            x.removeBelow(-rootM);</span>
+<span class="fc" id="L88">            x.removeAbove(rootM);</span>
 			/*
 			for (int v = -rootm+1; v &lt; rootm; v++) {
 				x.removeValue(v);
 			}*/
         }
-<span class="fc" id="L93">    }</span>
+<span class="fc" id="L94">    }</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

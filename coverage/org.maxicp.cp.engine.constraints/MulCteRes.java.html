@@ -26,104 +26,105 @@ import java.util.List;
     private int c;
 
     /**
-     * x * y == c
-     * @param x
-     * @param y
-     * @param c
+     * Creates a multiplication constraint {@code x * y == c}.
+     *
+     * @param x the first variable factor
+     * @param y the second variable factor
+     * @param c the constant product
      */
     public MulCteRes(CPIntVar x, CPIntVar y, int c) {
-<span class="fc" id="L35">        super(x.getSolver());</span>
-<span class="fc" id="L36">        this.x = x;</span>
-<span class="fc" id="L37">        this.y = y;</span>
-<span class="fc" id="L38">        this.c = c;</span>
-<span class="fc" id="L39">    }</span>
+<span class="fc" id="L36">        super(x.getSolver());</span>
+<span class="fc" id="L37">        this.x = x;</span>
+<span class="fc" id="L38">        this.y = y;</span>
+<span class="fc" id="L39">        this.c = c;</span>
+<span class="fc" id="L40">    }</span>
 
     @Override
     public void post() {
 
-<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (x == y) {</span>
-<span class="nc" id="L45">            getSolver().post(new Square(x,new CPIntVarConstant(getSolver(),c)));</span>
-<span class="nc" id="L46">            setActive(false);</span>
-<span class="nc" id="L47">            return;</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        if (x == y) {</span>
+<span class="nc" id="L46">            getSolver().post(new Square(x,new CPIntVarConstant(getSolver(),c)));</span>
+<span class="nc" id="L47">            setActive(false);</span>
+<span class="nc" id="L48">            return;</span>
         }
-<span class="pc bpc" id="L49" title="1 of 6 branches missed.">        if (c == 0 &amp;&amp; x.contains(0) &amp;&amp; y.contains(0)) {</span>
-<span class="fc" id="L50">            x.propagateOnDomainChange(this);</span>
-<span class="fc" id="L51">            y.propagateOnDomainChange(this);</span>
+<span class="pc bpc" id="L50" title="1 of 6 branches missed.">        if (c == 0 &amp;&amp; x.contains(0) &amp;&amp; y.contains(0)) {</span>
+<span class="fc" id="L51">            x.propagateOnDomainChange(this);</span>
+<span class="fc" id="L52">            y.propagateOnDomainChange(this);</span>
         } else {
-<span class="fc" id="L53">            x.propagateOnBoundChange(this);</span>
-<span class="fc" id="L54">            y.propagateOnBoundChange(this);</span>
+<span class="fc" id="L54">            x.propagateOnBoundChange(this);</span>
+<span class="fc" id="L55">            y.propagateOnBoundChange(this);</span>
         }
         // propagate must be called after attaching events because this propagator may not reach fix-point it-self.
-<span class="fc" id="L57">        propagate();</span>
-<span class="fc" id="L58">    }</span>
+<span class="fc" id="L58">        propagate();</span>
+<span class="fc" id="L59">    }</span>
 
     @Override
     public void propagate() {
 
-<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (c != 0) {</span>
-<span class="fc" id="L64">            x.remove(0);</span>
-<span class="fc" id="L65">            y.remove(0);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (c != 0) {</span>
+<span class="fc" id="L65">            x.remove(0);</span>
+<span class="fc" id="L66">            y.remove(0);</span>
         }
-<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (x.isFixed()) {</span>
-<span class="fc" id="L68">            getSolver().post(new MulCte(y,x.min(),new CPIntVarConstant(getSolver(),c)));</span>
-<span class="fc" id="L69">            setActive(false);</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (y.isFixed()) {</span>
-<span class="fc" id="L71">            getSolver().post(new MulCte(x,y.min(),new CPIntVarConstant(getSolver(),c)));</span>
-<span class="fc" id="L72">            setActive(false);</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        } else if (c == 0) {</span>
-<span class="fc" id="L74">            boolean xZero = x.contains(0);</span>
-<span class="fc" id="L75">            boolean yZero = y.contains(0);</span>
-<span class="pc bpc" id="L76" title="1 of 4 branches missed.">            if (xZero || yZero) {</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (xZero ^ yZero) {</span>
-<span class="fc bfc" id="L78" title="All 2 branches covered.">                    if (xZero) {</span>
-<span class="fc" id="L79">                        x.fix(0);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (x.isFixed()) {</span>
+<span class="fc" id="L69">            getSolver().post(new MulCte(y,x.min(),new CPIntVarConstant(getSolver(),c)));</span>
+<span class="fc" id="L70">            setActive(false);</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        } else if (y.isFixed()) {</span>
+<span class="fc" id="L72">            getSolver().post(new MulCte(x,y.min(),new CPIntVarConstant(getSolver(),c)));</span>
+<span class="fc" id="L73">            setActive(false);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        } else if (c == 0) {</span>
+<span class="fc" id="L75">            boolean xZero = x.contains(0);</span>
+<span class="fc" id="L76">            boolean yZero = y.contains(0);</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">            if (xZero || yZero) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                if (xZero ^ yZero) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">                    if (xZero) {</span>
+<span class="fc" id="L80">                        x.fix(0);</span>
                     } else {
-<span class="fc" id="L81">                        y.fix(0);</span>
+<span class="fc" id="L82">                        y.fix(0);</span>
                     }
-<span class="fc" id="L83">                    setActive(false);</span>
+<span class="fc" id="L84">                    setActive(false);</span>
                 }
             }
             else {
-<span class="nc" id="L87">                throw InconsistencyException.INCONSISTENCY;</span>
+<span class="nc" id="L88">                throw InconsistencyException.INCONSISTENCY;</span>
             }
-<span class="fc" id="L89">        }</span>
+<span class="fc" id="L90">        }</span>
         else { // c != 0
-<span class="fc" id="L91">            propagateVar(x,y);</span>
-<span class="fc" id="L92">            propagateVar(y,x);</span>
+<span class="fc" id="L92">            propagateVar(x,y);</span>
+<span class="fc" id="L93">            propagateVar(y,x);</span>
         }
-<span class="fc" id="L94">    }</span>
+<span class="fc" id="L95">    }</span>
 
     /**
      * Filter domain of z with w * z == c with c!=0
      */
     private void propagateVar(CPIntVar w , CPIntVar z) {
-<span class="fc" id="L100">        int a = w.min();</span>
-<span class="fc" id="L101">        int b = w.max();</span>
+<span class="fc" id="L101">        int a = w.min();</span>
+<span class="fc" id="L102">        int b = w.max();</span>
 
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        assert (c != 0);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        assert (c != 0);</span>
         //assert(a &lt; b);
 
-<span class="pc bpc" id="L106" title="1 of 4 branches missed.">        if (a &gt; 0 || b &lt; 0) {</span>
+<span class="pc bpc" id="L107" title="1 of 4 branches missed.">        if (a &gt; 0 || b &lt; 0) {</span>
             // [a,b] &gt; 0 or [a,b] &lt; 0
-<span class="fc" id="L108">            z.removeBelow(NumberUtils.minCeilDiv(c,a,b));</span>
-<span class="fc" id="L109">            z.removeAbove(NumberUtils.maxFloorDiv(c,a,b));</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">        } else if (a == 0) {</span>
-<span class="nc" id="L111">            int after0 = w.after(0);</span>
+<span class="fc" id="L109">            z.removeBelow(NumberUtils.minCeilDiv(c,a,b));</span>
+<span class="fc" id="L110">            z.removeAbove(NumberUtils.maxFloorDiv(c,a,b));</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        } else if (a == 0) {</span>
+<span class="nc" id="L112">            int after0 = w.after(0);</span>
             // a=0 ... after0 ... b
-<span class="nc" id="L113">            z.removeBelow(NumberUtils.minCeilDiv(c,after0,b));</span>
-<span class="nc" id="L114">            z.removeAbove(NumberUtils.maxFloorDiv(c,after0,b));</span>
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">        } else if (b == 0) {</span>
-<span class="nc" id="L116">            int before0 = w.before(0);</span>
+<span class="nc" id="L114">            z.removeBelow(NumberUtils.minCeilDiv(c,after0,b));</span>
+<span class="nc" id="L115">            z.removeAbove(NumberUtils.maxFloorDiv(c,after0,b));</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        } else if (b == 0) {</span>
+<span class="nc" id="L117">            int before0 = w.before(0);</span>
             // a ... before0 ... b=0
-<span class="nc" id="L118">            z.removeBelow(NumberUtils.minCeilDiv(c,before0,a));</span>
-<span class="nc" id="L119">            z.removeAbove(NumberUtils.maxFloorDiv(c,before0,a));</span>
-<span class="nc" id="L120">        } else { // a ... 0 ... b</span>
-<span class="fc" id="L121">            int before0 = w.before(0);</span>
-<span class="fc" id="L122">            int after0 = w.after(0);</span>
-<span class="fc" id="L123">            z.removeBelow(NumberUtils.minCeilDiv(c, a, before0, after0, b));</span>
-<span class="fc" id="L124">            z.removeAbove(NumberUtils.maxFloorDiv(c, a, before0, after0, b));</span>
+<span class="nc" id="L119">            z.removeBelow(NumberUtils.minCeilDiv(c,before0,a));</span>
+<span class="nc" id="L120">            z.removeAbove(NumberUtils.maxFloorDiv(c,before0,a));</span>
+<span class="nc" id="L121">        } else { // a ... 0 ... b</span>
+<span class="fc" id="L122">            int before0 = w.before(0);</span>
+<span class="fc" id="L123">            int after0 = w.after(0);</span>
+<span class="fc" id="L124">            z.removeBelow(NumberUtils.minCeilDiv(c, a, before0, after0, b));</span>
+<span class="fc" id="L125">            z.removeAbove(NumberUtils.maxFloorDiv(c, a, before0, after0, b));</span>
         }
-<span class="fc" id="L126">    }</span>
+<span class="fc" id="L127">    }</span>
 }
 
 
