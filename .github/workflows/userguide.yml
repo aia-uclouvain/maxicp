@@ -13,11 +13,11 @@ jobs:
         java: [ '21' ]
     steps:
       - name: Step0 - Check out the repository
-        uses: actions/checkout@v3
-      - name: Step1 - Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v4
+      - name: Step1 - Set up Python 3.10
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.10'
       - name: Step2 - Install python dependencies
         run: |
           pwd
@@ -35,7 +35,7 @@ jobs:
           cd userguide
           make html
           mv build/html /tmp/.
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: gh-pages
       - name: Step5 - add html
