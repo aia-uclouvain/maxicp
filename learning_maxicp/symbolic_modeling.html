@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Symbolic Modeling (MaxiCP-Modelling) &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>Symbolic Modeling (MaxiCP-Modelling) &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -22,7 +22,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="List of Example Models" href="allmodels.html" />
+    <link rel="next" title="Solving XCSP3 Instances (CLI and Java API)" href="xcsp3.html" />
     <link rel="prev" title="Sequence Variables for Routing" href="seqvar.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -48,12 +48,12 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="allmodels.html" title="List of Example Models"
+          <a href="xcsp3.html" title="Solving XCSP3 Instances (CLI and Java API)"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="seqvar.html" title="Sequence Variables for Routing"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Symbolic Modeling (MaxiCP-Modelling)</a></li> 
       </ul>
     </div>  
@@ -177,7 +177,7 @@ the branching decisions along the path), which is solved concurrently by a threa
 
 <span class="kt">int</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 <span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">var</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">results</span><span class="p">)</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="na">get</span><span class="p">().</span><span class="na">numberOfSolutions</span><span class="p">();</span>
-<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;Total solutions: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">total</span><span class="p">);</span>
+<span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Total solutions: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">total</span><span class="p">);</span>
 <span class="n">executor</span><span class="p">.</span><span class="na">shutdown</span><span class="p">();</span>
 </pre></div>
 </div>
@@ -254,8 +254,8 @@ custom search heuristics that need direct access to domain internals:</p>
   </div>
   <div>
     <h4>Next topic</h4>
-    <p class="topless"><a href="allmodels.html"
-                          title="next chapter">List of Example Models</a></p>
+    <p class="topless"><a href="xcsp3.html"
+                          title="next chapter">Solving XCSP3 Instances (CLI and Java API)</a></p>
   </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
@@ -285,12 +285,12 @@ custom search heuristics that need direct access to domain internals:</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="allmodels.html" title="List of Example Models"
+          <a href="xcsp3.html" title="Solving XCSP3 Instances (CLI and Java API)"
              >next</a> |</li>
         <li class="right" >
           <a href="seqvar.html" title="Sequence Variables for Routing"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Symbolic Modeling (MaxiCP-Modelling)</a></li> 
       </ul>
     </div>
@@ -345,8 +345,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

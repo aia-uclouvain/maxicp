@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Preface &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>Preface &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="_static/custom.css" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="index.html" title="MaxiCP: A Not So Mini Constraint Programming Solver"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Preface</a></li> 
       </ul>
     </div>  
@@ -122,7 +122,7 @@ Add the following to your <code class="docutils literal notranslate"><span class
 <div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;dependency&gt;</span>
 <span class="w">    </span><span class="nt">&lt;groupId&gt;</span>org.maxicp<span class="nt">&lt;/groupId&gt;</span>
 <span class="w">    </span><span class="nt">&lt;artifactId&gt;</span>maxicp<span class="nt">&lt;/artifactId&gt;</span>
-<span class="w">    </span><span class="nt">&lt;version&gt;</span>0.0.2<span class="nt">&lt;/version&gt;</span>
+<span class="w">    </span><span class="nt">&lt;version&gt;</span>1.0.0<span class="nt">&lt;/version&gt;</span>
 <span class="nt">&lt;/dependency&gt;</span>
 </pre></div>
 </div>
@@ -242,7 +242,7 @@ and open <code class="docutils literal notranslate"><span class="pre">pom.xml</s
         <li class="right" >
           <a href="index.html" title="MaxiCP: A Not So Mini Constraint Programming Solver"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Preface</a></li> 
       </ul>
     </div>
@@ -297,8 +297,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

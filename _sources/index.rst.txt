@@ -19,6 +19,7 @@ MaxiCP: A Not So Mini Constraint Programming Solver
    learning_maxicp/scheduling
    learning_maxicp/seqvar
    learning_maxicp/symbolic_modeling
+   learning_maxicp/xcsp3
    learning_maxicp/allmodels
    references
 

@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Scheduling with Conditional Intervals &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>Scheduling with Conditional Intervals &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="search_strategies.html" title="Search"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Scheduling with Conditional Intervals</a></li> 
       </ul>
     </div>  
@@ -177,7 +177,25 @@ built compositionally from elementary functions:</p>
 </ul>
 <p>Internally these compile to a single <strong>Generalized Cumulative</strong> constraint <span id="id7">[<a class="reference internal" href="../references.html#id15" title="Pierre Schaus, Charles Thomas, and Roger Kameugne. Implementing cumulative functions with generalized cumulative constraints. arXiv preprint arXiv:2410.02456, 2024. URL: https://arxiv.org/abs/2410.02456.">27</a>]</span>,
 which accepts variable and possibly negative heights <span id="id8">[<a class="reference internal" href="../references.html#id25" title="Nicolas Beldiceanu and Mats Carlsson. A new multi-resource cumulatives constraint with negative heights. In CP 2002, 63–79. Springer, 2002.">28</a>]</span>.</p>
-</section>
+<p><strong>Interactive Visualization.</strong>
+Use the interactive playground below to explore how elementary cumulative functions combine into a resource profile and how capacity constraints detect violations:</p>
+<ul class="simple">
+<li><p><strong>Task A</strong> on <code class="docutils literal notranslate"><span class="pre">[10,</span> <span class="pre">40)</span></code> contributes <code class="docutils literal notranslate"><span class="pre">pulse(Task</span> <span class="pre">A,</span> <span class="pre">4)</span></code>.</p></li>
+<li><p><strong>Task B</strong> on <code class="docutils literal notranslate"><span class="pre">[30,</span> <span class="pre">70)</span></code> contributes <code class="docutils literal notranslate"><span class="pre">pulse(Task</span> <span class="pre">B,</span> <span class="pre">5)</span></code>.</p></li>
+<li><p><strong>Prod C</strong> on <code class="docutils literal notranslate"><span class="pre">[60,</span> <span class="pre">80)</span></code> contributes <code class="docutils literal notranslate"><span class="pre">stepAtEnd(Prod</span> <span class="pre">C,</span> <span class="pre">-2)</span></code> (reducing the level by 2 from time 80 onward).</p></li>
+<li><p>With <code class="docutils literal notranslate"><span class="pre">alwaysIn(f,</span> <span class="pre">0,</span> <span class="pre">8)</span></code>, the overlap between <strong>Task A</strong> and <strong>Task B</strong> on <code class="docutils literal notranslate"><span class="pre">[30,</span> <span class="pre">40)</span></code> reaches height <code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">+</span> <span class="pre">5</span> <span class="pre">=</span> <span class="pre">9</span> <span class="pre">&gt;</span> <span class="pre">8</span></code> (highlighted in red as <strong>Capacity Exceeded</strong>). Drag <strong>Task B</strong> to the right (so it starts at or after <code class="docutils literal notranslate"><span class="pre">40</span></code>), resize intervals, or switch between <code class="docutils literal notranslate"><span class="pre">pulse</span></code>, <code class="docutils literal notranslate"><span class="pre">stepAtStart</span></code>, and <code class="docutils literal notranslate"><span class="pre">stepAtEnd</span></code> to see the cumulative profile update in real time.</p></li>
+</ul>
+<div class="cumul-viz-wrapper">
+  <div class="cumul-viz-header">
+    <span><strong>Interactive Cumulative Function Visualizer</strong> — drag or resize tasks in the Gantt chart, or edit effects</span>
+    <a href="../_static/cumulative_functions/index.html" target="_blank" rel="noopener noreferrer">Open in full screen &#8599;</a>
+  </div>
+  <iframe class="cumul-viz-iframe"
+          src="../_static/cumulative_functions/index.html"
+          title="Interactive Cumulative Functions Visualizer"
+          loading="lazy">
+  </iframe>
+</div></section>
 <section id="rcpsp-resource-constrained-project-scheduling">
 <h2>RCPSP (Resource-Constrained Project Scheduling)<a class="headerlink" href="#rcpsp-resource-constrained-project-scheduling" title="Permalink to this heading">¶</a></h2>
 <p>Full source:
@@ -310,7 +328,7 @@ completion, consumers remove from it at their start.</p>
         <li class="right" >
           <a href="search_strategies.html" title="Search"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Scheduling with Conditional Intervals</a></li> 
       </ul>
     </div>
@@ -365,8 +383,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

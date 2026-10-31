@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>State Management &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>State Management &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="architecture.html" title="Architecture Overview"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">State Management</a></li> 
       </ul>
     </div>  
@@ -192,7 +192,7 @@ data structures built on top of <code class="docutils literal notranslate"><span
         <li class="right" >
           <a href="architecture.html" title="Architecture Overview"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">State Management</a></li> 
       </ul>
     </div>
@@ -247,8 +247,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

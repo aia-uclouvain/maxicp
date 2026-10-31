@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>List of Example Models &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>List of Example Models &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -23,7 +23,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="References" href="../references.html" />
-    <link rel="prev" title="Symbolic Modeling (MaxiCP-Modelling)" href="symbolic_modeling.html" />
+    <link rel="prev" title="Solving XCSP3 Instances (CLI and Java API)" href="xcsp3.html" />
 
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <!--[if lt IE 9]>
@@ -51,9 +51,9 @@
           <a href="../references.html" title="References"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+          <a href="xcsp3.html" title="Solving XCSP3 Instances (CLI and Java API)"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">List of Example Models</a></li> 
       </ul>
     </div>  
@@ -253,8 +253,8 @@ out of the box.</p>
   </div>
   <div>
     <h4>Previous topic</h4>
-    <p class="topless"><a href="symbolic_modeling.html"
-                          title="previous chapter">Symbolic Modeling (MaxiCP-Modelling)</a></p>
+    <p class="topless"><a href="xcsp3.html"
+                          title="previous chapter">Solving XCSP3 Instances (CLI and Java API)</a></p>
   </div>
   <div>
     <h4>Next topic</h4>
@@ -292,9 +292,9 @@ out of the box.</p>
           <a href="../references.html" title="References"
              >next</a> |</li>
         <li class="right" >
-          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+          <a href="xcsp3.html" title="Solving XCSP3 Instances (CLI and Java API)"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">List of Example Models</a></li> 
       </ul>
     </div>
@@ -349,8 +349,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

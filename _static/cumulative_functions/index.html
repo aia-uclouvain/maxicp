@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>Cumulative Functions Scheduler</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile Header & Tab Navigation -->
+    <header class="mobile-nav glass">
+        <div class="mobile-nav-top">
+            <div class="mobile-brand">
+                <h2>Cumul Functions</h2>
+                <div id="mobile-status-badge" class="status-badge feasible">
+                    <span class="badge-dot"></span><span class="badge-text">Feasible</span>
+                </div>
+            </div>
+            <button id="mobile-references-btn" class="btn small glass-btn" aria-label="Open References">References</button>
+        </div>
+        <div class="mobile-tabs" role="tablist" aria-label="View switch">
+            <button class="mobile-tab active" data-tab="charts" role="tab" aria-selected="true">
+                <span class="tab-icon">📊</span>
+                <span>Visualizer</span>
+            </button>
+            <button class="mobile-tab" data-tab="config" role="tab" aria-selected="false">
+                <span class="tab-icon">⚙️</span>
+                <span>Intervals</span>
+                <span class="tab-badge" id="intervals-count-badge">3</span>
+            </button>
+            <button class="mobile-tab" data-tab="split" role="tab" aria-selected="false">
+                <span class="tab-icon">☷</span>
+                <span>Both</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="app-container" data-view="charts">
+        <aside class="sidebar glass" id="app-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title-row">
+                    <h2>Cumul Functions</h2>
+                    <button id="references-btn" class="btn small glass-btn">References</button>
+                </div>
+                <div id="desktop-status-badge" class="status-badge feasible">
+                    <span class="badge-dot"></span><span class="badge-text">Feasible</span>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <h3>Global Constraints</h3>
+                <div class="input-group">
+                    <label for="global-min">Min Capacity:</label>
+                    <input type="number" id="global-min" value="0" inputmode="decimal">
+                </div>
+                <div class="input-group">
+                    <label for="global-max">Max Capacity:</label>
+                    <input type="number" id="global-max" value="10" inputmode="decimal">
+                </div>
+            </div>
+            
+            <div class="intervals-header">
+                <h3>Intervals</h3>
+                <button id="add-interval-btn" class="btn primary">+ Add Interval</button>
+            </div>
+            <div id="intervals-list" class="intervals-list">
+                <!-- Intervals will be injected here by JS -->
+            </div>
+        </aside>
+        
+        <main class="main-content" id="app-main">
+            <div class="chart-container glass gantt-container">
+                <div class="chart-header">
+                    <h3>Gantt Chart (Drag to move/resize)</h3>
+                    <div id="drag-indicator" class="drag-indicator" style="display: none;"></div>
+                </div>
+                <div class="chart-body-wrapper">
+                    <div class="y-axis-spacer" aria-hidden="true"></div>
+                    <div class="chart-plot-area">
+                        <div class="axis-container" id="gantt-axis"></div>
+                        <div class="gantt-area" id="gantt-area">
+                            <!-- Interval bars injected here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container glass cumul-container">
+                <div class="chart-header">
+                    <h3>Cumulative Function</h3>
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-color limit-color"></span>Limits</span>
+                        <span class="legend-item"><span class="legend-color profile-color"></span>Usage</span>
+                        <span class="legend-item"><span class="legend-color violation-color"></span>Violation</span>
+                    </div>
+                </div>
+                <div class="chart-body-wrapper">
+                    <div class="y-axis-container" id="cumul-y-axis"></div>
+                    <div class="cumul-area">
+                        <svg id="cumul-svg" preserveAspectRatio="none"></svg>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Quick Actions for Mobile -->
+    <div id="mobile-floating-charts" class="mobile-floating-bar">
+        <button id="quick-add-task-btn" class="btn primary small">+ Add Task</button>
+        <button id="quick-edit-config-btn" class="btn glass-btn small">Configure Intervals ⚙️</button>
+    </div>
+    <div id="mobile-floating-config" class="mobile-floating-bar">
+        <button id="quick-view-charts-btn" class="btn primary small">View Visualizer 📊</button>
+    </div>
+
+    <!-- References Modal -->
+    <div id="references-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content glass">
+            <button class="close-modal" aria-label="Close references">&times;</button>
+            <h2 id="modal-title" style="margin-bottom: 20px;">References</h2>
+            <div class="reference-item">
+                <p>Cumulative functions were introduced in:</p>
+                <a href="https://cdn.aaai.org/FLAIRS/2008/FLAIRS08-126.pdf" target="_blank" rel="noopener noreferrer">
+                    Laborie, P., Rogerie, J., Shaw, P., & Vilím, P. (2009). Reasoning with Conditional Time-Intervals. Part II: An Algebraical Model for Resources. In FLAIRS.
+                </a>
+            </div>
+            <div class="reference-item" style="margin-top: 20px;">
+                <p>This paper explains how to implement them using a Generalized Cumulative Constraint:</p>
+                <a href="https://arxiv.org/pdf/2508.01751" target="_blank" rel="noopener noreferrer">
+                    Schaus, P., Thomas, C., & Kameugne, R. (2025). Implementing Cumulative Functions with Generalized Cumulative Constraints. ArXiv.
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

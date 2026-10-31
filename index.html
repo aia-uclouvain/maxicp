@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>MaxiCP: A Not So Mini Constraint Programming Solver &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>MaxiCP: A Not So Mini Constraint Programming Solver &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="_static/custom.css" />
@@ -49,7 +49,7 @@
         <li class="right" >
           <a href="intro.html" title="Preface"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">MaxiCP: A Not So Mini Constraint Programming Solver</a></li> 
       </ul>
     </div>  
@@ -116,6 +116,7 @@
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#branch-and-bound-optimization">Branch-and-Bound Optimization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#large-neighborhood-search-lns">Large Neighborhood Search (LNS)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#variable-objective-lns-volns">Variable Objective LNS (VOLNS)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/search_strategies.html#black-box-search">Black-Box Search</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="learning_maxicp/scheduling.html">Scheduling with Conditional Intervals</a><ul>
@@ -146,6 +147,12 @@
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#embarrassingly-parallel-search-eps">Embarrassingly Parallel Search (EPS)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#portfolio-parallel-search">Portfolio Parallel Search</a></li>
 <li class="toctree-l2"><a class="reference internal" href="learning_maxicp/symbolic_modeling.html#mixing-both-layers">Mixing Both Layers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="learning_maxicp/xcsp3.html">Solving XCSP3 Instances (CLI and Java API)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/xcsp3.html#running-an-xcsp3-instance-from-the-command-line">Running an XCSP3 Instance from the Command Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/xcsp3.html#running-an-xcsp3-instance-in-java">Running an XCSP3 Instance in Java</a></li>
+<li class="toctree-l2"><a class="reference internal" href="learning_maxicp/xcsp3.html#supported-xcsp3-constraints-and-objectives">Supported XCSP3 Constraints and Objectives</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="learning_maxicp/allmodels.html">List of Example Models</a><ul>
@@ -220,7 +227,7 @@
         <li class="right" >
           <a href="intro.html" title="Preface"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="#">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">MaxiCP: A Not So Mini Constraint Programming Solver</a></li> 
       </ul>
     </div>
@@ -275,8 +282,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

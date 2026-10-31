@@ -348,4 +348,5 @@ Now that you understand the basic building blocks, explore the deeper sections:
 - :ref:`scheduling` — conditional interval variables, cumulative functions, Job-Shop, RCPSP.
 - :ref:`seqvar` — sequence variables for routing (TSPTW, CVRPTW, DARP).
 - :ref:`symbolic_modeling` — the symbolic layer in depth: model trees, EPS, LNS neighborhoods.
+- :ref:`xcsp3` — how to solve XCSP3 instances from the command line or Java API.
 

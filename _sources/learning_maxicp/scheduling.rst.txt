@@ -128,6 +128,28 @@ The resulting function is bounded by:
 Internally these compile to a single **Generalized Cumulative** constraint :cite:`Schaus2025GeneralizedCumulative`,
 which accepts variable and possibly negative heights :cite:`BeldiceanuC02`.
 
+**Interactive Visualization.**
+Use the interactive playground below to explore how elementary cumulative functions combine into a resource profile and how capacity constraints detect violations:
+
+- **Task A** on ``[10, 40)`` contributes ``pulse(Task A, 4)``.
+- **Task B** on ``[30, 70)`` contributes ``pulse(Task B, 5)``.
+- **Prod C** on ``[60, 80)`` contributes ``stepAtEnd(Prod C, -2)`` (reducing the level by 2 from time 80 onward).
+- With ``alwaysIn(f, 0, 8)``, the overlap between **Task A** and **Task B** on ``[30, 40)`` reaches height ``4 + 5 = 9 > 8`` (highlighted in red as **Capacity Exceeded**). Drag **Task B** to the right (so it starts at or after ``40``), resize intervals, or switch between ``pulse``, ``stepAtStart``, and ``stepAtEnd`` to see the cumulative profile update in real time.
+
+.. raw:: html
+
+   <div class="cumul-viz-wrapper">
+     <div class="cumul-viz-header">
+       <span><strong>Interactive Cumulative Function Visualizer</strong> — drag or resize tasks in the Gantt chart, or edit effects</span>
+       <a href="../_static/cumulative_functions/index.html" target="_blank" rel="noopener noreferrer">Open in full screen &#8599;</a>
+     </div>
+     <iframe class="cumul-viz-iframe"
+             src="../_static/cumulative_functions/index.html"
+             title="Interactive Cumulative Functions Visualizer"
+             loading="lazy">
+     </iframe>
+   </div>
+
 RCPSP (Resource-Constrained Project Scheduling)
 =================================================
 

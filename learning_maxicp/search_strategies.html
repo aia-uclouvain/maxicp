@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Search &#8212; MaxiCP User-Guide 1.0 documentation</title>
+    <title>Search &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
@@ -53,7 +53,7 @@
         <li class="right" >
           <a href="propagation.html" title="Propagation Engine"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Search</a></li> 
       </ul>
     </div>  
@@ -209,7 +209,7 @@ current best values (the <em>freeze</em> phase) then re-solving the relaxed sub-
 
 <span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="n">xBest</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">min</span><span class="p">();</span>
-<span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">&quot;objective: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">totCost</span><span class="p">.</span><span class="na">min</span><span class="p">());</span>
+<span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"objective: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">totCost</span><span class="p">.</span><span class="na">min</span><span class="p">());</span>
 <span class="p">});</span>
 </pre></div>
 </div>
@@ -364,6 +364,43 @@ As iterations proceed, more rows reach violation 0 and the surviving violated ro
 are progressively tightened until the total violation reaches 0 — a valid magic square.</p>
 </section>
 </section>
+<section id="black-box-search">
+<h2>Black-Box Search<a class="headerlink" href="#black-box-search" title="Permalink to this heading">¶</a></h2>
+<p>In addition to user-defined branching strategies and custom LNS loops, MaxiCP provides a
+commercial-solver-style black-box search (<code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code>) that implements <code class="docutils literal notranslate"><span class="pre">SearchMethod</span></code>
+as a drop-in replacement for <code class="docutils literal notranslate"><span class="pre">DFSearch</span></code>.</p>
+<p>It is available in both the <strong>raw API</strong> via <code class="docutils literal notranslate"><span class="pre">CPFactory.makeBlackBox(cp)</span></code> and the
+<strong>modeling API</strong> via <code class="docutils literal notranslate"><span class="pre">cp.blackBoxSearch()</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// Raw API</span>
+<span class="n">SearchMethod</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CPFactory</span><span class="p">.</span><span class="na">makeBlackBox</span><span class="p">(</span><span class="n">cp</span><span class="p">);</span>
+<span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span><span class="w"> </span><span class="c1">// or search.solve()</span>
+
+<span class="c1">// Modeling API</span>
+<span class="n">model</span><span class="p">.</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">SearchMethod</span><span class="w"> </span><span class="n">search</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">blackBoxSearch</span><span class="p">();</span>
+<span class="w">    </span><span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">search</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span><span class="w"> </span><span class="c1">// or search.solve()</span>
+<span class="p">});</span>
+</pre></div>
+</div>
+<p>When decision variables are not explicitly supplied, <code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code> automatically discovers
+the primary decision variables of the model (<code class="docutils literal notranslate"><span class="pre">IntVar</span></code> for combinatorial problems and
+<code class="docutils literal notranslate"><span class="pre">IntervalVar</span></code> for scheduling problems) while filtering out auxiliary variables created by
+expressions or objectives:</p>
+<ul class="simple">
+<li><p><strong>Combinatorial integer models</strong> (<code class="docutils literal notranslate"><span class="pre">IntVar</span></code>): combines domain/objective probing, Luby-scheduled
+restarts with conflict-driven and activity-based branching (<code class="docutils literal notranslate"><span class="pre">dom/wdeg</span></code>, Last Conflict,
+Conflict Ordering Search, Bound-Impact, and phase saving), and an adaptive multi-neighborhood
+LNS portfolio interleaved with exact DFS/FDS phases for optimality proofs.</p></li>
+<li><p><strong>Scheduling models</strong> (<code class="docutils literal notranslate"><span class="pre">IntervalVar</span></code>): combines <code class="docutils literal notranslate"><span class="pre">SetTimes</span></code> and Failure-Directed Search
+(<code class="docutils literal notranslate"><span class="pre">FDS</span></code>) with restarts and a dedicated Scheduling LNS (precedence-graph, time-window, and
+machine-based neighborhoods).</p></li>
+</ul>
+<p>Full examples:
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java">RCPSP.java (raw)</a> ·
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/RCPSP.java">RCPSP.java (modeling)</a> ·
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/magicsquare/MagicSquare.java">MagicSquare.java (raw)</a> ·
+<a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/MagicSquare.java">MagicSquare.java (modeling)</a></p>
+</section>
 </section>
 
 
@@ -392,6 +429,7 @@ are progressively tightened until the total violation reaches 0 — a valid magi
 <li><a class="reference internal" href="#example-magic-square">Example: Magic Square</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#black-box-search">Black-Box Search</a></li>
 </ul>
 </li>
 </ul>
@@ -440,7 +478,7 @@ are progressively tightened until the total violation reaches 0 — a valid magi
         <li class="right" >
           <a href="propagation.html" title="Propagation Engine"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Search</a></li> 
       </ul>
     </div>
@@ -495,8 +533,28 @@ function pdf_new_window ()
     }
     }
 }
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
 pdf_new_window();
 external_new_window();
+setup_mobile_nav();
 </script>
 
 

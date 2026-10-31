@@ -1,0 +1,415 @@
+
+
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Solving XCSP3 Instances (CLI and Java API) &#8212; MaxiCP User-Guide 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bizstyle.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/bizstyle.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="List of Example Models" href="allmodels.html" />
+    <link rel="prev" title="Symbolic Modeling (MaxiCP-Modelling)" href="symbolic_modeling.html" />
+
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!--[if lt IE 9]>
+    <script src="_static/css3-mediaqueries.js"></script>
+    <![endif]-->
+<!--
+  ~ MaxiCP is under MIT License
+  ~ Copyright (c)  2023 UCLouvain
+  -->
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-125847974-1']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="allmodels.html" title="List of Example Models"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Solving XCSP3 Instances (CLI and Java API)</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="solving-xcsp3-instances-cli-and-java-api">
+<span id="xcsp3"></span><h1>Solving XCSP3 Instances (CLI and Java API)<a class="headerlink" href="#solving-xcsp3-instances-cli-and-java-api" title="Permalink to this heading">¶</a></h1>
+<p><a class="reference external" href="https://www.xcsp.org/">XCSP3</a> <span id="id1">[<a class="reference internal" href="../references.html#id49" title="Frédéric Boussemart, Christophe Lecoutre, Gilles Audemard, and Cédric Piette. XCSP3: an integrated format for benchmarking combinatorial constrained problems. arXiv preprint arXiv:1611.03398, 2020. URL: https://arxiv.org/abs/1611.03398.">32</a>]</span> is the standard XML-based format for representing combinatorial constrained problems — both satisfaction (<strong>CSP</strong>) and optimization (<strong>COP</strong>) — used in the International XCSP3 Solver Competitions.</p>
+<p>MaxiCP includes a built-in XCSP3 parser and competition runner in the <code class="docutils literal notranslate"><span class="pre">org.maxicp.modeling.xcsp3</span></code> package that translates XCSP3 instances (plain <code class="docutils literal notranslate"><span class="pre">.xml</span></code> or compressed <code class="docutils literal notranslate"><span class="pre">.xml.lzma</span></code>) into a symbolic <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code> and solves them either with <strong>Black-Box Search</strong> (<a class="reference internal" href="search_strategies.html#maxicp-search"><span class="std std-ref">Search</span></a>) or with a custom search strategy.</p>
+<p>Source:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/modeling/xcsp3/XCSP3.java">XCSP3</a> — XCSP3 parser and <code class="docutils literal notranslate"><span class="pre">XCSP3LoadedInstance</span></code> loader</p></li>
+<li><p><a class="reference external" href="https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/modeling/xcsp3/XCSP3Cli.java">XCSP3Cli</a> — Competition CLI entrypoint</p></li>
+</ul>
+<section id="running-an-xcsp3-instance-from-the-command-line">
+<h2>Running an XCSP3 Instance from the Command Line<a class="headerlink" href="#running-an-xcsp3-instance-from-the-command-line" title="Permalink to this heading">¶</a></h2>
+<p>There are two ways to solve an XCSP3 instance from the terminal: using the standalone competition bundle (recommended) or invoking <code class="docutils literal notranslate"><span class="pre">XCSP3Cli</span></code> directly via Java/Maven.</p>
+<section id="option-1-standalone-maxicp-mini-bundle-recommended">
+<h3>Option 1 — Standalone <code class="docutils literal notranslate"><span class="pre">maxicp-mini</span></code> Bundle (Recommended)<a class="headerlink" href="#option-1-standalone-maxicp-mini-bundle-recommended" title="Permalink to this heading">¶</a></h3>
+<p>From the repository root, build the self-contained competition bundle:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/package-mini-xcsp3.sh
+</pre></div>
+</div>
+<p>This script compiles MaxiCP, copies all runtime JARs into <code class="docutils literal notranslate"><span class="pre">mini-xcsp3/lib/</span></code>, and generates the executable launcher <code class="docutils literal notranslate"><span class="pre">mini-xcsp3/maxicp-mini</span></code>.</p>
+<p>You can then run any <code class="docutils literal notranslate"><span class="pre">.xml</span></code> or <code class="docutils literal notranslate"><span class="pre">.xml.lzma</span></code> XCSP3 instance:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Solve a satisfaction (CSP) instance</span>
+./mini-xcsp3/maxicp-mini<span class="w"> </span>src/test/resources/XCSP3/CSP/HyperSudoku-03_c24.xml
+
+<span class="c1"># Optimize a COP instance with a 10-second time limit and fixed random seed</span>
+./mini-xcsp3/maxicp-mini<span class="w"> </span>--time-limit<span class="o">=</span><span class="m">10</span><span class="w"> </span>--seed<span class="o">=</span><span class="m">42</span><span class="w"> </span>src/test/resources/XCSP3/COP/LitPuzzle-10_c24.xml
+
+<span class="c1"># Run a compressed .xml.lzma instance</span>
+./mini-xcsp3/maxicp-mini<span class="w"> </span>--time-limit<span class="o">=</span><span class="m">30</span><span class="w"> </span>data/XCSP3/2024_V3/MiniCOP/Fortress1-02-mini_c25.xml.lzma
+</pre></div>
+</div>
+<p>Supported CLI arguments:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;path&gt;</span></code></p></td>
+<td><p>Path to the XCSP3 instance file (<code class="docutils literal notranslate"><span class="pre">.xml</span></code> or <code class="docutils literal notranslate"><span class="pre">.xml.lzma</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--time-limit=&lt;seconds&gt;</span></code></p></td>
+<td><p>Wall-clock time limit in seconds (defaults to unlimited if omitted).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--seed=&lt;long&gt;</span></code> <em>(or 2nd positional arg)</em></p></td>
+<td><p>Random seed used for tie-breaking, restarts, and LNS neighborhoods.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--mem-limit=...</span></code> / <code class="docutils literal notranslate"><span class="pre">--tmpdir=...</span></code></p></td>
+<td><p>Accepted for compatibility with XCSP3 competition evaluation wrappers.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="option-2-running-xcsp3cli-directly-with-java">
+<h3>Option 2 — Running <code class="docutils literal notranslate"><span class="pre">XCSP3Cli</span></code> Directly with <code class="docutils literal notranslate"><span class="pre">java</span></code><a class="headerlink" href="#option-2-running-xcsp3cli-directly-with-java" title="Permalink to this heading">¶</a></h3>
+<p>Once packaged (or after <code class="docutils literal notranslate"><span class="pre">mvn</span> <span class="pre">compile</span> <span class="pre">dependency:copy-dependencies</span></code>), you can also invoke the <code class="docutils literal notranslate"><span class="pre">org.maxicp.modeling.xcsp3.XCSP3Cli</span></code> class directly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>java<span class="w"> </span>-cp<span class="w"> </span><span class="s2">"mini-xcsp3/lib/*"</span><span class="w"> </span>org.maxicp.modeling.xcsp3.XCSP3Cli<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--time-limit<span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>src/test/resources/XCSP3/COP/LitPuzzle-10_c24.xml
+</pre></div>
+</div>
+</section>
+<section id="reading-the-competition-output-protocol">
+<h3>Reading the Competition Output Protocol<a class="headerlink" href="#reading-the-competition-output-protocol" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">XCSP3Cli</span></code> follows the official XCSP3 competition output stream protocol:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">o</span> <span class="pre">&lt;value&gt;</span></code> — printed each time a new improving objective value <code class="docutils literal notranslate"><span class="pre">&lt;value&gt;</span></code> is found (for COP instances).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">&lt;status&gt;</span></code> — final status line:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">SATISFIABLE</span></code> — at least one feasible solution was found (and optimality was not proven for COP).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">OPTIMUM</span> <span class="pre">FOUND</span></code> — an optimal solution was found and proven (for COP).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">UNSATISFIABLE</span></code> — the instance was proven infeasible.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">UNKNOWN</span></code> — no solution was found within the time limit.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s</span> <span class="pre">UNSUPPORTED</span></code> — the instance uses an XCSP3 feature not supported by the parser.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">v</span> <span class="pre">&lt;instantiation&gt;</span> <span class="pre">...</span> <span class="pre">&lt;/instantiation&gt;</span></code> — the variable assignment of the best solution found, formatted as a valid XCSP3 <code class="docutils literal notranslate"><span class="pre">&lt;instantiation&gt;</span></code> element.</p></li>
+</ul>
+<p>Example output on an optimization instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">o</span> <span class="mi">18</span>
+<span class="n">o</span> <span class="mi">15</span>
+<span class="n">o</span> <span class="mi">14</span>
+<span class="n">s</span> <span class="n">OPTIMUM</span> <span class="n">FOUND</span>
+<span class="n">v</span> <span class="o">&lt;</span><span class="n">instantiation</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">...</span> <span class="o">&lt;/</span><span class="nb">list</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">values</span><span class="o">&gt;</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">1</span> <span class="o">...</span> <span class="o">&lt;/</span><span class="n">values</span><span class="o">&gt;</span> <span class="o">&lt;/</span><span class="n">instantiation</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-an-xcsp3-instance-in-java">
+<h2>Running an XCSP3 Instance in Java<a class="headerlink" href="#running-an-xcsp3-instance-in-java" title="Permalink to this heading">¶</a></h2>
+<p>You can also load and solve XCSP3 instances directly from your Java code using <code class="docutils literal notranslate"><span class="pre">XCSP3.load(...)</span></code> or <code class="docutils literal notranslate"><span class="pre">XCSP3.runWithBlackBox(...)</span></code>.</p>
+<section id="quick-one-liner-with-validation-xcsp3-runwithblackbox">
+<h3>Quick One-Liner with Validation (<code class="docutils literal notranslate"><span class="pre">XCSP3.runWithBlackBox</span></code>)<a class="headerlink" href="#quick-one-liner-with-validation-xcsp3-runwithblackbox" title="Permalink to this heading">¶</a></h3>
+<p>For quick experiments, <code class="docutils literal notranslate"><span class="pre">XCSP3.runWithBlackBox(path,</span> <span class="pre">timeoutInSeconds)</span></code> loads the instance, runs <code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code> with progress logging, and automatically validates the resulting <code class="docutils literal notranslate"><span class="pre">&lt;instantiation&gt;</span></code> with the official XCSP3 <code class="docutils literal notranslate"><span class="pre">SolutionChecker</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.modeling.xcsp3.XCSP3</span><span class="p">;</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">RunXCSP3Demo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">XCSP3</span><span class="p">.</span><span class="na">runWithBlackBox</span><span class="p">(</span><span class="s">"src/test/resources/XCSP3/COP/LitPuzzle-10_c24.xml"</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="loading-an-instance-and-solving-with-blackboxsearch">
+<h3>Loading an Instance and Solving with <code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code><a class="headerlink" href="#loading-an-instance-and-solving-with-blackboxsearch" title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">XCSP3.load(filename)</span></code> parses the XML file and returns an <code class="docutils literal notranslate"><span class="pre">XCSP3LoadedInstance</span></code> record (which implements <code class="docutils literal notranslate"><span class="pre">AutoCloseable</span></code>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">instance.md()</span></code> — the <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code> containing all parsed variables, variable groups, and constraints.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance.decisionVars()</span></code> — the array of decision variables (<code class="docutils literal notranslate"><span class="pre">IntExpression[]</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance.decisionVarIds()</span></code> — the XCSP3 variable identifiers (<code class="docutils literal notranslate"><span class="pre">String[]</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance.objective()</span></code> — the symbolic <code class="docutils literal notranslate"><span class="pre">Objective</span></code> to optimize, or <code class="docutils literal notranslate"><span class="pre">null</span></code> for satisfaction (CSP) instances.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instance.formatSolution(result)</span></code> / <code class="docutils literal notranslate"><span class="pre">instance.solutionGenerator()</span></code> — formats a solution into an XCSP3 <code class="docutils literal notranslate"><span class="pre">&lt;instantiation&gt;</span></code> XML string.</p></li>
+</ul>
+<p>Here is how to load an instance, solve or optimize it with <code class="docutils literal notranslate"><span class="pre">ModelingBlackBox</span></code>, and validate the solution:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.modeling.xcsp3.XCSP3</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.search.blackbox.ModelingBlackBox</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">org.xcsp.parser.callbacks.SolutionChecker</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">java.io.ByteArrayInputStream</span><span class="p">;</span>
+
+<span class="n">String</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"src/test/resources/XCSP3/COP/LitPuzzle-10_c24.xml"</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">timeoutSeconds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+
+<span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">XCSP3</span><span class="p">.</span><span class="na">XCSP3LoadedInstance</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XCSP3</span><span class="p">.</span><span class="na">load</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ModelingBlackBox</span><span class="p">.</span><span class="na">Result</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="na">objective</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">            </span><span class="o">?</span><span class="w"> </span><span class="n">ModelingBlackBox</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">instance</span><span class="p">.</span><span class="na">md</span><span class="p">(),</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="na">objective</span><span class="p">(),</span><span class="w"> </span><span class="n">timeoutSeconds</span><span class="p">)</span>
+<span class="w">            </span><span class="p">:</span><span class="w"> </span><span class="n">ModelingBlackBox</span><span class="p">.</span><span class="na">solve</span><span class="p">(</span><span class="n">instance</span><span class="p">.</span><span class="na">md</span><span class="p">(),</span><span class="w"> </span><span class="n">timeoutSeconds</span><span class="p">);</span>
+
+<span class="w">    </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Status: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">result</span><span class="p">.</span><span class="na">status</span><span class="p">());</span>
+<span class="w">    </span><span class="n">result</span><span class="p">.</span><span class="na">objectiveValue</span><span class="p">().</span><span class="na">ifPresent</span><span class="p">(</span><span class="n">obj</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="s">"Best objective: "</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">obj</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="na">solution</span><span class="p">().</span><span class="na">isPresent</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">String</span><span class="w"> </span><span class="n">solXml</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="na">formatSolution</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">solXml</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Optional: verify the solution with the official XCSP3 SolutionChecker</span>
+<span class="w">        </span><span class="n">SolutionChecker</span><span class="w"> </span><span class="n">checker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SolutionChecker</span><span class="p">(</span>
+<span class="w">                </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ByteArrayInputStream</span><span class="p">(</span><span class="n">solXml</span><span class="p">.</span><span class="na">getBytes</span><span class="p">()));</span>
+<span class="w">        </span><span class="k">assert</span><span class="w"> </span><span class="n">checker</span><span class="p">.</span><span class="na">invalidObjs</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">checker</span><span class="p">.</span><span class="na">violatedCtrs</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="solving-an-xcsp3-instance-with-a-custom-search-strategy">
+<h3>Solving an XCSP3 Instance with a Custom Search Strategy<a class="headerlink" href="#solving-an-xcsp3-instance-with-a-custom-search-strategy" title="Permalink to this heading">¶</a></h3>
+<p>Because <code class="docutils literal notranslate"><span class="pre">XCSP3.load(path)</span></code> populates a standard <code class="docutils literal notranslate"><span class="pre">ModelDispatcher</span></code>, you can also concretize the model with <code class="docutils literal notranslate"><span class="pre">runCP</span></code> and apply any MaxiCP search heuristic (such as <code class="docutils literal notranslate"><span class="pre">firstFailBinary</span></code>, <code class="docutils literal notranslate"><span class="pre">conflictOrderingSearch</span></code>, or <code class="docutils literal notranslate"><span class="pre">fds</span></code>) instead of <code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.modeling.xcsp3.XCSP3</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.search.DFSearch</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.search.SearchStatistics</span><span class="p">;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">org.maxicp.search.Searches</span><span class="p">;</span>
+
+<span class="n">String</span><span class="w"> </span><span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"src/test/resources/XCSP3/CSP/HyperSudoku-03_c24.xml"</span><span class="p">;</span>
+
+<span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">XCSP3</span><span class="p">.</span><span class="na">XCSP3LoadedInstance</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XCSP3</span><span class="p">.</span><span class="na">load</span><span class="p">(</span><span class="n">path</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">instance</span><span class="p">.</span><span class="na">md</span><span class="p">().</span><span class="na">runCP</span><span class="p">(</span><span class="n">cp</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">DFSearch</span><span class="w"> </span><span class="n">dfs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="na">dfSearch</span><span class="p">(</span><span class="n">Searches</span><span class="p">.</span><span class="na">firstFailBinary</span><span class="p">(</span><span class="n">instance</span><span class="p">.</span><span class="na">decisionVars</span><span class="p">()));</span>
+
+<span class="w">        </span><span class="n">dfs</span><span class="p">.</span><span class="na">onSolution</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">String</span><span class="w"> </span><span class="n">xmlInstantiation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="na">solutionGenerator</span><span class="p">().</span><span class="na">get</span><span class="p">();</span>
+<span class="w">            </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">xmlInstantiation</span><span class="p">);</span>
+<span class="w">        </span><span class="p">});</span>
+
+<span class="w">        </span><span class="n">SearchStatistics</span><span class="w"> </span><span class="n">stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance</span><span class="p">.</span><span class="na">objective</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">                </span><span class="o">?</span><span class="w"> </span><span class="n">dfs</span><span class="p">.</span><span class="na">optimize</span><span class="p">(</span><span class="n">instance</span><span class="p">.</span><span class="na">objective</span><span class="p">())</span>
+<span class="w">                </span><span class="p">:</span><span class="w"> </span><span class="n">dfs</span><span class="p">.</span><span class="na">solve</span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="na">numberOfSolutions</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">        </span><span class="n">System</span><span class="p">.</span><span class="na">out</span><span class="p">.</span><span class="na">println</span><span class="p">(</span><span class="n">stats</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="supported-xcsp3-constraints-and-objectives">
+<h2>Supported XCSP3 Constraints and Objectives<a class="headerlink" href="#supported-xcsp3-constraints-and-objectives" title="Permalink to this heading">¶</a></h2>
+<p>MaxiCP’s XCSP3 parser supports the core XCSP3 / Mini-Track and Main-Track integer constraint families:</p>
+<ul class="simple">
+<li><p><strong>Intensional &amp; Primitive</strong>: <code class="docutils literal notranslate"><span class="pre">intension</span></code> (arbitrary boolean/arithmetic syntax trees including <code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">sub</span></code>, <code class="docutils literal notranslate"><span class="pre">mul</span></code>, <code class="docutils literal notranslate"><span class="pre">div</span></code>, <code class="docutils literal notranslate"><span class="pre">mod</span></code>, <code class="docutils literal notranslate"><span class="pre">pow</span></code>, <code class="docutils literal notranslate"><span class="pre">sqr</span></code>, <code class="docutils literal notranslate"><span class="pre">abs</span></code>, <code class="docutils literal notranslate"><span class="pre">dist</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">if</span></code>, <code class="docutils literal notranslate"><span class="pre">in</span></code>, <code class="docutils literal notranslate"><span class="pre">notin</span></code>, relational and logical operators), <code class="docutils literal notranslate"><span class="pre">primitive</span></code> unary/binary/ternary constraints, <code class="docutils literal notranslate"><span class="pre">clause</span></code>, and <code class="docutils literal notranslate"><span class="pre">logic</span></code>.</p></li>
+<li><p><strong>Extensional</strong>: <code class="docutils literal notranslate"><span class="pre">extension</span></code> (unary and <em>n</em>-ary positive and negative table constraints, including starred <code class="docutils literal notranslate"><span class="pre">*</span></code> tuples via <code class="docutils literal notranslate"><span class="pre">ShortTableCT</span></code> / <code class="docutils literal notranslate"><span class="pre">TableCT</span></code> / <code class="docutils literal notranslate"><span class="pre">NegTable</span></code>).</p></li>
+<li><p><strong>Comparison &amp; Ordering</strong>: <code class="docutils literal notranslate"><span class="pre">allDifferent</span></code> (including <code class="docutils literal notranslate"><span class="pre">except</span></code> and <code class="docutils literal notranslate"><span class="pre">allDifferentList</span></code>), <code class="docutils literal notranslate"><span class="pre">allEqual</span></code>, <code class="docutils literal notranslate"><span class="pre">notAllEqual</span></code>, <code class="docutils literal notranslate"><span class="pre">ordered</span></code> / <code class="docutils literal notranslate"><span class="pre">lex</span></code> / <code class="docutils literal notranslate"><span class="pre">lexMatrix</span></code>.</p></li>
+<li><p><strong>Counting &amp; Summing</strong>: <code class="docutils literal notranslate"><span class="pre">sum</span></code> (weighted, unweighted, and view/expression sums with <code class="docutils literal notranslate"><span class="pre">EQ</span></code>, <code class="docutils literal notranslate"><span class="pre">NE</span></code>, <code class="docutils literal notranslate"><span class="pre">LT</span></code>, <code class="docutils literal notranslate"><span class="pre">LE</span></code>, <code class="docutils literal notranslate"><span class="pre">GT</span></code>, <code class="docutils literal notranslate"><span class="pre">GE</span></code>, <code class="docutils literal notranslate"><span class="pre">IN</span></code>, <code class="docutils literal notranslate"><span class="pre">NOTIN</span></code> conditions), <code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">atLeast</span></code>, <code class="docutils literal notranslate"><span class="pre">atMost</span></code>, <code class="docutils literal notranslate"><span class="pre">exactly</span></code>, <code class="docutils literal notranslate"><span class="pre">among</span></code>, <code class="docutils literal notranslate"><span class="pre">cardinality</span></code> (closed/open with constant or variable occurrences), <code class="docutils literal notranslate"><span class="pre">nValues</span></code>.</p></li>
+<li><p><strong>Connection &amp; Indexing</strong>: <code class="docutils literal notranslate"><span class="pre">element</span></code> (1D and 2D constant or variable arrays/matrices), <code class="docutils literal notranslate"><span class="pre">minimum</span></code>, <code class="docutils literal notranslate"><span class="pre">maximum</span></code>, <code class="docutils literal notranslate"><span class="pre">channel</span></code> (permutation, inverse with offset, and boolean indicator channeling), <code class="docutils literal notranslate"><span class="pre">instantiation</span></code>.</p></li>
+<li><p><strong>Languages, Graphs &amp; Packing</strong>: <code class="docutils literal notranslate"><span class="pre">regular</span></code> (DFA), <code class="docutils literal notranslate"><span class="pre">mdd</span></code> (Multi-valued Decision Diagrams), <code class="docutils literal notranslate"><span class="pre">circuit</span></code>, <code class="docutils literal notranslate"><span class="pre">noOverlap</span></code> (1D disjunctive and <em>k</em>-D diffn), <code class="docutils literal notranslate"><span class="pre">cumulative</span></code>, <code class="docutils literal notranslate"><span class="pre">binPacking</span></code>, <code class="docutils literal notranslate"><span class="pre">knapsack</span></code>.</p></li>
+<li><p><strong>Objectives</strong>: <code class="docutils literal notranslate"><span class="pre">minimize</span></code> and <code class="docutils literal notranslate"><span class="pre">maximize</span></code> on <code class="docutils literal notranslate"><span class="pre">EXPRESSION</span></code>, <code class="docutils literal notranslate"><span class="pre">SUM</span></code>, <code class="docutils literal notranslate"><span class="pre">PRODUCT</span></code>, <code class="docutils literal notranslate"><span class="pre">MINIMUM</span></code>, <code class="docutils literal notranslate"><span class="pre">MAXIMUM</span></code>, and <code class="docutils literal notranslate"><span class="pre">NVALUES</span></code>.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/maxicp.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Solving XCSP3 Instances (CLI and Java API)</a><ul>
+<li><a class="reference internal" href="#running-an-xcsp3-instance-from-the-command-line">Running an XCSP3 Instance from the Command Line</a><ul>
+<li><a class="reference internal" href="#option-1-standalone-maxicp-mini-bundle-recommended">Option 1 — Standalone <code class="docutils literal notranslate"><span class="pre">maxicp-mini</span></code> Bundle (Recommended)</a></li>
+<li><a class="reference internal" href="#option-2-running-xcsp3cli-directly-with-java">Option 2 — Running <code class="docutils literal notranslate"><span class="pre">XCSP3Cli</span></code> Directly with <code class="docutils literal notranslate"><span class="pre">java</span></code></a></li>
+<li><a class="reference internal" href="#reading-the-competition-output-protocol">Reading the Competition Output Protocol</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-an-xcsp3-instance-in-java">Running an XCSP3 Instance in Java</a><ul>
+<li><a class="reference internal" href="#quick-one-liner-with-validation-xcsp3-runwithblackbox">Quick One-Liner with Validation (<code class="docutils literal notranslate"><span class="pre">XCSP3.runWithBlackBox</span></code>)</a></li>
+<li><a class="reference internal" href="#loading-an-instance-and-solving-with-blackboxsearch">Loading an Instance and Solving with <code class="docutils literal notranslate"><span class="pre">BlackBoxSearch</span></code></a></li>
+<li><a class="reference internal" href="#solving-an-xcsp3-instance-with-a-custom-search-strategy">Solving an XCSP3 Instance with a Custom Search Strategy</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#supported-xcsp3-constraints-and-objectives">Supported XCSP3 Constraints and Objectives</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="symbolic_modeling.html"
+                          title="previous chapter">Symbolic Modeling (MaxiCP-Modelling)</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="allmodels.html"
+                          title="next chapter">List of Example Models</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/learning_maxicp/xcsp3.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="allmodels.html" title="List of Example Models"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="symbolic_modeling.html" title="Symbolic Modeling (MaxiCP-Modelling)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">MaxiCP User-Guide 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Solving XCSP3 Instances (CLI and Java API)</a></li> 
+      </ul>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2025, MaxiCP.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.2.2.
+    </div>
+
+
+<div class="forkme-ribbon-wrap">
+  <a href="https://github.com/aia-uclouvain/maxicp"
+     target="_blank" rel="noopener noreferrer"
+     aria-label="Fork me on GitHub">Fork me on GitHub</a>
+</div>
+
+<div class="footer">
+    <script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+<script>
+//open external links in a new window
+function external_new_window() {
+    for(var c = document.getElementsByTagName("a"), a = 0;a < c.length;a++) {
+        var b = c[a];
+        if(b.getAttribute("href") && b.hostname !== location.hostname) {
+            b.target = "_blank";
+            b.rel = "noopener";
+        }
+    }
+}
+//open PDF links in a new window
+function pdf_new_window ()
+{
+    if (!document.getElementsByTagName) return false;
+    var links = document.getElementsByTagName("a");
+    for (var eleLink=0; eleLink < links.length; eleLink ++) {
+    if ((links[eleLink].href.indexOf('.pdf') !== -1)||(links[eleLink].href.indexOf('.doc') !== -1)||(links[eleLink].href.indexOf('.docx') !== -1)) {
+        links[eleLink].onclick =
+        function() {
+            window.open(this.href);
+            return false;
+        }
+    }
+    }
+}
+// Mobile sidebar toggle button for smartphone readability
+function setup_mobile_nav() {
+    var topNav = document.querySelector("div.related ul");
+    var sidebar = document.querySelector("div.sphinxsidebar");
+    if (!topNav || !sidebar) return;
+    var toggleLi = document.createElement("li");
+    toggleLi.className = "mobile-nav-toggle";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", "Toggle navigation menu");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = "&#9776; Menu";
+    btn.onclick = function() {
+        var isOpen = sidebar.classList.toggle("mobile-open");
+        btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    };
+    toggleLi.appendChild(btn);
+    topNav.insertBefore(toggleLi, topNav.firstChild);
+}
+pdf_new_window();
+external_new_window();
+setup_mobile_nav();
+</script>
+
+
+  </body>
+</html>
