@@ -160,7 +160,6 @@
                         <additionalOption>-Xdoclint:none</additionalOption>
                         <additionalOption>-quiet</additionalOption>
                     </additionalOptions>
-                    <outputDirectory>${project.build.directory}/apidocs</outputDirectory>
                     <sourceFileExcludes>
                         <sourceFileExclude>module-info.java</sourceFileExclude>
                     </sourceFileExcludes>
