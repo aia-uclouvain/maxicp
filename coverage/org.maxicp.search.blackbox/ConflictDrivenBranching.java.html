@@ -247,14 +247,14 @@ public final class ConflictDrivenBranching implements Supplier&lt;Runnable[]&gt;
 <span class="fc bfc" id="L247" title="All 2 branches covered.">        if (sz &gt; DOMAIN_SPLIT_THRESHOLD) {</span>
 <span class="fc" id="L248">            int mid = min + ((max - min) &gt;&gt;&gt; 1);</span>
 <span class="fc" id="L249">            boolean lowerFirst = chooseLowerHalfFirst(varIdx, min, max, mid);</span>
-<span class="fc bfc" id="L250" title="All 2 branches covered.">            if (lowerFirst) {</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">            if (lowerFirst) {</span>
 <span class="fc" id="L251">                return branch(</span>
 <span class="fc" id="L252">                        () -&gt; applySplitBranch(varIdx, mid, true),</span>
 <span class="fc" id="L253">                        () -&gt; applySplitBranch(varIdx, mid, false)</span>
                 );
             } else {
-<span class="fc" id="L256">                return branch(</span>
-<span class="fc" id="L257">                        () -&gt; applySplitBranch(varIdx, mid, false),</span>
+<span class="nc" id="L256">                return branch(</span>
+<span class="nc" id="L257">                        () -&gt; applySplitBranch(varIdx, mid, false),</span>
 <span class="nc" id="L258">                        () -&gt; applySplitBranch(varIdx, mid, true)</span>
                 );
             }
@@ -279,8 +279,8 @@ public final class ConflictDrivenBranching implements Supplier&lt;Runnable[]&gt;
         }
 <span class="fc bfc" id="L280" title="All 2 branches covered.">        if (hasSavedPhase[varIdx]) {</span>
 <span class="fc" id="L281">            int saved = savedPhase[varIdx];</span>
-<span class="pc bpc" id="L282" title="1 of 4 branches missed.">            if (saved &gt;= min &amp;&amp; saved &lt;= max) {</span>
-<span class="fc bfc" id="L283" title="All 2 branches covered.">                return saved &lt;= mid;</span>
+<span class="fc bfc" id="L282" title="All 4 branches covered.">            if (saved &gt;= min &amp;&amp; saved &lt;= max) {</span>
+<span class="pc bpc" id="L283" title="1 of 2 branches missed.">                return saved &lt;= mid;</span>
             }
         }
 <span class="fc" id="L286">        return true;</span>
@@ -401,9 +401,9 @@ public final class ConflictDrivenBranching implements Supplier&lt;Runnable[]&gt;
 <span class="nc" id="L401">                    model.add(Factory.lt(mid, v));</span>
                 }
             }
-<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            if (isFixed(varIdx)) {</span>
-<span class="nc" id="L405">                savedPhase[varIdx] = min(varIdx);</span>
-<span class="nc" id="L406">                hasSavedPhase[varIdx] = true;</span>
+<span class="fc bfc" id="L404" title="All 2 branches covered.">            if (isFixed(varIdx)) {</span>
+<span class="fc" id="L405">                savedPhase[varIdx] = min(varIdx);</span>
+<span class="fc" id="L406">                hasSavedPhase[varIdx] = true;</span>
             }
 <span class="fc" id="L408">        } catch (InconsistencyException e) {</span>
 <span class="fc" id="L409">            recordConflict(varIdx);</span>
