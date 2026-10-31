@@ -32,13 +32,12 @@ public class Sorted extends AbstractCPConstraint {
     int [] max;
 
     /**
-     * x is sorted in y according to permutation o
-     * y[0] <= y[1] <= ... <= y[n-1]
-     * x[i] = y[o[i]] for all i
+     * {@code x} is sorted in {@code y} according to permutation {@code o}:
+     * {@code y[0] <= y[1] <= ... <= y[n-1]} and {@code x[i] = y[o[i]]} for all {@code i}.
      *
      * @param x a set of n variables
-     * @param o a permutation of 0..n-1, so that x[i] = y[o[i]]
-     * @param y a set of n variables, y[i] is the ith smallest value of x
+     * @param o a permutation of 0..n-1, so that {@code x[i] = y[o[i]]}
+     * @param y a set of n variables, {@code y[i]} is the ith smallest value of x
      */
     public Sorted(CPIntVar[] x, CPIntVar[] o, CPIntVar[] y) {
         super(x[0].getSolver());

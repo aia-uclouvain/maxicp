@@ -11,6 +11,11 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Binary NoOverlap constraint with transition times enforcing that two interval variables {@code A} and {@code B}
+ * do not overlap and respect minimum setup/transition times {@code transitionTimeAB} (when {@code A} precedes {@code B})
+ * and {@code transitionTimeBA} (when {@code B} precedes {@code A}) when both are present.
+ */
 public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
     final CPBoolVar before;
     final CPBoolVar after;
@@ -18,6 +23,14 @@ public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
     final int transitionTimeAB;
     final int transitionTimeBA;
 
+    /**
+     * Creates a binary non-overlapping constraint with transition times between {@code A} and {@code B}.
+     *
+     * @param A                the first interval variable
+     * @param B                the second interval variable
+     * @param transitionTimeAB the minimum transition time when {@code A} precedes {@code B}
+     * @param transitionTimeBA the minimum transition time when {@code B} precedes {@code A}
+     */
     public NoOverlapBinaryWithTransitionTime(CPIntervalVar A, CPIntervalVar B, int transitionTimeAB, int transitionTimeBA) {
         super(A.getSolver());
         this.A = A;
@@ -28,6 +41,16 @@ public class NoOverlapBinaryWithTransitionTime extends AbstractCPConstraint {
         this.transitionTimeBA = transitionTimeBA;
     }
 
+    /**
+     * Creates a binary non-overlapping constraint with transition times between {@code A} and {@code B},
+     * channeled with a given precedence boolean variable {@code AprecedesB}.
+     *
+     * @param AprecedesB       a boolean variable that is true iff {@code A} precedes {@code B}
+     * @param A                the first interval variable
+     * @param B                the second interval variable
+     * @param transitionTimeAB the minimum transition time when {@code A} precedes {@code B}
+     * @param transitionTimeBA the minimum transition time when {@code B} precedes {@code A}
+     */
     public NoOverlapBinaryWithTransitionTime(CPBoolVar AprecedesB, CPIntervalVar A, CPIntervalVar B, int transitionTimeAB, int transitionTimeBA) {
         super(A.getSolver());
         this.A = A;

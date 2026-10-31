@@ -41,10 +41,10 @@ public record CstOffset(IntExpression expr, int v) implements SymbolicIntExpress
 
     @Override
     public int defaultFillArray(int[] array) {
-        int v = expr.fillArray(array);
-        for (int i = 0; i < v; i++)
-            array[i] = array[i]+v;
-        return v;
+        int size = expr.fillArray(array);
+        for (int i = 0; i < size; i++)
+            array[i] = array[i] + this.v;
+        return size;
     }
 
     @Override

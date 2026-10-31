@@ -26,6 +26,13 @@ public class CPStepAtStartCumulFunction implements CPCumulFunction {
     private final CPIntervalVar dummy;
     public CPIntVar height;
 
+    /**
+     * Creates a step-at-start cumulative function for an interval variable with step height in {@code [hMin, hMax]}.
+     *
+     * @param var  the interval variable at the start of which the step occurs
+     * @param hMin the minimum step height (must be {@code > 0})
+     * @param hMax the maximum step height (must be {@code >= hMin})
+     */
     public CPStepAtStartCumulFunction(CPIntervalVar var, int hMin, int hMax) {
         if (hMin > hMax) throw new IllegalArgumentException("hMin > hMax: " + hMin + " > " + hMax);
         if (hMin <= 0) throw new IllegalArgumentException("hMin <= 0: " + hMin);
@@ -40,6 +47,12 @@ public class CPStepAtStartCumulFunction implements CPCumulFunction {
         height = makeIntVar(var.getSolver(), hMin, hMax);
     }
 
+    /**
+     * Creates a step-at-start cumulative function for an interval variable with fixed step height {@code h}.
+     *
+     * @param var the interval variable at the start of which the step occurs
+     * @param h   the fixed step height (must be {@code > 0})
+     */
     public CPStepAtStartCumulFunction(CPIntervalVar var, int h) {
         this(var, h, h);
     }

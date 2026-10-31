@@ -18,6 +18,8 @@ The key features of MaxiCP are:
 - **More global constraints** (e.g., bin-packing, gcc, etc.).
 - **Sequence variables with optional visits** for modeling complex vehicle routing and insertion based search heuristics, including LNS.
 - **Conditional task interval variables** including support for modeling with cumulative function expressions for scheduling problem.
+- **Black-box search (`BlackBoxSearch`)** for out-of-the-box solving and optimization of both combinatorial (`IntVar`) and scheduling (`IntervalVar`) models across both the raw and modeling APIs.
+- **XCSP3 format integration** for solving standard CSP and COP benchmark instances.
 
 
 ## Website and documentation
@@ -36,7 +38,7 @@ You can add this as a maven dependency to your project, those releases are commi
 <dependency>
     <groupId>org.maxicp</groupId>
     <artifactId>maxicp</artifactId>
-    <version>0.0.2</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -175,6 +177,22 @@ public class NQueens {
 
     }
 }
+```
+
+#### Using Black-Box Search
+
+Both APIs also provide an automatic black-box search (`BlackBoxSearch`) that discovers the model's decision variables (`IntVar` and `IntervalVar`) and applies multi-phase portfolio search (restarts, conflict-driven/FDS branching, and Large Neighborhood Search):
+
+```java
+// Raw API
+SearchMethod search = CPFactory.makeBlackBox(cp);
+SearchStatistics stats = search.solve(); // or search.optimize(obj)
+
+// Modeling API
+model.runCP(cp -> {
+    SearchMethod search = cp.blackBoxSearch();
+    SearchStatistics stats = search.solve(); // or search.optimize(obj)
+});
 ```
 
 

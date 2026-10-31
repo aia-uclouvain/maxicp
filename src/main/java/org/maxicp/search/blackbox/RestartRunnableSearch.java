@@ -3,27 +3,18 @@ package org.maxicp.search.blackbox;
 import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.FDSModeling;
 import org.maxicp.search.SearchStatistics;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
 /**
- * Feasibility search phase based on repeated DFS restarts.
+ * Feasibility search phase based on repeated DFS restarts with persistent conflict learning.
  *
- * <p>The class repeatedly launches a depth-first search on the same model,
- * but stops each restart after a bounded number of failures. The failure budget
- * grows according to the Luby sequence, which gives a robust restart policy for
- * hard search spaces: many short runs are tried first, then progressively longer
- * runs are allowed when the search still has not found a solution.</p>
- *
- * <p>When a solution is found, it is copied out of the current model state and
- * stored in the enclosing {@link BlackBoxSearch}. This phase does not optimize
- * anything; it only tries to determine whether the model is feasible and, if so,
- * record one feasible assignment.</p>
+ * <p>Rotates between conflict-driven constructive heuristics ({@code dom/wdeg} + {@code Last-Conflict} +
+ * phase saving / objective polarity) and failure-directed search ({@link org.maxicp.search.FDSModeling}),
+ * while scaling failure cutoffs with the Luby sequence.</p>
  */
 public class RestartRunnableSearch extends RunnableSearch {
 
@@ -54,38 +45,56 @@ public class RestartRunnableSearch extends RunnableSearch {
 
     @Override
     public SearchStatus run(long timeLimitInMillis) {
+        if (!blackBoxSearch.intervals().isEmpty()) {
+            return new SchedulingRunnableSearch(
+                    blackBoxSearch, model, blackBoxSearch.intervals(), vars, null, random.nextLong())
+                    .run(timeLimitInMillis);
+        }
+
         long t0 = System.currentTimeMillis();
         int restart = 1;
         SearchStatus bestStatus = SearchStatus.UNKNOWN;
         blackBoxSearch.logPhase("[phase feasibility-restarts] start budget=%dms".formatted(timeLimitInMillis));
 
-        while ((System.currentTimeMillis() - t0) < timeLimitInMillis && !hasFeasibleSolution()) {
-            Supplier<Runnable[]> branching = new FDSModeling(vars.toArray(IntExpression[]::new));
-            if (randomSwapProbability > 0.0) {
-                branching = new RandomizedBranching(branching, random, randomSwapProbability);
+        ConflictDrivenBranching cdBranching = blackBoxSearch.conflictDrivenBranching(random);
+
+        while ((System.currentTimeMillis() - t0) < timeLimitInMillis && !hasFeasibleSolution() && !blackBoxSearch.isLimitReached()) {
+            Supplier<Runnable[]> branching;
+            int mode = (restart - 1) % 4;
+            if (mode == 2) {
+                branching = blackBoxSearch.tieredFdsBranching(random);
+                if (randomSwapProbability > 0.0) {
+                    branching = new RandomizedBranching(branching, random, randomSwapProbability);
+                }
+            } else {
+                ConflictDrivenBranching.ValueStrategy valStrat = switch (mode) {
+                    case 0 -> ConflictDrivenBranching.ValueStrategy.OBJECTIVE_AND_PHASE;
+                    case 1 -> ConflictDrivenBranching.ValueStrategy.PHASE_SAVING;
+                    default -> ConflictDrivenBranching.ValueStrategy.RANDOM_BOUND;
+                };
+                double noise = restart == 1 ? 0.0 : Math.min(0.15, 0.02 * (1 + (restart % 5)));
+                cdBranching.configureRestart(valStrat, noise, true);
+                branching = cdBranching;
+                if (randomSwapProbability > 0.0 && mode == 3) {
+                    branching = new RandomizedBranching(branching, random, randomSwapProbability * 0.5);
+                }
             }
 
-            DFSearch dfs = model.dfSearch(branching);
-            dfs.onSolution(() -> {
-                List<Integer> solution = new ArrayList<>(vars.size());
-                for (IntExpression var : vars) {
-                    solution.add(var.min());
-                }
-                blackBoxSearch.updateSolution(solution);
-                blackBoxSearch.updateObjective(blackBoxSearch.evaluateCurrentObjective());
-            });
+            DFSearch dfs = blackBoxSearch.createSubSearch(branching);
+            dfs.onSolution(blackBoxSearch::recordSolutionFromCurrentState);
 
             final int failureLimit = baseFailureLimit * luby(restart);
             blackBoxSearch.logProgress("[phase feasibility-restarts] restart=%d failureLimit=%d"
                     .formatted(restart, failureLimit));
-            SearchStatistics stats = dfs.solve(s -> {
-                long elapsed = System.currentTimeMillis() - t0;
-                return elapsed >= timeLimitInMillis || s.numberOfFailures() >= failureLimit || hasFeasibleSolution();
-            });
+            SearchStatistics stats = dfs.solve(s ->
+                    blackBoxSearch.shouldAbortSubSearch(s, t0, timeLimitInMillis, failureLimit)
+                            || hasFeasibleSolution());
+            blackBoxSearch.accumulateSubSearchStats(stats);
             blackBoxSearch.logTrace("[phase feasibility-restarts] restart=%d stats: %s"
                     .formatted(restart, blackBoxSearch.formatStats(stats)));
 
-            if (stats.isCompleted() && stats.numberOfSolutions() == 0) {
+            if (stats.isCompleted() && stats.numberOfSolutions() == 0 && stats.numberOfFailures() < failureLimit
+                    && !blackBoxSearch.isLimitReached()) {
                 blackBoxSearch.logPhase("[phase feasibility-restarts] proven UNSAT");
                 return SearchStatus.UNSAT;
             }
@@ -101,17 +110,6 @@ public class RestartRunnableSearch extends RunnableSearch {
         return status;
     }
 
-    /**
-     * Returns the {@code i}-th term of the Luby sequence, using 1-based indexing.
-     *
-     * <p>The sequence starts as {@code 1, 1, 2, 1, 1, 2, 4, ...}. In this class,
-     * the returned value is multiplied by {@link #baseFailureLimit} to obtain the
-     * failure cutoff for a restart. This keeps the restart budget small at first
-     * while still occasionally granting much larger budgets.</p>
-     *
-     * @param i position in the sequence, starting at 1
-     * @return the Luby scaling factor for restart {@code i}
-     */
     private static int luby(int i) {
         int k = 1;
         while ((1 << k) - 1 < i) {
@@ -123,4 +121,3 @@ public class RestartRunnableSearch extends RunnableSearch {
         return luby(i - (1 << (k - 1)) + 1);
     }
 }
-

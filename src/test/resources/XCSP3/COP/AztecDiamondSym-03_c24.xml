@@ -1,0 +1,54 @@
+<instance format="XCSP3" type="COP">
+  <variables>
+    <array id="x" note="x[i][j] is the number of the domino in cell (i,j)" size="[6][6]"> 0..11 </array>
+  </variables>
+  <constraints>
+    <group note="ensuring valid positioning of dominos (over sequences of length 3)">
+      <extension>
+        <list> %0 %1 %2 </list>
+        <supports> (0,0,*)(0,*,0)(1,1,*)(1,*,1)(2,2,*)(2,*,2)(3,3,*)(3,*,3)(4,4,*)(4,*,4)(5,5,*)(5,*,5)(6,6,*)(6,*,6)(7,7,*)(7,*,7)(8,8,*)(8,*,8)(9,9,*)(9,*,9)(10,10,*)(10,*,10)(11,11,*)(11,*,11) </supports>
+      </extension>
+      <args> x[0][2..3] x[1][2] </args>
+      <args> x[0][3] x[0][2] x[1][3] </args>
+      <args> x[1][1..2] x[2][1] </args>
+      <args> x[1][4] x[1][3] x[2][4] </args>
+      <args> x[2][0..1] x[3][0] </args>
+      <args> x[2][5] x[2][4] x[3][5] </args>
+      <args> x[3][0..1] x[2][0] </args>
+      <args> x[3][5] x[3][4] x[2][5] </args>
+      <args> x[4][1..2] x[3][1] </args>
+      <args> x[4][4] x[4][3] x[3][4] </args>
+      <args> x[5][2..3] x[4][2] </args>
+      <args> x[5][3] x[5][2] x[4][3] </args>
+    </group>
+    <group note="ensuring valid positioning of dominos (over sequences of length 5)">
+      <extension>
+        <list> %... </list>
+        <supports> (0,0,*,*,*)(0,*,0,*,*)(0,*,*,0,*)(0,*,*,*,0)(1,1,*,*,*)(1,*,1,*,*)(1,*,*,1,*)(1,*,*,*,1)(2,2,*,*,*)(2,*,2,*,*)(2,*,*,2,*)(2,*,*,*,2)(3,3,*,*,*)(3,*,3,*,*)(3,*,*,3,*)(3,*,*,*,3)(4,4,*,*,*)(4,*,4,*,*)(4,*,*,4,*)(4,*,*,*,4)(5,5,*,*,*)(5,*,5,*,*)(5,*,*,5,*)(5,*,*,*,5)(6,6,*,*,*)(6,*,6,*,*)(6,*,*,6,*)(6,*,*,*,6)(7,7,*,*,*)(7,*,7,*,*)(7,*,*,7,*)(7,*,*,*,7)(8,8,*,*,*)(8,*,8,*,*)(8,*,*,8,*)(8,*,*,*,8)(9,9,*,*,*)(9,*,9,*,*)(9,*,*,9,*)(9,*,*,*,9)(10,10,*,*,*)(10,*,10,*,*)(10,*,*,10,*)(10,*,*,*,10)(11,11,*,*,*)(11,*,11,*,*)(11,*,*,11,*)(11,*,*,*,11) </supports>
+      </extension>
+      <args> x[1][2] x[1][1] x[1][3] x[0][2] x[2][2] </args>
+      <args> x[1][3] x[1][2] x[1][4] x[0][3] x[2][3] </args>
+      <args> x[2][1] x[2][0] x[2][2] x[1][1] x[3][1] </args>
+      <args> x[2][2] x[2][1] x[2][3] x[1][2] x[3][2] </args>
+      <args> x[2][3] x[2][2] x[2][4] x[1][3] x[3][3] </args>
+      <args> x[2][4] x[2][3] x[2][5] x[1][4] x[3][4] </args>
+      <args> x[3][1] x[3][0] x[3][2] x[2][1] x[4][1] </args>
+      <args> x[3][2] x[3][1] x[3][3] x[2][2] x[4][2] </args>
+      <args> x[3][3] x[3][2] x[3][4] x[2][3] x[4][3] </args>
+      <args> x[3][4] x[3][3] x[3][5] x[2][4] x[4][4] </args>
+      <args> x[4][2] x[4][1] x[4][3] x[3][2] x[5][2] </args>
+      <args> x[4][3] x[4][2] x[4][4] x[3][3] x[5][3] </args>
+    </group>
+    <cardinality note="ensuring the two pieces of each domino occurs twice">
+      <list> x[0][2..3] x[1][1..4] x[2][] x[3][] x[4][1..4] x[5][2..3] </list>
+      <values> 0 1 2 3 4 5 6 7 8 9 10 11 </values>
+      <occurs> 2 2 2 2 2 2 2 2 2 2 2 2 </occurs>
+    </cardinality>
+  </constraints>
+  <objectives>
+    <minimize type="sum">
+      <list> x[0][2..3] x[1][1..4] x[2][] x[3][] x[4][1..4] x[5][2..3] </list>
+      <coeffs> 3 0 4 2 0 2 3 2 1 0 1 2 0x6 2 1 0 1 2 0 </coeffs>
+    </minimize>
+  </objectives>
+</instance>

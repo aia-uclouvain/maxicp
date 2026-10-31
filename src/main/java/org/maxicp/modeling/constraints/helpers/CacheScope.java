@@ -6,6 +6,9 @@ import org.maxicp.modeling.algebra.Expression;
 import java.util.Collection;
 import java.util.WeakHashMap;
 
+/**
+ * Interface for modeling constraints that cache their computed scope of expressions.
+ */
 public interface CacheScope extends Constraint {
     /**
      * Computes the scope. Should be implemented by subclasses, but not used directly.

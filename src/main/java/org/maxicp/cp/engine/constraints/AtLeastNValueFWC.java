@@ -13,6 +13,12 @@ import org.maxicp.state.StateInt;
 import java.util.stream.IntStream;
 
 
+/**
+ * Forward Checking filtering for the AtLeastNValue constraint.
+ * <p>
+ * Enforces that the number of distinct values taken by the variables in {@code x}
+ * is at least {@code nValue}: {@code |{x[i] | 0 <= i < x.length}| >= nValue}.
+ */
 public class AtLeastNValueFWC extends AbstractCPConstraint {
 
     private final CPIntVar[] x;
@@ -31,9 +37,10 @@ public class AtLeastNValueFWC extends AbstractCPConstraint {
 
 
     /**
-     * The number of values that are used in the array x is at least nValue
-     * #{x[i] | i in 0..x.length-1} >= nValue
-     * @param x array of variables
+     * The number of values that are used in the array x is at least nValue:
+     * {@code #{x[i] | i in 0..x.length-1} >= nValue}.
+     *
+     * @param x      array of variables
      * @param nValue the number of values that are used in the array x is at least nValue
      */
     public AtLeastNValueFWC(CPIntVar [] x, CPIntVar nValue) {

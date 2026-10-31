@@ -16,9 +16,7 @@ import java.util.function.Function;
 public record Element2D(int[][] array, IntExpression x, IntExpression y) implements SymbolicIntExpression, NonLeafExpressionNode, DecisionVarsProvider {
 
     private int[] getTempArray(IntExpression index) {
-        int minIndex = Math.max(index.min(), 0);
-        int maxIndex = Math.min(index.max(), array.length - 1);
-        return new int[maxIndex - minIndex + 1];
+        return new int[Math.max(0, index.size())];
     }
 
     @Override
@@ -43,9 +41,16 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempy = this.getTempArray(y);
         int sizey = y.fillArray(tempy);
         int minValue = Integer.MAX_VALUE;
-        for(int i = 0; i < sizex; i++)
-            for(int j = 0; j < sizey; j++)
-                minValue = Math.min(minValue, array[tempx[i]][tempy[j]]);
+        for (int i = 0; i < sizex; i++) {
+            int rx = tempx[i];
+            if (rx < 0 || rx >= array.length) continue;
+            for (int j = 0; j < sizey; j++) {
+                int cy = tempy[j];
+                if (cy >= 0 && cy < array[rx].length) {
+                    minValue = Math.min(minValue, array[rx][cy]);
+                }
+            }
+        }
         return minValue;
     }
 
@@ -56,9 +61,16 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempy = this.getTempArray(y);
         int sizey = y.fillArray(tempy);
         int maxValue = Integer.MIN_VALUE;
-        for(int i = 0; i < sizex; i++)
-            for(int j = 0; j < sizey; j++)
-                maxValue = Math.max(maxValue, array[tempx[i]][tempy[j]]);
+        for (int i = 0; i < sizex; i++) {
+            int rx = tempx[i];
+            if (rx < 0 || rx >= array.length) continue;
+            for (int j = 0; j < sizey; j++) {
+                int cy = tempy[j];
+                if (cy >= 0 && cy < array[rx].length) {
+                    maxValue = Math.max(maxValue, array[rx][cy]);
+                }
+            }
+        }
         return maxValue;
     }
 
@@ -68,10 +80,15 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int sizex = x.fillArray(tempx);
         int[] tempy = this.getTempArray(y);
         int sizey = y.fillArray(tempy);
-        for(int i = 0; i < sizex; i++)
-            for(int j = 0; j < sizey; j++)
-                if (array[tempx[i]][tempy[j]] == v)
+        for (int i = 0; i < sizex; i++) {
+            int rx = tempx[i];
+            if (rx < 0 || rx >= array.length) continue;
+            for (int j = 0; j < sizey; j++) {
+                int cy = tempy[j];
+                if (cy >= 0 && cy < array[rx].length && array[rx][cy] == v)
                     return true;
+            }
+        }
         return false;
     }
 
@@ -83,9 +100,13 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int sizey = y.fillArray(tempy);
         int k = 0;
         Set<Integer> s = new HashSet<>();
-        for(int i = 0; i < sizex; i++) {
-            for(int j = 0; j < sizey; j++) {
-                int e = this.array[tempx[i]][tempy[j]];
+        for (int i = 0; i < sizex; i++) {
+            int rx = tempx[i];
+            if (rx < 0 || rx >= this.array.length) continue;
+            for (int j = 0; j < sizey; j++) {
+                int cy = tempy[j];
+                if (cy < 0 || cy >= this.array[rx].length) continue;
+                int e = this.array[rx][cy];
                 s.add(e);
                 if (s.size() != k) {
                     array[k] = e;
@@ -103,9 +124,16 @@ public record Element2D(int[][] array, IntExpression x, IntExpression y) impleme
         int[] tempy = this.getTempArray(y);
         int sizey = y.fillArray(tempy);
         Set<Integer> s = new HashSet<>();
-        for(int i = 0; i < sizex; i++)
-            for (int j = 0; j < sizey; j++)
-                s.add(array[tempx[i]][tempy[j]]);
+        for (int i = 0; i < sizex; i++) {
+            int rx = tempx[i];
+            if (rx < 0 || rx >= array.length) continue;
+            for (int j = 0; j < sizey; j++) {
+                int cy = tempy[j];
+                if (cy >= 0 && cy < array[rx].length) {
+                    s.add(array[rx][cy]);
+                }
+            }
+        }
         return s.size();
     }
 

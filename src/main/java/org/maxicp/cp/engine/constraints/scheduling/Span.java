@@ -21,6 +21,12 @@ public class Span extends AbstractCPConstraint {
     private final CPIntervalVar span;
     private final CPIntervalVar[] alts;
 
+    /**
+     * Creates a Span constraint linking the spanning interval {@code span} to the sub-intervals {@code alts}.
+     *
+     * @param span the main interval variable spanning all present intervals in {@code alts}
+     * @param alts the array of sub-intervals
+     */
     public Span(CPIntervalVar span, CPIntervalVar[] alts) {
         super(span.getSolver());
         this.span = span;

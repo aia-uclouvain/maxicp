@@ -5,10 +5,12 @@
 
 package org.maxicp.cp.engine.core;
 
+import org.maxicp.ModelDispatcher;
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.IntObjective;
 import org.maxicp.search.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.state.StateManaged;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -92,4 +94,44 @@ public interface CPSolver extends StateManaged {
      * Gives the ModelProxy associated with this CPSolver, if any
      */
     ModelProxy getModelProxy();
+
+    /**
+     * Creates a black-box search that automatically discovers the solver's decision variables.
+     */
+    default BlackBoxSearch blackBoxSearch() {
+        if (getModelProxy() instanceof ModelDispatcher md) {
+            return md.blackBoxSearch();
+        }
+        throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
+    }
+
+    /**
+     * Creates a black-box search over the specified integer variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntVar... vars) {
+        if (getModelProxy() instanceof ModelDispatcher md) {
+            return md.blackBoxSearch(vars);
+        }
+        throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
+    }
+
+    /**
+     * Creates a black-box search over the specified interval variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntervalVar... intervals) {
+        if (getModelProxy() instanceof ModelDispatcher md) {
+            return md.blackBoxSearch(intervals);
+        }
+        throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
+    }
+
+    /**
+     * Creates a black-box search over the specified 2D matrix of interval variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPIntervalVar[][] intervals) {
+        if (getModelProxy() instanceof ModelDispatcher md) {
+            return md.blackBoxSearch(intervals);
+        }
+        throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
+    }
 }

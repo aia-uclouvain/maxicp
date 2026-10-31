@@ -16,7 +16,7 @@ import org.maxicp.modeling.symbolic.IntVarRangeImpl;
 public class PulseCumulFunction implements CumulFunction {
     private final ModelProxy modelProxy;
     public final IntervalVar interval;
-    private final IntVar height;
+    public final IntExpression height;
     public final int hMin;
     public final int hMax;
 
@@ -32,6 +32,14 @@ public class PulseCumulFunction implements CumulFunction {
 
     public PulseCumulFunction(IntervalVar interval, int h) {
         this(interval, h, h);
+    }
+
+    public PulseCumulFunction(IntervalVar interval, IntExpression height) {
+        this.modelProxy = interval.getModelProxy();
+        this.interval = interval;
+        this.height = height;
+        this.hMin = height.min();
+        this.hMax = height.max();
     }
 
     @Override

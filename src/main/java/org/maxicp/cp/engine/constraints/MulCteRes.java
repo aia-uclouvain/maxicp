@@ -26,10 +26,11 @@ public class MulCteRes extends AbstractCPConstraint {
     private int c;
 
     /**
-     * x * y == c
-     * @param x
-     * @param y
-     * @param c
+     * Creates a multiplication constraint {@code x * y == c}.
+     *
+     * @param x the first variable factor
+     * @param y the second variable factor
+     * @param c the constant product
      */
     public MulCteRes(CPIntVar x, CPIntVar y, int c) {
         super(x.getSolver());

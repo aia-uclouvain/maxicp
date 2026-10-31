@@ -333,3 +333,45 @@ improve the aggregate quality, and attack the most violated constraint.
 As iterations proceed, more rows reach violation 0 and the surviving violated rows
 are progressively tightened until the total violation reaches 0 — a valid magic square.
 
+Black-Box Search
+================
+
+In addition to user-defined branching strategies and custom LNS loops, MaxiCP provides a
+commercial-solver-style black-box search (``BlackBoxSearch``) that implements ``SearchMethod``
+as a drop-in replacement for ``DFSearch``.
+
+It is available in both the **raw API** via ``CPFactory.makeBlackBox(cp)`` and the
+**modeling API** via ``cp.blackBoxSearch()``:
+
+.. code-block:: java
+
+    // Raw API
+    SearchMethod search = CPFactory.makeBlackBox(cp);
+    SearchStatistics stats = search.optimize(obj); // or search.solve()
+
+    // Modeling API
+    model.runCP(cp -> {
+        SearchMethod search = cp.blackBoxSearch();
+        SearchStatistics stats = search.optimize(obj); // or search.solve()
+    });
+
+When decision variables are not explicitly supplied, ``BlackBoxSearch`` automatically discovers
+the primary decision variables of the model (``IntVar`` for combinatorial problems and
+``IntervalVar`` for scheduling problems) while filtering out auxiliary variables created by
+expressions or objectives:
+
+* **Combinatorial integer models** (``IntVar``): combines domain/objective probing, Luby-scheduled
+  restarts with conflict-driven and activity-based branching (``dom/wdeg``, Last Conflict,
+  Conflict Ordering Search, Bound-Impact, and phase saving), and an adaptive multi-neighborhood
+  LNS portfolio interleaved with exact DFS/FDS phases for optimality proofs.
+* **Scheduling models** (``IntervalVar``): combines ``SetTimes`` and Failure-Directed Search
+  (``FDS``) with restarts and a dedicated Scheduling LNS (precedence-graph, time-window, and
+  machine-based neighborhoods).
+
+Full examples:
+`RCPSP.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/RCPSP.java>`__ ·
+`RCPSP.java (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/RCPSP.java>`__ ·
+`MagicSquare.java (raw) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/raw/magicsquare/MagicSquare.java>`__ ·
+`MagicSquare.java (modeling) <https://github.com/aia-uclouvain/maxicp/blob/main/src/main/java/org/maxicp/cp/examples/modeling/MagicSquare.java>`__
+
+

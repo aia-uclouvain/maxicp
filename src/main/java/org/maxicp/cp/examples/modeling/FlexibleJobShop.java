@@ -5,15 +5,13 @@ import org.maxicp.cp.examples.utils.FJSInstance;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
-import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.maxicp.modeling.Factory.*;
-import static org.maxicp.search.Searches.*;
 
 /**
  * The Flexible Job Shop Problem (FJSP) is an extension of the classical Job
@@ -91,12 +89,7 @@ public class FlexibleJobShop {
         Objective minimizeMakespan = minimize(makespan);
 
         model.runCP((cp) -> {
-            List<IntervalVar> allIntervals = new ArrayList<>();
-            allIntervals.addAll(Arrays.asList(tasks));
-            for (int m = 0; m < nMachines; m++) {
-                allIntervals.addAll(tasksOnMachine[m]);
-            }
-            DFSearch search = cp.dfSearch(fds(allIntervals.toArray(IntervalVar[]::new)));
+            SearchMethod search = cp.blackBoxSearch();
             // print each solution found
             search.onSolution(() -> {
                 System.out.println("makespan: " + makespan);

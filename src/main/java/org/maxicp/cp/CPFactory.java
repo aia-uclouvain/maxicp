@@ -6,6 +6,7 @@
 package org.maxicp.cp;
 
 import org.maxicp.Constants;
+import org.maxicp.ModelDispatcher;
 import org.maxicp.cp.engine.constraints.*;
 import org.maxicp.cp.engine.constraints.scheduling.*;
 import org.maxicp.cp.engine.constraints.seqvar.*;
@@ -16,8 +17,10 @@ import org.maxicp.cp.engine.constraints.seqvar.NotBetween;
 import org.maxicp.cp.engine.constraints.seqvar.Require;
 import org.maxicp.cp.engine.core.*;
 import org.maxicp.cp.engine.constraints.scheduling.Activity;
+import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.state.copy.Copier;
 import org.maxicp.state.trail.Trailer;
 import org.maxicp.util.NumberUtils;
@@ -26,6 +29,7 @@ import org.maxicp.util.exception.IntOverFlowException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -108,6 +112,45 @@ public final class CPFactory {
     // Integer variables
     // ********************
 
+    private static <T extends CPIntVar> T registerRawIntVar(CPSolver cp, T v) {
+        if (cp != null && cp.getModelProxy() instanceof ModelDispatcher md) {
+            md.registerRawIntVar(v);
+        }
+        return v;
+    }
+
+    private static <T extends CPIntervalVar> T registerRawIntervalVar(CPSolver cp, T v) {
+        if (cp != null && cp.getModelProxy() instanceof ModelDispatcher md) {
+            md.registerRawIntervalVar(v);
+        }
+        return v;
+    }
+
+    private static void registerRawVariableGroup(CPIntVar[] vars) {
+        if (vars != null && vars.length > 1) {
+            List<IntExpression> group = Arrays.stream(vars).filter(Objects::nonNull).map(v -> (IntExpression) v).toList();
+            if (group.size() > 1 && vars[0] != null && vars[0].getSolver() != null
+                    && vars[0].getSolver().getModelProxy() instanceof ModelDispatcher md && md.isRawSolver()) {
+                md.addVariableGroup(group);
+            }
+        }
+    }
+
+    private static CPIntVar makeAuxIntVar(CPSolver cp, int min, int max) {
+        if (min == max) {
+            return new CPIntVarConstant(cp, min);
+        }
+        return new CPIntVarImpl(cp, min, max);
+    }
+
+    private static CPBoolVar makeAuxBoolVar(CPSolver cp) {
+        return new CPBoolVarImpl(cp);
+    }
+
+    private static CPIntervalVar makeAuxIntervalVar(CPSolver cp) {
+        return new CPIntervalVarImpl(cp);
+    }
+
     /**
      * Creates a variable with a domain of specified arity.
      *
@@ -131,7 +174,7 @@ public final class CPFactory {
         if (min == max)
             return new CPIntVarConstant(cp, min);
         else
-            return new CPIntVarImpl(cp, min, max);
+            return registerRawIntVar(cp, new CPIntVarImpl(cp, min, max));
     }
 
     /**
@@ -146,7 +189,7 @@ public final class CPFactory {
             int value = values.iterator().next();
             return new CPIntVarConstant(cp, value);
         } else
-            return new CPIntVarImpl(cp, values);
+            return registerRawIntVar(cp, new CPIntVarImpl(cp, values));
     }
 
     /**
@@ -161,6 +204,7 @@ public final class CPFactory {
         CPIntVar[] t = new CPIntVar[n];
         for (int i = 0; i < n; i++)
             t[i] = body.apply(i);
+        registerRawVariableGroup(t);
         return t;
     }
 
@@ -200,7 +244,7 @@ public final class CPFactory {
      * @return an uninstantiated boolean variable
      */
     public static CPBoolVar makeBoolVar(CPSolver cp) {
-        return new CPBoolVarImpl(cp);
+        return registerRawIntVar(cp, new CPBoolVarImpl(cp));
     }
 
     /**
@@ -217,7 +261,7 @@ public final class CPFactory {
             boolVar.fix(true);
         if (!containsTrue)
             boolVar.fix(false);
-        return boolVar;
+        return registerRawIntVar(cp, boolVar);
     }
 
     /**
@@ -232,6 +276,7 @@ public final class CPFactory {
         CPBoolVar[] t = new CPBoolVar[n];
         for (int i = 0; i < n; i++)
             t[i] = body.apply(i);
+        registerRawVariableGroup(t);
         return t;
     }
 
@@ -271,7 +316,7 @@ public final class CPFactory {
      * @return a new interval variable
      */
     public static CPIntervalVar makeIntervalVar(CPSolver cp) {
-        return new CPIntervalVarImpl(cp);
+        return registerRawIntervalVar(cp, new CPIntervalVarImpl(cp));
     }
 
     /**
@@ -342,12 +387,40 @@ public final class CPFactory {
     public static CPIntervalVar[] makeIntervalVarArray(CPSolver cp, int n) {
         CPIntervalVar[] vars = new CPIntervalVar[n];
         for (int i = 0; i < n; i++) {
-            vars[i] = new CPIntervalVarImpl(cp);
+            vars[i] = makeIntervalVar(cp);
         }
         return vars;
     }
 
     // -------------- searches -----------------------
+
+    /**
+     * Creates a black-box search that automatically discovers the solver's decision variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp) {
+        return cp.blackBoxSearch();
+    }
+
+    /**
+     * Creates a black-box search over the specified integer variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntVar... vars) {
+        return cp.blackBoxSearch(vars);
+    }
+
+    /**
+     * Creates a black-box search over the specified interval variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntervalVar... intervals) {
+        return cp.blackBoxSearch(intervals);
+    }
+
+    /**
+     * Creates a black-box search over the specified 2D matrix of interval variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntervalVar[][] intervals) {
+        return cp.blackBoxSearch(intervals);
+    }
 
     /**
      * Creates a Depth First Search with custom branching heuristic
@@ -433,7 +506,7 @@ public final class CPFactory {
      * @return a variable that is a view of {@code x*a}
      */
     public static CPIntVar mul(CPIntVar x, int a) {
-        if (a == 0) return makeIntVar(x.getSolver(), 0, 0);
+        if (a == 0) return makeAuxIntVar(x.getSolver(), 0, 0);
         else if (a == 1) return x;
         else if (a < 0) {
             return minus(new CPIntVarViewMul(x, -a));
@@ -461,7 +534,7 @@ public final class CPFactory {
      */
     public static CPIntVar mul(CPIntVar x, CPBoolVar b) {
         if (b.isTrue()) return x;
-        CPIntVar y = makeIntVar(x.getSolver(), Math.min(0, x.min()), Math.max(0, x.max()));
+        CPIntVar y = makeAuxIntVar(x.getSolver(), Math.min(0, x.min()), Math.max(0, x.max()));
         x.getSolver().post(new Mul(x, b, y));
         return y;
     }
@@ -475,7 +548,7 @@ public final class CPFactory {
      * @return a variable that represents the absolute value of x
      */
     public static CPIntVar abs(CPIntVar x) {
-        CPIntVar r = makeIntVar(x.getSolver(), 0, Math.max(Math.abs(x.max()), Math.abs(x.min())));
+        CPIntVar r = makeAuxIntVar(x.getSolver(), 0, Math.max(Math.abs(x.max()), Math.abs(x.min())));
         x.getSolver().post(new Absolute(x, r), false);
         return r;
     }
@@ -506,7 +579,7 @@ public final class CPFactory {
             throw new IntOverFlowException("domains are too large for sum constraint and would exceed Integer bounds");
         }
         CPSolver cp = x[0].getSolver();
-        CPIntVar s = makeIntVar(cp, (int) sumMin, (int) sumMax);
+        CPIntVar s = makeAuxIntVar(cp, (int) sumMin, (int) sumMax);
         cp.post(new Sum(x, s), false);
         return s;
     }
@@ -579,7 +652,7 @@ public final class CPFactory {
         int [] t = new int[] {NumberUtils.safeMul(a, c), NumberUtils.safeMul(a, d), NumberUtils.safeMul(b, c), NumberUtils.safeMul(b, d)};
         int min = Arrays.stream(t).min().getAsInt();
         int max = Arrays.stream(t).max().getAsInt();
-        CPIntVar z = makeIntVar(x.getSolver(),min, max);
+        CPIntVar z = makeAuxIntVar(x.getSolver(),min, max);
         x.getSolver().post(new MulVar(x, y, z));
         return z;
     }
@@ -597,7 +670,7 @@ public final class CPFactory {
         CPSolver cp = x[0].getSolver();
         int min = Arrays.stream(x).mapToInt(CPIntVar::min).min().getAsInt();
         int max = Arrays.stream(x).mapToInt(CPIntVar::max).max().getAsInt();
-        CPIntVar y = makeIntVar(cp, min, max);
+        CPIntVar y = makeAuxIntVar(cp, min, max);
         cp.post(new Maximum(x, y), false);
         return y;
     }
@@ -849,7 +922,7 @@ public final class CPFactory {
      */
     public static CPBoolVar isEq(CPIntVar x, final int c) {
         CPSolver cp = x.getSolver();
-        CPBoolVar b = makeBoolVar(cp);
+        CPBoolVar b = makeAuxBoolVar(cp);
         cp.post(new IsEqual(b, x, c), false);
         return b;
     }
@@ -867,7 +940,7 @@ public final class CPFactory {
      */
     public static CPBoolVar isEq(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
-        CPBoolVar b = makeBoolVar(cp);
+        CPBoolVar b = makeAuxBoolVar(cp);
         cp.post(new IsEqualVar(b, x, y), false);
         return b;
     }
@@ -909,7 +982,7 @@ public final class CPFactory {
      */
     public static CPBoolVar isLe(CPIntVar x, final int c) {
         CPSolver cp = x.getSolver();
-        CPBoolVar b = makeBoolVar(cp);
+        CPBoolVar b = makeAuxBoolVar(cp);
         cp.post(new IsLessOrEqual(b, x, c), false);
         return b;
     }
@@ -927,7 +1000,7 @@ public final class CPFactory {
      */
     public static CPBoolVar isLe(CPIntVar x, CPIntVar y) {
         CPSolver cp = x.getSolver();
-        CPBoolVar b = makeBoolVar(cp);
+        CPBoolVar b = makeAuxBoolVar(cp);
         cp.post(new IsLessOrEqualVar(b, x, y), false);
         return b;
     }
@@ -963,16 +1036,16 @@ public final class CPFactory {
     /**
      * Creates a Boolean variable b encoding the strict ordering between x and y.
      *
-     * The constraint enforces x ≠ y and links b to the ordering as follows:
-     *   - b = true  if and only if x < y
-     *   - b = false if and only if x > y
+     * The constraint enforces {@code x != y} and links {@code b} to the ordering as follows:
+     *   - {@code b = true}  if and only if {@code x < y}
+     *   - {@code b = false} if and only if {@code x > y}
      *
      * @param x the first integer variable
      * @param y the second integer variable
      * @return a Boolean variable representing the strict order between x and y
      */
     public static CPBoolVar strictOrder(CPIntVar x, CPIntVar y) {
-        CPBoolVar b = makeBoolVar(x.getSolver());
+        CPBoolVar b = makeAuxBoolVar(x.getSolver());
         x.getSolver().post(isLt(b, x, y));
         x.getSolver().post(isLt(not(b), y, x));
         return b;
@@ -1081,7 +1154,7 @@ public final class CPFactory {
      */
     public static CPBoolVar isIncluded(CPSetVar x, final int v) {
         CPSolver cp = x.getSolver();
-        CPBoolVar b = makeBoolVar(cp);
+        CPBoolVar b = makeAuxBoolVar(cp);
         cp.post(new IsIncluded(b, x, v));
         return b;
     }
@@ -1136,7 +1209,7 @@ public final class CPFactory {
      * @param x an array of variables
      */
     public static CPBoolVar isOr(CPBoolVar... x) {
-        CPBoolVar b = makeBoolVar(x[0].getSolver());
+        CPBoolVar b = makeAuxBoolVar(x[0].getSolver());
         CPSolver cp = x[0].getSolver();
         cp.post(new IsOr(b, x), false);
         return b;
@@ -1159,7 +1232,7 @@ public final class CPFactory {
      */
     public static CPIntVar element(int[] array, CPIntVar y) {
         CPSolver cp = y.getSolver();
-        CPIntVar z = makeIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());
+        CPIntVar z = makeAuxIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());
         cp.post(new Element1D(array, y, z), false);
         return z;
     }
@@ -1178,7 +1251,7 @@ public final class CPFactory {
      */
     public static CPIntVar elementDC(int[] array, CPIntVar y) {
         CPSolver cp = y.getSolver();
-        CPIntVar z = makeIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());
+        CPIntVar z = makeAuxIntVar(cp, IntStream.of(array).min().getAsInt(), IntStream.of(array).max().getAsInt());
         cp.post(new Element1D(array, y, z), false);
         return z;
     }
@@ -1196,7 +1269,7 @@ public final class CPFactory {
      */
     public static CPIntVar element(CPIntVar[] array, CPIntVar y) {
         CPSolver cp = y.getSolver();
-        CPIntVar z = makeIntVar(cp,
+        CPIntVar z = makeAuxIntVar(cp,
                 Arrays.stream(array).mapToInt(CPIntVar::min).min().getAsInt(),
                 Arrays.stream(array).mapToInt(CPIntVar::max).max().getAsInt());
         cp.post(new Element1DVar(array, y, z), false);
@@ -1224,7 +1297,7 @@ public final class CPFactory {
                 max = Math.max(max, matrix[i][j]);
             }
         }
-        CPIntVar z = makeIntVar(x.getSolver(), min, max);
+        CPIntVar z = makeAuxIntVar(x.getSolver(), min, max);
         x.getSolver().post(new Element2D(matrix, x, y, z), false);
         return z;
     }
@@ -1449,7 +1522,7 @@ public final class CPFactory {
      */
     public static CPIntVar start(CPIntervalVar var) {
         CPSolver cp = var.getSolver();
-        CPIntVar start = makeIntVar(cp, var.startMin(), var.startMax());
+        CPIntVar start = makeAuxIntVar(cp, var.startMin(), var.startMax());
         cp.post(new IntervalVarStart(var, start));
         return start;
     }
@@ -1465,7 +1538,7 @@ public final class CPFactory {
         CPSolver cp = interval.getSolver();
         int minBound = Math.min(interval.startMin(), val);
         int maxBound = Math.max(interval.startMax(), val);
-        CPIntVar start = makeIntVar(cp, minBound, maxBound);
+        CPIntVar start = makeAuxIntVar(cp, minBound, maxBound);
         cp.post(new IntervalVarStartOrValue(interval, start, val));
         return start;
     }
@@ -1620,7 +1693,7 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.start <= var2.start}
      */
     public static CPBoolVar isStartBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-        CPBoolVar b = makeBoolVar(var1.getSolver());
+        CPBoolVar b = makeAuxBoolVar(var1.getSolver());
         CPSolver cp = var1.getSolver();
         cp.post(new IsStartBeforeStart(var1, var2, b), false);
         return b;
@@ -1636,7 +1709,7 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.start <= var2.end}
      */
     public static CPBoolVar isStartBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-        CPBoolVar b = makeBoolVar(var1.getSolver());
+        CPBoolVar b = makeAuxBoolVar(var1.getSolver());
         CPSolver cp = var1.getSolver();
         cp.post(new IsStartBeforeEnd(var1, var2, b), false);
         return b;
@@ -1650,7 +1723,7 @@ public final class CPFactory {
      */
     public static CPIntVar end(CPIntervalVar var) {
         CPSolver cp = var.getSolver();
-        CPIntVar end = makeIntVar(cp, var.endMin(), var.endMax());
+        CPIntVar end = makeAuxIntVar(cp, var.endMin(), var.endMax());
         cp.post(new IntervalVarEnd(var, end));
         return end;
     }
@@ -1666,7 +1739,7 @@ public final class CPFactory {
         CPSolver cp = interval.getSolver();
         int minBound = Math.min(interval.endMin(), val);
         int maxBound = Math.max(interval.endMax(), val);
-        CPIntVar end = makeIntVar(cp, minBound, maxBound);
+        CPIntVar end = makeAuxIntVar(cp, minBound, maxBound);
         cp.post(new IntervalVarEndOrValue(interval, end, val));
         return end;
     }
@@ -1789,7 +1862,7 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.end <= var2.start}
      */
     public static CPBoolVar isEndBeforeStart(CPIntervalVar var1, CPIntervalVar var2) {
-        CPBoolVar b = makeBoolVar(var1.getSolver());
+        CPBoolVar b = makeAuxBoolVar(var1.getSolver());
         CPSolver cp = var1.getSolver();
         cp.post(new IsEndBeforeStart(var1, var2, b), false);
         return b;
@@ -1805,7 +1878,7 @@ public final class CPFactory {
      * @return a boolean variable which is a reification of the constraint {@code var1.end <= var2.end}
      */
     public static CPBoolVar isEndBeforeEnd(CPIntervalVar var1, CPIntervalVar var2) {
-        CPBoolVar b = makeBoolVar(var1.getSolver());
+        CPBoolVar b = makeAuxBoolVar(var1.getSolver());
         CPSolver cp = var1.getSolver();
         cp.post(new IsEndBeforeEnd(var1, var2, b), false);
         return b;
@@ -1819,7 +1892,7 @@ public final class CPFactory {
      */
     public static CPIntVar length(CPIntervalVar var) {
         CPSolver cp = var.getSolver();
-        CPIntVar length = makeIntVar(cp, var.lengthMin(), var.lengthMax());
+        CPIntVar length = makeAuxIntVar(cp, var.lengthMin(), var.lengthMax());
         cp.post(new IntervalVarLength(var, length));
         return length;
     }
@@ -1835,7 +1908,7 @@ public final class CPFactory {
         CPSolver cp = interval.getSolver();
         int minBound = Math.min(interval.lengthMin(), val);
         int maxBound = Math.max(interval.lengthMax(), val);
-        CPIntVar length = makeIntVar(cp, minBound, maxBound);
+        CPIntVar length = makeAuxIntVar(cp, minBound, maxBound);
         cp.post(new IntervalVarLengthOrValue(interval, length, val));
         return length;
     }
@@ -1951,7 +2024,7 @@ public final class CPFactory {
      * @return an {@link Alternative} constraint
      */
     public static CPConstraint alternative(CPIntervalVar interval, CPIntervalVar[] alternatives, int cardinality) {
-        return alternative(interval, alternatives, CPFactory.makeIntVar(interval.getSolver(), cardinality, cardinality));
+        return alternative(interval, alternatives, makeAuxIntVar(interval.getSolver(), cardinality, cardinality));
     }
 
     /**
@@ -2020,6 +2093,10 @@ public final class CPFactory {
         return new CPPulseCumulFunction(var, hMin, hMax);
     }
 
+    public static CPCumulFunction pulse(CPIntervalVar var, CPIntVar height) {
+        return new CPPulseCumulFunction(var, height);
+    }
+
     /**
      * Creates an elementary Cumulative Function that is a step of height h that happen at the start of the Interval
      * variable var if it is present.
@@ -2080,7 +2157,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction step(CPSolver cp, int from, int h) {
-        CPIntervalVar dummy = makeIntervalVar(cp);
+        CPIntervalVar dummy = makeAuxIntervalVar(cp);
         dummy.setStartMin(from);
         dummy.setStartMax(from);
         dummy.setEndMin(Constants.HORIZON);
@@ -2097,7 +2174,7 @@ public final class CPFactory {
      * @return a cumulative function that is a step of height h at time from
      */
     public static CPCumulFunction pulse(CPSolver cp, int from, int to, int h) {
-        CPIntervalVar dummy = makeIntervalVar(cp);
+        CPIntervalVar dummy = makeAuxIntervalVar(cp);
         dummy.setStartMin(from);
         dummy.setStartMax(from);
         dummy.setEndMin(to);
@@ -2173,10 +2250,12 @@ public final class CPFactory {
                     if (act.getStartMin() < minStart) minStart = act.getStartMin();
                     if (act.getEndMax() > maxEnd) maxEnd = act.getEndMax();
                 }
-                CPIntervalVar interval = makeIntervalVar(cp, false, maxEnd - minStart);
+                CPIntervalVar interval = makeAuxIntervalVar(cp);
+                interval.setLength(maxEnd - minStart);
+                interval.setPresent();
                 interval.setStart(minStart);
                 interval.setEnd(maxEnd);
-                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));
+                Activity dummy = new Activity(interval, makeAuxIntVar(cp, 0, 0));
                 activities.add(dummy);
                 switch (algo) {
                     case BELDICEANU_CARLSSON -> {
@@ -2233,10 +2312,12 @@ public final class CPFactory {
         return new AbstractCPConstraint(cp) {
             @Override
             public void post() {
-                CPIntervalVar interval = makeIntervalVar(cp, false, to - from);
+                CPIntervalVar interval = makeAuxIntervalVar(cp);
+                interval.setLength(to - from);
+                interval.setPresent();
                 interval.setStart(from);
                 interval.setEnd(to);
-                Activity dummy = new Activity(interval, makeIntVar(cp, 0, 0));
+                Activity dummy = new Activity(interval, makeAuxIntVar(cp, 0, 0));
                 activities.add(dummy);
 
                 switch (algo) {

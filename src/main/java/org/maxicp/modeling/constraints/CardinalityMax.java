@@ -15,6 +15,13 @@ import org.maxicp.modeling.constraints.helpers.ConstraintFromRecord;
 import java.util.Arrays;
 import java.util.Collection;
 
+/**
+ * Upper-bound cardinality constraint ensuring that each value {@code v} in {@code 0..array.length - 1}
+ * appears at most {@code array[v]} times in {@code x}.
+ *
+ * @param x     the array of integer expressions
+ * @param array the maximum number of occurrences for each value {@code 0..array.length - 1}
+ */
 public record CardinalityMax(IntExpression[] x, int[] array) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {
 
     @Override

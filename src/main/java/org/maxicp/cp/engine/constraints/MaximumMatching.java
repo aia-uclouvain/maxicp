@@ -35,6 +35,11 @@ public class MaximumMatching {
 
     private CPIntVar[] x;
 
+    /**
+     * Creates a maximum matching structure over the variable-value bipartite graph of {@code x}.
+     *
+     * @param x the array of variables
+     */
     public MaximumMatching(CPIntVar... x) {
         this.x = x;
 

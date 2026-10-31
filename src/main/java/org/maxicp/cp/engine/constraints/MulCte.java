@@ -23,10 +23,11 @@ public class MulCte extends AbstractCPConstraint {
     private int c;
 
     /**
-     * x * c == z
-     * @param x
-     * @param c
-     * @param z
+     * Creates a multiplication constraint {@code x * c == z}.
+     *
+     * @param x the variable factor
+     * @param c the constant factor
+     * @param z the product variable
      */
     public MulCte(CPIntVar x, int c, CPIntVar z) {
         super(x.getSolver());

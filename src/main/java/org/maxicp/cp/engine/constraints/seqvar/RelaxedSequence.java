@@ -23,6 +23,13 @@ public class RelaxedSequence extends AbstractCPConstraint {
     private final Set<Integer> relaxed;
 
 
+    /**
+     * Creates a constraint imposing the non-relaxed nodes of {@code orderedSequence} onto {@code sequence}.
+     *
+     * @param sequence        the sequence variable
+     * @param orderedSequence an ordered array of nodes starting with {@code sequence.start()} and ending with {@code sequence.end()}
+     * @param relaxed         the set of nodes from {@code orderedSequence} that are relaxed (not forced to be inserted)
+     */
     public RelaxedSequence(CPSeqVar sequence, int [] orderedSequence, Set<Integer> relaxed) {
         super(sequence.getSolver());
         this.sequence = sequence;

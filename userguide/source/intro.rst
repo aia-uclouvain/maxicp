@@ -81,7 +81,7 @@ Add the following to your ``pom.xml``:
     <dependency>
         <groupId>org.maxicp</groupId>
         <artifactId>maxicp</artifactId>
-        <version>0.0.2</version>
+        <version>1.0.0</version>
     </dependency>
 
 If you need the latest development version from the ``main`` branch, use

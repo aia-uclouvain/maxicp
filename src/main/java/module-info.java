@@ -7,7 +7,7 @@
  * for instance by reporting bugs, suggesting ideas or,
  *  developing a constraint.
  */
-module org.maxicp {
+open module org.maxicp {
     exports org.maxicp;
     exports org.maxicp.util;
     exports org.maxicp.util.io;
@@ -32,6 +32,7 @@ module org.maxicp {
     exports org.maxicp.modeling.algebra.integer;
     exports org.maxicp.modeling.algebra.sequence;
     exports org.maxicp.search;
+    exports org.maxicp.search.blackbox;
     exports org.maxicp.cp;
     exports org.maxicp.cp.modeling;
     exports org.maxicp.cp.engine.core;
@@ -46,4 +47,8 @@ module org.maxicp {
     requires java.xml;
     requires java.compiler;
     requires junit;
+    requires org.junit.jupiter.api;
+    requires org.junit.jupiter.params;
+    requires org.junit.jupiter.engine;
+    requires org.junit.platform.launcher;
 }

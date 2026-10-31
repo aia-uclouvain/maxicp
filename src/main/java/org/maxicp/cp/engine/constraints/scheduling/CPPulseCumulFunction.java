@@ -23,6 +23,13 @@ public class CPPulseCumulFunction implements CPCumulFunction {
     public final CPIntervalVar var;
     public CPIntVar height;
 
+    /**
+     * Creates a pulse cumulative function over an interval variable with height in {@code [hMin, hMax]}.
+     *
+     * @param var  the interval variable over which the pulse is active
+     * @param hMin the minimum pulse height (must be {@code > 0})
+     * @param hMax the maximum pulse height (must be {@code >= hMin})
+     */
     public CPPulseCumulFunction(CPIntervalVar var, int hMin, int hMax) {
         if (hMin > hMax) throw new IllegalArgumentException("hMin > hMax: " + hMin + " > " + hMax);
         if (hMin <= 0) throw new IllegalArgumentException("hMin <= 0: " + hMin);
@@ -30,8 +37,25 @@ public class CPPulseCumulFunction implements CPCumulFunction {
         height = makeIntVar(var.getSolver(), hMin, hMax);
     }
 
+    /**
+     * Creates a pulse cumulative function over an interval variable with fixed height {@code h}.
+     *
+     * @param var the interval variable over which the pulse is active
+     * @param h   the pulse height (must be {@code > 0})
+     */
     public CPPulseCumulFunction(CPIntervalVar var, int h) {
         this(var, h, h);
+    }
+
+    /**
+     * Creates a pulse cumulative function over an interval variable with variable height {@code height}.
+     *
+     * @param var    the interval variable over which the pulse is active
+     * @param height the integer variable representing the pulse height
+     */
+    public CPPulseCumulFunction(CPIntervalVar var, CPIntVar height) {
+        this.var = var;
+        this.height = height;
     }
 
     @Override

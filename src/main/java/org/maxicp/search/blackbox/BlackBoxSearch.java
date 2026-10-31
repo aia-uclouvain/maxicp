@@ -1,50 +1,60 @@
 package org.maxicp.search.blackbox;
 
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.Maximize;
+import org.maxicp.cp.engine.core.Minimize;
+import org.maxicp.cp.modeling.ConcreteCPModel;
+import org.maxicp.modeling.DecisionVarCollector;
 import org.maxicp.modeling.Factory;
+import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.modeling.symbolic.Maximization;
 import org.maxicp.modeling.symbolic.Minimization;
 import org.maxicp.modeling.symbolic.Objective;
+import org.maxicp.modeling.symbolic.SharedMaximization;
+import org.maxicp.modeling.symbolic.SharedMinimization;
+import org.maxicp.search.DFSearch;
+import org.maxicp.search.FDSModeling;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.Searches;
+import org.maxicp.search.SetTimesModeling;
+import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
- * Phase-based black-box search orchestrator for modeling-level CP problems.
+ * Commercial-solver-style black-box search orchestrator for modeling-level CP and scheduling problems.
  *
- * <p>
- * A {@code BlackBoxSearch} executes a sequence of configured phases, each phase
- * being a
- * {@link RunnableSearch} with a relative time budget. The class stores and
- * propagates incumbents
- * (solution and objective value), handles early stopping criteria, and merges
- * per-phase statuses
- * into a global status.
- * </p>
+ * <p>Implements {@link SearchMethod} so it can be used as a drop-in replacement for {@link DFSearch}
+ * inside {@code model.runCP(cp -> ...)} via {@code cp.blackBoxSearch()}, or directly on a
+ * {@link ModelDispatcher} via {@code model.blackBoxSearch()}, {@code model.solve(...)}, and
+ * {@code model.optimize(...)}.</p>
  *
- * <p>
- * <b>Time-share semantics:</b>
- * </p>
- * <ul>
- * <li>Each phase has a {@code timeShare} in {@code (0,1]}.</li>
- * <li>Configured shares must sum to at most {@code 1.0} (not necessarily
- * exactly {@code 1.0}).</li>
- * <li>If shares sum to less than {@code 1.0}, the remaining budget is assigned
- * to the last phase
- * in the configured sequence when that phase is reached.</li>
- * <li>The actual per-phase budget is always capped by the currently remaining
- * global time.</li>
- * </ul>
+ * <p>Automatically discovers both integer/boolean variables ({@link IntExpression}) and scheduling
+ * interval variables ({@link IntervalVar}) from the model when not explicitly provided.</p>
  */
-public class BlackBoxSearch {
+public class BlackBoxSearch implements SearchMethod {
+
+    /** Snapshot of an {@link IntervalVar} in an incumbent solution. */
+    public record IntervalSnapshot(boolean present, int start, int length, int end) {
+    }
 
     /**
      * Strategy used to choose which decision variables are frozen in each LNS
@@ -133,61 +143,112 @@ public class BlackBoxSearch {
     }
 
     private final ModelDispatcher model;
-    private final List<IntExpression> vars;
-    private final Objective objective;
+    private final boolean autoDiscoveredVars;
+    private List<IntExpression> vars;
+    private final List<IntervalVar> intervals;
+    private Objective objective;
     private final List<Phase> phases = new ArrayList<>();
+    private boolean userConfiguredPhases = false;
     private final List<String> executedPhaseNames = new ArrayList<>();
     private Verbosity verbosity = Verbosity.QUIET;
+
     private Optional<List<Integer>> bestSolution = Optional.empty();
+    private Optional<List<IntervalSnapshot>> bestIntervalSolution = Optional.empty();
+    private final IdentityHashMap<IntExpression, Integer> bestVarValues = new IdentityHashMap<>();
     private Optional<Integer> bestObjectiveValue = Optional.empty();
+    private SearchStatus lastStatus = SearchStatus.UNKNOWN;
     private long solutionCount = 0;
 
+    private BiConsumer<List<Integer>, Integer> incumbentListener;
+    private final List<Consumer<SearchStatistics>> solutionListeners = new ArrayList<>();
+    private final List<Consumer<SearchStatistics>> failureListeners = new ArrayList<>();
+
+    private SearchStatistics liveStats = new SearchStatistics();
+    private int accumulatedNodes = 0;
+    private int accumulatedFailures = 0;
+    private long searchStartMillis = 0L;
+    private Predicate<SearchStatistics> activeLimit = null;
+    private boolean limitReached = false;
+
+    private ModelStructureAnalyzer cachedStructure;
+    private ConflictDrivenBranching sharedConflictBranching;
+    private FDSModeling sharedPrimaryFds;
+    private FDSModeling sharedSchedulingFds;
+    private ConcreteModel cachedConcreteModel;
+    private CPIntVar[] cachedCpVars;
+    private CPIntervalVar[] cachedCpIntervals;
+    private CPIntVar cachedObjCpVar;
+
     /**
-     * Creates a black-box search on decision variables with an objective
-     * (optimization).
+     * Creates a black-box search on explicit integer decision variables with an objective.
      */
     public BlackBoxSearch(ModelDispatcher model, List<IntExpression> vars, Objective objective) {
+        this(model, vars, DecisionVarCollector.collectIntervals(model), objective, false);
+    }
+
+    private BlackBoxSearch(
+            ModelDispatcher model,
+            List<IntExpression> vars,
+            List<IntervalVar> intervals,
+            Objective objective,
+            boolean autoDiscoveredVars) {
         this.model = model;
         this.vars = List.copyOf(vars);
+        this.intervals = List.copyOf(intervals);
         this.objective = objective;
+        this.autoDiscoveredVars = autoDiscoveredVars;
     }
 
     /**
-     * Creates a black-box search with automatic decision-variable inference.
-     *
-     * <p>
-     * The variables are obtained from
-     * {@link ModelDispatcher#getDecisionVariables()}.
-     * This is convenient for LNS users who want to freeze only real decision
-     * variables and avoid freezing derived expressions.
-     * </p>
+     * Creates a black-box search with automatic decision-variable and interval-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model, Objective objective) {
-        this(model, model.getDecisionVariables(), objective);
+        this(
+                model,
+                DecisionVarCollector.collectAllIntVars(model, objective),
+                DecisionVarCollector.collectIntervals(model),
+                objective,
+                true);
     }
 
     /**
-     * Creates a black-box search on an array of decision variables with an
-     * objective (optimization).
+     * Creates a black-box search on an array of integer decision variables with an objective.
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars, Objective objective) {
-        this(model, Arrays.asList(vars), objective);
+        this(model, Arrays.asList(vars), List.of(), objective, false);
     }
 
     /**
-     * Creates a black-box search on decision variables without objective
-     * (feasibility).
+     * Creates a black-box search on an array of integer decision variables without objective (feasibility).
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars) {
-        this(model, Arrays.asList(vars), null);
+        this(model, Arrays.asList(vars), List.of(), null, false);
     }
 
     /**
-     * Creates a feasibility black-box search with automatic decision-variable
-     * inference.
+     * Creates a black-box search on an array of scheduling interval variables.
+     */
+    public BlackBoxSearch(ModelDispatcher model, IntervalVar... intervals) {
+        this(model, DecisionVarCollector.collectAllIntVars(model, null), Arrays.asList(intervals), null, true);
+    }
+
+    /**
+     * Creates a black-box search on a 2D matrix of scheduling interval variables.
+     */
+    public BlackBoxSearch(ModelDispatcher model, IntervalVar[][] intervals) {
+        this(
+                model,
+                DecisionVarCollector.collectAllIntVars(model, null),
+                Arrays.stream(intervals).flatMap(Arrays::stream).toList(),
+                null,
+                true);
+    }
+
+    /**
+     * Creates a black-box search with automatic decision-variable and interval-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model) {
-        this(model, model.getDecisionVariables(), null);
+        this(model, (Objective) null);
     }
 
     /** Sets logging verbosity for this search. */
@@ -197,17 +258,294 @@ public class BlackBoxSearch {
     }
 
     /**
+     * Registers a callback invoked whenever a new feasible or improving incumbent is recorded.
+     */
+    public BlackBoxSearch onIncumbent(BiConsumer<List<Integer>, Integer> listener) {
+        this.incumbentListener = listener;
+        return this;
+    }
+
+    @Override
+    public void onSolution(Consumer<SearchStatistics> listener) {
+        if (listener != null) {
+            solutionListeners.add(listener);
+        }
+    }
+
+    @Override
+    public void onFailure(Consumer<SearchStatistics> listener) {
+        if (listener != null) {
+            failureListeners.add(listener);
+        }
+    }
+
+    List<IntervalVar> intervals() {
+        return intervals;
+    }
+
+    List<IntExpression> vars() {
+        return vars;
+    }
+
+    ModelStructureAnalyzer structureAnalyzer() {
+        if (cachedStructure == null) {
+            cachedStructure = ModelStructureAnalyzer.analyze(model, vars, objective);
+        }
+        return cachedStructure;
+    }
+
+    ConflictDrivenBranching conflictDrivenBranching(Random fallbackRandom) {
+        if (sharedConflictBranching == null) {
+            sharedConflictBranching = new ConflictDrivenBranching(
+                    model, vars, structureAnalyzer(), fallbackRandom != null ? fallbackRandom : new Random(42L));
+            bestSolution.ifPresent(sharedConflictBranching::updateIncumbent);
+        }
+        return sharedConflictBranching;
+    }
+
+    private IntExpression[] computePrimaryIntVars() {
+        ModelStructureAnalyzer structure = structureAnalyzer();
+        int[] primaryIdx = structure.primaryIndices();
+        IntExpression[] primaryVars = new IntExpression[primaryIdx.length];
+        for (int i = 0; i < primaryIdx.length; i++) {
+            primaryVars[i] = vars.get(primaryIdx[i]);
+        }
+        if (primaryVars.length == 0 && !vars.isEmpty()) {
+            primaryVars = vars.toArray(IntExpression[]::new);
+        }
+        return primaryVars;
+    }
+
+    FDSModeling primaryFdsBranching() {
+        if (sharedPrimaryFds == null) {
+            IntExpression[] primaryVars = computePrimaryIntVars();
+            if (primaryVars.length > 0) {
+                sharedPrimaryFds = new FDSModeling(primaryVars);
+            }
+        } else {
+            sharedPrimaryFds.resetLevel();
+        }
+        return sharedPrimaryFds;
+    }
+
+    Supplier<Runnable[]> tieredFdsBranching(Random fallbackRandom) {
+        if (!intervals.isEmpty()) {
+            return schedulingFdsBranching(fallbackRandom);
+        }
+        FDSModeling fds = primaryFdsBranching();
+        if (fds == null) {
+            return () -> Searches.EMPTY;
+        }
+        ModelStructureAnalyzer structure = structureAnalyzer();
+        if (structure.secondaryIndices().length == 0) {
+            return fds;
+        }
+        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);
+        return Searches.and(fds, cd);
+    }
+
+    Supplier<Runnable[]> schedulingFdsBranching(Random fallbackRandom) {
+        if (intervals.isEmpty()) {
+            return tieredFdsBranching(fallbackRandom);
+        }
+        if (sharedSchedulingFds == null) {
+            IntervalVar[] ivArr = intervals.toArray(IntervalVar[]::new);
+            IntExpression[] primaryVars = computePrimaryIntVars();
+            sharedSchedulingFds = primaryVars.length > 0
+                    ? new FDSModeling(ivArr, primaryVars)
+                    : new FDSModeling(ivArr);
+        } else {
+            sharedSchedulingFds.resetLevel();
+        }
+        if (vars.isEmpty() || structureAnalyzer().secondaryIndices().length == 0) {
+            return sharedSchedulingFds;
+        }
+        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);
+        return Searches.and(sharedSchedulingFds, cd);
+    }
+
+    Supplier<Runnable[]> schedulingSetTimesBranching(Random fallbackRandom) {
+        IntervalVar[] ivArr = intervals.toArray(IntervalVar[]::new);
+        Supplier<Runnable[]> setTimes = new SetTimesModeling(ivArr);
+        if (vars.isEmpty()) {
+            return setTimes;
+        }
+        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);
+        return Searches.and(setTimes, cd);
+    }
+
+    DFSearch createSubSearch(Supplier<Runnable[]> branching) {
+        DFSearch dfs = model.dfSearch(branching);
+        if (!failureListeners.isEmpty()) {
+            dfs.onFailure(subStats -> {
+                syncLiveStats(subStats);
+                for (Consumer<SearchStatistics> fl : failureListeners) {
+                    fl.accept(liveStats);
+                }
+            });
+        }
+        return dfs;
+    }
+
+    boolean shouldAbortSubSearch(
+            SearchStatistics subStats,
+            long phaseStartMillis,
+            long phaseBudgetMillis,
+            int failureCutoff) {
+        syncLiveStats(subStats);
+        if (activeLimit != null && activeLimit.test(liveStats)) {
+            limitReached = true;
+            return true;
+        }
+        if ((System.currentTimeMillis() - phaseStartMillis) >= phaseBudgetMillis) {
+            return true;
+        }
+        return failureCutoff < Integer.MAX_VALUE && subStats.numberOfFailures() >= failureCutoff;
+    }
+
+    void accumulateSubSearchStats(SearchStatistics subStats) {
+        if (subStats == null) {
+            return;
+        }
+        accumulatedNodes += subStats.numberOfNodes();
+        accumulatedFailures += subStats.numberOfFailures();
+        syncLiveStats(null);
+    }
+
+    private void syncLiveStats(SearchStatistics currentSubStats) {
+        int subNodes = currentSubStats != null ? currentSubStats.numberOfNodes() : 0;
+        int subFails = currentSubStats != null ? currentSubStats.numberOfFailures() : 0;
+        int targetNodes = accumulatedNodes + subNodes;
+        int targetFails = accumulatedFailures + subFails;
+        while (liveStats.numberOfNodes() < targetNodes) {
+            liveStats.incrNodes();
+        }
+        while (liveStats.numberOfFailures() < targetFails) {
+            liveStats.incrFailures();
+        }
+        if (searchStartMillis > 0L) {
+            liveStats.setTimeInMillis(Math.max(0L, System.currentTimeMillis() - searchStartMillis));
+        }
+    }
+
+    boolean isLimitReached() {
+        if (limitReached) {
+            return true;
+        }
+        if (activeLimit != null) {
+            syncLiveStats(null);
+            if (activeLimit.test(liveStats)) {
+                limitReached = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void ensureCpCache() {
+        if (!model.isConcrete()) {
+            return;
+        }
+        ConcreteModel cm = model.getConcreteModel();
+        if (cm != cachedConcreteModel) {
+            cachedConcreteModel = cm;
+            if (cm instanceof ConcreteCPModel cpm) {
+                cachedCpVars = new CPIntVar[vars.size()];
+                for (int i = 0; i < vars.size(); i++) {
+                    cachedCpVars[i] = cpm.getCPVar(vars.get(i));
+                }
+                cachedCpIntervals = new CPIntervalVar[intervals.size()];
+                for (int i = 0; i < intervals.size(); i++) {
+                    cachedCpIntervals[i] = cpm.getCPVar(intervals.get(i));
+                }
+                IntExpression objExpr = extractObjectiveExpr(objective);
+                if (objExpr != null) {
+                    cachedObjCpVar = cpm.getCPVar(objExpr);
+                    cpm.solver.fixPoint();
+                } else {
+                    cachedObjCpVar = null;
+                }
+            } else {
+                cachedCpVars = null;
+                cachedCpIntervals = null;
+                cachedObjCpVar = null;
+            }
+        }
+    }
+
+    private CPIntVar currentObjCpVar() {
+        ensureCpCache();
+        if (cachedConcreteModel instanceof ConcreteCPModel cpm && objective != null) {
+            IntExpression objExpr = extractObjectiveExpr(objective);
+            return cpm.getCPVar(objExpr);
+        }
+        return null;
+    }
+
+    void recordSolutionFromCurrentState() {
+        ensureCpCache();
+        Integer objVal = evaluateCurrentObjective();
+        if (objective != null && objVal != null && bestObjectiveValue.isPresent()) {
+            int currentBest = bestObjectiveValue.get();
+            boolean strictlyBetter = isMinimization(objective) ? (objVal < currentBest) : (objVal > currentBest);
+            if (!strictlyBetter) {
+                return;
+            }
+        }
+
+        List<Integer> solution = new ArrayList<>(vars.size());
+        if (cachedCpVars != null) {
+            for (int i = 0; i < vars.size(); i++) {
+                int val = cachedCpVars[i].min();
+                solution.add(val);
+                bestVarValues.put(vars.get(i), val);
+            }
+        } else {
+            for (IntExpression var : vars) {
+                int val = var.min();
+                solution.add(val);
+                bestVarValues.put(var, val);
+            }
+        }
+
+        if (!intervals.isEmpty()) {
+            List<IntervalSnapshot> ivSnaps = new ArrayList<>(intervals.size());
+            if (cachedCpIntervals != null) {
+                for (CPIntervalVar cpIv : cachedCpIntervals) {
+                    ivSnaps.add(new IntervalSnapshot(
+                            cpIv.isPresent(),
+                            cpIv.startMin(),
+                            cpIv.lengthMin(),
+                            cpIv.endMin()));
+                }
+            } else {
+                for (IntervalVar iv : intervals) {
+                    ivSnaps.add(new IntervalSnapshot(
+                            iv.isPresent(),
+                            iv.startMin(),
+                            iv.lengthMin(),
+                            iv.endMin()));
+                }
+            }
+            bestIntervalSolution = Optional.of(Collections.unmodifiableList(ivSnaps));
+        }
+
+        updateObjective(objVal);
+        updateSolution(solution);
+
+        liveStats.incrSolutions();
+        syncLiveStats(null);
+        for (Consumer<SearchStatistics> listener : solutionListeners) {
+            listener.accept(liveStats);
+        }
+    }
+
+    private static boolean isMinimization(Objective objective) {
+        return objective instanceof Minimization || objective instanceof SharedMinimization;
+    }
+
+    /**
      * Registers one executable phase in the black-box plan.
-     *
-     * @param name             descriptive phase name used in logs and diagnostics
-     * @param search           runnable implementation executed for the phase
-     * @param timeShare        relative share of the global timeout allocated to
-     *                         this phase for non-last phases
-     *                         (must be in {@code (0,1]}; shares across phases must
-     *                         sum to at most {@code 1.0})
-     * @param requiresFeasible whether this phase can run only after an incumbent
-     *                         exists
-     * @return this search instance for fluent configuration
      */
     public BlackBoxSearch addPhase(String name, RunnableSearch search, double timeShare, boolean requiresFeasible) {
         if (timeShare <= 0.0) {
@@ -219,16 +557,27 @@ public class BlackBoxSearch {
 
     /**
      * Builds the built-in default plan.
-     *
-     * <p>
-     * Feasibility: initial exhaustive + restart phases.
-     * </p>
-     * <p>
-     * Optimization: initial exhaustive + restart + LNS + exhaustive phases.
-     * </p>
      */
     public BlackBoxSearch withDefaultPhasePlan() {
         phases.clear();
+
+        if (!intervals.isEmpty()) {
+            RunnableSearch initialSched = new SchedulingRunnableSearch(this, model, intervals, vars, objective, 42L);
+            addPhase("initial-exhaustive", initialSched, objective == null ? 0.25 : 0.25, false);
+
+            if (objective == null) {
+                RunnableSearch restSched = new SchedulingRunnableSearch(this, model, intervals, vars, null, 43L);
+                addPhase("feasibility-restarts", restSched, 0.75, false);
+                return this;
+            }
+
+            RunnableSearch schedLns = new SchedulingLNSRunnableSearch(this, model, intervals, vars, objective, 80, 65, 43L);
+            addPhase("lns-improvement", schedLns, 0.50, true);
+
+            RunnableSearch finalSched = new SchedulingRunnableSearch(this, model, intervals, vars, objective, 44L);
+            addPhase("exhaustive-fds", finalSched, 0.25, false);
+            return this;
+        }
 
         ExhaustivePhaseOptions exhaustiveOptions = ExhaustivePhaseOptions.defaults();
         RunnableSearch initialExhaustive = new DFSRunnableSearch(this, model, vars, objective,
@@ -253,20 +602,13 @@ public class BlackBoxSearch {
 
         RunnableSearch exhaustive = new DFSRunnableSearch(this, model, vars, objective,
                 exhaustiveOptions.randomSwapProbability(), exhaustiveOptions.randomSeed());
-        addPhase("exhaustive-fds", exhaustive, (1.0 - 0.25 - 0.20 - 1.0 / 3.0), true);
+        addPhase("exhaustive-fds", exhaustive, (1.0 - 0.25 - 0.20 - 1.0 / 3.0), false);
 
         return this;
     }
 
     /**
      * Configures the optimization phase plan explicitly.
-     *
-     * <p>
-     * Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at
-     * most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via
-     * remaining-time assignment.
-     * </p>
      */
     public BlackBoxSearch withOptimizationPlan(RestartPhaseOptions restart,
             LnsPhaseOptions lns,
@@ -280,6 +622,7 @@ public class BlackBoxSearch {
         }
         validateShares(initialExhaustiveShare, restartShare, lnsShare, exhaustiveShare);
         phases.clear();
+        userConfiguredPhases = true;
 
         RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, objective,
                 exhaustive.randomSwapProbability(), exhaustive.randomSeed());
@@ -295,19 +638,12 @@ public class BlackBoxSearch {
         addPhase("initial-exhaustive", initialExhaustiveSearch, initialExhaustiveShare, false);
         addPhase("feasibility-restarts", restartSearch, restartShare, false);
         addPhase("lns-improvement", lnsSearch, lnsShare, true);
-        addPhase("exhaustive-fds", exhaustiveSearch, exhaustiveShare, true);
+        addPhase("exhaustive-fds", exhaustiveSearch, exhaustiveShare, false);
         return this;
     }
 
     /**
      * Configures the feasibility phase plan explicitly.
-     *
-     * <p>
-     * Shares do <b>not</b> need to sum to exactly {@code 1.0}; they must sum to at
-     * most {@code 1.0}.
-     * Any remaining fraction is effectively left to the last configured phase via
-     * remaining-time assignment.
-     * </p>
      */
     public BlackBoxSearch withFeasibilityPlan(RestartPhaseOptions restart,
             ExhaustivePhaseOptions exhaustive,
@@ -316,6 +652,7 @@ public class BlackBoxSearch {
             double exhaustiveShare) {
         validateShares(initialExhaustiveShare, restartShare, exhaustiveShare);
         phases.clear();
+        userConfiguredPhases = true;
 
         RunnableSearch initialExhaustiveSearch = new DFSRunnableSearch(this, model, vars, null,
                 exhaustive.randomSwapProbability(), exhaustive.randomSeed());
@@ -349,17 +686,39 @@ public class BlackBoxSearch {
         }
     }
 
+    private void resetRunMetrics() {
+        liveStats = new SearchStatistics();
+        accumulatedNodes = 0;
+        accumulatedFailures = 0;
+        searchStartMillis = System.currentTimeMillis();
+        limitReached = false;
+        bestSolution = Optional.empty();
+        bestIntervalSolution = Optional.empty();
+        bestVarValues.clear();
+        bestObjectiveValue = Optional.empty();
+        solutionCount = 0;
+        executedPhaseNames.clear();
+    }
+
+    private void setObjectiveInternal(Objective newObjective) {
+        if (this.objective != newObjective) {
+            this.objective = newObjective;
+            this.cachedStructure = null;
+            this.sharedConflictBranching = null;
+            this.sharedPrimaryFds = null;
+            this.sharedSchedulingFds = null;
+            this.cachedConcreteModel = null;
+            if (autoDiscoveredVars) {
+                this.vars = DecisionVarCollector.collectAllIntVars(model, newObjective);
+            }
+            if (!userConfiguredPhases) {
+                phases.clear();
+            }
+        }
+    }
+
     /**
      * Executes the configured phase plan under a global timeout.
-     *
-     * <p>
-     * Early stop conditions:
-     * </p>
-     * <ul>
-     * <li>Feasibility mode: stops on first feasible solution.</li>
-     * <li>Any mode: stops on {@link SearchStatus#PROVEN_OPTIMAL} or
-     * {@link SearchStatus#UNSAT}.</li>
-     * </ul>
      *
      * @param timeLimitInSeconds global timeout in seconds
      * @return merged global status across executed phases
@@ -367,6 +726,31 @@ public class BlackBoxSearch {
     public SearchStatus start(int timeLimitInSeconds) {
         if (phases.isEmpty()) {
             throw new IllegalStateException("No search phases configured");
+        }
+        if (!model.isConcrete()) {
+            try {
+                return model.runCP(() -> startInConcreteContext(timeLimitInSeconds));
+            } catch (InconsistencyException e) {
+                lastStatus = SearchStatus.UNSAT;
+                liveStats.setCompleted();
+                return SearchStatus.UNSAT;
+            }
+        }
+        return startInConcreteContext(timeLimitInSeconds);
+    }
+
+    private SearchStatus startInConcreteContext(int timeLimitInSeconds) {
+        ensureCpCache();
+        if (searchStartMillis == 0L) {
+            searchStartMillis = System.currentTimeMillis();
+        }
+
+        // Check trivial root satisfaction when there are no variables and no intervals
+        if (vars.isEmpty() && intervals.isEmpty()) {
+            recordSolutionFromCurrentState();
+            liveStats.setCompleted();
+            lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;
+            return lastStatus;
         }
 
         long totalBudgetMillis = Math.max(1L, timeLimitInSeconds * 1000L);
@@ -382,12 +766,12 @@ public class BlackBoxSearch {
 
         for (Phase phase : phases) {
             long elapsed = System.currentTimeMillis() - t0;
-            if (elapsed >= totalBudgetMillis) {
-                logPhase("[blackbox] timeout reached before phase '%s'".formatted(phase.name));
+            if (elapsed >= totalBudgetMillis || isLimitReached()) {
+                logPhase("[blackbox] timeout/limit reached before phase '%s'".formatted(phase.name));
                 break;
             }
 
-            if (phase.requiresFeasible && bestSolution.isEmpty()) {
+            if (phase.requiresFeasible && !hasAnyIncumbent()) {
                 logPhase("[blackbox] skip phase '%s' (no feasible incumbent yet)".formatted(phase.name));
                 phaseIndex++;
                 continue;
@@ -421,24 +805,290 @@ public class BlackBoxSearch {
             SearchStatus status = phase.search.run(phaseBudget);
             logPhase("[blackbox] phase '%s' completed with status=%s".formatted(phase.name, status));
             globalStatus = mergeStatus(globalStatus, status);
-            if (objective == null && bestSolution.isPresent()) {
+            if (objective == null && hasAnyIncumbent()) {
                 logPhase("[blackbox] stop early on first feasible solution");
+                lastStatus = SearchStatus.SAT;
                 return SearchStatus.SAT;
             }
             if (status == SearchStatus.PROVEN_OPTIMAL || status == SearchStatus.UNSAT) {
                 logPhase("[blackbox] stop early with status=%s".formatted(status));
+                liveStats.setCompleted();
+                lastStatus = status;
                 return status;
             }
             phaseIndex++;
         }
 
         logPhase("[blackbox] finished with status=%s".formatted(globalStatus));
+        lastStatus = globalStatus;
         return globalStatus;
+    }
+
+    private boolean hasAnyIncumbent() {
+        return bestSolution.isPresent() || bestIntervalSolution.isPresent();
+    }
+
+    // -------------------------------------------------------------------------
+    // SearchMethod Implementation
+    // -------------------------------------------------------------------------
+
+    @Override
+    public SearchStatistics solve() {
+        return solve(stats -> false);
+    }
+
+    /**
+     * Solves the feasibility model under a wall-clock timeout in seconds.
+     *
+     * @param timeLimitInSeconds timeout in seconds
+     * @return aggregated search statistics
+     */
+    public SearchStatistics solve(int timeLimitInSeconds) {
+        setObjectiveInternal(null);
+        if (phases.isEmpty()) {
+            withDefaultPhasePlan();
+        }
+        resetRunMetrics();
+        this.activeLimit = null;
+        start(timeLimitInSeconds);
+        syncLiveStats(null);
+        return liveStats;
+    }
+
+    @Override
+    public SearchStatistics solve(Predicate<SearchStatistics> limit) {
+        setObjectiveInternal(null);
+        return runWithLimit(limit, null);
+    }
+
+    @Override
+    public SearchStatistics solveSubjectTo(Predicate<SearchStatistics> limit, Runnable subjectTo) {
+        setObjectiveInternal(null);
+        return runWithLimit(limit, subjectTo);
+    }
+
+    @Override
+    public SearchStatistics optimize(Objective obj) {
+        return optimize(obj, stats -> false);
+    }
+
+    /**
+     * Optimizes the given objective under a wall-clock timeout in seconds.
+     *
+     * @param obj                symbolic objective to minimize or maximize
+     * @param timeLimitInSeconds timeout in seconds
+     * @return aggregated search statistics
+     */
+    public SearchStatistics optimize(Objective obj, int timeLimitInSeconds) {
+        setObjectiveInternal(obj);
+        if (phases.isEmpty()) {
+            withDefaultPhasePlan();
+        }
+        resetRunMetrics();
+        this.activeLimit = null;
+        start(timeLimitInSeconds);
+        syncLiveStats(null);
+        return liveStats;
+    }
+
+    @Override
+    public SearchStatistics optimize(Objective obj, Predicate<SearchStatistics> limit) {
+        setObjectiveInternal(obj);
+        return runWithLimit(limit, null);
+    }
+
+    @Override
+    public SearchStatistics optimizeSubjectTo(Objective objToTighten, Predicate<SearchStatistics> limit, Runnable subjectTo) {
+        setObjectiveInternal(objToTighten);
+        return runWithLimit(limit, subjectTo);
+    }
+
+    @Override
+    public SearchStatistics optimize(org.maxicp.search.Objective obj) {
+        return optimize(obj, stats -> false);
+    }
+
+    /**
+     * Optimizes the given low-level objective within the specified time limit (in seconds).
+     */
+    public SearchStatistics optimize(org.maxicp.search.Objective obj, int timeLimitInSeconds) {
+        long budgetMillis = Math.max(1L, timeLimitInSeconds) * 1000L;
+        return optimize(obj, stats -> stats.timeInMillis() >= budgetMillis);
+    }
+
+    @Override
+    public SearchStatistics optimize(org.maxicp.search.Objective toTighten, Predicate<SearchStatistics> limit) {
+        return optimizeSubjectTo(toTighten, limit, null);
+    }
+
+    @Override
+    public SearchStatistics optimizeSubjectTo(
+            org.maxicp.search.Objective objToTighten,
+            Predicate<SearchStatistics> limit,
+            Runnable subjectTo) {
+        if (objToTighten instanceof Minimize min) {
+            return optimizeSubjectTo(new Minimization(min.getVar()), limit, subjectTo);
+        }
+        if (objToTighten instanceof Maximize max) {
+            return optimizeSubjectTo(new Maximization(max.getVar()), limit, subjectTo);
+        }
+        if (!model.isConcrete()) {
+            return model.runCP(() -> executeLowLevelObjective(objToTighten, limit, subjectTo));
+        }
+        return executeLowLevelObjective(objToTighten, limit, subjectTo);
+    }
+
+    private SearchStatistics executeLowLevelObjective(
+            org.maxicp.search.Objective objToTighten,
+            Predicate<SearchStatistics> limit,
+            Runnable subjectTo) {
+        resetRunMetrics();
+        this.activeLimit = limit;
+        model.getConcreteModel().getStateManager().withNewState(() -> {
+            try {
+                if (subjectTo != null) {
+                    subjectTo.run();
+                }
+                Supplier<Runnable[]> branching = tieredFdsBranching(new Random(42L));
+                DFSearch dfs = createSubSearch(branching);
+                dfs.onSolution(this::recordSolutionFromCurrentState);
+                SearchStatistics st = dfs.optimize(objToTighten,
+                        s -> shouldAbortSubSearch(s, searchStartMillis, Long.MAX_VALUE, Integer.MAX_VALUE));
+                accumulateSubSearchStats(st);
+                if (st.isCompleted() && !isLimitReached()) {
+                    liveStats.setCompleted();
+                }
+            } catch (InconsistencyException ignored) {
+                liveStats.setCompleted();
+            }
+        });
+        syncLiveStats(null);
+        return liveStats;
+    }
+
+    private SearchStatistics runWithLimit(Predicate<SearchStatistics> limit, Runnable subjectTo) {
+        if (!model.isConcrete()) {
+            try {
+                return model.runCP(() -> runWithLimitInConcreteContext(limit, subjectTo));
+            } catch (InconsistencyException e) {
+                resetRunMetrics();
+                lastStatus = SearchStatus.UNSAT;
+                liveStats.setCompleted();
+                return liveStats;
+            }
+        }
+        return runWithLimitInConcreteContext(limit, subjectTo);
+    }
+
+    private SearchStatistics runWithLimitInConcreteContext(Predicate<SearchStatistics> limit, Runnable subjectTo) {
+        resetRunMetrics();
+        this.activeLimit = limit;
+        model.getConcreteModel().getStateManager().withNewState(() -> {
+            try {
+                if (subjectTo != null) {
+                    subjectTo.run();
+                }
+                ensureCpCache();
+                if (vars.isEmpty() && intervals.isEmpty()) {
+                    recordSolutionFromCurrentState();
+                    liveStats.setCompleted();
+                    lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;
+                    return;
+                }
+                if (phases.isEmpty()) {
+                    withDefaultPhasePlan();
+                }
+
+                // Execute iterative rounds with exponentially growing round budgets until proven optimal/SAT/UNSAT or limit
+                long roundBudgetMillis = 250L;
+                SearchStatus globalStatus = SearchStatus.UNKNOWN;
+                while (!isLimitReached()) {
+                    for (Phase phase : phases) {
+                        if (isLimitReached()) {
+                            break;
+                        }
+                        if (phase.requiresFeasible && !hasAnyIncumbent()) {
+                            continue;
+                        }
+                        long phaseBudget = Math.max(25L, Math.round(roundBudgetMillis * phase.timeShare));
+                        executedPhaseNames.add(phase.name);
+                        SearchStatus status = phase.search.run(phaseBudget);
+                        globalStatus = mergeStatus(globalStatus, status);
+                        if (objective == null && hasAnyIncumbent()) {
+                            lastStatus = SearchStatus.SAT;
+                            return;
+                        }
+                        if (status == SearchStatus.PROVEN_OPTIMAL || status == SearchStatus.UNSAT) {
+                            liveStats.setCompleted();
+                            lastStatus = status;
+                            return;
+                        }
+                    }
+                    roundBudgetMillis = Math.min(8000L, roundBudgetMillis * 2L);
+                }
+                lastStatus = globalStatus;
+            } catch (InconsistencyException e) {
+                lastStatus = hasAnyIncumbent() ? SearchStatus.PROVEN_OPTIMAL : SearchStatus.UNSAT;
+                liveStats.setCompleted();
+            }
+        });
+        syncLiveStats(null);
+        return liveStats;
+    }
+
+    /** Returns the overall status of the most recent search run. */
+    public SearchStatus status() {
+        return lastStatus;
     }
 
     /** Returns the best incumbent solution found so far, if any. */
     public Optional<List<Integer>> bestSolution() {
         return bestSolution.map(List::copyOf);
+    }
+
+    /** Returns the best incumbent interval snapshots found so far, if any. */
+    public Optional<List<IntervalSnapshot>> bestIntervalSolution() {
+        return bestIntervalSolution;
+    }
+
+    /**
+     * Returns the value of {@code var} in the best incumbent solution found so far, if available.
+     */
+    public Optional<Integer> bestValue(IntExpression var) {
+        Integer v = bestVarValues.get(var);
+        if (v != null) {
+            return Optional.of(v);
+        }
+        if (var != null && var.isFixed()) {
+            return Optional.of(var.min());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns the values of the given expressions in the best incumbent solution found so far.
+     */
+    public Optional<List<Integer>> bestValues(IntExpression... targetVars) {
+        if (bestSolution.isEmpty() && bestIntervalSolution.isEmpty()) {
+            return Optional.empty();
+        }
+        List<Integer> out = new ArrayList<>(targetVars.length);
+        for (IntExpression expr : targetVars) {
+            Integer v = bestVarValues.get(expr);
+            if (v != null) {
+                out.add(v);
+            } else if (expr.isFixed()) {
+                out.add(expr.min());
+            } else {
+                return Optional.empty();
+            }
+        }
+        return Optional.of(Collections.unmodifiableList(out));
+    }
+
+    /** Returns an unmodifiable view of the recorded variable values in the best solution. */
+    public Map<IntExpression, Integer> bestVarValuesMap() {
+        return Collections.unmodifiableMap(bestVarValues);
     }
 
     /** Returns the incumbent objective value, if any. */
@@ -452,6 +1102,10 @@ public class BlackBoxSearch {
     }
 
     Integer evaluateCurrentObjective() {
+        CPIntVar objVar = currentObjCpVar();
+        if (objVar != null) {
+            return objVar.min();
+        }
         return evaluateObjective(objective);
     }
 
@@ -465,37 +1119,64 @@ public class BlackBoxSearch {
             return;
         }
         int incumbent = bestObjectiveValue.get();
-        if (objective instanceof Maximization && objectiveValue > incumbent) {
+        if ((objective instanceof Maximization || objective instanceof SharedMaximization) && objectiveValue > incumbent) {
             bestObjectiveValue = Optional.of(objectiveValue);
             logProgress("[blackbox] objective improved %d -> %d".formatted(incumbent, objectiveValue));
         }
-        if (objective instanceof Minimization && objectiveValue < incumbent) {
+        if ((objective instanceof Minimization || objective instanceof SharedMinimization) && objectiveValue < incumbent) {
             bestObjectiveValue = Optional.of(objectiveValue);
             logProgress("[blackbox] objective improved %d -> %d".formatted(incumbent, objectiveValue));
         }
     }
 
     void postIncumbentCut() {
+        postIncumbentCut(true);
+    }
+
+    void postIncumbentCut(boolean enforceFixPoint) {
         if (objective == null || bestObjectiveValue.isEmpty()) {
             return;
         }
         int incumbent = bestObjectiveValue.get();
+        CPIntVar objVar = currentObjCpVar();
+        if (objVar != null && cachedConcreteModel instanceof ConcreteCPModel cpm) {
+            if (objective instanceof Minimization || objective instanceof SharedMinimization) {
+                objVar.removeAbove(incumbent - 1);
+            } else if (objective instanceof Maximization || objective instanceof SharedMaximization) {
+                objVar.removeBelow(incumbent + 1);
+            }
+            if (enforceFixPoint) {
+                cpm.solver.fixPoint();
+            }
+            return;
+        }
         switch (objective) {
-            case Minimization min -> model.add(Factory.lt(min.expr(), incumbent));
-            case Maximization max -> model.add(Factory.gt(max.expr(), incumbent));
+            case Minimization min -> model.add(Factory.lt(min.expr(), incumbent), enforceFixPoint);
+            case SharedMinimization min -> model.add(Factory.lt(min.expr, incumbent), enforceFixPoint);
+            case Maximization max -> model.add(Factory.gt(max.expr(), incumbent), enforceFixPoint);
+            case SharedMaximization max -> model.add(Factory.gt(max.expr, incumbent), enforceFixPoint);
             default -> throw new IllegalStateException("Unsupported objective type: " + objective.getClass());
         }
+    }
+
+    private static IntExpression extractObjectiveExpr(Objective objective) {
+        if (objective == null) {
+            return null;
+        }
+        return switch (objective) {
+            case Minimization min -> min.expr();
+            case SharedMinimization min -> min.expr;
+            case Maximization max -> max.expr();
+            case SharedMaximization max -> max.expr;
+            default -> throw new IllegalStateException("Unsupported objective type: " + objective.getClass());
+        };
     }
 
     static Integer evaluateObjective(Objective objective) {
         if (objective == null) {
             return null;
         }
-        IntExpression expr = switch (objective) {
-            case Minimization min -> min.expr();
-            case Maximization max -> max.expr();
-            default -> throw new IllegalStateException("Unsupported objective type: " + objective.getClass());
-        };
+        IntExpression expr = extractObjectiveExpr(objective);
         try {
             return expr.evaluate();
         } catch (VariableNotFixedException e) {
@@ -526,12 +1207,24 @@ public class BlackBoxSearch {
     public void updateSolution(List<Integer> solution) {
         boolean first = bestSolution.isEmpty();
         solutionCount++;
-        bestSolution = Optional.of(Collections.unmodifiableList(new ArrayList<>(solution)));
+        List<Integer> copy = Collections.unmodifiableList(new ArrayList<>(solution));
+        bestSolution = Optional.of(copy);
+        if (copy.size() == vars.size()) {
+            for (int i = 0; i < vars.size(); i++) {
+                bestVarValues.put(vars.get(i), copy.get(i));
+            }
+        }
+        if (sharedConflictBranching != null) {
+            sharedConflictBranching.updateIncumbent(copy);
+        }
         logProgress("[blackbox] solution #%d found%s".formatted(solutionCount, formatSolutionPreview(solution)));
         if (!first)
             logTrace("[blackbox] incumbent updated");
         for (RunnableSearch search : registeredSearches()) {
-            search.updateSolution(solution);
+            search.updateSolution(copy);
+        }
+        if (incumbentListener != null) {
+            incumbentListener.accept(copy, bestObjectiveValue.orElse(null));
         }
     }
 

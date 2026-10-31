@@ -12,7 +12,7 @@ import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.examples.utils.FJSInstance;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.FDSModeling;
+import org.maxicp.search.FDS;
 import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 
@@ -105,7 +105,7 @@ public class FlexibleJobShop {
             allIntervals.addAll(tasksOnMachine[m]);
         }
 
-        DFSearch dfs = CPFactory.makeDfs(cp, new FDSModeling(allIntervals.toArray(new CPIntervalVar[0])));
+        DFSearch dfs = CPFactory.makeDfs(cp, new FDS(allIntervals.toArray(new CPIntervalVar[0])));
 
         dfs.onSolution(s -> {
             System.out.println("makespan: " + makespan.min());

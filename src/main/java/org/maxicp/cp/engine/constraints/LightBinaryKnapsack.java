@@ -13,6 +13,10 @@ import org.maxicp.state.StateInt;
 
 import java.util.Arrays;
 
+/**
+ * Lightweight Binary Knapsack constraint enforcing {@code load = sum_i items[i] * weights[i]}
+ * using bound reasoning on the required and possible loads.
+ */
 public class LightBinaryKnapsack extends AbstractCPConstraint {
 
     private final CPBoolVar[] items;
@@ -27,6 +31,13 @@ public class LightBinaryKnapsack extends AbstractCPConstraint {
     private int requiredLoad;
     private int possibleLoad;
 
+    /**
+     * Creates a lightweight binary knapsack constraint {@code load = sum_i items[i] * weights[i]}.
+     *
+     * @param items   the binary selection variables for each item
+     * @param weights the weight of each item
+     * @param load    the total weight variable of the selected items
+     */
     public LightBinaryKnapsack(CPBoolVar[] items, int[] weights, CPIntVar load) {
         super(items[0].getSolver());
 

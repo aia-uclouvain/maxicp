@@ -107,8 +107,8 @@ public class SportScheduling {
 
         long time = TimeIt.run(() -> {
             baseModel.runCP(() -> {
-                SearchMethod search = baseModel.dfSearch(Searches.fds(allGames));
-                //SearchMethod search = baseModel.dfSearch(Searches.firstFailBinary(allGames));
+                //SearchMethod search = baseModel.dfSearch(Searches.fds(allGames));
+                SearchMethod search = baseModel.dfSearch(Searches.firstFailBinary(allGames));
 
                 search.onSolution(() -> {
                     System.out.println("---------games---------");

@@ -16,7 +16,10 @@ import static org.maxicp.cp.CPFactory.eq;
 import static org.maxicp.cp.CPFactory.neq;
 
 /**
- * Among constraint
+ * Among constraint.
+ * <p>
+ * Enforces that the number of variables in {@code x} that take a value in a given set {@code vals}
+ * is equal to {@code N}.
  */
 public class Among extends AbstractCPConstraint {
 
@@ -32,6 +35,14 @@ public class Among extends AbstractCPConstraint {
     private final StateSparseSet nonSubsetIdx;
     private final StateInt[] interSize;
 
+    /**
+     * Creates an Among constraint enforcing that {@code N} variables in {@code x}
+     * take their value in {@code vals}.
+     *
+     * @param x    the array of decision variables
+     * @param vals the set of target values to count
+     * @param N    the variable representing the number of variables in {@code x} taking a value in {@code vals}
+     */
     public Among(CPIntVar[] x, Set<Integer> vals, CPIntVar N) {
         super(x[0].getSolver());
         this.x = x;
@@ -72,8 +83,8 @@ public class Among extends AbstractCPConstraint {
         ubN = getSolver().getStateManager().makeStateInt(nonEmptyInterIdx.size());
 
         N.propagateOnBoundChange(this);
-        for (int i = 0; i < nonEmptyInterIdx.size(); i++) {
-            if (nonSubsetIdx.contains(i)) {
+        for (int i = 0; i < x.length; i++) {
+            if (nonEmptyInterIdx.contains(i) && nonSubsetIdx.contains(i)) {
                 int idx = i;
                 x[idx].whenDomainChange(() -> {
                     if (x[idx].isFixed()) {
@@ -104,20 +115,17 @@ public class Among extends AbstractCPConstraint {
 
         // The lower bound for N is the number of variable with a domain that is totally included in vals
         lbN.setValue(x.length - nonSubsetIdx.size());
-        // The upper bound for N is the number of variable with a domain that is totally excluded from vals
+        // The upper bound for N is the number of variable with a domain that is not totally excluded from vals
         ubN.setValue(nonEmptyInterIdx.size());
 
-
-        if (!N.isFixed()) {
-            N.removeBelow(lbN.value());
-            N.removeAbove(ubN.value());
-        }
+        N.removeBelow(lbN.value());
+        N.removeAbove(ubN.value());
 
         // If N is fixed and that exactly N variables still have at least one value in vals
         // the values in their domain that are not in vals
         if (N.isFixed() && N.min() == ubN.value()) {
             for (int i: nonSubsetIdx.toArray()) {
-                if(!x[i].isFixed() && nonEmptyInterIdx.contains(i)) {
+                if (!x[i].isFixed() && nonEmptyInterIdx.contains(i)) {
                     CPIntVar var = x[i];
                     int[] domain = new int[var.size()];
                     var.fillArray(domain);

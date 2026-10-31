@@ -1,0 +1,38 @@
+<instance format="XCSP3" type="COP">
+  <variables>
+    <array id="x" note="x[i] is the bin (number) where is put the ith item" size="[50]"> 0..28 </array>
+    <var id="z" note="z is the number of used bins"> 25..29 </var>
+  </variables>
+  <constraints>
+    <binPacking note="ensuring that the capacity of each bin is not exceeded">
+      <list> x[] </list>
+      <sizes> 3 7 7 10 11 13 14 17 20 21 22 23 24 25 27 28 28 29 30 30 33 33 40 40 42 44 46 49 51 52 56 61 62 67 67 69 72 74 76 85 86 87 88 91 92 92 96 96 99 99 </sizes>
+      <condition> (le,100) </condition>
+    </binPacking>
+    <nValues note="ensuring a minimum number of bins">
+      <list> x[] </list>
+      <condition> (eq,z) </condition>
+    </nValues>
+    <group class="symmetry-breaking">
+      <ordered>
+        <list> %0 %1 </list>
+        <operator> le </operator>
+      </ordered>
+      <args> x[1] x[2] </args>
+      <args> x[15] x[16] </args>
+      <args> x[18] x[19] </args>
+      <args> x[20] x[21] </args>
+      <args> x[22] x[23] </args>
+      <args> x[33] x[34] </args>
+      <args> x[44] x[45] </args>
+      <args> x[46] x[47] </args>
+    </group>
+    <instantiation class="symmetry-breaking">
+      <list> x[28..49] </list>
+      <values> 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 </values>
+    </instantiation>
+  </constraints>
+  <objectives>
+    <minimize note="minimizing the number of used bins"> z </minimize>
+  </objectives>
+</instance>

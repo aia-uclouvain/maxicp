@@ -48,7 +48,6 @@ public class MinimizeTest extends CPSolverTest {
             });
 
             search.onSolution(() -> {
-                System.out.println("on Solution"+nbSol);
                 nbSol.incrementAndGet();
             });
             SearchStatistics stats = search.optimize(obj); // actually solve the problem

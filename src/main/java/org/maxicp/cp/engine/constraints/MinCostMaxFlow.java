@@ -2,6 +2,9 @@ package org.maxicp.cp.engine.constraints;
 
 import java.util.Arrays;
 
+/**
+ * Minimum-cost maximum-flow algorithm using successive shortest augmenting paths with potentials.
+ */
 public class MinCostMaxFlow {
     // Stores the found edges
     private final boolean[] found;
@@ -29,6 +32,12 @@ public class MinCostMaxFlow {
 
 
 
+    /**
+     * Creates a minimum-cost maximum-flow solver for a network with a given number of nodes.
+     *
+     * @param H        the maximum cost bound
+     * @param numNodes the total number of nodes in the flow network
+     */
     public MinCostMaxFlow(int H, int numNodes) {
         this.numNodes = numNodes;
         this.H = H;

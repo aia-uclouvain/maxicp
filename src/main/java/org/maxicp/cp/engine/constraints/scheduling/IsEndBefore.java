@@ -3,6 +3,9 @@ package org.maxicp.cp.engine.constraints.scheduling;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.*;
 
+/**
+ * Reified constraint enforcing {@code boolVar <=> end(intervalVar) <= var} when {@code intervalVar} is present.
+ */
 public class IsEndBefore extends AbstractCPConstraint {
 
     private final CPIntervalVar intervalVar;
@@ -12,6 +15,13 @@ public class IsEndBefore extends AbstractCPConstraint {
     private final CPConstraint endBefore;
     private final CPConstraint endAfter;
 
+    /**
+     * Creates a reified constraint linking {@code boolVar} to {@code end(intervalVar) <= var}.
+     *
+     * @param boolVar     the boolean variable that is true iff {@code end(intervalVar) <= var}
+     * @param intervalVar the interval variable
+     * @param var         the integer variable compared against the end of {@code intervalVar}
+     */
     public IsEndBefore(CPBoolVar boolVar, CPIntervalVar intervalVar, CPIntVar var) {
         super(intervalVar.getSolver());
         this.boolVar = boolVar;

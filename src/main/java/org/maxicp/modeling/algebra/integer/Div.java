@@ -23,7 +23,7 @@ public record Div(IntExpression x, IntExpression y) implements SymbolicIntExpres
 
     @Override
     public Div mapSubexpressions(Function<Expression, Expression> f) {
-        return null;
+        return new Div((IntExpression) f.apply(x), (IntExpression) f.apply(y));
     }
 
     @Override

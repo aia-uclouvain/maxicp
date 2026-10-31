@@ -9,7 +9,7 @@
     <groupId>org.maxicp</groupId>
     <artifactId>maxicp</artifactId>
     <packaging>jar</packaging>
-    <version>0.0.4</version>
+    <version>1.0.0</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>MaxiCP: A Constraint Programming Solver for Scheduling and Vehicle Routing</description>
     <url>https://github.com/aia-uclouvain/maxicp</url>
@@ -57,15 +57,27 @@
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.jupiter.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.9.1</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -138,7 +150,6 @@
                 <version>3.11.2</version>
 
                 <configuration>
-                    <aggregate>false</aggregate>          <!-- Important: disable aggregation -->
                     <failOnError>false</failOnError>      <!-- Avoid stopping build for JPMS warnings -->
                     <source>${maven.compiler.source}</source>
                     <excludePackageNames>
@@ -149,8 +160,7 @@
                         <additionalOption>-Xdoclint:none</additionalOption>
                         <additionalOption>-quiet</additionalOption>
                     </additionalOptions>
-                    <reportOutputDirectory>${project.build.directory}</reportOutputDirectory>
-                    <destDir>apidocs</destDir>
+                    <outputDirectory>${project.build.directory}/apidocs</outputDirectory>
                     <sourceFileExcludes>
                         <sourceFileExclude>module-info.java</sourceFileExclude>
                     </sourceFileExcludes>

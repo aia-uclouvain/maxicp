@@ -18,9 +18,7 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
 
 
     private int[] getTempArray() {
-        int minIndex = Math.max(index.min(), 0);
-        int maxIndex = Math.min(index.max(), array.length - 1);
-        return new int[maxIndex - minIndex + 1];
+        return new int[Math.max(0, index.size())];
     }
 
     @Override
@@ -46,8 +44,12 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
         int minValue = Integer.MAX_VALUE;
-        for (int i = 0; i < size; i++)
-            minValue = Math.min(minValue, array[temp[i]].min());
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length) {
+                minValue = Math.min(minValue, array[idx].min());
+            }
+        }
         return minValue;
     }
 
@@ -56,8 +58,12 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
         int maxValue = Integer.MIN_VALUE;
-        for (int i = 0; i < size; i++)
-            maxValue = Math.max(maxValue, array[temp[i]].max());
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length) {
+                maxValue = Math.max(maxValue, array[idx].max());
+            }
+        }
         return maxValue;
     }
 
@@ -65,9 +71,11 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
     public boolean defaultContains(int v) {
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
-        for (int i = 0; i < size; i++)
-            if (this.array[temp[i]].contains(v))
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length && this.array[idx].contains(v))
                 return true;
+        }
         return false;
     }
 
@@ -78,8 +86,10 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
         int k = 0;
         Set<Integer> s = new HashSet<>();
         for (int i = 0; i < size; i++) {
-            IntExpression e = this.array[temp[i]];
-            int[] temp2 = new int[e.max() - e.min() + 1];
+            int idx = temp[i];
+            if (idx < 0 || idx >= this.array.length) continue;
+            IntExpression e = this.array[idx];
+            int[] temp2 = new int[Math.max(0, e.size())];
             int size2 = e.fillArray(temp2);
             for (int j = 0; j < size2; j++){
                 s.add(temp2[j]);
@@ -98,8 +108,10 @@ public record Element1DVar(IntExpression[] array, IntExpression index) implement
         int size = index.fillArray(temp);
         Set<Integer> s = new HashSet<>();
         for (int i = 0; i < size; i++){
-            IntExpression e = this.array[temp[i]];
-            int[] temp2 = new int[e.max() - e.min() + 1];
+            int idx = temp[i];
+            if (idx < 0 || idx >= this.array.length) continue;
+            IntExpression e = this.array[idx];
+            int[] temp2 = new int[Math.max(0, e.size())];
             int size2 = e.fillArray(temp2);
             for (int j = 0; j < size2; j++)
                 s.add(temp2[j]);

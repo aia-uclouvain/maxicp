@@ -20,10 +20,11 @@ public class Mul extends AbstractCPConstraint {
     private final CPIntVar y;
 
     /**
-     * Creates the constraint x * b = y
+     * Creates the constraint {@code x * b = y}.
      *
-     * @param x the variable on which the maximum is to be found
-     * @param y the variable that is equal to the maximum on x
+     * @param x the integer variable
+     * @param b the boolean variable (0 or 1)
+     * @param y the variable equal to {@code x * b}
      */
     public Mul(CPIntVar x, CPBoolVar b, CPIntVar y) {
         super(x.getSolver());

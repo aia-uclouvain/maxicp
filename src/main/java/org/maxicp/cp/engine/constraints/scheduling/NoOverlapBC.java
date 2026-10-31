@@ -24,6 +24,11 @@ public class NoOverlapBC extends AbstractCPConstraint {
     final CPIntervalVar[] vars;
     private CPBoolVar[] precedences;
 
+    /**
+     * Creates a bound-consistent NoOverlap constraint over the given interval variables.
+     *
+     * @param vars the interval variables that must not overlap
+     */
     public NoOverlapBC(CPIntervalVar... vars) {
         super(vars[0].getSolver());
         this.vars = vars;

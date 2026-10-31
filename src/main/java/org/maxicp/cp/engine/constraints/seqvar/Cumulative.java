@@ -17,6 +17,10 @@ import java.util.stream.IntStream;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
 
+/**
+ * Cumulative constraint on a sequence variable ({@link CPSeqVar}), ensuring that the total resource consumption
+ * of active activities along the sequence never exceeds a given capacity.
+ */
 public class Cumulative extends AbstractCPConstraint {
 
     // only activities in 0..nValidActivities are considered (the remaining ones are excluded from the sequence)

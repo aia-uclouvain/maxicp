@@ -19,10 +19,11 @@ public class DivVar extends AbstractCPConstraint {
     private CPIntVar x, y, z;
 
     /**
-     * x / y == z
-     * @param x
-     * @param y
-     * @param z
+     * Creates an integer division constraint {@code x / y == z}.
+     *
+     * @param x the dividend variable
+     * @param y the divisor variable (0 is excluded from its domain)
+     * @param z the quotient variable
      */
     public DivVar(CPIntVar x, CPIntVar y, CPIntVar z) {
         super(x.getSolver());

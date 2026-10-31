@@ -5,6 +5,7 @@
 
 package org.maxicp.search;
 
+import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.state.StateManager;
@@ -14,9 +15,9 @@ import java.util.*;
 import java.util.function.Supplier;
 
 /**
- * Failure-Directed Search (FDS) for scheduling problems with interval variables.
+ * Failure-Directed Search (FDS) for scheduling and integer problems with CP variables.
  * <p>
- * This search algorithm is designed for a broad class of scheduling problems.
+ * This search algorithm is designed for a broad class of scheduling and constraint problems.
  * Instead of guiding the search towards possible solutions, FDS drives the search
  * into conflicts in order to prove that the current branch is infeasible.
  * Choices that fail the most are preferred (first-fail principle applied also to branch ordering).
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
  *   <li><b>Presence choice:</b> whether an optional interval variable is present or absent.</li>
  *   <li><b>Start time choice:</b> whether startOf(v) &le; t or startOf(v) &gt; t (domain splitting).</li>
  *   <li><b>Length choice:</b> whether length(v) &le; l or length(v) &gt; l (domain splitting).</li>
+ *   <li><b>Integer choice:</b> whether x &le; v or x &gt; v (domain splitting).</li>
  * </ul>
  * <p>
  * The choices are generated lazily. At each branching point, the best unfixed
@@ -44,7 +46,7 @@ public class FDS implements Supplier<Runnable[]> {
 
     /** Type of a binary choice. */
     private enum ChoiceType {
-        PRESENCE, START, LENGTH
+        PRESENCE, START, LENGTH, INT
     }
 
     /**
@@ -54,12 +56,13 @@ public class FDS implements Supplier<Runnable[]> {
      *   <li>PRESENCE: positive = present, negative = absent</li>
      *   <li>START: positive = startOf(v) &le; splitValue, negative = startOf(v) &gt; splitValue</li>
      *   <li>LENGTH: positive = length(v) &le; splitValue, negative = length(v) &gt; splitValue</li>
+     *   <li>INT: positive = x &le; splitValue, negative = x &gt; splitValue</li>
      * </ul>
      */
     private static final class Choice {
         final ChoiceType type;
         final int varIndex;
-        final int splitValue; // only used for START and LENGTH choices
+        final int splitValue; // used for START, LENGTH, and INT choices
 
         double ratingPos = 1.0; // rating for positive branch
         double ratingNeg = 1.0; // rating for negative branch
@@ -95,6 +98,7 @@ public class FDS implements Supplier<Runnable[]> {
                     }
                     yield false;
                 }
+                case INT -> false;
             };
         }
 
@@ -106,6 +110,7 @@ public class FDS implements Supplier<Runnable[]> {
             return switch (type) {
                 case PRESENCE -> false;
                 case START, LENGTH -> var.isOptional();
+                case INT -> false;
             };
         }
 
@@ -117,6 +122,7 @@ public class FDS implements Supplier<Runnable[]> {
                 case PRESENCE -> var.setPresent();
                 case START -> var.setStartMax(splitValue);
                 case LENGTH -> var.setLengthMax(splitValue);
+                case INT -> throw new IllegalStateException("INT choice must be applied with CPIntVar");
             }
             cp.fixPoint();
         }
@@ -129,6 +135,7 @@ public class FDS implements Supplier<Runnable[]> {
                 case PRESENCE -> var.setAbsent();
                 case START -> var.setStartMin(splitValue + 1);
                 case LENGTH -> var.setLengthMin(splitValue + 1);
+                case INT -> throw new IllegalStateException("INT choice must be applied with CPIntVar");
             }
             cp.fixPoint();
         }
@@ -139,6 +146,7 @@ public class FDS implements Supplier<Runnable[]> {
                 case PRESENCE -> "Presence(var=" + varIndex + ")";
                 case START -> "Start(var=" + varIndex + ",t=" + splitValue + ")";
                 case LENGTH -> "Length(var=" + varIndex + ",l=" + splitValue + ")";
+                case INT -> "Int(var=" + varIndex + ",v=" + splitValue + ")";
             };
         }
     }
@@ -146,6 +154,7 @@ public class FDS implements Supplier<Runnable[]> {
     // ------- FDS fields -------
 
     private final CPIntervalVar[] intervals;
+    private final CPIntVar[] intVars;
     private final CPSolver cp;
 
     /** Decay factor for rating updates (typical values: 0.9 to 0.99). */
@@ -154,12 +163,19 @@ public class FDS implements Supplier<Runnable[]> {
     /** Average rating per depth level, used for normalization. */
     private final Map<Integer, double[]> avgRatingByDepth; // [0]=avg, [1]=count
 
-    /** All choices generated for this search. */
-    private final List<Choice> allChoices;
+    /** Choices grouped by interval variable index. */
+    private final List<Choice>[] intervalChoices;
+
+    /** Choices grouped by integer variable index. */
+    private final List<Choice>[] intChoices;
+
+    /** Reusable buffer for domain size snapshots before branching. */
+    private final long[] domBeforeBuffer;
 
     /** State manager for depth tracking. */
     private final StateManager sm;
-    private final int baseLevel;
+    private int baseLevel;
+    private boolean lastSelectHadUnfixed;
 
     /**
      * Creates a Failure-Directed Search for the given interval variables.
@@ -167,7 +183,16 @@ public class FDS implements Supplier<Runnable[]> {
      * @param intervals the interval variables to decide
      */
     public FDS(CPIntervalVar... intervals) {
-        this(0.95, intervals);
+        this(0.95, intervals, new CPIntVar[0]);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDS(CPIntervalVar[][] intervals) {
+        this(0.95, flatten(intervals), new CPIntVar[0]);
     }
 
     /**
@@ -177,15 +202,136 @@ public class FDS implements Supplier<Runnable[]> {
      * @param intervals the interval variables to decide
      */
     public FDS(double alpha, CPIntervalVar... intervals) {
-        this.intervals = intervals;
-        this.cp = intervals[0].getSolver();
+        this(alpha, intervals, new CPIntVar[0]);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param alpha     decay factor for rating updates (typical: 0.9 to 0.99)
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDS(double alpha, CPIntervalVar[][] intervals) {
+        this(alpha, flatten(intervals), new CPIntVar[0]);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for integer variables.
+     */
+    public FDS(CPIntVar... intVars) {
+        this(0.95, new CPIntervalVar[0], intVars);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer variables.
+     */
+    public FDS(CPIntVar[][] intVars) {
+        this(0.95, new CPIntervalVar[0], flatten(intVars));
+    }
+
+    /**
+     * Creates a Failure-Directed Search for integer variables.
+     */
+    public FDS(double alpha, CPIntVar... intVars) {
+        this(alpha, new CPIntervalVar[0], intVars);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer variables.
+     */
+    public FDS(double alpha, CPIntVar[][] intVars) {
+        this(alpha, new CPIntervalVar[0], flatten(intVars));
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed interval and integer decisions.
+     */
+    public FDS(CPIntervalVar[] intervals, CPIntVar... intVars) {
+        this(0.95, intervals, intVars);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDS(CPIntervalVar[][] intervals, CPIntVar... intVars) {
+        this(0.95, flatten(intervals), intVars);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDS(double alpha, CPIntervalVar[][] intervals, CPIntVar... intVars) {
+        this(alpha, flatten(intervals), intVars);
+    }
+
+    private static CPIntervalVar[] flatten(CPIntervalVar[][] intervals) {
+        if (intervals == null) return new CPIntervalVar[0];
+        return Arrays.stream(intervals)
+                .filter(Objects::nonNull)
+                .flatMap(Arrays::stream)
+                .filter(Objects::nonNull)
+                .toArray(CPIntervalVar[]::new);
+    }
+
+    private static CPIntVar[] flatten(CPIntVar[][] intVars) {
+        if (intVars == null) return new CPIntVar[0];
+        return Arrays.stream(intVars)
+                .filter(Objects::nonNull)
+                .flatMap(Arrays::stream)
+                .filter(Objects::nonNull)
+                .toArray(CPIntVar[]::new);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed interval and integer decisions.
+     */
+    @SuppressWarnings("unchecked")
+    public FDS(double alpha, CPIntervalVar[] intervals, CPIntVar... intVars) {
+        this.intervals = intervals == null ? new CPIntervalVar[0] : intervals;
+        this.intVars = intVars == null ? new CPIntVar[0] : intVars;
+        if (this.intervals.length == 0 && this.intVars.length == 0) {
+            throw new IllegalArgumentException("FDS requires at least one decision variable");
+        }
+        this.cp = resolveSolver(this.intervals, this.intVars);
         this.sm = cp.getStateManager();
         this.alpha = alpha;
         this.baseLevel = sm.getLevel();
         this.avgRatingByDepth = new HashMap<>();
-        this.allChoices = new ArrayList<>();
+        this.intervalChoices = new List[this.intervals.length];
+        for (int i = 0; i < this.intervals.length; i++) {
+            this.intervalChoices[i] = new ArrayList<>();
+        }
+        this.intChoices = new List[this.intVars.length];
+        for (int i = 0; i < this.intVars.length; i++) {
+            this.intChoices[i] = new ArrayList<>();
+        }
+        this.domBeforeBuffer = new long[this.intervals.length + this.intVars.length];
 
         generateInitialChoices();
+    }
+
+    private static CPSolver resolveSolver(CPIntervalVar[] intervals, CPIntVar[] intVars) {
+        CPSolver solver = null;
+        for (CPIntervalVar var : intervals) {
+            if (solver == null) solver = var.getSolver();
+            else if (solver != var.getSolver()) {
+                throw new IllegalArgumentException("All variables must belong to the same solver");
+            }
+        }
+        for (CPIntVar var : intVars) {
+            if (solver == null) solver = var.getSolver();
+            else if (solver != var.getSolver()) {
+                throw new IllegalArgumentException("All variables must belong to the same solver");
+            }
+        }
+        return solver;
+    }
+
+    /**
+     * Resets the depth base level to the current solver level while keeping learned choice ratings.
+     */
+    public void resetLevel() {
+        this.baseLevel = sm.getLevel();
     }
 
     /**
@@ -209,15 +355,23 @@ public class FDS implements Supplier<Runnable[]> {
 
             // Presence choice for optional variables
             if (var.isOptional()) {
-                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));
+                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));
             }
 
             // Start time choices via binary splitting
-            addBinarySplitChoices(ChoiceType.START, i, var.startMin(), var.startMax());
+            addBinarySplitChoices(intervalChoices[i], ChoiceType.START, i, var.startMin(), var.startMax());
 
             // Length choices via binary splitting (if not fixed)
             if (var.lengthMin() < var.lengthMax()) {
-                addBinarySplitChoices(ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());
+                addBinarySplitChoices(intervalChoices[i], ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());
+            }
+        }
+
+        for (int i = 0; i < intVars.length; i++) {
+            int min = intVars[i].min();
+            int max = intVars[i].max();
+            if (min < max) {
+                addBinarySplitChoices(intChoices[i], ChoiceType.INT, i, min, max);
             }
         }
     }
@@ -235,7 +389,7 @@ public class FDS implements Supplier<Runnable[]> {
      * (up to {@link #MAX_INITIAL_CHOICES_PER_VAR} choices), ensuring O(log(domainSize))
      * choices per variable. More choices are generated on demand when needed.
      */
-    private void    addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
+    private void addBinarySplitChoices(List<Choice> target, ChoiceType type, int varIndex, int lo, int hi) {
         if (lo >= hi) return;
         int count = 0;
         Deque<int[]> queue = new ArrayDeque<>();
@@ -244,8 +398,8 @@ public class FDS implements Supplier<Runnable[]> {
             int[] range = queue.poll();
             int l = range[0], h = range[1];
             if (l >= h) continue;
-            int mid = l + (h - l) / 2;
-            allChoices.add(new Choice(type, varIndex, mid));
+            int mid = l + ((h - l) >>> 1);
+            target.add(new Choice(type, varIndex, mid));
             count++;
             queue.add(new int[]{l, mid});
             queue.add(new int[]{mid + 1, h});
@@ -268,17 +422,29 @@ public class FDS implements Supplier<Runnable[]> {
     }
 
     /**
-     * Compute the search space size estimate R for the given intervals.
+     * Compute the search space size estimate R for the given variables.
      * R = product(domainSize_after / domainSize_before) over all variables.
      * Returns a value between 0 and 1.
      */
     private double computeSearchSpaceReduction(long[] domainSizesBefore) {
         double ratio = 1.0;
+        int p = 0;
         for (int i = 0; i < intervals.length; i++) {
-            long before = domainSizesBefore[i];
-            if (before > 0) {
+            long before = domainSizesBefore[p++];
+            if (before > 1L) {
                 long after = domainSize(intervals[i]);
-                ratio *= (double) after / (double) before;
+                if (after != before) {
+                    ratio *= (double) after / (double) before;
+                }
+            }
+        }
+        for (int i = 0; i < intVars.length; i++) {
+            long before = domainSizesBefore[p++];
+            if (before > 1L) {
+                long after = Math.max(1L, intVars[i].size());
+                if (after != before) {
+                    ratio *= (double) after / (double) before;
+                }
             }
         }
         return Math.min(ratio, 1.0);
@@ -288,22 +454,25 @@ public class FDS implements Supplier<Runnable[]> {
      * Estimate domain size for an interval variable.
      */
     private long domainSize(CPIntervalVar var) {
-        if (var.isAbsent()) return 1;
-        long startRange = Math.max(1, (long) var.startMax() - var.startMin() + 1);
-        long lengthRange = Math.max(1, (long) var.lengthMax() - var.lengthMin() + 1);
+        if (var.isAbsent()) return 1L;
+        long startRange = Math.max(1L, (long) var.startMax() - var.startMin() + 1L);
+        long lengthRange = Math.max(1L, (long) var.lengthMax() - var.lengthMin() + 1L);
         if (var.isOptional()) startRange++; // +1 for the absent possibility
         return startRange * lengthRange;
     }
 
     /**
-     * Snapshot domain sizes for all interval variables (before a branch).
+     * Snapshot domain sizes for all decision variables (before a branch).
      */
     private long[] snapshotDomainSizes() {
-        long[] sizes = new long[intervals.length];
+        int p = 0;
         for (int i = 0; i < intervals.length; i++) {
-            sizes[i] = domainSize(intervals[i]);
+            domBeforeBuffer[p++] = domainSize(intervals[i]);
         }
-        return sizes;
+        for (int i = 0; i < intVars.length; i++) {
+            domBeforeBuffer[p++] = Math.max(1L, intVars[i].size());
+        }
+        return domBeforeBuffer;
     }
 
     /**
@@ -341,16 +510,6 @@ public class FDS implements Supplier<Runnable[]> {
     }
 
     /**
-     * Check if all interval variables are fixed.
-     */
-    private boolean allFixed() {
-        for (CPIntervalVar var : intervals) {
-            if (!var.isFixed()) return false;
-        }
-        return true;
-    }
-
-    /**
      * The FDS branching strategy, implementing the {@code Supplier<Runnable[]>} interface.
      * <p>
      * This method implements the core FDS algorithm from Algorithm 1 in the paper.
@@ -367,56 +526,123 @@ public class FDS implements Supplier<Runnable[]> {
      */
     @Override
     public Runnable[] get() {
-        if (allFixed()) {
-            return Searches.EMPTY;
-        }
-
-        // Pick: find the best applicable choice (lowest rating)
-        Choice bestChoice = null;
-        double bestRating = Double.MAX_VALUE;
-
-        for (Choice c : allChoices) {
-            CPIntervalVar var = intervals[c.varIndex];
-            if (c.isWaiting(var) || c.isResolved(var)) {
-                continue;
-            }
-            double r = c.rating();
-            if (r < bestRating) {
-                bestRating = r;
-                bestChoice = c;
-            }
-        }
-
+        Choice bestChoice = selectBestChoice();
         if (bestChoice == null) {
-            // No applicable choice found — generate more if needed
-            if (!allFixed()) {
-                int before = allChoices.size();
-                generateAdditionalChoices();
-                if (allChoices.size() > before) {
-                    return get(); // retry with newly generated choices
-                }
+            if (!lastSelectHadUnfixed) {
+                return Searches.EMPTY;
             }
-            return Searches.EMPTY;
+            if (generateAdditionalChoices()) {
+                bestChoice = selectBestChoice();
+            }
+            if (bestChoice == null) {
+                return Searches.EMPTY;
+            }
         }
 
         final Choice chosen = bestChoice;
-        final CPIntervalVar var = intervals[chosen.varIndex];
-
         // Determine which branch to explore first (better rating = lower value → heads into conflict)
         boolean positiveFirst = chosen.ratingPos <= chosen.ratingNeg;
 
         if (positiveFirst) {
-
             return Searches.branch(
-                    makeBranch(chosen, var, true),
-                    makeBranch(chosen, var, false)
+                    makeBranch(chosen, true),
+                    makeBranch(chosen, false)
             );
         } else {
             return Searches.branch(
-                    makeBranch(chosen, var, false),
-                    makeBranch(chosen, var, true)
+                    makeBranch(chosen, false),
+                    makeBranch(chosen, true)
             );
         }
+    }
+
+    private Choice selectBestChoice() {
+        Choice bestChoice = null;
+        double bestRating = Double.MAX_VALUE;
+        int bestDomSize = Integer.MAX_VALUE;
+        int bestMidDist = Integer.MAX_VALUE;
+        boolean anyUnfixed = false;
+
+        for (int i = 0; i < intervals.length; i++) {
+            CPIntervalVar var = intervals[i];
+            if (var.isFixed()) continue;
+            anyUnfixed = true;
+            if (var.isAbsent()) continue;
+            boolean optional = var.isOptional();
+            int sMin = var.startMin();
+            int sMax = var.startMax();
+            int lMin = var.lengthMin();
+            int lMax = var.lengthMax();
+            int sMid = sMin + ((sMax - sMin) >>> 1);
+            int lMid = lMin + ((lMax - lMin) >>> 1);
+
+            List<Choice> choices = intervalChoices[i];
+            for (int k = 0, n = choices.size(); k < n; k++) {
+                Choice c = choices.get(k);
+                int domSize;
+                int midDist;
+                switch (c.type) {
+                    case PRESENCE -> {
+                        if (!optional) continue;
+                        domSize = 2;
+                        midDist = 0;
+                    }
+                    case START -> {
+                        if (optional || sMin > c.splitValue || sMax <= c.splitValue) continue;
+                        domSize = sMax - sMin + 1;
+                        midDist = Math.abs(c.splitValue - sMid);
+                    }
+                    case LENGTH -> {
+                        if (optional || lMin > c.splitValue || lMax <= c.splitValue) continue;
+                        domSize = lMax - lMin + 1;
+                        midDist = Math.abs(c.splitValue - lMid);
+                    }
+                    default -> {
+                        continue;
+                    }
+                }
+                double r = c.rating();
+                if (r < bestRating - 1e-12
+                        || (Math.abs(r - bestRating) <= 1e-12
+                        && (domSize < bestDomSize || (domSize == bestDomSize && midDist < bestMidDist)))) {
+                    bestRating = r;
+                    bestDomSize = domSize;
+                    bestMidDist = midDist;
+                    bestChoice = c;
+                }
+            }
+        }
+
+        for (int i = 0; i < intVars.length; i++) {
+            CPIntVar v = intVars[i];
+            int min = v.min();
+            int max = v.max();
+            if (min == max) {
+                continue;
+            }
+            anyUnfixed = true;
+            int domSize = v.size();
+            int mid = min + ((max - min) >>> 1);
+            List<Choice> choices = intChoices[i];
+            for (int k = 0, n = choices.size(); k < n; k++) {
+                Choice c = choices.get(k);
+                if (min <= c.splitValue && max > c.splitValue) {
+                    double r = c.rating();
+                    int midDist = Math.abs(c.splitValue - mid);
+                    if (r < bestRating - 1e-12
+                            || (Math.abs(r - bestRating) <= 1e-12
+                            && (domSize < bestDomSize || (domSize == bestDomSize && midDist < bestMidDist)))) {
+                        bestRating = r;
+                        bestDomSize = domSize;
+                        bestMidDist = midDist;
+                        bestChoice = c;
+                    }
+                }
+            }
+        }
+
+        lastSelectHadUnfixed = anyUnfixed;
+        return anyUnfixed ? bestChoice : null;
     }
 
     /**
@@ -424,24 +650,30 @@ public class FDS implements Supplier<Runnable[]> {
      * The closure applies the branch, updates the rating, and re-throws any failure.
      *
      * @param choice     the choice to branch on
-     * @param var        the interval variable for this choice
      * @param isPositive true for positive branch, false for negative
      * @return a Runnable that applies the branch
      */
-    private Runnable makeBranch(Choice choice, CPIntervalVar var, boolean isPositive) {
+    private Runnable makeBranch(Choice choice, boolean isPositive) {
         return () -> {
             long[] domBefore = snapshotDomainSizes();
             try {
-                if (isPositive) {
-                    choice.applyPositive(var, cp);
+                if (choice.type == ChoiceType.INT) {
+                    CPIntVar v = intVars[choice.varIndex];
+                    if (isPositive) {
+                        v.removeAbove(choice.splitValue);
+                    } else {
+                        v.removeBelow(choice.splitValue + 1);
+                    }
+                    cp.fixPoint();
+                } else if (isPositive) {
+                    choice.applyPositive(intervals[choice.varIndex], cp);
                 } else {
-                    choice.applyNegative(var, cp);
+                    choice.applyNegative(intervals[choice.varIndex], cp);
                 }
             } catch (InconsistencyException e) {
                 updateRating(choice, isPositive, true, 0);
                 throw e;
             }
-            long[] domAfter = snapshotDomainSizes();
             double R = computeSearchSpaceReduction(domBefore);
             updateRating(choice, isPositive, false, R);
         };
@@ -452,29 +684,44 @@ public class FDS implements Supplier<Runnable[]> {
      * This is called when all initial choices are resolved but some variables remain unfixed
      * (as described in Section 6.1 of the paper).
      */
-    private void generateAdditionalChoices() {
+    private boolean generateAdditionalChoices() {
+        boolean added = false;
         for (int i = 0; i < intervals.length; i++) {
             CPIntervalVar var = intervals[i];
             if (var.isFixed() || var.isAbsent()) continue;
 
             // Presence choice for still-optional variables
             if (var.isOptional()) {
-                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));
+                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));
+                added = true;
                 continue; // presence must be decided first
             }
 
             // Start time choices for the remaining start domain
             if (var.startMin() < var.startMax()) {
-                int mid = var.startMin() + (var.startMax() - var.startMin()) / 2;
-                allChoices.add(new Choice(ChoiceType.START, i, mid));
+                int mid = var.startMin() + ((var.startMax() - var.startMin()) >>> 1);
+                intervalChoices[i].add(new Choice(ChoiceType.START, i, mid));
+                added = true;
             }
 
             // Length choices for the remaining length domain
             if (var.lengthMin() < var.lengthMax()) {
-                int mid = var.lengthMin() + (var.lengthMax() - var.lengthMin()) / 2;
-                allChoices.add(new Choice(ChoiceType.LENGTH, i, mid));
+                int mid = var.lengthMin() + ((var.lengthMax() - var.lengthMin()) >>> 1);
+                intervalChoices[i].add(new Choice(ChoiceType.LENGTH, i, mid));
+                added = true;
             }
         }
+
+        for (int i = 0; i < intVars.length; i++) {
+            int min = intVars[i].min();
+            int max = intVars[i].max();
+            if (min < max) {
+                int mid = min + ((max - min) >>> 1);
+                intChoices[i].add(new Choice(ChoiceType.INT, i, mid));
+                added = true;
+            }
+        }
+        return added;
     }
 }
 

@@ -33,7 +33,7 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     }
 
     public static SymbolicModel emptyModel(ModelProxy modelProxy) {
-        return new SymbolicModel(null, null, modelProxy, List.of());
+        return new SymbolicModel(null, null, modelProxy, new ArrayList<>());
     }
 
     public boolean isEmpty() {
@@ -50,9 +50,8 @@ public record SymbolicModel(Constraint constraint, SymbolicModel parent, ModelPr
     }
 
     public SymbolicModel addVariableGroup(List<IntExpression> group) {
-        List<List<IntExpression>> newGroups = new ArrayList<>(this.variableGroups);
-        newGroups.add(group);
-        return new SymbolicModel(this.constraint, this.parent, this.modelProxy, newGroups);
+        this.variableGroups.add(group);
+        return this;
     }
 
     public Objective minimize(Expression expr) {

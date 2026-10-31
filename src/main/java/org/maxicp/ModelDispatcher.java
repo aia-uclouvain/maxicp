@@ -14,11 +14,18 @@ import org.maxicp.modeling.symbolic.*;
 import org.maxicp.search.BestFirstSearch;
 import org.maxicp.search.ConcurrentDFSearch;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchStatistics;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.util.Ints;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static org.maxicp.Constants.HORIZON;
@@ -29,18 +36,31 @@ import static org.maxicp.Constants.HORIZON;
 public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, ModelProxyInstantiatorWithCP, ModelProxy {
     private Model initialModel;
     private ThreadLocal<Model> currentModel;
+    private final boolean rawSolver;
+    private final List<IntVar> registeredIntVars = new ArrayList<>();
+    private final List<IntervalVar> registeredIntervalVars = new ArrayList<>();
 
     public ModelDispatcher() {
+        this(false);
+    }
+
+    public ModelDispatcher(boolean rawSolver) {
+        this.rawSolver = rawSolver;
         initialModel = SymbolicModel.emptyModel(this);
         currentModel = new ThreadLocal<>();
         currentModel.set(initialModel);
+    }
+
+    public boolean isRawSolver() {
+        return rawSolver;
     }
 
     /**
      * @return the current model
      */
     public Model getModel() {
-        return currentModel.get();
+        Model m = currentModel != null ? currentModel.get() : null;
+        return m != null ? m : initialModel;
     }
 
     /**
@@ -51,6 +71,9 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
         if (m != null && !m.getModelProxy().equals(this))
             throw new RuntimeException("Model being assigned to this ModelProxy does not originate from here");
         currentModel.set(m);
+        if (rawSolver && m != null) {
+            initialModel = m;
+        }
         return m;
     }
 
@@ -85,14 +108,64 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     }
 
     /**
+     * Infers the interval variables from the constraint graph and variable registrations of the current model.
+     *
+     * @return unmodifiable list of interval variables
+     */
+    public List<IntervalVar> getIntervalVariables() {
+        return DecisionVarCollector.collectIntervals(this);
+    }
+
+    /**
+     * Returns all non-constant {@link IntVar} instances created on this model dispatcher.
+     */
+    public List<IntVar> getRegisteredIntVars() {
+        return Collections.unmodifiableList(registeredIntVars);
+    }
+
+    /**
+     * Returns all {@link IntervalVar} instances created on this model dispatcher.
+     */
+    public List<IntervalVar> getRegisteredIntervalVars() {
+        return Collections.unmodifiableList(registeredIntervalVars);
+    }
+
+    private <T extends IntVar> T registerIntVar(T v) {
+        registeredIntVars.add(v);
+        return v;
+    }
+
+    private <T extends IntervalVar> T registerIntervalVar(T v) {
+        registeredIntervalVars.add(v);
+        return v;
+    }
+
+    public <T extends IntVar> T registerRawIntVar(T v) {
+        if (rawSolver) {
+            registeredIntVars.add(v);
+        }
+        return v;
+    }
+
+    public <T extends IntervalVar> T registerRawIntervalVar(T v) {
+        if (rawSolver) {
+            registeredIntervalVars.add(v);
+        }
+        return v;
+    }
+
+    /**
      * Create an array of n IntVars with domain between 0 and domSize-1, inclusive.
      * @param n size of the array, number of IntVars
      * @param domSize size of the domains. Domains are [0, domsize-1]
      */
     public IntVar[] intVarArray(int n, int domSize) {
         IntVar[] out = new IntVar[n];
-        for(int i = 0; i < n; i++)
-            out[i] = new IntVarRangeImpl(this, 0, domSize-1);
+        for (int i = 0; i < n; i++)
+            out[i] = intVar(0, domSize - 1);
+        if (n > 1) {
+            addVariableGroup(Arrays.asList(out));
+        }
         return out;
     }
 
@@ -100,35 +173,41 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
         IntExpression[] t = new IntExpression[n];
         for (int i = 0; i < n; i++)
             t[i] = body.apply(i);
+        if (n > 1) {
+            List<IntExpression> group = Arrays.stream(t).filter(Objects::nonNull).toList();
+            if (group.size() > 1) {
+                addVariableGroup(group);
+            }
+        }
         return t;
     }
 
     public IntVar intVar(int min, int max) {
-        return new IntVarRangeImpl(this, min, max);
+        return registerIntVar(new IntVarRangeImpl(this, min, max));
     }
 
     public IntVar intVar(String id, int min, int max) {
-        return new IntVarRangeImpl(this, id, min, max);
+        return registerIntVar(new IntVarRangeImpl(this, id, min, max));
     }
 
     public IntVar intVar(int[] values) {
-        return new IntVarSetImpl(this, Set.copyOf(Ints.asList(values)));
+        return registerIntVar(new IntVarSetImpl(this, Set.copyOf(Ints.asList(values))));
     }
 
     public IntVar intVar(Set<Integer> values) {
-        return new IntVarSetImpl(this, values);
+        return registerIntVar(new IntVarSetImpl(this, values));
     }
 
     public IntVar intVar(String id, int[] values) {
-        return new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values)));
+        return registerIntVar(new IntVarSetImpl(this, id, Set.copyOf(Ints.asList(values))));
     }
 
     public IntVar constant(int value) {
-        return intVar(value, value);
+        return new IntVarRangeImpl(this, value, value);
     }
 
     public IntervalVar intervalVar(int startMin, int startMax, int endMin, int endMax, int lengthMin, int lengthMax, boolean isPresent) {
-        return new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent);
+        return registerIntervalVar(new IntervalVarImpl(this, startMin, startMax, endMin, endMax, lengthMin, lengthMax, isPresent));
     }
 
     public IntervalVar intervalVar(boolean isPresent) {
@@ -160,13 +239,16 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
 
     public BoolVar[] boolVarArray(int n) {
         BoolVar[] out = new BoolVar[n];
-        for(int i = 0; i < n; i++)
-            out[i] = new BoolVarImpl(this);
+        for (int i = 0; i < n; i++)
+            out[i] = boolVar();
+        if (n > 1) {
+            addVariableGroup(Arrays.asList(out));
+        }
         return out;
     }
 
     public BoolVar boolVar() {
-        return new BoolVarImpl(this);
+        return registerIntVar(new BoolVarImpl(this));
     }
 
     public SeqVar seqVar(int nNode, int begin, int end) {
@@ -208,9 +290,82 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
         return new BestFirstSearch<U>(this, branching, nodeEvaluator);
     }
 
+    /**
+     * Creates a black-box search that automatically discovers the model's decision variables
+     * (either {@link IntervalVar}s for scheduling models or {@link IntVar}s for combinatorial models).
+     */
+    public BlackBoxSearch blackBoxSearch() {
+        return new BlackBoxSearch(this);
+    }
+
+    /**
+     * Creates a black-box search over the specified integer decision variables.
+     */
+    public BlackBoxSearch blackBoxSearch(IntExpression... vars) {
+        return new BlackBoxSearch(this, vars);
+    }
+
+    /**
+     * Creates a black-box search over the specified interval variables.
+     */
+    public BlackBoxSearch blackBoxSearch(IntervalVar... intervals) {
+        return new BlackBoxSearch(this, intervals);
+    }
+
+    /**
+     * Creates a black-box search over the specified 2D matrix of interval variables.
+     */
+    public BlackBoxSearch blackBoxSearch(IntervalVar[][] intervals) {
+        return new BlackBoxSearch(this, intervals);
+    }
+
+    /**
+     * Instantiates the model and solves it using black-box search.
+     */
+    public SearchStatistics solve() {
+        return runCP(() -> blackBoxSearch().solve());
+    }
+
+    /**
+     * Instantiates the model and solves it using black-box search within the given time limit (in seconds).
+     */
+    public SearchStatistics solve(int timeLimitInSeconds) {
+        return runCP(() -> blackBoxSearch().solve(timeLimitInSeconds));
+    }
+
+    /**
+     * Instantiates the model and solves it using black-box search with a stopping predicate.
+     */
+    public SearchStatistics solve(Predicate<SearchStatistics> limit) {
+        return runCP(() -> blackBoxSearch().solve(limit));
+    }
+
+    /**
+     * Instantiates the model and optimizes the given objective using black-box search.
+     */
+    public SearchStatistics optimize(Objective objective) {
+        return runCP(() -> blackBoxSearch().optimize(objective));
+    }
+
+    /**
+     * Instantiates the model and optimizes the given objective using black-box search within the given time limit (in seconds).
+     */
+    public SearchStatistics optimize(Objective objective, int timeLimitInSeconds) {
+        return runCP(() -> blackBoxSearch().optimize(objective, timeLimitInSeconds));
+    }
+
+    /**
+     * Instantiates the model and optimizes the given objective using black-box search with a stopping predicate.
+     */
+    public SearchStatistics optimize(Objective objective, Predicate<SearchStatistics> limit) {
+        return runCP(() -> blackBoxSearch().optimize(objective, limit));
+    }
+
     public void addVariableGroup(List<IntExpression> group) {
         if (getModel() instanceof SymbolicModel sm) {
             setModel(sm.addVariableGroup(group));
+        } else if (getModel() instanceof ConcreteModel cm && cm.symbolicCopy() != null) {
+            cm.symbolicCopy().addVariableGroup(group);
         }
     }
 }

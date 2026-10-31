@@ -7,6 +7,10 @@ package org.maxicp.search;
 
 import org.junit.jupiter.api.Test;
 import org.maxicp.ModelDispatcher;
+import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.IntVar;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
@@ -92,6 +96,89 @@ class FDSModelingCompletenessTest {
             assertEquals(2, referenceCount);
             assertEquals(referenceCount, fdsCount);
         }
+    }
+
+    @Test
+    void rawFdsIsCompleteOn4QueensIntVars() {
+        int n = 4;
+        CPSolver cp1 = CPFactory.makeSolver();
+        CPIntVar[] q1 = CPFactory.makeIntVarArray(cp1, n, n);
+        cp1.post(CPFactory.allDifferent(q1));
+        cp1.post(CPFactory.allDifferent(CPFactory.makeIntVarArray(n, i -> CPFactory.plus(q1[i], i))));
+        cp1.post(CPFactory.allDifferent(CPFactory.makeIntVarArray(n, i -> CPFactory.minus(q1[i], i))));
+        int fdsCount = CPFactory.makeDfs(cp1, Searches.fds(q1)).solve().numberOfSolutions();
+
+        CPSolver cp2 = CPFactory.makeSolver();
+        CPIntVar[] q2 = CPFactory.makeIntVarArray(cp2, n, n);
+        cp2.post(CPFactory.allDifferent(q2));
+        cp2.post(CPFactory.allDifferent(CPFactory.makeIntVarArray(n, i -> CPFactory.plus(q2[i], i))));
+        cp2.post(CPFactory.allDifferent(CPFactory.makeIntVarArray(n, i -> CPFactory.minus(q2[i], i))));
+        int referenceCount = CPFactory.makeDfs(cp2, Searches.firstFailBinary(q2)).solve().numberOfSolutions();
+
+        assertEquals(2, referenceCount);
+        assertEquals(referenceCount, fdsCount);
+    }
+
+    @Test
+    void rawFdsIsCompleteOnTinyIntervalSchedulingAndMixed() {
+        CPSolver cp = CPFactory.makeSolver();
+        CPIntervalVar[] tasks = new CPIntervalVar[3];
+        for (int i = 0; i < 3; i++) {
+            tasks[i] = CPFactory.makeIntervalVar(cp, false, 1, 1);
+            tasks[i].setStartMin(0);
+            tasks[i].setEndMax(3);
+        }
+        cp.post(CPFactory.noOverlap(tasks));
+        int fdsCount = CPFactory.makeDfs(cp, Searches.fds(tasks)).solve().numberOfSolutions();
+        assertEquals(6, fdsCount);
+
+        CPSolver cpMixed = CPFactory.makeSolver();
+        CPIntervalVar a = CPFactory.makeIntervalVar(cpMixed, false, 1, 1);
+        a.setStartMin(0);
+        a.setEndMax(3);
+        CPIntervalVar b = CPFactory.makeIntervalVar(cpMixed, false, 1, 1);
+        b.setStartMin(0);
+        b.setEndMax(3);
+        CPIntVar x = CPFactory.makeIntVar(cpMixed, 0, 1);
+        cpMixed.post(CPFactory.eq(CPFactory.start(a), x));
+        cpMixed.post(CPFactory.eq(CPFactory.start(b), CPFactory.plus(x, 1)));
+        cpMixed.post(CPFactory.noOverlap(a, b));
+        int mixedCount = CPFactory.makeDfs(cpMixed, Searches.fds(new CPIntervalVar[]{a, b}, x)).solve().numberOfSolutions();
+        assertEquals(2, mixedCount);
+    }
+
+    @Test
+    void fds2DIntervalsMatrixWorksInModelingAndRaw() throws Exception {
+        try (ModelDispatcher model = makeModelDispatcher()) {
+            IntervalVar[][] tasks = new IntervalVar[2][2];
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    tasks[i][j] = model.intervalVar(0, 3, 1, true);
+                }
+                model.add(endBeforeStart(tasks[i][0], tasks[i][1]));
+            }
+            model.add(noOverlap(tasks[0][0], tasks[1][0]));
+            model.add(noOverlap(tasks[0][1], tasks[1][1]));
+
+            int fdsCount = solveCount(model, () -> Searches.fds(tasks));
+            assertEquals(2, fdsCount);
+        }
+
+        CPSolver cp = CPFactory.makeSolver();
+        CPIntervalVar[][] rawTasks = new CPIntervalVar[2][2];
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                rawTasks[i][j] = CPFactory.makeIntervalVar(cp, false, 1, 1);
+                rawTasks[i][j].setStartMin(0);
+                rawTasks[i][j].setEndMax(3);
+            }
+            cp.post(CPFactory.endBeforeStart(rawTasks[i][0], rawTasks[i][1]));
+        }
+        cp.post(CPFactory.noOverlap(new CPIntervalVar[]{rawTasks[0][0], rawTasks[1][0]}));
+        cp.post(CPFactory.noOverlap(new CPIntervalVar[]{rawTasks[0][1], rawTasks[1][1]}));
+
+        int rawFdsCount = CPFactory.makeDfs(cp, Searches.fds(rawTasks)).solve().numberOfSolutions();
+        assertEquals(2, rawFdsCount);
     }
 }
 

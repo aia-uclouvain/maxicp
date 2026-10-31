@@ -25,6 +25,13 @@ public class GeneralizedCumulativeChecker extends AbstractCPConstraint {
     protected boolean[] covered;
     int offset; // offset to start indices at zero from the time
 
+    /**
+     * Creates a checker for the generalized cumulative constraint with minimum and maximum capacity bounds.
+     *
+     * @param activities  the array of activities
+     * @param minCapacity the minimum resource capacity bound
+     * @param maxCapacity the maximum resource capacity bound
+     */
     public GeneralizedCumulativeChecker(Activity[] activities, int minCapacity, int maxCapacity) {
         super(activities[0].interval().getSolver());
         if (maxCapacity < 0) throw new IllegalArgumentException("The maximum capacity provided is < 0");
@@ -46,6 +53,12 @@ public class GeneralizedCumulativeChecker extends AbstractCPConstraint {
         covered = new boolean[maxTime - minTime + 1];
     }
 
+    /**
+     * Creates a checker for the generalized cumulative constraint with a maximum capacity bound.
+     *
+     * @param activities  the array of activities
+     * @param maxCapacity the maximum resource capacity bound
+     */
     public GeneralizedCumulativeChecker(Activity[] activities, int maxCapacity) {
         this(activities, Integer.MIN_VALUE, maxCapacity);
     }

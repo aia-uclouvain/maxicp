@@ -19,7 +19,7 @@ public class Insert extends AbstractCPConstraint {
 
     /**
      * Inserts a node into a sequence, after a given insertion.
-     * This extends the sequence, such that a link ... -> prev -> node -> ... is formed.
+     * This extends the sequence, such that a link {@code ... -> prev -> node -> ...} is formed.
      *
      * @param seqVar sequence where the node needs to be inserted
      * @param prev predecessor for the node

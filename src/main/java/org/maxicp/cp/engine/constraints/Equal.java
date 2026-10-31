@@ -9,6 +9,9 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 
+/**
+ * Equality constraint between two integer variables {@code x = y}.
+ */
 public class Equal extends AbstractCPConstraint {
     private final CPIntVar x, y;
 

@@ -29,6 +29,10 @@ public class Maximize implements IntObjective {
         this(x, new AtomicInteger(Integer.MIN_VALUE+1));
     }
 
+    public CPIntVar getVar() {
+        return x;
+    }
+
     @Override
     public void setFilter(boolean activate) {
         this.filter = activate;
@@ -65,7 +69,11 @@ public class Maximize implements IntObjective {
     @Override
     public void filter() {
         if (filter) {
-            x.removeBelow(bound.get());
+            int b = bound.get();
+            if (b > x.min()) {
+                x.removeBelow(b);
+                x.getSolver().fixPoint();
+            }
         }
     }
 }

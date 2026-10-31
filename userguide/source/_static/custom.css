@@ -1,75 +1,471 @@
-/* Change primary theme color */
+/* ==========================================================================
+   MaxiCP User Guide — Gradaly.io Inspired Palette (Slate + Indigo + Teal)
+   ========================================================================== */
+
+:root {
+    --slate-50:  #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+
+    --indigo-50:  #eef2ff;
+    --indigo-100: #e0e7ff;
+    --indigo-200: #c7d2fe;
+    --indigo-600: #4f46e5;
+    --indigo-700: #4338ca;
+    --indigo-800: #3730a3;
+
+    --teal-50:  #f0fdfa;
+    --teal-100: #ccfbf1;
+    --teal-200: #99f6e4;
+    --teal-500: #14b8a6;
+    --teal-600: #0d9488;
+    --teal-800: #115e59;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ── Page & Body Layout ──────────────────────────────────────────────────── */
 body {
-    background-color: #ffffff; /* White background */
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+    background-color: var(--slate-50) !important;
+    background-image: none !important;
+    color: var(--slate-800);
+    margin: 0 auto !important;
+    max-width: 1320px;
+    border-left: 1px solid var(--slate-200) !important;
+    border-right: 1px solid var(--slate-200) !important;
+    -webkit-font-smoothing: antialiased;
 }
 
 div.document {
-    color: #333;
+    background-color: #ffffff !important;
+    color: var(--slate-800);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+    -moz-box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+    -webkit-box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
 }
 
+div.bodywrapper {
+    margin: 0 0 0 268px;
+    border-left: 1px solid var(--slate-200);
+}
+
+div.body {
+    margin: 0;
+    padding: 1.75em 2.5em 3em 2.5em;
+    max-width: 920px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* ── Top & Bottom Navigation Bar (Clean White Glass Navbar like gradaly.io) ─ */
+div.related {
+    box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+div.related ul {
+    background-color: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    height: auto !important;
+    min-height: 3.1em;
+    padding: 0.45em 1.25em !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--slate-200) !important;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35em;
+}
+
+div.related ul li {
+    color: var(--slate-600) !important;
+    height: auto !important;
+    float: none !important;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+div.related ul li.nav-item-0 a {
+    font-weight: 700 !important;
+    color: var(--slate-900) !important;
+}
+
+div.related ul li.right {
+    float: none !important;
+    margin-left: auto;
+    order: 2;
+}
+
+div.related ul li.right ~ li.right {
+    margin-left: 0.25em;
+}
+
+div.related ul li a {
+    color: var(--slate-700) !important;
+    font-weight: 600;
+    padding: 0.25em 0.6em !important;
+    border-radius: 6px;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease;
+}
+
+div.related ul li a:hover {
+    background-color: var(--indigo-50) !important;
+    color: var(--indigo-600) !important;
+    text-decoration: none !important;
+}
+
+/* Mobile menu button (hidden on desktop) */
+li.mobile-nav-toggle {
+    display: none !important;
+}
+
+li.mobile-nav-toggle button {
+    background-color: var(--indigo-50);
+    color: var(--indigo-700);
+    border: 1px solid var(--indigo-200);
+    border-radius: 6px;
+    padding: 0.3em 0.7em;
+    font-size: 0.88em;
+    font-weight: 700;
+    cursor: pointer;
+    margin-right: 0.4em;
+    transition: all 0.15s ease;
+}
+
+li.mobile-nav-toggle button:hover {
+    background-color: var(--indigo-100);
+    color: var(--indigo-800);
+}
+
+/* ── Sidebar (div.sphinxsidebar) ─────────────────────────────────────────── */
+div.sphinxsidebar {
+    width: 268px;
+    padding: 1.25em 18px 24px 18px;
+    font-size: 0.92em;
+    background-color: var(--slate-50);
+}
+
+div.sphinxsidebar p.logo {
+    margin: 0.25em 0 1.25em 0;
+    text-align: center;
+}
+
+div.sphinxsidebar p.logo img.logo {
+    max-width: 185px;
+    height: auto;
+    background-color: var(--surface-white);
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 0.65rem;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+div.sphinxsidebar p.logo a:hover img.logo {
+    border-color: var(--indigo-200);
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.08), 0 2px 4px -2px rgba(79, 70, 229, 0.06);
+}
+
+/* Gradaly-style Indigo Badge Headers in Sidebar */
+div.sphinxsidebar h3,
+div.sphinxsidebar h4 {
+    margin: 1.25em 0 0.55em 0;
+    font-size: 0.78em;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.45em 0.8em;
+    color: var(--indigo-800) !important;
+    border: 1px solid var(--indigo-200) !important;
+    background-color: var(--indigo-50) !important;
+    border-radius: 8px;
+}
+
+div.sphinxsidebar h3 a {
+    color: var(--indigo-800) !important;
+    text-decoration: none !important;
+}
+
+div.sphinxsidebar ul {
+    line-height: 1.55;
+}
+
+div.sphinxsidebar a {
+    color: var(--slate-700);
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+div.sphinxsidebar a:hover {
+    color: var(--indigo-600);
+    text-decoration: none;
+}
+
+div.sphinxsidebar input[type="text"] {
+    width: 100%;
+    padding: 0.45em 0.65em;
+    border: 1px solid var(--slate-300) !important;
+    border-radius: 8px;
+    font-size: 0.92em;
+    background-color: #ffffff;
+    color: var(--slate-900);
+}
+
+div.sphinxsidebar input[type="text"]:focus {
+    outline: 2px solid var(--indigo-600);
+    border-color: transparent !important;
+}
+
+div.sphinxsidebar input[type="submit"] {
+    margin-top: 0.45em;
+    padding: 0.4em 0.85em;
+    background-color: var(--indigo-600);
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+div.sphinxsidebar input[type="submit"]:hover {
+    background-color: var(--indigo-700);
+}
+
+/* ── Headings & Links (Slate-900 Headings + Indigo-600 / Teal-500 Accents) ─ */
 h1, h2, h3, h4, h5, h6 {
-    color: #d32f2f; /* Dark Red */
+    color: var(--slate-900);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 0.1em 0 0.65em 0;
+    padding-bottom: 0.35em;
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(90deg, var(--indigo-600), var(--teal-500)) 1;
+}
+
+h2 {
+    font-size: 1.45em;
+    margin: 1.75em 0 0.55em 0;
+    padding-bottom: 0.35em;
+    border-bottom: 1px solid var(--slate-200);
+    color: var(--slate-900);
+}
+
+h3 {
+    font-size: 1.18em;
+    font-weight: 700;
+    margin: 1.35em 0 0.35em 0;
+    padding-bottom: 0.15em;
+    border-bottom: none;
+    color: var(--indigo-700);
+}
+
+div.body h1 a, div.body h2 a, div.body h3 a,
+div.body h4 a, div.body h5 a, div.body h6 a {
+    color: inherit !important;
+    text-decoration: none !important;
 }
 
 a {
-    color: #d32f2f; /* Red links */
+    color: var(--indigo-600);
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s ease;
 }
 
 a:hover {
-    color: #ff5252; /* Lighter red on hover */
+    color: var(--indigo-700);
+    text-decoration: underline;
 }
 
-.wy-side-nav, .wy-nav-top {
-    background-color: #b71c1c; /* Deep Red Sidebar */
+div.body a {
+    text-decoration: none;
 }
 
-/* Change the header and footer color */
-.wy-side-nav, .wy-nav-top {
-    background-color: #b71c1c !important;  /* Deep Red */
+div.body a:hover {
+    text-decoration: underline;
 }
 
-/* Change the footer color */
-.wy-nav-bottom {
-    background-color: #b71c1c !important;
+a.headerlink {
+    color: var(--slate-300) !important;
+    font-size: 0.75em;
+    margin-left: 8px;
+    text-decoration: none !important;
 }
 
-/* Change the sidebar "Next topic" and "Quick search" button colors */
-.wy-menu-vertical header, .wy-menu-vertical a {
-    background-color: #d32f2f !important; /* Medium Red */
+a.headerlink:hover {
+    background-color: var(--indigo-50);
+    color: var(--indigo-600) !important;
+    border-radius: 4px;
 }
 
-/* Change the text color for better contrast */
-.wy-side-nav a, .wy-nav-top a, .wy-nav-bottom a {
-    color: white !important;
+/* ── Code Blocks & Inline Code (Clean Slate-50 Card with Indigo Accent) ──── */
+div.highlight {
+    background-color: var(--slate-50) !important;
+    border: 1px solid var(--slate-200) !important;
+    border-left: 4px solid var(--indigo-600) !important;
+    border-radius: 10px;
+    margin: 1.1em 0 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Optional: Remove the blue borders */
-.wy-side-nav, .wy-nav-top, .wy-nav-bottom {
+div.highlight pre,
+pre {
+    background-color: transparent !important;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+    font-size: 0.88em;
+    line-height: 1.55;
+    letter-spacing: 0;
+    padding: 0.95em 1.15em !important;
+    margin: 0 !important;
     border: none !important;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--slate-800);
 }
 
-
-/* Force the related navigation bar to be dark red */
-div.related ul {
-    background-color: #881624 !important;
-    height: 100% !important;
-    overflow: hidden !important;
-    border-top: 1px solid #ddd !important;
-    border-bottom: 1px solid #ddd !important;
+code, tt, code.docutils.literal {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+                 "Liberation Mono", monospace;
+    font-size: 0.86em;
+    font-weight: 500;
+    background-color: var(--slate-100);
+    border: 1px solid var(--slate-200);
+    border-bottom: 1px solid var(--slate-200);
+    border-radius: 5px;
+    padding: 0.14em 0.4em;
+    color: var(--indigo-800);
 }
 
-/* Make the sidebar headers dark red */
-div.sphinxsidebar h3, div.sphinxsidebar h4 {
-    margin: 1em 0 0.5em 0;
-    font-size: 1em;
-    padding: 0.1em 0 0.1em 0.5em;
-    color: white !important;  /* Keep text readable */
-    border: 1px solid #881624 !important;
-    background-color: #881624 !important;
+/* Allow long inline code literals to wrap on small screens */
+code.docutils.literal span.pre {
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
-/* ── Fork-me-on-GitHub ribbon ─────────────────────────────────────────────── */
-/* A clipping wrapper fixed to the top-right corner of the viewport.           */
+a code {
+    color: var(--indigo-600);
+    background-color: var(--indigo-50);
+    border-color: var(--indigo-200);
+}
+
+a:hover code {
+    color: var(--indigo-800);
+    background-color: var(--indigo-100);
+}
+
+/* ── Tables, Math & Figures ──────────────────────────────────────────────── */
+table.docutils {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.35em 0;
+    border: 1px solid var(--slate-200);
+    background-color: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+table.docutils th,
+th {
+    background-color: var(--slate-100) !important;
+    color: var(--slate-900) !important;
+    font-weight: 700;
+    padding: 0.65em 0.85em !important;
+    border: 1px solid var(--slate-200) !important;
+    border-bottom: 2px solid var(--slate-300) !important;
+}
+
+table.docutils td {
+    padding: 0.55em 0.85em !important;
+    border: 1px solid var(--slate-200) !important;
+    vertical-align: top;
+}
+
+table.docutils tr:nth-child(even) td {
+    background-color: var(--slate-50);
+}
+
+img, div.figure img {
+    max-width: 100%;
+    height: auto;
+}
+
+div.math {
+    overflow-x: auto;
+    max-width: 100%;
+    padding: 0.25em 0;
+}
+
+/* ── Admonitions (Teal & Indigo Cards like gradaly.io) ───────────────────── */
+div.admonition {
+    border: 1px solid var(--teal-200);
+    border-left: 4px solid var(--teal-500);
+    background-color: var(--teal-50);
+    border-radius: 10px;
+    margin: 1.35em 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+div.admonition p.admonition-title {
+    background-color: var(--teal-100) !important;
+    border-bottom: 1px solid var(--teal-200) !important;
+    color: var(--teal-800) !important;
+    font-weight: 700;
+    padding: 0.45em 0.9em !important;
+    font-size: 0.92em;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+div.footer {
+    background-color: #ffffff;
+    color: var(--slate-600);
+    padding: 0.85em 1.5em;
+    border-top: 1px solid var(--slate-200);
+    border-bottom: none;
+    box-shadow: none !important;
+    -moz-box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+}
+
+div.footer a {
+    color: var(--indigo-600);
+}
+
+/* ── Fork-me-on-GitHub ribbon (Indigo-to-Teal Gradient) ──────────────────── */
 .forkme-ribbon-wrap {
     position: fixed;
     top: 0;
@@ -78,7 +474,7 @@ div.sphinxsidebar h3, div.sphinxsidebar h4 {
     height: 150px;
     overflow: hidden;
     z-index: 9999;
-    pointer-events: none;   /* let clicks pass through the transparent area */
+    pointer-events: none;
 }
 
 .forkme-ribbon-wrap a {
@@ -89,7 +485,7 @@ div.sphinxsidebar h3, div.sphinxsidebar h4 {
     display: block;
     width: 168px;
     padding: 6px 0;
-    background-color: #333333;
+    background: linear-gradient(90deg, var(--indigo-600), var(--teal-600));
     color: #ffffff !important;
     font-size: 11px;
     font-weight: bold;
@@ -98,11 +494,142 @@ div.sphinxsidebar h3, div.sphinxsidebar h4 {
     text-transform: uppercase;
     letter-spacing: 1px;
     transform: rotate(45deg);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, .4);
-    transition: background-color 0.2s ease;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+    transition: opacity 0.2s ease;
 }
 
 .forkme-ribbon-wrap a:hover {
-    background-color: #d32f2f !important;
+    opacity: 0.92;
     color: #ffffff !important;
+}
+
+/* ── Embedded Interactive Cumulative Visualization ───────────────────────── */
+.cumul-viz-wrapper {
+    margin: 1.5em 0;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: var(--slate-900);
+    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.12), 0 2px 6px -2px rgba(15, 23, 42, 0.08);
+}
+
+.cumul-viz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55em 1em;
+    background-color: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+    font-size: 0.85em;
+    color: var(--slate-700);
+    gap: 0.75em;
+    flex-wrap: wrap;
+}
+
+.cumul-viz-header strong {
+    color: var(--slate-900);
+    font-weight: 700;
+}
+
+.cumul-viz-header a {
+    color: var(--indigo-600) !important;
+    font-weight: 600;
+    text-decoration: none !important;
+}
+
+.cumul-viz-header a:hover {
+    color: var(--indigo-700) !important;
+    text-decoration: underline !important;
+}
+
+.cumul-viz-iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+    display: block;
+}
+
+/* ── Responsive Layout for Tablets & Smartphones ─────────────────────────── */
+@media only screen and (max-width: 900px) {
+    .forkme-ribbon-wrap {
+        display: none !important;
+    }
+}
+
+@media only screen and (max-width: 767px) {
+    body {
+        font-size: 15px;
+        line-height: 1.6;
+        margin: 0 !important;
+        border: none !important;
+    }
+
+    li.mobile-nav-toggle {
+        display: inline-flex !important;
+    }
+
+    div.related ul {
+        padding: 0.45em 0.75em !important;
+    }
+
+    div.related ul li.nav-item-this {
+        display: none !important;
+    }
+
+    /* Collapsible drawer for sidebar on mobile */
+    div.sphinxsidebar {
+        display: none;
+        float: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 1em 1.25em !important;
+        background-color: var(--slate-50) !important;
+        border-bottom: 1px solid var(--slate-200);
+    }
+
+    div.sphinxsidebar.mobile-open {
+        display: block !important;
+    }
+
+    div.documentwrapper {
+        float: none !important;
+        width: 100% !important;
+    }
+
+    div.bodywrapper {
+        margin: 0 !important;
+        width: 100% !important;
+        border-left: none !important;
+    }
+
+    div.body {
+        padding: 1.15em 1em 2.25em 1em !important;
+        max-width: 100% !important;
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    h2 {
+        font-size: 1.25em;
+    }
+
+    h3 {
+        font-size: 1.08em;
+    }
+
+    div.highlight pre,
+    pre {
+        font-size: 0.82em;
+        padding: 0.75em 0.85em !important;
+    }
+
+    /* Allow wide tables to scroll horizontally on phones without breaking page width */
+    table.docutils {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }

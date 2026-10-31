@@ -14,7 +14,17 @@ import org.maxicp.util.ImmutableSet;
 
 import java.util.Collection;
 
+/**
+ * AllDifferent constraint ensuring that all expressions in {@code x} take pairwise distinct values.
+ *
+ * @param x the set of integer expressions that must be pairwise distinct
+ */
 public record AllDifferent(ImmutableSet<IntExpression> x) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {
+    /**
+     * Creates an AllDifferent constraint over the given array of integer expressions.
+     *
+     * @param x the integer expressions that must be pairwise distinct
+     */
     public AllDifferent(IntExpression... x) {
         this(ImmutableSet.of(x));
     }

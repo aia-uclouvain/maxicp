@@ -1,13 +1,18 @@
-/*
+                                                                                                                                            /*
  * MaxiCP is under MIT License
  * Copyright (c)  2024 UCLouvain
  */
 
 package org.maxicp.search;
 
+import org.maxicp.cp.engine.core.CPIntVar;
+import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSolver;
+import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.ModelProxy;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.state.StateManager;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -162,12 +167,26 @@ public class FDSModeling implements Supplier<Runnable[]> {
     /** Average rating per depth level, used for normalization. */
     private final Map<Integer, double[]> avgRatingByDepth; // [0]=avg, [1]=count
 
-    /** All choices generated for this search. */
-    private final List<Choice> allChoices;
+    /** Choices grouped by interval variable index. */
+    private final List<Choice>[] intervalChoices;
+
+    /** Choices grouped by integer variable index. */
+    private final List<Choice>[] intChoices;
+
+    /** Reusable buffer for domain size snapshots before branching. */
+    private final long[] domBeforeBuffer;
+
+    /** Cached concrete model and direct CP variable references to avoid ThreadLocal/StateMap overhead per node. */
+    private ConcreteModel cachedConcreteModel;
+    private CPSolver cpSolver;
+    private CPIntervalVar[] cpIntervals;
+    private CPIntVar[] cpIntVars;
 
     /** State manager for depth tracking. */
-    private final StateManager sm;
-    private final int baseLevel;
+    private StateManager sm;
+    private int baseLevel;
+    private boolean initializedChoices;
+    private boolean lastSelectHadUnfixed;
 
     /**
      * Creates a Failure-Directed Search for the given interval variables.
@@ -176,6 +195,15 @@ public class FDSModeling implements Supplier<Runnable[]> {
      */
     public FDSModeling(IntervalVar... intervals) {
         this(0.95, intervals, new IntExpression[0]);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDSModeling(IntervalVar[][] intervals) {
+        this(0.95, flatten(intervals), new IntExpression[0]);
     }
 
     /**
@@ -189,10 +217,27 @@ public class FDSModeling implements Supplier<Runnable[]> {
     }
 
     /**
+     * Creates a Failure-Directed Search for the given 2D matrix of interval variables.
+     *
+     * @param alpha     decay factor for rating updates (typical: 0.9 to 0.99)
+     * @param intervals the 2D array of interval variables to decide
+     */
+    public FDSModeling(double alpha, IntervalVar[][] intervals) {
+        this(alpha, flatten(intervals), new IntExpression[0]);
+    }
+
+    /**
      * Creates a Failure-Directed Search for integer expressions.
      */
     public FDSModeling(IntExpression... intExpressions) {
         this(0.95, new IntervalVar[0], intExpressions);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer expressions.
+     */
+    public FDSModeling(IntExpression[][] intExpressions) {
+        this(0.95, new IntervalVar[0], flatten(intExpressions));
     }
 
     /**
@@ -203,6 +248,13 @@ public class FDSModeling implements Supplier<Runnable[]> {
     }
 
     /**
+     * Creates a Failure-Directed Search for a 2D matrix of integer expressions.
+     */
+    public FDSModeling(double alpha, IntExpression[][] intExpressions) {
+        this(alpha, new IntervalVar[0], flatten(intExpressions));
+    }
+
+    /**
      * Creates a Failure-Directed Search for mixed interval and integer decisions.
      */
     public FDSModeling(IntervalVar[] intervals, IntExpression... intExpressions) {
@@ -210,8 +262,41 @@ public class FDSModeling implements Supplier<Runnable[]> {
     }
 
     /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDSModeling(IntervalVar[][] intervals, IntExpression... intExpressions) {
+        this(0.95, flatten(intervals), intExpressions);
+    }
+
+    /**
+     * Creates a Failure-Directed Search for mixed 2D interval and integer decisions.
+     */
+    public FDSModeling(double alpha, IntervalVar[][] intervals, IntExpression... intExpressions) {
+        this(alpha, flatten(intervals), intExpressions);
+    }
+
+    private static IntervalVar[] flatten(IntervalVar[][] intervals) {
+        if (intervals == null) return new IntervalVar[0];
+        return Arrays.stream(intervals)
+                .filter(Objects::nonNull)
+                .flatMap(Arrays::stream)
+                .filter(Objects::nonNull)
+                .toArray(IntervalVar[]::new);
+    }
+
+    private static IntExpression[] flatten(IntExpression[][] intExpressions) {
+        if (intExpressions == null) return new IntExpression[0];
+        return Arrays.stream(intExpressions)
+                .filter(Objects::nonNull)
+                .flatMap(Arrays::stream)
+                .filter(Objects::nonNull)
+                .toArray(IntExpression[]::new);
+    }
+
+    /**
      * Creates a Failure-Directed Search for mixed interval and integer decisions.
      */
+    @SuppressWarnings("unchecked")
     public FDSModeling(double alpha, IntervalVar[] intervals, IntExpression... intExpressions) {
         this.intervals = intervals == null ? new IntervalVar[0] : intervals;
         this.intExpressions = intExpressions == null ? new IntExpression[0] : intExpressions;
@@ -219,13 +304,84 @@ public class FDSModeling implements Supplier<Runnable[]> {
             throw new IllegalArgumentException("FDSModeling requires at least one decision variable");
         }
         this.model = resolveModelProxy(this.intervals, this.intExpressions);
-        this.sm = model.getConcreteModel().getStateManager();
         this.alpha = alpha;
-        this.baseLevel = sm.getLevel();
         this.avgRatingByDepth = new HashMap<>();
-        this.allChoices = new ArrayList<>();
+        this.intervalChoices = new List[this.intervals.length];
+        for (int i = 0; i < this.intervals.length; i++) {
+            this.intervalChoices[i] = new ArrayList<>();
+        }
+        this.intChoices = new List[this.intExpressions.length];
+        for (int i = 0; i < this.intExpressions.length; i++) {
+            this.intChoices[i] = new ArrayList<>();
+        }
+        this.domBeforeBuffer = new long[this.intervals.length + this.intExpressions.length];
 
-        generateInitialChoices();
+        if (this.model == null || this.model.isConcrete()) {
+            ensureConcreteCache();
+            generateInitialChoices();
+            this.initializedChoices = true;
+        }
+    }
+
+    /**
+     * Resets the depth base level to the current solver level while keeping learned choice ratings.
+     */
+    public void resetLevel() {
+        ensureConcreteCache();
+        if (sm != null) {
+            this.baseLevel = sm.getLevel();
+        }
+    }
+
+    private void ensureConcreteCache() {
+        if (model == null) {
+            if (cpSolver == null) {
+                cpIntervals = new CPIntervalVar[intervals.length];
+                for (int i = 0; i < intervals.length; i++) {
+                    cpIntervals[i] = (CPIntervalVar) intervals[i];
+                    if (cpSolver == null) cpSolver = cpIntervals[i].getSolver();
+                }
+                cpIntVars = new CPIntVar[intExpressions.length];
+                for (int i = 0; i < intExpressions.length; i++) {
+                    cpIntVars[i] = (CPIntVar) intExpressions[i];
+                    if (cpSolver == null) cpSolver = cpIntVars[i].getSolver();
+                }
+                if (cpSolver != null) {
+                    sm = cpSolver.getStateManager();
+                    baseLevel = sm.getLevel();
+                }
+            }
+            if (!initializedChoices) {
+                generateInitialChoices();
+                initializedChoices = true;
+            }
+            return;
+        }
+        ConcreteModel cm = model.getConcreteModel();
+        if (cm != cachedConcreteModel) {
+            cachedConcreteModel = cm;
+            sm = cm.getStateManager();
+            baseLevel = sm.getLevel();
+            if (cm instanceof ConcreteCPModel cpm) {
+                cpSolver = cpm.solver;
+                cpIntervals = new CPIntervalVar[intervals.length];
+                for (int i = 0; i < intervals.length; i++) {
+                    cpIntervals[i] = cpm.getCPVar(intervals[i]);
+                }
+                cpIntVars = new CPIntVar[intExpressions.length];
+                for (int i = 0; i < intExpressions.length; i++) {
+                    cpIntVars[i] = cpm.getCPVar(intExpressions[i]);
+                }
+            } else {
+                cpSolver = null;
+                cpIntervals = null;
+                cpIntVars = null;
+            }
+        }
+        if (!initializedChoices) {
+            generateInitialChoices();
+            initializedChoices = true;
+        }
     }
 
     private static ModelProxy resolveModelProxy(IntervalVar[] intervals, IntExpression[] intExpressions) {
@@ -266,22 +422,23 @@ public class FDSModeling implements Supplier<Runnable[]> {
 
             // Presence choice for optional variables
             if (var.isOptional()) {
-                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));
+                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));
             }
 
             // Start time choices via binary splitting
-            addBinarySplitChoices(ChoiceType.START, i, var.startMin(), var.startMax());
+            addBinarySplitChoices(intervalChoices[i], ChoiceType.START, i, var.startMin(), var.startMax());
 
             // Length choices via binary splitting (if not fixed)
             if (var.lengthMin() < var.lengthMax()) {
-                addBinarySplitChoices(ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());
+                addBinarySplitChoices(intervalChoices[i], ChoiceType.LENGTH, i, var.lengthMin(), var.lengthMax());
             }
         }
 
         for (int i = 0; i < intExpressions.length; i++) {
-            IntExpression x = intExpressions[i];
-            if (x.min() < x.max()) {
-                addBinarySplitChoices(ChoiceType.INT, i, x.min(), x.max());
+            int min = cpIntVars != null ? cpIntVars[i].min() : intExpressions[i].min();
+            int max = cpIntVars != null ? cpIntVars[i].max() : intExpressions[i].max();
+            if (min < max) {
+                addBinarySplitChoices(intChoices[i], ChoiceType.INT, i, min, max);
             }
         }
     }
@@ -299,7 +456,7 @@ public class FDSModeling implements Supplier<Runnable[]> {
      * (up to {@link #MAX_INITIAL_CHOICES_PER_VAR} choices), ensuring O(log(domainSize))
      * choices per variable. More choices are generated on demand when needed.
      */
-    private void addBinarySplitChoices(ChoiceType type, int varIndex, int lo, int hi) {
+    private void addBinarySplitChoices(List<Choice> target, ChoiceType type, int varIndex, int lo, int hi) {
         if (lo >= hi) return;
         int count = 0;
         Deque<int[]> queue = new ArrayDeque<>();
@@ -308,8 +465,8 @@ public class FDSModeling implements Supplier<Runnable[]> {
             int[] range = queue.poll();
             int l = range[0], h = range[1];
             if (l >= h) continue;
-            int mid = l + (h - l) / 2;
-            allChoices.add(new Choice(type, varIndex, mid));
+            int mid = l + ((h - l) >>> 1);
+            target.add(new Choice(type, varIndex, mid));
             count++;
             queue.add(new int[]{l, mid});
             queue.add(new int[]{mid + 1, h});
@@ -334,10 +491,19 @@ public class FDSModeling implements Supplier<Runnable[]> {
     /**
      * Estimate domain size for an interval variable.
      */
-    private long domainSize(IntervalVar var) {
-        if (var.isAbsent()) return 1;
-        long startRange = Math.max(1, (long) var.startMax() - var.startMin() + 1);
-        long lengthRange = Math.max(1, (long) var.lengthMax() - var.lengthMin() + 1);
+    private long intervalDomainSize(int i) {
+        if (cpIntervals != null) {
+            CPIntervalVar var = cpIntervals[i];
+            if (var.isAbsent()) return 1L;
+            long startRange = Math.max(1L, (long) var.startMax() - var.startMin() + 1L);
+            long lengthRange = Math.max(1L, (long) var.lengthMax() - var.lengthMin() + 1L);
+            if (var.isOptional()) startRange++;
+            return startRange * lengthRange;
+        }
+        IntervalVar var = intervals[i];
+        if (var.isAbsent()) return 1L;
+        long startRange = Math.max(1L, (long) var.startMax() - var.startMin() + 1L);
+        long lengthRange = Math.max(1L, (long) var.lengthMax() - var.lengthMin() + 1L);
         if (var.isOptional()) startRange++; // +1 for the absent possibility
         return startRange * lengthRange;
     }
@@ -345,38 +511,44 @@ public class FDSModeling implements Supplier<Runnable[]> {
     /**
      * Estimate domain size for an integer expression.
      */
-    private long domainSize(IntExpression x) {
-        return Math.max(1L, x.size());
+    private long intDomainSize(int i) {
+        int sz = cpIntVars != null ? cpIntVars[i].size() : intExpressions[i].size();
+        return Math.max(1L, sz);
     }
 
     /**
      * Snapshot domain sizes for all decision variables (before a branch).
      */
     private long[] snapshotDomainSizes() {
-        long[] sizes = new long[intervals.length + intExpressions.length];
         int p = 0;
-        for (IntervalVar interval : intervals) {
-            sizes[p++] = domainSize(interval);
+        for (int i = 0; i < intervals.length; i++) {
+            domBeforeBuffer[p++] = intervalDomainSize(i);
         }
-        for (IntExpression x : intExpressions) {
-            sizes[p++] = domainSize(x);
+        for (int i = 0; i < intExpressions.length; i++) {
+            domBeforeBuffer[p++] = intDomainSize(i);
         }
-        return sizes;
+        return domBeforeBuffer;
     }
 
     private double computeSearchSpaceReduction(long[] domainSizesBefore) {
         double ratio = 1.0;
         int p = 0;
-        for (IntervalVar interval : intervals) {
+        for (int i = 0; i < intervals.length; i++) {
             long before = domainSizesBefore[p++];
-            if (before > 0) {
-                ratio *= (double) domainSize(interval) / (double) before;
+            if (before > 1L) {
+                long after = intervalDomainSize(i);
+                if (after != before) {
+                    ratio *= (double) after / (double) before;
+                }
             }
         }
-        for (IntExpression x : intExpressions) {
+        for (int i = 0; i < intExpressions.length; i++) {
             long before = domainSizesBefore[p++];
-            if (before > 0) {
-                ratio *= (double) domainSize(x) / (double) before;
+            if (before > 1L) {
+                long after = intDomainSize(i);
+                if (after != before) {
+                    ratio *= (double) after / (double) before;
+                }
             }
         }
         return Math.min(ratio, 1.0);
@@ -416,73 +588,21 @@ public class FDSModeling implements Supplier<Runnable[]> {
         avg[0] += (localRating - avg[0]) / avg[1];
     }
 
-    /**
-     * Check if all interval variables are fixed.
-     */
-    private boolean allFixed() {
-        for (IntervalVar var : intervals) {
-            if (!var.isFixed()) return false;
-        }
-        for (IntExpression x : intExpressions) {
-            if (!x.isFixed()) return false;
-        }
-        return true;
-    }
-
-    /**
-     * The FDS branching strategy, implementing the {@code Supplier<Runnable[]>} interface.
-     * <p>
-     * This method implements the core FDS algorithm from Algorithm 1 in the paper.
-     * At each branching point:
-     * <ol>
-     *   <li>Select the applicable choice with the best (lowest) rating.</li>
-     *   <li>Skip waiting and resolved choices.</li>
-     *   <li>Return two branches: the better-rated branch first (heading into conflict).</li>
-     * </ol>
-     * If all initial choices are resolved but variables remain unfixed,
-     * additional choices are generated dynamically.
-     *
-     * @return array of branching closures, or EMPTY if all tasks are fixed
-     */
     @Override
     public Runnable[] get() {
-        if (allFixed()) {
-            return EMPTY;
-        }
+        ensureConcreteCache();
 
-        // Pick: find the best applicable choice (lowest rating)
-        Choice bestChoice = null;
-        double bestRating = Double.MAX_VALUE;
-
-        for (Choice c : allChoices) {
-            if (c.type == ChoiceType.INT) {
-                IntExpression x = intExpressions[c.varIndex];
-                if (x.isFixed() || x.max() <= c.splitValue || x.min() > c.splitValue) {
-                    continue;
-                }
-            } else {
-                IntervalVar var = intervals[c.varIndex];
-                if (c.isWaiting(var) || c.isResolved(var)) {
-                    continue;
-                }
-            }
-            double r = c.rating();
-            if (r < bestRating) {
-                bestRating = r;
-                bestChoice = c;
-            }
-        }
-
+        Choice bestChoice = selectBestChoice();
         if (bestChoice == null) {
-            // No applicable choice found — generate more if needed
-            if (!allFixed()) {
-                int before = allChoices.size();
-                generateAdditionalChoices();
-                if (allChoices.size() > before) {
-                    return get(); // retry with newly generated choices
-                }
+            if (!lastSelectHadUnfixed) {
+                return EMPTY;
             }
-            return EMPTY;
+            if (generateAdditionalChoices()) {
+                bestChoice = selectBestChoice();
+            }
+            if (bestChoice == null) {
+                return EMPTY;
+            }
         }
 
         final Choice chosen = bestChoice;
@@ -502,6 +622,95 @@ public class FDSModeling implements Supplier<Runnable[]> {
         }
     }
 
+    private Choice selectBestChoice() {
+        Choice bestChoice = null;
+        double bestRating = Double.MAX_VALUE;
+        boolean anyUnfixed = false;
+
+        for (int i = 0; i < intervals.length; i++) {
+            boolean fixed;
+            boolean absent;
+            boolean optional;
+            int sMin, sMax, lMin, lMax;
+            if (cpIntervals != null) {
+                CPIntervalVar var = cpIntervals[i];
+                fixed = var.isFixed();
+                if (fixed) continue;
+                anyUnfixed = true;
+                absent = var.isAbsent();
+                if (absent) continue;
+                optional = var.isOptional();
+                sMin = var.startMin();
+                sMax = var.startMax();
+                lMin = var.lengthMin();
+                lMax = var.lengthMax();
+            } else {
+                IntervalVar var = intervals[i];
+                fixed = var.isFixed();
+                if (fixed) continue;
+                anyUnfixed = true;
+                absent = var.isAbsent();
+                if (absent) continue;
+                optional = var.isOptional();
+                sMin = var.startMin();
+                sMax = var.startMax();
+                lMin = var.lengthMin();
+                lMax = var.lengthMax();
+            }
+
+            List<Choice> choices = intervalChoices[i];
+            for (int k = 0, n = choices.size(); k < n; k++) {
+                Choice c = choices.get(k);
+                boolean applicable = switch (c.type) {
+                    case PRESENCE -> optional;
+                    case START -> !optional && sMin <= c.splitValue && sMax > c.splitValue;
+                    case LENGTH -> !optional && lMin <= c.splitValue && lMax > c.splitValue;
+                    case INT -> false;
+                };
+                if (applicable) {
+                    double r = c.rating();
+                    if (r < bestRating) {
+                        bestRating = r;
+                        bestChoice = c;
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < intExpressions.length; i++) {
+            int min, max, size;
+            if (cpIntVars != null) {
+                CPIntVar v = cpIntVars[i];
+                min = v.min();
+                max = v.max();
+                if (min == max) continue;
+                size = v.size();
+            } else {
+                IntExpression x = intExpressions[i];
+                min = x.min();
+                max = x.max();
+                if (min == max) continue;
+                size = x.size();
+            }
+            anyUnfixed = true;
+            double mid = (min + max - 1) * 0.5;
+            List<Choice> choices = intChoices[i];
+            for (int k = 0, n = choices.size(); k < n; k++) {
+                Choice c = choices.get(k);
+                if (min <= c.splitValue && max > c.splitValue) {
+                    double r = c.rating() + size * 1e-9 + Math.abs(c.splitValue - mid) * 1e-12;
+                    if (r < bestRating) {
+                        bestRating = r;
+                        bestChoice = c;
+                    }
+                }
+            }
+        }
+
+        lastSelectHadUnfixed = anyUnfixed;
+        return anyUnfixed ? bestChoice : null;
+    }
+
     /**
      * Create a branching closure for one side of a choice.
      * The closure applies the branch, updates the rating, and re-throws any failure.
@@ -515,12 +724,40 @@ public class FDSModeling implements Supplier<Runnable[]> {
             long[] domBefore = snapshotDomainSizes();
             try {
                 if (choice.type == ChoiceType.INT) {
-                    IntExpression x = intExpressions[choice.varIndex];
-                    if (isPositive) {
-                        model.add(le(x, choice.splitValue));
+                    if (cpIntVars != null) {
+                        CPIntVar v = cpIntVars[choice.varIndex];
+                        if (isPositive) {
+                            v.removeAbove(choice.splitValue);
+                        } else {
+                            v.removeBelow(choice.splitValue + 1);
+                        }
+                        cpSolver.fixPoint();
                     } else {
-                        model.add(lt(choice.splitValue, x));
+                        IntExpression x = intExpressions[choice.varIndex];
+                        if (isPositive) {
+                            model.add(le(x, choice.splitValue));
+                        } else {
+                            model.add(lt(choice.splitValue, x));
+                        }
                     }
+                } else if (cpIntervals != null) {
+                    CPIntervalVar var = cpIntervals[choice.varIndex];
+                    if (isPositive) {
+                        switch (choice.type) {
+                            case PRESENCE -> var.setPresent();
+                            case START -> var.setStartMax(choice.splitValue);
+                            case LENGTH -> var.setLengthMax(choice.splitValue);
+                            case INT -> throw new IllegalStateException();
+                        }
+                    } else {
+                        switch (choice.type) {
+                            case PRESENCE -> var.setAbsent();
+                            case START -> var.setStartMin(choice.splitValue + 1);
+                            case LENGTH -> var.setLengthMin(choice.splitValue + 1);
+                            case INT -> throw new IllegalStateException();
+                        }
+                    }
+                    cpSolver.fixPoint();
                 } else if (isPositive) {
                     choice.applyPositive(intervals[choice.varIndex], model);
                 } else {
@@ -540,38 +777,44 @@ public class FDSModeling implements Supplier<Runnable[]> {
      * This is called when all initial choices are resolved but some variables remain unfixed
      * (as described in Section 6.1 of the paper).
      */
-    private void generateAdditionalChoices() {
+    private boolean generateAdditionalChoices() {
+        boolean added = false;
         for (int i = 0; i < intervals.length; i++) {
             IntervalVar var = intervals[i];
             if (var.isFixed() || var.isAbsent()) continue;
 
             // Presence choice for still-optional variables
             if (var.isOptional()) {
-                allChoices.add(new Choice(ChoiceType.PRESENCE, i, 0));
+                intervalChoices[i].add(new Choice(ChoiceType.PRESENCE, i, 0));
+                added = true;
                 continue; // presence must be decided first
             }
 
             // Start time choices for the remaining start domain
             if (var.startMin() < var.startMax()) {
-                int mid = var.startMin() + (var.startMax() - var.startMin()) / 2;
-                allChoices.add(new Choice(ChoiceType.START, i, mid));
+                int mid = var.startMin() + ((var.startMax() - var.startMin()) >>> 1);
+                intervalChoices[i].add(new Choice(ChoiceType.START, i, mid));
+                added = true;
             }
 
             // Length choices for the remaining length domain
             if (var.lengthMin() < var.lengthMax()) {
-                int mid = var.lengthMin() + (var.lengthMax() - var.lengthMin()) / 2;
-                allChoices.add(new Choice(ChoiceType.LENGTH, i, mid));
+                int mid = var.lengthMin() + ((var.lengthMax() - var.lengthMin()) >>> 1);
+                intervalChoices[i].add(new Choice(ChoiceType.LENGTH, i, mid));
+                added = true;
             }
         }
 
         for (int i = 0; i < intExpressions.length; i++) {
-            IntExpression x = intExpressions[i];
-            if (x.isFixed()) continue;
-            if (x.min() < x.max()) {
-                int mid = x.min() + (x.max() - x.min()) / 2;
-                allChoices.add(new Choice(ChoiceType.INT, i, mid));
+            int min = cpIntVars != null ? cpIntVars[i].min() : intExpressions[i].min();
+            int max = cpIntVars != null ? cpIntVars[i].max() : intExpressions[i].max();
+            if (min < max) {
+                int mid = min + ((max - min) >>> 1);
+                intChoices[i].add(new Choice(ChoiceType.INT, i, mid));
+                added = true;
             }
         }
+        return added;
     }
 }
 

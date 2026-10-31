@@ -68,7 +68,7 @@
     columns=fullflexible,
     keepspaces=true,
     showstringspaces=false,
-    morekeywords=[2]{CPIntVar,CPBoolVar,CPSeqVar,CPIntervalVar,CPSolver,DFSearch,SearchStatistics,Objective,ModelDispatcher,IntVar,IntExpression,ConcreteCPModel,StateManager,StateInt,StateMap,DeltaCPIntVar,AbstractConstraint,AbstractCPConstraint}
+    morekeywords=[2]{CPIntVar,CPBoolVar,CPSeqVar,CPIntervalVar,CPSolver,DFSearch,SearchMethod,BlackBoxSearch,SearchStatistics,Objective,ModelDispatcher,IntVar,IntExpression,ConcreteCPModel,StateManager,StateInt,StateMap,DeltaCPIntVar,AbstractConstraint,AbstractCPConstraint}
 }
 
 \newtcblisting[auto counter]{codebox}[2][]{%
@@ -243,11 +243,11 @@ Its architecture is organized into several coherent packages:
 
     \item[\texttt{org.maxicp.cp.engine.constraints}] contains the constraint implementations, organized into sub-packages for some specific computation domains.
 
-    \item[\texttt{org.maxicp.modeling}] provides the symbolic modeling layer, including symbolic variables (\texttt{IntVar}, \texttt{SeqVar}, \texttt{IntervalVar}), the \texttt{Factory} with constraint creation methods, and the symbolic model representation.
+    \item[\texttt{org.maxicp.modeling}] provides the symbolic modeling layer, including symbolic variables (\texttt{IntVar}, \texttt{SeqVar}, \texttt{IntervalVar}), the \texttt{Factory} with constraint creation methods, the symbolic model representation, and an XCSP3 parser/solver (\texttt{org.maxicp.modeling.xcsp3}).
 
     \item[\texttt{org.maxicp.cp.modeling}] bridges the symbolic modeling layer and the concrete CP layers. The \texttt{ConcreteCPModel} class instantiates symbolic constraints into the CP engine.
 
-    \item[\texttt{org.maxicp.search}] implements search strategies, including depth-first search (\texttt{DFSearch}), concurrent search (\texttt{ConcurrentDFSearch}), best-first search (\texttt{BestFirstSearch}), and a rich library of variable and value selection heuristics (\texttt{Searches}).
+    \item[\texttt{org.maxicp.search}] implements search strategies under the unified \texttt{SearchMethod} interface, including depth-first search (\texttt{DFSearch}), concurrent search (\texttt{ConcurrentDFSearch}), best-first search (\texttt{BestFirstSearch}), a rich library of variable and value selection heuristics (\texttt{Searches}), and an automatic multi-phase black-box search (\texttt{org.maxicp.search.blackbox.BlackBoxSearch}).
 \end{description}
 
 \subsection{Two Levels of Modeling: Raw and Symbolic}
@@ -1028,6 +1028,31 @@ relaxed & 6& $\star$& $\star$& $\star$& 9& $\star$& $\star$& $\star$&11&10& $\st
 \label{tab:lns}
 \end{table}
 
+\subsection{Black-Box Search}
+\label{sec:blackbox}
+
+In addition to user-defined branching strategies and custom LNS loops, \maxicp\ provides a commercial-solver-style black-box search (\texttt{BlackBoxSearch}) that implements the \texttt{SearchMethod} interface as a drop-in replacement for \texttt{DFSearch}.
+It is available in both the raw API via \texttt{CPFactory.makeBlackBox(cp)} and the symbolic modeling API via \texttt{cp.blackBoxSearch()}:
+
+\begin{codebox}[label={lst:blackbox}]{Solving and optimizing with BlackBoxSearch}
+// Raw API
+SearchMethod search = CPFactory.makeBlackBox(cp);
+SearchStatistics stats = search.optimize(obj); // or search.solve()
+
+// Symbolic Modeling API
+model.runCP(cp -> {
+    SearchMethod search = cp.blackBoxSearch();
+    SearchStatistics stats = search.optimize(obj); // or search.solve()
+});
+\end{codebox}
+
+When decision variables are not explicitly supplied, \texttt{BlackBoxSearch} automatically inspects the model to discover the primary decision variables (\texttt{IntVar} for combinatorial problems and \texttt{IntervalVar} for scheduling problems) while filtering out auxiliary variables introduced by expressions or objectives:
+\begin{itemize}
+    \item \textbf{Combinatorial integer models (\texttt{IntVar}):} Combines initial domain/objective probing, Luby-scheduled restarts with conflict-driven and activity-based branching (\texttt{dom/wdeg}, Last Conflict, Conflict Ordering Search, Bound-Impact, and phase saving), and an adaptive multi-neighborhood LNS portfolio (random, constraint-graph, objective-guided, conflict-guided, and structural variable-group neighborhoods) interleaved with exact DFS/FDS phases for optimality proofs.
+    \item \textbf{Scheduling models (\texttt{IntervalVar}):} Combines \texttt{SetTimes} and Failure-Directed Search (\texttt{FDS}) with restarts and a dedicated Scheduling LNS (precedence-graph, time-window, and machine-based neighborhoods) to rapidly improve makespan bounds while retaining completeness to prove optimality.
+\end{itemize}
+This same format-agnostic \texttt{BlackBoxSearch} engine also powers the \maxicp\ XCSP3 solver (\texttt{org.maxicp.modeling.xcsp3}).
+
 
 % ==================================================================================
 \section{Scheduling with Conditional Time Intervals}
@@ -1245,15 +1270,15 @@ for (int i = 0; i < nActivities; i++) {
 CPIntVar makespan = makespan(tasks);
 Objective obj = cp.minimize(makespan);
 
-DFSearch dfs = makeDfs(cp, fds(tasks));
-dfs.optimize(obj);
+SearchMethod search = makeBlackBox(cp); // or makeDfs(cp, fds(tasks))
+search.optimize(obj);
 \end{codebox}
 
 The resource profile is built compositionally:
 \texttt{CPFlatCumulFunction} represents the zero function, and for each activity consuming resource~$r$,
 a \texttt{CPPulseCumulFunction} (contributing the consumption height while the task executes) is added using \texttt{CPPlusCumulFunction}.
 The \texttt{le(resource, capa)} constraint ensures the cumulative profile never exceeds the capacity.
-The search uses the Failure-Directed Search heuristic \texttt{fds}~\cite{failureDirectedSearch}.
+The search can use either the black-box scheduling search \texttt{makeBlackBox(cp)} (Section~\ref{sec:blackbox}) or an explicit Failure-Directed Search heuristic \texttt{fds(tasks)}~\cite{failureDirectedSearch}.
 
 \subsection{Producer-Consumer Scheduling}
 
@@ -1855,8 +1880,8 @@ The two-layer API design (raw and symbolic) makes \maxicp\ accessible to both be
 experts deploying it in production. The entire codebase is available as open-source under the MIT license.
 
 Future work includes expanding the reformulation library (e.g., automatic linearization for MIP hybridization),
-integrating advanced black-box heuristics,
-and developing a MiniZinc backend.
+further enhancing the black-box search portfolio,
+and developing a MiniZinc backend alongside the existing XCSP3 support.
 
 \bibliographystyle{unsrtnat}
 \bibliography{maxicp}

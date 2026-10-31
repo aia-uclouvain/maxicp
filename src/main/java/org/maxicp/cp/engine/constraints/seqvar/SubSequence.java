@@ -26,8 +26,8 @@ public class SubSequence extends AbstractCPConstraint {
      * Ensures that the ordering from a subsequence appears within a super sequence, including all of its nodes
      * The super sequence can have other nodes belonging to its ordering as well
      * Example:
-     * mainSequence: 0 -> 1 -> 2 -> 3 -> 4
-     * subSequence:  0 -> 2 -> 4
+     * {@code mainSequence: 0 -> 1 -> 2 -> 3 -> 4}
+     * {@code subSequence:  0 -> 2 -> 4}
      *
      * @param mainSequence super sequence
      * @param subSequence  sub sequence, whose ordering appears within the main sequence. The ordering appearing in the

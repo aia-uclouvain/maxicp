@@ -18,6 +18,7 @@ public interface Model {
     ModelProxy getModelProxy();
 
     default List<List<IntExpression>> getVariableGroups() {
-        return List.of();
+        SymbolicModel sym = symbolicCopy();
+        return sym != null && sym != this ? sym.getVariableGroups() : List.of();
     }
 }

@@ -16,12 +16,10 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 
-import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.io.InputReader;
-
-import java.util.function.Supplier;
 
 /**
  * Resource Constrained Project Scheduling Problem.
@@ -31,7 +29,7 @@ public class RCPSP {
 
     public static void main(String[] args) {
         // Reading the data
-            InputReader reader = new InputReader("data/RCPSP/j90_1_2.rcp");
+            InputReader reader = new InputReader("data/RCPSP/j120_1_1.rcp");
 
         int nActivities = reader.getInt();
         int nResources = reader.getInt();
@@ -98,13 +96,13 @@ public class RCPSP {
 
         Objective obj = cp.minimize(makespan);
 
-        DFSearch dfs = CPFactory.makeDfs(cp, fds(tasks));
+        SearchMethod search = CPFactory.makeBlackBox(cp);
 
-        dfs.onSolution(() -> {
+        search.onSolution(() -> {
             System.out.println("makespan:" + makespan);
         });
 
-        SearchStatistics stats = dfs.optimize(obj);
+        SearchStatistics stats = search.optimize(obj);
 
         System.out.format("Statistics: %s\n", stats);
     }

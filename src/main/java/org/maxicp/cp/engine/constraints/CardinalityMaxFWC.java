@@ -14,6 +14,12 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 
+/**
+ * Forward Checking Cardinality (Upper Bound) Constraint.
+ * <p>
+ * Constrains the maximum number of occurrences of each value {@code v} in {@code 0..upper.length - 1}
+ * among the variables in {@code x} to be at most {@code upper[v]}.
+ */
 public class CardinalityMaxFWC extends AbstractCPConstraint {
 
     private final CPIntVar [] x;
@@ -39,8 +45,6 @@ public class CardinalityMaxFWC extends AbstractCPConstraint {
      * @param x The variables to constraint (at least one)
      * @param upper The upper cardinality bounds,
      *              upper[i] is the maximum number of occurrences of value i in X
-     *
-     * @author Pierre Schaus
      */
     public CardinalityMaxFWC(CPIntVar [] x, int upper []) {
         super(x[0].getSolver());

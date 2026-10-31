@@ -14,8 +14,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * CP implementation of a Plus Cumulative Function
+ * CP implementation of a Plus Cumulative Function ({@code left + right}).
  *
+ * @param left  the first cumulative function
+ * @param right the second cumulative function
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
 public record CPPlusCumulFunction(CPCumulFunction left, CPCumulFunction right) implements CPCumulFunction {

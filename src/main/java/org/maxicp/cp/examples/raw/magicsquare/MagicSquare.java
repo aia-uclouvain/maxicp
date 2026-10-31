@@ -11,9 +11,8 @@ import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.AllDifferentDC;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
-import org.maxicp.search.Searches;
 
 import java.util.Arrays;
 
@@ -26,7 +25,7 @@ public class MagicSquare {
     //
     public static void main(String[] args) {
 
-        int n = 6;
+        int n = 10;
         int sumResult = n * (n * n + 1) / 2;
 
         CPSolver cp = CPFactory.makeSolver();
@@ -72,17 +71,16 @@ public class MagicSquare {
         cp.post(CPFactory.sum(diagonalLeft, sumResult));
         cp.post(CPFactory.sum(diagonalRight, sumResult));
 
-        DFSearch dfs = CPFactory.makeDfs(cp, Searches.firstFailBinary(xFlat));
-        //DFSearch dfs = CPFactory.makeDfs(cp, Searches.staticOrder(xFlat));
+        SearchMethod search = CPFactory.makeBlackBox(cp);
 
-        dfs.onSolution(() -> {
+        search.onSolution(() -> {
                     for (int i = 0; i < n; i++) {
                         System.out.println(Arrays.toString(x[i]));
                     }
                 }
         );
 
-        SearchStatistics stats = dfs.solve(stat -> stat.numberOfSolutions() >= 1); // stop on first solution
+        SearchStatistics stats = search.solve();
 
         System.out.println(stats);
     }

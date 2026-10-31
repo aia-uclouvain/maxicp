@@ -16,6 +16,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+/**
+ * Lower-bound cardinality constraint ensuring that each value {@code v} in {@code 0..array.length - 1}
+ * appears at least {@code array[v]} times in {@code x}.
+ *
+ * @param x     the array of integer expressions
+ * @param array the minimum number of occurrences for each value {@code 0..array.length - 1}
+ */
 public record CardinalityMin(IntExpression[] x, int[] array) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {
 
     @Override

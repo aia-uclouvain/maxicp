@@ -8,6 +8,9 @@ package org.maxicp.cp.engine.constraints;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 
+/**
+ * Element Constraint over an array of variables, modeling {@code array[y] = z}.
+ */
 public class Element1DVar extends AbstractCPConstraint {
 
     private final CPIntVar[] array;
@@ -20,6 +23,13 @@ public class Element1DVar extends AbstractCPConstraint {
     private int zMin;
     private int zMax;
 
+    /**
+     * Creates an element constraint {@code array[y] = z} where {@code array} is an array of integer variables.
+     *
+     * @param array the array of variables to index
+     * @param y     the index variable
+     * @param z     the result variable
+     */
     public Element1DVar(CPIntVar[] array, CPIntVar y, CPIntVar z) {
         super(y.getSolver());
         this.array = array;

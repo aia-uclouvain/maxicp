@@ -7,6 +7,7 @@ package org.maxicp.search;
 
 
 import org.maxicp.cp.CPFactory;
+import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.modeling.*;
@@ -710,7 +711,31 @@ public final class Searches {
         return new FDS(intervals);
     }
 
+    public static Supplier<Runnable[]> fds(CPIntervalVar[][] intervals) {
+        return new FDS(intervals);
+    }
+
+    public static Supplier<Runnable[]> fds(CPIntVar... intVars) {
+        return new FDS(intVars);
+    }
+
+    public static Supplier<Runnable[]> fds(CPIntVar[][] intVars) {
+        return new FDS(intVars);
+    }
+
+    public static Supplier<Runnable[]> fds(CPIntervalVar[] intervals, CPIntVar... intVars) {
+        return new FDS(intervals, intVars);
+    }
+
+    public static Supplier<Runnable[]> fds(CPIntervalVar[][] intervals, CPIntVar... intVars) {
+        return new FDS(intervals, intVars);
+    }
+
     public static Supplier<Runnable[]> fds(IntervalVar[] intervals) {
+        return new FDSModeling(intervals);
+    }
+
+    public static Supplier<Runnable[]> fds(IntervalVar[][] intervals) {
         return new FDSModeling(intervals);
     }
 
@@ -718,11 +743,20 @@ public final class Searches {
         return new FDSModeling(intExpressions);
     }
 
+    public static Supplier<Runnable[]> fds(IntExpression[][] intExpressions) {
+        return new FDSModeling(intExpressions);
+    }
+
     public static Supplier<Runnable[]> fds(IntervalVar[] intervals, IntExpression... intExpressions) {
         return new FDSModeling(intervals, intExpressions);
     }
 
+    public static Supplier<Runnable[]> fds(IntervalVar[][] intervals, IntExpression... intExpressions) {
+        return new FDSModeling(intervals, intExpressions);
+    }
+
     public static Runnable[] branchOnStartMin(IntervalVar var) {
+        if (!var.isPresent() || var.startMin() == var.startMax()) return EMPTY;
         int min = var.startMin();
         Runnable left = () -> {
             var.getModelProxy().add(start(var, min));

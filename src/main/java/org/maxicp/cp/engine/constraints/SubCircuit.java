@@ -85,10 +85,12 @@ public class SubCircuit extends AbstractCPConstraint {
         dest[s].setValue(d);
 
         // Update the number of active sub-circuits
-        if (d != v) {
-            nSubCircuits.setValue(nSubCircuits.value() - 1);
-        } else if (s == u) {
-            nSubCircuits.setValue(nSubCircuits.value() + 1);
+        if (s != v) {
+            if (s != u && d != v) {
+                nSubCircuits.setValue(nSubCircuits.value() - 1);
+            } else if (s == u && d == v) {
+                nSubCircuits.setValue(nSubCircuits.value() + 1);
+            }
         }
 
         // We can only have one main sub-circuit, so if we would close this one now,

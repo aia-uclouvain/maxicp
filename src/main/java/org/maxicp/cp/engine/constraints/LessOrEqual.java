@@ -16,6 +16,12 @@ public class LessOrEqual extends AbstractCPConstraint { // x <= y
     private final CPIntVar x;
     private final CPIntVar y;
 
+    /**
+     * Creates a constraint enforcing {@code x <= y}.
+     *
+     * @param x the left-hand side variable
+     * @param y the right-hand side variable
+     */
     public LessOrEqual(CPIntVar x, CPIntVar y) {
         super(x.getSolver());
         this.x = x;

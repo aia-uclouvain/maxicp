@@ -9,6 +9,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Sweep-line filtering algorithm for the Generalized Cumulative constraint enforcing a minimum capacity bound.
+ * <p>
+ * Supports optional activities, variable durations, and positive or negative resource heights.
+ */
 public class GeneralizedCumulativeSweepMin extends AbstractCPConstraint {
     private final Activity[] activities;
     private final int minCapacity;
@@ -29,10 +34,24 @@ public class GeneralizedCumulativeSweepMin extends AbstractCPConstraint {
 
     private final EventList[] eventList; // contains all the possible events of each task (used for speed-up)
 
+    /**
+     * Creates a generalized cumulative sweep constraint enforcing that the cumulative profile
+     * stays at or above {@code minCapacity} whenever at least one activity is active.
+     *
+     * @param activities  the list of activities contributing to the profile
+     * @param minCapacity the minimum required capacity (must be {@code >= 0})
+     */
     public GeneralizedCumulativeSweepMin(List<Activity> activities, int minCapacity) {
         this(activities.toArray(new Activity[0]), minCapacity);
     }
 
+    /**
+     * Creates a generalized cumulative sweep constraint enforcing that the cumulative profile
+     * stays at or above {@code minCapacity} whenever at least one activity is active.
+     *
+     * @param activities  the array of activities contributing to the profile
+     * @param minCapacity the minimum required capacity (must be {@code >= 0})
+     */
     public GeneralizedCumulativeSweepMin(Activity[] activities, int minCapacity) {
         super(activities[0].interval().getSolver());
         if (minCapacity < 0) throw new IllegalArgumentException("The minimum capacity provided is < 0");

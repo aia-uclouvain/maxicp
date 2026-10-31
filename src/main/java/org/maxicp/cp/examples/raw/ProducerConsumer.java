@@ -11,8 +11,8 @@ import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
-import org.maxicp.search.DFSearch;
 import org.maxicp.search.Objective;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 
 import java.io.File;
@@ -118,16 +118,14 @@ public class ProducerConsumer {
         CPIntVar makespan = makespan(intervals);
         Objective obj = cp.minimize(makespan);
 
-        // DFSearch dfs = new DFSearch(cp.getStateManager(), setTimes(intervals, i ->
-        // intervals[i].lengthMax()));
-        DFSearch dfs = new DFSearch(cp.getStateManager(), fds(intervals));
+        SearchMethod search = CPFactory.makeBlackBox(cp);
 
-        dfs.onSolution(() -> {
+        search.onSolution(() -> {
             System.out.println("Makespan: " + makespan.min());
         });
 
         long begin = System.currentTimeMillis();
-        SearchStatistics stats = dfs.optimize(obj,
+        SearchStatistics stats = search.optimize(obj,
                 statistics -> statistics.isCompleted() || (System.currentTimeMillis() - begin) / 1000.0 > timeLimit);
         System.out.println(stats);
         System.out.println("time(s):" + (System.currentTimeMillis() - begin) / 1000.0);

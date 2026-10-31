@@ -15,9 +15,7 @@ import java.util.function.Function;
 public record Element1D(int[] array, IntExpression index) implements SymbolicIntExpression, NonLeafExpressionNode, DecisionVarsProvider {
 
     private int[] getTempArray() {
-        int minIndex = Math.max(index.min(), 0);
-        int maxIndex = Math.min(index.max(), array.length - 1);
-        return new int[maxIndex - minIndex + 1];
+        return new int[Math.max(0, index.size())];
     }
 
     @Override
@@ -40,8 +38,12 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
         int minValue = Integer.MAX_VALUE;
-        for (int i = 0; i < size; i++)
-            minValue = Math.min(minValue, array[temp[i]]);
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length) {
+                minValue = Math.min(minValue, array[idx]);
+            }
+        }
         return minValue;
     }
 
@@ -50,8 +52,12 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
         int maxValue = Integer.MIN_VALUE;
-        for (int i = 0; i < size; i++)
-            maxValue = Math.max(maxValue, array[temp[i]]);
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length) {
+                maxValue = Math.max(maxValue, array[idx]);
+            }
+        }
         return maxValue;
     }
 
@@ -59,9 +65,11 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
     public boolean defaultContains(int v) {
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
-        for (int i = 0; i < size; i++)
-            if (this.array[temp[i]] == v)
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < array.length && this.array[idx] == v)
                 return true;
+        }
         return false;
     }
 
@@ -72,7 +80,9 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
         int j = 0;
         Set<Integer> s = new HashSet<>();
         for (int i = 0; i < size; i++) {
-            int e = this.array[temp[i]];
+            int idx = temp[i];
+            if (idx < 0 || idx >= this.array.length) continue;
+            int e = this.array[idx];
             s.add(e);
             if (s.size() != j) {
                 array[j] = e;
@@ -87,8 +97,12 @@ public record Element1D(int[] array, IntExpression index) implements SymbolicInt
         int[] temp = this.getTempArray();
         int size = index.fillArray(temp);
         Set<Integer> s = new HashSet<>();
-        for (int i = 0; i < size; i++)
-            s.add(this.array[temp[i]]);
+        for (int i = 0; i < size; i++) {
+            int idx = temp[i];
+            if (idx >= 0 && idx < this.array.length) {
+                s.add(this.array[idx]);
+            }
+        }
         return s.size();
     }
 

@@ -4,10 +4,15 @@ import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.blackbox.BlackBoxSearch;
 import org.maxicp.search.blackbox.ModelingBlackBox;
 import org.maxicp.search.blackbox.SearchStatus;
+import org.maxicp.util.exception.InconsistencyException;
 import org.maxicp.util.exception.NotImplementedException;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Competition-oriented CLI for XCSP3 instances.
@@ -19,41 +24,149 @@ public final class XCSP3Cli {
     }
 
     public static void main(String[] args) {
+        long startMillis = System.currentTimeMillis();
         String benchPath = findBenchPath(args);
         if (benchPath == null) {
             System.out.println("s UNKNOWN");
             return;
         }
 
-        try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(benchPath)) {
-            int timeLimitSeconds = findTimeLimitSeconds(args);
-            OptionalLong randomSeed = findRandomSeed(args, benchPath);
-            ModelingBlackBox.Result outcome = instance.objective() != null
-                    ? (randomSeed.isPresent()
-                    ? ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeLimitSeconds,
-                    cfg -> configureOptimizeSeed(cfg, randomSeed.getAsLong()))
-                    : ModelingBlackBox.optimize(instance.md(), instance.decisionVars(), instance.objective(), timeLimitSeconds))
-                    : (randomSeed.isPresent()
-                    ? ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeLimitSeconds,
-                    cfg -> configureSolveSeed(cfg, randomSeed.getAsLong()))
-                    : ModelingBlackBox.solve(instance.md(), instance.decisionVars(), timeLimitSeconds));
+        final Object outputLock = new Object();
+        final AtomicBoolean outputFinished = new AtomicBoolean(false);
+        final AtomicReference<String> latestFormattedSolution = new AtomicReference<>();
+        final AtomicReference<Integer> lastPrintedObjective = new AtomicReference<>();
+        final AtomicReference<Objective> objectiveRef = new AtomicReference<>();
 
-            if (outcome.objectiveValue().isPresent()) {
-                System.out.println("o " + outcome.objectiveValue().get());
+        Thread shutdownHook = new Thread(() -> {
+            synchronized (outputLock) {
+                if (outputFinished.get()) {
+                    return;
+                }
+                outputFinished.set(true);
+                String solution = latestFormattedSolution.get();
+                if (solution != null) {
+                    System.out.println("s SATISFIABLE");
+                    System.out.println("v " + normalizeSolution(solution));
+                } else {
+                    System.out.println("s UNKNOWN");
+                }
                 System.out.flush();
             }
+        }, "xcsp3-cli-shutdown");
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-            printFinalStatus(outcome.status(), instance.objective(), outcome.solution().isPresent());
-            if (outcome.solution().isPresent()) {
-                String solution = buildSolution(instance.decisionVarIds(), outcome.solution().get());
-                System.out.println("v " + normalizeSolution(solution));
+        try (XCSP3.XCSP3LoadedInstance instance = XCSP3.load(benchPath)) {
+            objectiveRef.set(instance.objective());
+
+            int requestedLimitSeconds = findTimeLimitSeconds(args);
+            int effectiveTimeLimitSeconds = computeEffectiveTimeLimitSeconds(requestedLimitSeconds, startMillis);
+            OptionalLong randomSeed = findRandomSeed(args, benchPath);
+
+            ModelingBlackBox.Result outcome = instance.objective() != null
+                    ? ModelingBlackBox.optimize(
+                            instance.md(),
+                            instance.objective(),
+                            effectiveTimeLimitSeconds,
+                            cfg -> {
+                                if (randomSeed.isPresent()) {
+                                    configureOptimizeSeed(cfg, randomSeed.getAsLong());
+                                }
+                                cfg.onIncumbent((sol, objVal) -> {
+                                    synchronized (outputLock) {
+                                        if (outputFinished.get()) {
+                                            return;
+                                        }
+                                        latestFormattedSolution.set(instance.solutionGenerator().get());
+                                        if (objVal != null && !Objects.equals(lastPrintedObjective.get(), objVal)) {
+                                            lastPrintedObjective.set(objVal);
+                                            System.out.println("o " + objVal);
+                                            System.out.flush();
+                                        }
+                                    }
+                                });
+                                return cfg;
+                            })
+                    : ModelingBlackBox.solve(
+                            instance.md(),
+                            effectiveTimeLimitSeconds,
+                            cfg -> {
+                                if (randomSeed.isPresent()) {
+                                    configureSolveSeed(cfg, randomSeed.getAsLong());
+                                }
+                                cfg.onIncumbent((sol, objVal) -> {
+                                    synchronized (outputLock) {
+                                        if (!outputFinished.get()) {
+                                            latestFormattedSolution.set(instance.solutionGenerator().get());
+                                        }
+                                    }
+                                });
+                                return cfg;
+                            });
+
+            synchronized (outputLock) {
+                if (!outputFinished.get()) {
+                    outputFinished.set(true);
+                    if (outcome.objectiveValue().isPresent()) {
+                        Integer finalObj = outcome.objectiveValue().get();
+                        if (!Objects.equals(lastPrintedObjective.get(), finalObj)) {
+                            System.out.println("o " + finalObj);
+                            System.out.flush();
+                        }
+                    }
+
+                    printFinalStatus(outcome.status(), instance.objective(), outcome.solution().isPresent());
+                    if (outcome.solution().isPresent()) {
+                        String solution = instance.formatSolution(outcome);
+                        System.out.println("v " + normalizeSolution(solution));
+                    }
+                    System.out.flush();
+                }
+            }
+        } catch (InconsistencyException e) {
+            synchronized (outputLock) {
+                if (!outputFinished.getAndSet(true)) {
+                    System.out.println("s UNSATISFIABLE");
+                    System.out.flush();
+                }
             }
         } catch (NotImplementedException e) {
-            System.out.println("s UNSUPPORTED");
+            synchronized (outputLock) {
+                if (!outputFinished.getAndSet(true)) {
+                    System.out.println("s UNSUPPORTED");
+                    System.out.flush();
+                }
+            }
         } catch (Throwable t) {
-            System.out.println("s UNKNOWN");
-            System.out.println("c " + t.getClass().getSimpleName() + ": " + sanitizeForComment(t.getMessage()));
+            synchronized (outputLock) {
+                if (!outputFinished.getAndSet(true)) {
+                    String solution = latestFormattedSolution.get();
+                    if (solution != null) {
+                        System.out.println("s SATISFIABLE");
+                        System.out.println("v " + normalizeSolution(solution));
+                    } else {
+                        System.out.println("s UNKNOWN");
+                        System.out.println("c " + t.getClass().getSimpleName() + ": " + sanitizeForComment(t.getMessage()));
+                    }
+                    System.out.flush();
+                }
+            }
+        } finally {
+            try {
+                Runtime.getRuntime().removeShutdownHook(shutdownHook);
+            } catch (IllegalStateException ignored) {
+                // JVM is already shutting down.
+            }
         }
+    }
+
+    private static int computeEffectiveTimeLimitSeconds(int requestedLimitSeconds, long startMillis) {
+        if (requestedLimitSeconds == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        long elapsedMillis = Math.max(0L, System.currentTimeMillis() - startMillis);
+        long safetyMarginMillis = requestedLimitSeconds >= 5 ? 800L : 0L;
+        long remainingMillis = requestedLimitSeconds * 1000L - elapsedMillis - safetyMarginMillis;
+        return (int) Math.max(1L, remainingMillis / 1000L);
     }
 
     private static int findTimeLimitSeconds(String[] args) {

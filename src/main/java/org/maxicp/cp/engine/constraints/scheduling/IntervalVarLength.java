@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the length (duration) of an interval variable {@code var} to an integer variable {@code length}.
  *
  * @author Charles Thomas
  */
@@ -19,6 +19,12 @@ public class IntervalVarLength extends AbstractCPConstraint {
     CPIntervalVar var;
     CPIntVar length;
 
+    /**
+     * Creates a constraint linking {@code length(var)} to {@code length}.
+     *
+     * @param var    the interval variable
+     * @param length the integer variable representing the length of {@code var}
+     */
     public IntervalVarLength(CPIntervalVar var, CPIntVar length) {
         super(var.getSolver());
         this.var = var;

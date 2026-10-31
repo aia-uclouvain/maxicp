@@ -13,6 +13,12 @@ import org.maxicp.util.exception.InconsistencyException;
 
 import java.util.Arrays;
 
+/**
+ * Forward Checking Cardinality (Lower Bound) Constraint.
+ * <p>
+ * Constrains the minimum number of occurrences of each value {@code v} in {@code 0..lower.length - 1}
+ * among the variables in {@code x} to be at least {@code lower[v]}.
+ */
 public class CardinalityMinFWC extends AbstractCPConstraint {
 
     private final CPIntVar [] x;
@@ -30,12 +36,10 @@ public class CardinalityMinFWC extends AbstractCPConstraint {
     int [] iterValues;
 
     /**
-     * Constraint the minimum number of occurences of a range of values in X.
+     * Constraint the minimum number of occurrences of a range of values in X.
      * @param x The variables to constraint (at least one)
-     * @param lower The upper cardinality bounds,
-     *              lower[i] is the maximum number of occurences of value i in X
-     *
-     * @author Pierre Schaus
+     * @param lower The lower cardinality bounds,
+     *              lower[i] is the minimum number of occurrences of value i in X
      */
     public CardinalityMinFWC(CPIntVar [] x, int [] lower) {
         super(x[0].getSolver());

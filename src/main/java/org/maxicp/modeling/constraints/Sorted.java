@@ -22,6 +22,10 @@ import java.util.List;
  * position permutation {@code o} (i.e. {@code y[i] = x[o[i]]}).
  * {@code x} and {@code o} are the input decision variables; {@code y}
  * is the derived sorted output.
+ *
+ * @param x the array of expressions to be sorted
+ * @param o the permutation expressions mapping sorted positions to original indices
+ * @param y the array of sorted expressions in non-decreasing order
  */
 public record Sorted(IntExpression[] x, IntExpression[] o, IntExpression[] y) implements ConstraintFromRecord, CacheScope, DecisionVarsProvider {
 

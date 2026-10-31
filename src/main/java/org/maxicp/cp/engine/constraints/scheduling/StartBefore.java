@@ -4,6 +4,10 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Constraint enforcing that the start of an interval variable comes before or at a given integer variable:
+ * {@code start(interval) <= var} when {@code interval} is present.
+ */
 public class StartBefore extends AbstractCPConstraint {
 
     final CPIntervalVar interval;

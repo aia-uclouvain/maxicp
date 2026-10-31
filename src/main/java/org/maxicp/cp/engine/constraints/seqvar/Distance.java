@@ -11,6 +11,10 @@ import org.maxicp.cp.engine.core.CPSeqVar;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
+/**
+ * Distance constraint on a sequence variable ({@link CPSeqVar}), maintaining the total travel distance
+ * between consecutive visited nodes in the sequence.
+ */
 public class Distance extends AbstractCPConstraint {
 
     private final CPSeqVar seqVar;
@@ -19,6 +23,14 @@ public class Distance extends AbstractCPConstraint {
     private final int[][] dist;
     private final CPIntVar totalDist;
 
+    /**
+     * Creates a constraint maintaining that {@code totalDist} equals the sum of transition distances
+     * between consecutive nodes visited in {@code seqVar}.
+     *
+     * @param seqVar    the sequence variable
+     * @param dist      the distance matrix between nodes (assumed to satisfy the triangle inequality)
+     * @param totalDist the variable representing the total distance of the sequence
+     */
     public Distance(CPSeqVar seqVar, int[][] dist, CPIntVar totalDist) {
         super(seqVar.getSolver());
         this.seqVar  = seqVar;

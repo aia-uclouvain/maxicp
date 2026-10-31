@@ -14,8 +14,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * CP implementation of a Minus Cumulative Function
+ * CP implementation of a Minus Cumulative Function ({@code left - right}).
  *
+ * @param left  the left-hand side cumulative function
+ * @param right the right-hand side cumulative function to subtract
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
 public record CPMinusCumulFunction(CPCumulFunction left, CPCumulFunction right) implements CPCumulFunction {

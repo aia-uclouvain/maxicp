@@ -25,6 +25,11 @@ public class NoOverlapBCLeftToRight {
     private final int[] startMinNew, startMax, duration, endMin;
     int n;
 
+    /**
+     * Creates a left-to-right bound-consistency filter for at most {@code nMax} activities.
+     *
+     * @param nMax the maximum number of activities
+     */
     public NoOverlapBCLeftToRight(int nMax) {
         startMin = new int[nMax];
         startMinNew = new int[nMax];

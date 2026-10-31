@@ -10,6 +10,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Modeling-level constraint linking a sequence variable ({@link SeqVar}) with visit time expressions,
+ * transition distances, and service durations.
+ */
 public class TransitionTimes implements Constraint {
 
     public final SeqVar seqVar;

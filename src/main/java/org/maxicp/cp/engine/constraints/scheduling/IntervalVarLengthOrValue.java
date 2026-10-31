@@ -11,7 +11,8 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the length (duration) of an interval variable {@code var} to an integer variable {@code length}
+ * when {@code var} is present, or fixing {@code length} to a default {@code value} when {@code var} is absent.
  *
  * @author Charles Thomas
  */
@@ -20,6 +21,14 @@ public class IntervalVarLengthOrValue extends AbstractCPConstraint {
     CPIntVar length;
     int value;
 
+    /**
+     * Creates a constraint enforcing {@code length == length(var)} if {@code var} is present,
+     * and {@code length == value} if {@code var} is absent.
+     *
+     * @param var    the interval variable
+     * @param length the integer variable representing the length of {@code var} or {@code value}
+     * @param value  the fallback value assigned to {@code length} when {@code var} is absent
+     */
     public IntervalVarLengthOrValue(CPIntervalVar var, CPIntVar length, int value) {
         super(var.getSolver());
         this.var = var;

@@ -11,11 +11,21 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPBoolVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Binary NoOverlap constraint enforcing that two interval variables {@code A} and {@code B}
+ * do not overlap in time when both are present.
+ */
 public class NoOverlapBinary extends AbstractCPConstraint {
     final CPBoolVar before;
     final CPBoolVar after;
     final CPIntervalVar A, B;
 
+    /**
+     * Creates a binary non-overlapping constraint between two interval variables {@code A} and {@code B}.
+     *
+     * @param A the first interval variable
+     * @param B the second interval variable
+     */
     public NoOverlapBinary(CPIntervalVar A, CPIntervalVar B) {
         super(A.getSolver());
         this.A = A;

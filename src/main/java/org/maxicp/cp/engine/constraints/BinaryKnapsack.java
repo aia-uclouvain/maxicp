@@ -54,12 +54,30 @@ public class BinaryKnapsack extends AbstractCPConstraint {
     int [] X;
     int n = -1; //number of element in the knapsack
 
+    /**
+     * Creates a Binary Knapsack constraint ensuring that the total load is equal to
+     * the sum of the weights of the selected items, with a given number of items {@code n}.
+     *
+     * @param b       an array of {@link CPBoolVar} variables where {@code b[i]} is 1 if item {@code i} is selected, 0 otherwise
+     * @param weights an array of non-negative integers representing the weights of the items
+     * @param load    a {@link CPIntVar} variable representing the total weight of selected items
+     * @param n       the number of items in the knapsack
+     */
     public BinaryKnapsack(CPBoolVar [] b, final int [] weights, CPIntVar load, int n) {
         this(b,weights,load);
         this.n = n;
         assert (n > 0);
     }
 
+    /**
+     * Creates a Binary Knapsack constraint ensuring that the total load is equal to
+     * the sum of the weights of the selected items, with a given number of items {@code n}.
+     *
+     * @param b       an array of {@link CPBoolVar} variables where {@code b[i]} is 1 if item {@code i} is selected, 0 otherwise
+     * @param weights an array of non-negative integers representing the weights of the items
+     * @param load    the fixed total weight of selected items
+     * @param n       the number of items in the knapsack
+     */
     public BinaryKnapsack(CPBoolVar [] b, final int [] weights, int load, int n) {
         this(b,weights,load);
         this.n = n;
@@ -96,11 +114,11 @@ public class BinaryKnapsack extends AbstractCPConstraint {
 
     /**
      * Constraint: load is the sum of the weights of items selected in to the knapsack. <br>
-     * load = sum_i b[i]*weights[i] <br>
+     * {@code load = sum_i b[i]*weights[i]} <br>
      * Available propagation strength are Weak and Strong (the default)
-     * @param b
+     * @param b an array of {@link CPBoolVar} variables where {@code b[i]} is 1 if the item is selected, otherwise 0
      * @param weights a vector of non-negative integers of the same length as b
-     * @param load
+     * @param load the total weight of selected items in the knapsack
      */
     public BinaryKnapsack(CPBoolVar [] b, final int [] weights, int load) {
         this(b,weights, CPFactory.makeIntVar(b[0].getSolver(),load,load));

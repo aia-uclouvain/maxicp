@@ -16,8 +16,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * CP implementation of a Sum Cumulative Function
+ * CP implementation of a Sum Cumulative Function.
  *
+ * @param functions the cumulative functions to sum
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
 public record CPSumCumulFunction(CPCumulFunction... functions) implements CPCumulFunction {

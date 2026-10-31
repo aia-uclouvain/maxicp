@@ -18,6 +18,12 @@ public class EndBeforeEnd extends AbstractCPConstraint {
 
     final CPIntervalVar A, B;
 
+    /**
+     * Creates a constraint enforcing {@code end(A) <= end(B)} whenever both {@code A} and {@code B} are present.
+     *
+     * @param A the first interval variable
+     * @param B the second interval variable
+     */
     public EndBeforeEnd(CPIntervalVar A, CPIntervalVar B) {
         super(A.getSolver());
         this.A = A;

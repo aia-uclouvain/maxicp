@@ -7,6 +7,10 @@ import org.maxicp.modeling.algebra.Expression;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Modeling-level cumulative constraint on a sequence variable ({@link SeqVar}), ensuring that the total load
+ * of active activities along the sequence never exceeds {@code capacity}.
+ */
 public class Cumulative implements Constraint {
 
     public final SeqVar seqVar;

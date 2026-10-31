@@ -19,9 +19,10 @@ public class Square extends AbstractCPConstraint {
     private CPIntVar y;
 
     /**
-     * x*x == y
-     * @param x
-     * @param y
+     * Creates a square constraint {@code x * x == y}.
+     *
+     * @param x the input variable to be squared
+     * @param y the variable equal to {@code x * x}
      */
     public Square(CPIntVar x, CPIntVar y) {
         super(x.getSolver());

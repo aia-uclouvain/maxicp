@@ -1,0 +1,334 @@
+<instance format="XCSP3" type="CSP">
+  <variables>
+    <array id="points" note="points[j][0] and points[j][1] are the points for the two teams (indexes 0 and 1) of the jth game" size="[130][2]"> 0 1 3 </array>
+    <array id="score" note="score[i] is the final score of the ith team" size="[20]"> 25..93 </array>
+    <array id="fp" note="fp[i] is the final position of the ith team" size="[20]"> 1..20 </array>
+    <array id="bp" note="bp[i] is the best possible position of the ith team" size="[20]"> 1..20 </array>
+    <array id="wp" note="wp[i] is the worst possible position of the ith team" size="[20]"> 1..20 </array>
+  </variables>
+  <constraints>
+    <group note="assigning rights points for each game">
+      <extension>
+        <list> %0 %1 </list>
+        <supports> (0,3)(1,1)(3,0) </supports>
+      </extension>
+      <args> points[0][0] points[0][1] </args>
+      <args> points[1][0] points[1][1] </args>
+      <args> points[2][0] points[2][1] </args>
+      <args> points[3][0] points[3][1] </args>
+      <args> points[4][0] points[4][1] </args>
+      <args> points[5][0] points[5][1] </args>
+      <args> points[6][0] points[6][1] </args>
+      <args> points[7][0] points[7][1] </args>
+      <args> points[8][0] points[8][1] </args>
+      <args> points[9][0] points[9][1] </args>
+      <args> points[10][0] points[10][1] </args>
+      <args> points[11][0] points[11][1] </args>
+      <args> points[12][0] points[12][1] </args>
+      <args> points[13][0] points[13][1] </args>
+      <args> points[14][0] points[14][1] </args>
+      <args> points[15][0] points[15][1] </args>
+      <args> points[16][0] points[16][1] </args>
+      <args> points[17][0] points[17][1] </args>
+      <args> points[18][0] points[18][1] </args>
+      <args> points[19][0] points[19][1] </args>
+      <args> points[20][0] points[20][1] </args>
+      <args> points[21][0] points[21][1] </args>
+      <args> points[22][0] points[22][1] </args>
+      <args> points[23][0] points[23][1] </args>
+      <args> points[24][0] points[24][1] </args>
+      <args> points[25][0] points[25][1] </args>
+      <args> points[26][0] points[26][1] </args>
+      <args> points[27][0] points[27][1] </args>
+      <args> points[28][0] points[28][1] </args>
+      <args> points[29][0] points[29][1] </args>
+      <args> points[30][0] points[30][1] </args>
+      <args> points[31][0] points[31][1] </args>
+      <args> points[32][0] points[32][1] </args>
+      <args> points[33][0] points[33][1] </args>
+      <args> points[34][0] points[34][1] </args>
+      <args> points[35][0] points[35][1] </args>
+      <args> points[36][0] points[36][1] </args>
+      <args> points[37][0] points[37][1] </args>
+      <args> points[38][0] points[38][1] </args>
+      <args> points[39][0] points[39][1] </args>
+      <args> points[40][0] points[40][1] </args>
+      <args> points[41][0] points[41][1] </args>
+      <args> points[42][0] points[42][1] </args>
+      <args> points[43][0] points[43][1] </args>
+      <args> points[44][0] points[44][1] </args>
+      <args> points[45][0] points[45][1] </args>
+      <args> points[46][0] points[46][1] </args>
+      <args> points[47][0] points[47][1] </args>
+      <args> points[48][0] points[48][1] </args>
+      <args> points[49][0] points[49][1] </args>
+      <args> points[50][0] points[50][1] </args>
+      <args> points[51][0] points[51][1] </args>
+      <args> points[52][0] points[52][1] </args>
+      <args> points[53][0] points[53][1] </args>
+      <args> points[54][0] points[54][1] </args>
+      <args> points[55][0] points[55][1] </args>
+      <args> points[56][0] points[56][1] </args>
+      <args> points[57][0] points[57][1] </args>
+      <args> points[58][0] points[58][1] </args>
+      <args> points[59][0] points[59][1] </args>
+      <args> points[60][0] points[60][1] </args>
+      <args> points[61][0] points[61][1] </args>
+      <args> points[62][0] points[62][1] </args>
+      <args> points[63][0] points[63][1] </args>
+      <args> points[64][0] points[64][1] </args>
+      <args> points[65][0] points[65][1] </args>
+      <args> points[66][0] points[66][1] </args>
+      <args> points[67][0] points[67][1] </args>
+      <args> points[68][0] points[68][1] </args>
+      <args> points[69][0] points[69][1] </args>
+      <args> points[70][0] points[70][1] </args>
+      <args> points[71][0] points[71][1] </args>
+      <args> points[72][0] points[72][1] </args>
+      <args> points[73][0] points[73][1] </args>
+      <args> points[74][0] points[74][1] </args>
+      <args> points[75][0] points[75][1] </args>
+      <args> points[76][0] points[76][1] </args>
+      <args> points[77][0] points[77][1] </args>
+      <args> points[78][0] points[78][1] </args>
+      <args> points[79][0] points[79][1] </args>
+      <args> points[80][0] points[80][1] </args>
+      <args> points[81][0] points[81][1] </args>
+      <args> points[82][0] points[82][1] </args>
+      <args> points[83][0] points[83][1] </args>
+      <args> points[84][0] points[84][1] </args>
+      <args> points[85][0] points[85][1] </args>
+      <args> points[86][0] points[86][1] </args>
+      <args> points[87][0] points[87][1] </args>
+      <args> points[88][0] points[88][1] </args>
+      <args> points[89][0] points[89][1] </args>
+      <args> points[90][0] points[90][1] </args>
+      <args> points[91][0] points[91][1] </args>
+      <args> points[92][0] points[92][1] </args>
+      <args> points[93][0] points[93][1] </args>
+      <args> points[94][0] points[94][1] </args>
+      <args> points[95][0] points[95][1] </args>
+      <args> points[96][0] points[96][1] </args>
+      <args> points[97][0] points[97][1] </args>
+      <args> points[98][0] points[98][1] </args>
+      <args> points[99][0] points[99][1] </args>
+      <args> points[100][0] points[100][1] </args>
+      <args> points[101][0] points[101][1] </args>
+      <args> points[102][0] points[102][1] </args>
+      <args> points[103][0] points[103][1] </args>
+      <args> points[104][0] points[104][1] </args>
+      <args> points[105][0] points[105][1] </args>
+      <args> points[106][0] points[106][1] </args>
+      <args> points[107][0] points[107][1] </args>
+      <args> points[108][0] points[108][1] </args>
+      <args> points[109][0] points[109][1] </args>
+      <args> points[110][0] points[110][1] </args>
+      <args> points[111][0] points[111][1] </args>
+      <args> points[112][0] points[112][1] </args>
+      <args> points[113][0] points[113][1] </args>
+      <args> points[114][0] points[114][1] </args>
+      <args> points[115][0] points[115][1] </args>
+      <args> points[116][0] points[116][1] </args>
+      <args> points[117][0] points[117][1] </args>
+      <args> points[118][0] points[118][1] </args>
+      <args> points[119][0] points[119][1] </args>
+      <args> points[120][0] points[120][1] </args>
+      <args> points[121][0] points[121][1] </args>
+      <args> points[122][0] points[122][1] </args>
+      <args> points[123][0] points[123][1] </args>
+      <args> points[124][0] points[124][1] </args>
+      <args> points[125][0] points[125][1] </args>
+      <args> points[126][0] points[126][1] </args>
+      <args> points[127][0] points[127][1] </args>
+      <args> points[128][0] points[128][1] </args>
+      <args> points[129][0] points[129][1] </args>
+    </group>
+    <group note="computing final points">
+      <sum>
+        <list> %... </list>
+        <coeffs> 1 -1x13 </coeffs>
+        <condition> (eq,%0) </condition>
+      </sum>
+      <args> 54 score[0] points[0..1][1] points[3][1] points[6][1] points[14][1] points[19][1] points[26][1] points[32][1] points[39][1] points[46][1] points[57][1] points[72][1] points[93][1] </args>
+      <args> 25 score[1] points[0][0] points[2][1] points[4][1] points[7][1] points[15][1] points[20][1] points[27][1] points[33][1] points[40][1] points[47][1] points[58][1] points[73][1] points[94][1] </args>
+      <args> 25 score[2] points[1..2][0] points[5][1] points[8][1] points[16][1] points[21][1] points[28][1] points[34][1] points[41][1] points[48][1] points[59][1] points[74][1] points[95][1] </args>
+      <args> 54 score[3] points[3..5][0] points[9..10][1] points[17][1] points[22][1] points[29][1] points[49][1] points[60][1] points[75][1] points[83][1] points[104][1] </args>
+      <args> 25 score[4] points[6..9][0] points[11..12][1] points[18][1] points[50][1] points[61][1] points[76][1] points[84][1] points[105][1] points[117][1] </args>
+      <args> 51 score[5] points[10..11][0] points[13][1] points[23][1] points[35][1] points[51][1] points[62][1] points[64][1] points[77][1] points[85][1] points[96][1] points[106][1] points[118][1] </args>
+      <args> 54 score[6] points[12..13][0] points[24][1] points[30][1] points[36][1] points[52][1] points[63][1] points[65][1] points[78][1] points[86][1] points[97][1] points[107][1] points[119][1] </args>
+      <args> 25 score[7] points[14..18][0] points[25][1] points[31][1] points[42][1] points[53][1] points[66][1] points[79][1] points[98][1] points[120][1] </args>
+      <args> 33 score[8] points[19..25][0] points[37][1] points[43][1] points[67][1] points[99][1] points[108][1] points[121][1] </args>
+      <args> 33 score[9] points[26..31][0] points[38][1] points[44][1] points[54][1] points[68][1] points[87][1] points[109][1] points[122][1] </args>
+      <args> 25 score[10] points[32..38][0] points[45][1] points[55][1] points[69][1] points[88][1] points[110][1] points[123][1] </args>
+      <args> 49 score[11] points[39..45][0] points[56][1] points[80][1] points[89][1] points[100][1] points[111][1] points[124][1] </args>
+      <args> 27 score[12] points[46..56][0] points[70][1] points[125][1] </args>
+      <args> 46 score[13] points[57..63][0] points[71][1] points[81][1] points[90][1] points[101][1] points[112][1] points[126][1] </args>
+      <args> 25 score[14] points[64..71][0] points[82][1] points[91][1] points[102][1] points[113][1] points[127][1] </args>
+      <args> 39 score[15] points[72..82][0] points[92][1] points[114][1] </args>
+      <args> 32 score[16] points[83..92][0] points[103][1] points[115][1] points[128][1] </args>
+      <args> 39 score[17] points[93..103][0] points[116][1] points[129][1] </args>
+      <args> 39 score[18] points[104..116][0] </args>
+      <args> 45 score[19] points[117..129][0] </args>
+    </group>
+    <group note="computing worst positions (the number of teams with greater total points)">
+      <sum>
+        <list> %... </list>
+        <condition> (eq,%0) </condition>
+      </sum>
+      <args> wp[0] ge(score[0],score[0]) ge(score[1],score[0]) ge(score[2],score[0]) ge(score[3],score[0]) ge(score[4],score[0]) ge(score[5],score[0]) ge(score[6],score[0]) ge(score[7],score[0]) ge(score[8],score[0]) ge(score[9],score[0]) ge(score[10],score[0]) ge(score[11],score[0]) ge(score[12],score[0]) ge(score[13],score[0]) ge(score[14],score[0]) ge(score[15],score[0]) ge(score[16],score[0]) ge(score[17],score[0]) ge(score[18],score[0]) ge(score[19],score[0]) </args>
+      <args> wp[1] ge(score[0],score[1]) ge(score[1],score[1]) ge(score[2],score[1]) ge(score[3],score[1]) ge(score[4],score[1]) ge(score[5],score[1]) ge(score[6],score[1]) ge(score[7],score[1]) ge(score[8],score[1]) ge(score[9],score[1]) ge(score[10],score[1]) ge(score[11],score[1]) ge(score[12],score[1]) ge(score[13],score[1]) ge(score[14],score[1]) ge(score[15],score[1]) ge(score[16],score[1]) ge(score[17],score[1]) ge(score[18],score[1]) ge(score[19],score[1]) </args>
+      <args> wp[2] ge(score[0],score[2]) ge(score[1],score[2]) ge(score[2],score[2]) ge(score[3],score[2]) ge(score[4],score[2]) ge(score[5],score[2]) ge(score[6],score[2]) ge(score[7],score[2]) ge(score[8],score[2]) ge(score[9],score[2]) ge(score[10],score[2]) ge(score[11],score[2]) ge(score[12],score[2]) ge(score[13],score[2]) ge(score[14],score[2]) ge(score[15],score[2]) ge(score[16],score[2]) ge(score[17],score[2]) ge(score[18],score[2]) ge(score[19],score[2]) </args>
+      <args> wp[3] ge(score[0],score[3]) ge(score[1],score[3]) ge(score[2],score[3]) ge(score[3],score[3]) ge(score[4],score[3]) ge(score[5],score[3]) ge(score[6],score[3]) ge(score[7],score[3]) ge(score[8],score[3]) ge(score[9],score[3]) ge(score[10],score[3]) ge(score[11],score[3]) ge(score[12],score[3]) ge(score[13],score[3]) ge(score[14],score[3]) ge(score[15],score[3]) ge(score[16],score[3]) ge(score[17],score[3]) ge(score[18],score[3]) ge(score[19],score[3]) </args>
+      <args> wp[4] ge(score[0],score[4]) ge(score[1],score[4]) ge(score[2],score[4]) ge(score[3],score[4]) ge(score[4],score[4]) ge(score[5],score[4]) ge(score[6],score[4]) ge(score[7],score[4]) ge(score[8],score[4]) ge(score[9],score[4]) ge(score[10],score[4]) ge(score[11],score[4]) ge(score[12],score[4]) ge(score[13],score[4]) ge(score[14],score[4]) ge(score[15],score[4]) ge(score[16],score[4]) ge(score[17],score[4]) ge(score[18],score[4]) ge(score[19],score[4]) </args>
+      <args> wp[5] ge(score[0],score[5]) ge(score[1],score[5]) ge(score[2],score[5]) ge(score[3],score[5]) ge(score[4],score[5]) ge(score[5],score[5]) ge(score[6],score[5]) ge(score[7],score[5]) ge(score[8],score[5]) ge(score[9],score[5]) ge(score[10],score[5]) ge(score[11],score[5]) ge(score[12],score[5]) ge(score[13],score[5]) ge(score[14],score[5]) ge(score[15],score[5]) ge(score[16],score[5]) ge(score[17],score[5]) ge(score[18],score[5]) ge(score[19],score[5]) </args>
+      <args> wp[6] ge(score[0],score[6]) ge(score[1],score[6]) ge(score[2],score[6]) ge(score[3],score[6]) ge(score[4],score[6]) ge(score[5],score[6]) ge(score[6],score[6]) ge(score[7],score[6]) ge(score[8],score[6]) ge(score[9],score[6]) ge(score[10],score[6]) ge(score[11],score[6]) ge(score[12],score[6]) ge(score[13],score[6]) ge(score[14],score[6]) ge(score[15],score[6]) ge(score[16],score[6]) ge(score[17],score[6]) ge(score[18],score[6]) ge(score[19],score[6]) </args>
+      <args> wp[7] ge(score[0],score[7]) ge(score[1],score[7]) ge(score[2],score[7]) ge(score[3],score[7]) ge(score[4],score[7]) ge(score[5],score[7]) ge(score[6],score[7]) ge(score[7],score[7]) ge(score[8],score[7]) ge(score[9],score[7]) ge(score[10],score[7]) ge(score[11],score[7]) ge(score[12],score[7]) ge(score[13],score[7]) ge(score[14],score[7]) ge(score[15],score[7]) ge(score[16],score[7]) ge(score[17],score[7]) ge(score[18],score[7]) ge(score[19],score[7]) </args>
+      <args> wp[8] ge(score[0],score[8]) ge(score[1],score[8]) ge(score[2],score[8]) ge(score[3],score[8]) ge(score[4],score[8]) ge(score[5],score[8]) ge(score[6],score[8]) ge(score[7],score[8]) ge(score[8],score[8]) ge(score[9],score[8]) ge(score[10],score[8]) ge(score[11],score[8]) ge(score[12],score[8]) ge(score[13],score[8]) ge(score[14],score[8]) ge(score[15],score[8]) ge(score[16],score[8]) ge(score[17],score[8]) ge(score[18],score[8]) ge(score[19],score[8]) </args>
+      <args> wp[9] ge(score[0],score[9]) ge(score[1],score[9]) ge(score[2],score[9]) ge(score[3],score[9]) ge(score[4],score[9]) ge(score[5],score[9]) ge(score[6],score[9]) ge(score[7],score[9]) ge(score[8],score[9]) ge(score[9],score[9]) ge(score[10],score[9]) ge(score[11],score[9]) ge(score[12],score[9]) ge(score[13],score[9]) ge(score[14],score[9]) ge(score[15],score[9]) ge(score[16],score[9]) ge(score[17],score[9]) ge(score[18],score[9]) ge(score[19],score[9]) </args>
+      <args> wp[10] ge(score[0],score[10]) ge(score[1],score[10]) ge(score[2],score[10]) ge(score[3],score[10]) ge(score[4],score[10]) ge(score[5],score[10]) ge(score[6],score[10]) ge(score[7],score[10]) ge(score[8],score[10]) ge(score[9],score[10]) ge(score[10],score[10]) ge(score[11],score[10]) ge(score[12],score[10]) ge(score[13],score[10]) ge(score[14],score[10]) ge(score[15],score[10]) ge(score[16],score[10]) ge(score[17],score[10]) ge(score[18],score[10]) ge(score[19],score[10]) </args>
+      <args> wp[11] ge(score[0],score[11]) ge(score[1],score[11]) ge(score[2],score[11]) ge(score[3],score[11]) ge(score[4],score[11]) ge(score[5],score[11]) ge(score[6],score[11]) ge(score[7],score[11]) ge(score[8],score[11]) ge(score[9],score[11]) ge(score[10],score[11]) ge(score[11],score[11]) ge(score[12],score[11]) ge(score[13],score[11]) ge(score[14],score[11]) ge(score[15],score[11]) ge(score[16],score[11]) ge(score[17],score[11]) ge(score[18],score[11]) ge(score[19],score[11]) </args>
+      <args> wp[12] ge(score[0],score[12]) ge(score[1],score[12]) ge(score[2],score[12]) ge(score[3],score[12]) ge(score[4],score[12]) ge(score[5],score[12]) ge(score[6],score[12]) ge(score[7],score[12]) ge(score[8],score[12]) ge(score[9],score[12]) ge(score[10],score[12]) ge(score[11],score[12]) ge(score[12],score[12]) ge(score[13],score[12]) ge(score[14],score[12]) ge(score[15],score[12]) ge(score[16],score[12]) ge(score[17],score[12]) ge(score[18],score[12]) ge(score[19],score[12]) </args>
+      <args> wp[13] ge(score[0],score[13]) ge(score[1],score[13]) ge(score[2],score[13]) ge(score[3],score[13]) ge(score[4],score[13]) ge(score[5],score[13]) ge(score[6],score[13]) ge(score[7],score[13]) ge(score[8],score[13]) ge(score[9],score[13]) ge(score[10],score[13]) ge(score[11],score[13]) ge(score[12],score[13]) ge(score[13],score[13]) ge(score[14],score[13]) ge(score[15],score[13]) ge(score[16],score[13]) ge(score[17],score[13]) ge(score[18],score[13]) ge(score[19],score[13]) </args>
+      <args> wp[14] ge(score[0],score[14]) ge(score[1],score[14]) ge(score[2],score[14]) ge(score[3],score[14]) ge(score[4],score[14]) ge(score[5],score[14]) ge(score[6],score[14]) ge(score[7],score[14]) ge(score[8],score[14]) ge(score[9],score[14]) ge(score[10],score[14]) ge(score[11],score[14]) ge(score[12],score[14]) ge(score[13],score[14]) ge(score[14],score[14]) ge(score[15],score[14]) ge(score[16],score[14]) ge(score[17],score[14]) ge(score[18],score[14]) ge(score[19],score[14]) </args>
+      <args> wp[15] ge(score[0],score[15]) ge(score[1],score[15]) ge(score[2],score[15]) ge(score[3],score[15]) ge(score[4],score[15]) ge(score[5],score[15]) ge(score[6],score[15]) ge(score[7],score[15]) ge(score[8],score[15]) ge(score[9],score[15]) ge(score[10],score[15]) ge(score[11],score[15]) ge(score[12],score[15]) ge(score[13],score[15]) ge(score[14],score[15]) ge(score[15],score[15]) ge(score[16],score[15]) ge(score[17],score[15]) ge(score[18],score[15]) ge(score[19],score[15]) </args>
+      <args> wp[16] ge(score[0],score[16]) ge(score[1],score[16]) ge(score[2],score[16]) ge(score[3],score[16]) ge(score[4],score[16]) ge(score[5],score[16]) ge(score[6],score[16]) ge(score[7],score[16]) ge(score[8],score[16]) ge(score[9],score[16]) ge(score[10],score[16]) ge(score[11],score[16]) ge(score[12],score[16]) ge(score[13],score[16]) ge(score[14],score[16]) ge(score[15],score[16]) ge(score[16],score[16]) ge(score[17],score[16]) ge(score[18],score[16]) ge(score[19],score[16]) </args>
+      <args> wp[17] ge(score[0],score[17]) ge(score[1],score[17]) ge(score[2],score[17]) ge(score[3],score[17]) ge(score[4],score[17]) ge(score[5],score[17]) ge(score[6],score[17]) ge(score[7],score[17]) ge(score[8],score[17]) ge(score[9],score[17]) ge(score[10],score[17]) ge(score[11],score[17]) ge(score[12],score[17]) ge(score[13],score[17]) ge(score[14],score[17]) ge(score[15],score[17]) ge(score[16],score[17]) ge(score[17],score[17]) ge(score[18],score[17]) ge(score[19],score[17]) </args>
+      <args> wp[18] ge(score[0],score[18]) ge(score[1],score[18]) ge(score[2],score[18]) ge(score[3],score[18]) ge(score[4],score[18]) ge(score[5],score[18]) ge(score[6],score[18]) ge(score[7],score[18]) ge(score[8],score[18]) ge(score[9],score[18]) ge(score[10],score[18]) ge(score[11],score[18]) ge(score[12],score[18]) ge(score[13],score[18]) ge(score[14],score[18]) ge(score[15],score[18]) ge(score[16],score[18]) ge(score[17],score[18]) ge(score[18],score[18]) ge(score[19],score[18]) </args>
+      <args> wp[19] ge(score[0],score[19]) ge(score[1],score[19]) ge(score[2],score[19]) ge(score[3],score[19]) ge(score[4],score[19]) ge(score[5],score[19]) ge(score[6],score[19]) ge(score[7],score[19]) ge(score[8],score[19]) ge(score[9],score[19]) ge(score[10],score[19]) ge(score[11],score[19]) ge(score[12],score[19]) ge(score[13],score[19]) ge(score[14],score[19]) ge(score[15],score[19]) ge(score[16],score[19]) ge(score[17],score[19]) ge(score[18],score[19]) ge(score[19],score[19]) </args>
+    </group>
+    <group note="computing best positions (from worst positions and the number of teams with equal points)">
+      <sum>
+        <list> %... </list>
+        <coeffs> 1 -1x19 </coeffs>
+        <condition> (eq,%0) </condition>
+      </sum>
+      <args> bp[0] wp[0] eq(score[1],score[0]) eq(score[2],score[0]) eq(score[3],score[0]) eq(score[4],score[0]) eq(score[5],score[0]) eq(score[6],score[0]) eq(score[7],score[0]) eq(score[8],score[0]) eq(score[9],score[0]) eq(score[10],score[0]) eq(score[11],score[0]) eq(score[12],score[0]) eq(score[13],score[0]) eq(score[14],score[0]) eq(score[15],score[0]) eq(score[16],score[0]) eq(score[17],score[0]) eq(score[18],score[0]) eq(score[19],score[0]) </args>
+      <args> bp[1] wp[1] eq(score[0],score[1]) eq(score[2],score[1]) eq(score[3],score[1]) eq(score[4],score[1]) eq(score[5],score[1]) eq(score[6],score[1]) eq(score[7],score[1]) eq(score[8],score[1]) eq(score[9],score[1]) eq(score[10],score[1]) eq(score[11],score[1]) eq(score[12],score[1]) eq(score[13],score[1]) eq(score[14],score[1]) eq(score[15],score[1]) eq(score[16],score[1]) eq(score[17],score[1]) eq(score[18],score[1]) eq(score[19],score[1]) </args>
+      <args> bp[2] wp[2] eq(score[0],score[2]) eq(score[1],score[2]) eq(score[3],score[2]) eq(score[4],score[2]) eq(score[5],score[2]) eq(score[6],score[2]) eq(score[7],score[2]) eq(score[8],score[2]) eq(score[9],score[2]) eq(score[10],score[2]) eq(score[11],score[2]) eq(score[12],score[2]) eq(score[13],score[2]) eq(score[14],score[2]) eq(score[15],score[2]) eq(score[16],score[2]) eq(score[17],score[2]) eq(score[18],score[2]) eq(score[19],score[2]) </args>
+      <args> bp[3] wp[3] eq(score[0],score[3]) eq(score[1],score[3]) eq(score[2],score[3]) eq(score[4],score[3]) eq(score[5],score[3]) eq(score[6],score[3]) eq(score[7],score[3]) eq(score[8],score[3]) eq(score[9],score[3]) eq(score[10],score[3]) eq(score[11],score[3]) eq(score[12],score[3]) eq(score[13],score[3]) eq(score[14],score[3]) eq(score[15],score[3]) eq(score[16],score[3]) eq(score[17],score[3]) eq(score[18],score[3]) eq(score[19],score[3]) </args>
+      <args> bp[4] wp[4] eq(score[0],score[4]) eq(score[1],score[4]) eq(score[2],score[4]) eq(score[3],score[4]) eq(score[5],score[4]) eq(score[6],score[4]) eq(score[7],score[4]) eq(score[8],score[4]) eq(score[9],score[4]) eq(score[10],score[4]) eq(score[11],score[4]) eq(score[12],score[4]) eq(score[13],score[4]) eq(score[14],score[4]) eq(score[15],score[4]) eq(score[16],score[4]) eq(score[17],score[4]) eq(score[18],score[4]) eq(score[19],score[4]) </args>
+      <args> bp[5] wp[5] eq(score[0],score[5]) eq(score[1],score[5]) eq(score[2],score[5]) eq(score[3],score[5]) eq(score[4],score[5]) eq(score[6],score[5]) eq(score[7],score[5]) eq(score[8],score[5]) eq(score[9],score[5]) eq(score[10],score[5]) eq(score[11],score[5]) eq(score[12],score[5]) eq(score[13],score[5]) eq(score[14],score[5]) eq(score[15],score[5]) eq(score[16],score[5]) eq(score[17],score[5]) eq(score[18],score[5]) eq(score[19],score[5]) </args>
+      <args> bp[6] wp[6] eq(score[0],score[6]) eq(score[1],score[6]) eq(score[2],score[6]) eq(score[3],score[6]) eq(score[4],score[6]) eq(score[5],score[6]) eq(score[7],score[6]) eq(score[8],score[6]) eq(score[9],score[6]) eq(score[10],score[6]) eq(score[11],score[6]) eq(score[12],score[6]) eq(score[13],score[6]) eq(score[14],score[6]) eq(score[15],score[6]) eq(score[16],score[6]) eq(score[17],score[6]) eq(score[18],score[6]) eq(score[19],score[6]) </args>
+      <args> bp[7] wp[7] eq(score[0],score[7]) eq(score[1],score[7]) eq(score[2],score[7]) eq(score[3],score[7]) eq(score[4],score[7]) eq(score[5],score[7]) eq(score[6],score[7]) eq(score[8],score[7]) eq(score[9],score[7]) eq(score[10],score[7]) eq(score[11],score[7]) eq(score[12],score[7]) eq(score[13],score[7]) eq(score[14],score[7]) eq(score[15],score[7]) eq(score[16],score[7]) eq(score[17],score[7]) eq(score[18],score[7]) eq(score[19],score[7]) </args>
+      <args> bp[8] wp[8] eq(score[0],score[8]) eq(score[1],score[8]) eq(score[2],score[8]) eq(score[3],score[8]) eq(score[4],score[8]) eq(score[5],score[8]) eq(score[6],score[8]) eq(score[7],score[8]) eq(score[9],score[8]) eq(score[10],score[8]) eq(score[11],score[8]) eq(score[12],score[8]) eq(score[13],score[8]) eq(score[14],score[8]) eq(score[15],score[8]) eq(score[16],score[8]) eq(score[17],score[8]) eq(score[18],score[8]) eq(score[19],score[8]) </args>
+      <args> bp[9] wp[9] eq(score[0],score[9]) eq(score[1],score[9]) eq(score[2],score[9]) eq(score[3],score[9]) eq(score[4],score[9]) eq(score[5],score[9]) eq(score[6],score[9]) eq(score[7],score[9]) eq(score[8],score[9]) eq(score[10],score[9]) eq(score[11],score[9]) eq(score[12],score[9]) eq(score[13],score[9]) eq(score[14],score[9]) eq(score[15],score[9]) eq(score[16],score[9]) eq(score[17],score[9]) eq(score[18],score[9]) eq(score[19],score[9]) </args>
+      <args> bp[10] wp[10] eq(score[0],score[10]) eq(score[1],score[10]) eq(score[2],score[10]) eq(score[3],score[10]) eq(score[4],score[10]) eq(score[5],score[10]) eq(score[6],score[10]) eq(score[7],score[10]) eq(score[8],score[10]) eq(score[9],score[10]) eq(score[11],score[10]) eq(score[12],score[10]) eq(score[13],score[10]) eq(score[14],score[10]) eq(score[15],score[10]) eq(score[16],score[10]) eq(score[17],score[10]) eq(score[18],score[10]) eq(score[19],score[10]) </args>
+      <args> bp[11] wp[11] eq(score[0],score[11]) eq(score[1],score[11]) eq(score[2],score[11]) eq(score[3],score[11]) eq(score[4],score[11]) eq(score[5],score[11]) eq(score[6],score[11]) eq(score[7],score[11]) eq(score[8],score[11]) eq(score[9],score[11]) eq(score[10],score[11]) eq(score[12],score[11]) eq(score[13],score[11]) eq(score[14],score[11]) eq(score[15],score[11]) eq(score[16],score[11]) eq(score[17],score[11]) eq(score[18],score[11]) eq(score[19],score[11]) </args>
+      <args> bp[12] wp[12] eq(score[0],score[12]) eq(score[1],score[12]) eq(score[2],score[12]) eq(score[3],score[12]) eq(score[4],score[12]) eq(score[5],score[12]) eq(score[6],score[12]) eq(score[7],score[12]) eq(score[8],score[12]) eq(score[9],score[12]) eq(score[10],score[12]) eq(score[11],score[12]) eq(score[13],score[12]) eq(score[14],score[12]) eq(score[15],score[12]) eq(score[16],score[12]) eq(score[17],score[12]) eq(score[18],score[12]) eq(score[19],score[12]) </args>
+      <args> bp[13] wp[13] eq(score[0],score[13]) eq(score[1],score[13]) eq(score[2],score[13]) eq(score[3],score[13]) eq(score[4],score[13]) eq(score[5],score[13]) eq(score[6],score[13]) eq(score[7],score[13]) eq(score[8],score[13]) eq(score[9],score[13]) eq(score[10],score[13]) eq(score[11],score[13]) eq(score[12],score[13]) eq(score[14],score[13]) eq(score[15],score[13]) eq(score[16],score[13]) eq(score[17],score[13]) eq(score[18],score[13]) eq(score[19],score[13]) </args>
+      <args> bp[14] wp[14] eq(score[0],score[14]) eq(score[1],score[14]) eq(score[2],score[14]) eq(score[3],score[14]) eq(score[4],score[14]) eq(score[5],score[14]) eq(score[6],score[14]) eq(score[7],score[14]) eq(score[8],score[14]) eq(score[9],score[14]) eq(score[10],score[14]) eq(score[11],score[14]) eq(score[12],score[14]) eq(score[13],score[14]) eq(score[15],score[14]) eq(score[16],score[14]) eq(score[17],score[14]) eq(score[18],score[14]) eq(score[19],score[14]) </args>
+      <args> bp[15] wp[15] eq(score[0],score[15]) eq(score[1],score[15]) eq(score[2],score[15]) eq(score[3],score[15]) eq(score[4],score[15]) eq(score[5],score[15]) eq(score[6],score[15]) eq(score[7],score[15]) eq(score[8],score[15]) eq(score[9],score[15]) eq(score[10],score[15]) eq(score[11],score[15]) eq(score[12],score[15]) eq(score[13],score[15]) eq(score[14],score[15]) eq(score[16],score[15]) eq(score[17],score[15]) eq(score[18],score[15]) eq(score[19],score[15]) </args>
+      <args> bp[16] wp[16] eq(score[0],score[16]) eq(score[1],score[16]) eq(score[2],score[16]) eq(score[3],score[16]) eq(score[4],score[16]) eq(score[5],score[16]) eq(score[6],score[16]) eq(score[7],score[16]) eq(score[8],score[16]) eq(score[9],score[16]) eq(score[10],score[16]) eq(score[11],score[16]) eq(score[12],score[16]) eq(score[13],score[16]) eq(score[14],score[16]) eq(score[15],score[16]) eq(score[17],score[16]) eq(score[18],score[16]) eq(score[19],score[16]) </args>
+      <args> bp[17] wp[17] eq(score[0],score[17]) eq(score[1],score[17]) eq(score[2],score[17]) eq(score[3],score[17]) eq(score[4],score[17]) eq(score[5],score[17]) eq(score[6],score[17]) eq(score[7],score[17]) eq(score[8],score[17]) eq(score[9],score[17]) eq(score[10],score[17]) eq(score[11],score[17]) eq(score[12],score[17]) eq(score[13],score[17]) eq(score[14],score[17]) eq(score[15],score[17]) eq(score[16],score[17]) eq(score[18],score[17]) eq(score[19],score[17]) </args>
+      <args> bp[18] wp[18] eq(score[0],score[18]) eq(score[1],score[18]) eq(score[2],score[18]) eq(score[3],score[18]) eq(score[4],score[18]) eq(score[5],score[18]) eq(score[6],score[18]) eq(score[7],score[18]) eq(score[8],score[18]) eq(score[9],score[18]) eq(score[10],score[18]) eq(score[11],score[18]) eq(score[12],score[18]) eq(score[13],score[18]) eq(score[14],score[18]) eq(score[15],score[18]) eq(score[16],score[18]) eq(score[17],score[18]) eq(score[19],score[18]) </args>
+      <args> bp[19] wp[19] eq(score[0],score[19]) eq(score[1],score[19]) eq(score[2],score[19]) eq(score[3],score[19]) eq(score[4],score[19]) eq(score[5],score[19]) eq(score[6],score[19]) eq(score[7],score[19]) eq(score[8],score[19]) eq(score[9],score[19]) eq(score[10],score[19]) eq(score[11],score[19]) eq(score[12],score[19]) eq(score[13],score[19]) eq(score[14],score[19]) eq(score[15],score[19]) eq(score[16],score[19]) eq(score[17],score[19]) eq(score[18],score[19]) </args>
+    </group>
+    <block note="bounding final positions">
+      <group>
+        <intension> ge(%0,%1) </intension>
+        <args> fp[0] bp[0] </args>
+        <args> fp[1] bp[1] </args>
+        <args> fp[2] bp[2] </args>
+        <args> fp[3] bp[3] </args>
+        <args> fp[4] bp[4] </args>
+        <args> fp[5] bp[5] </args>
+        <args> fp[6] bp[6] </args>
+        <args> fp[7] bp[7] </args>
+        <args> fp[8] bp[8] </args>
+        <args> fp[9] bp[9] </args>
+        <args> fp[10] bp[10] </args>
+        <args> fp[11] bp[11] </args>
+        <args> fp[12] bp[12] </args>
+        <args> fp[13] bp[13] </args>
+        <args> fp[14] bp[14] </args>
+        <args> fp[15] bp[15] </args>
+        <args> fp[16] bp[16] </args>
+        <args> fp[17] bp[17] </args>
+        <args> fp[18] bp[18] </args>
+        <args> fp[19] bp[19] </args>
+      </group>
+      <group>
+        <intension> le(%0,%1) </intension>
+        <args> fp[0] wp[0] </args>
+        <args> fp[1] wp[1] </args>
+        <args> fp[2] wp[2] </args>
+        <args> fp[3] wp[3] </args>
+        <args> fp[4] wp[4] </args>
+        <args> fp[5] wp[5] </args>
+        <args> fp[6] wp[6] </args>
+        <args> fp[7] wp[7] </args>
+        <args> fp[8] wp[8] </args>
+        <args> fp[9] wp[9] </args>
+        <args> fp[10] wp[10] </args>
+        <args> fp[11] wp[11] </args>
+        <args> fp[12] wp[12] </args>
+        <args> fp[13] wp[13] </args>
+        <args> fp[14] wp[14] </args>
+        <args> fp[15] wp[15] </args>
+        <args> fp[16] wp[16] </args>
+        <args> fp[17] wp[17] </args>
+        <args> fp[18] wp[18] </args>
+        <args> fp[19] wp[19] </args>
+      </group>
+    </block>
+    <allDifferent note="ensuring different positions"> fp[] </allDifferent>
+    <block note="applying rules from specified positions">
+      <instantiation>
+        <list> fp[] </list>
+        <values> 2 16 17 4 15 3 5 18 11 13 12 1 20 10 14 8 19 7 9 6 </values>
+      </instantiation>
+      <group>
+        <sum>
+          <list> %... </list>
+          <condition> (lt,%0) </condition>
+        </sum>
+        <args> 2 gt(score[1],score[0]) gt(score[2],score[0]) gt(score[3],score[0]) gt(score[4],score[0]) gt(score[5],score[0]) gt(score[6],score[0]) gt(score[7],score[0]) gt(score[8],score[0]) gt(score[9],score[0]) gt(score[10],score[0]) gt(score[11],score[0]) gt(score[12],score[0]) gt(score[13],score[0]) gt(score[14],score[0]) gt(score[15],score[0]) gt(score[16],score[0]) gt(score[17],score[0]) gt(score[18],score[0]) gt(score[19],score[0]) </args>
+        <args> 16 gt(score[0],score[1]) gt(score[2],score[1]) gt(score[3],score[1]) gt(score[4],score[1]) gt(score[5],score[1]) gt(score[6],score[1]) gt(score[7],score[1]) gt(score[8],score[1]) gt(score[9],score[1]) gt(score[10],score[1]) gt(score[11],score[1]) gt(score[12],score[1]) gt(score[13],score[1]) gt(score[14],score[1]) gt(score[15],score[1]) gt(score[16],score[1]) gt(score[17],score[1]) gt(score[18],score[1]) gt(score[19],score[1]) </args>
+        <args> 17 gt(score[0],score[2]) gt(score[1],score[2]) gt(score[3],score[2]) gt(score[4],score[2]) gt(score[5],score[2]) gt(score[6],score[2]) gt(score[7],score[2]) gt(score[8],score[2]) gt(score[9],score[2]) gt(score[10],score[2]) gt(score[11],score[2]) gt(score[12],score[2]) gt(score[13],score[2]) gt(score[14],score[2]) gt(score[15],score[2]) gt(score[16],score[2]) gt(score[17],score[2]) gt(score[18],score[2]) gt(score[19],score[2]) </args>
+        <args> 4 gt(score[0],score[3]) gt(score[1],score[3]) gt(score[2],score[3]) gt(score[4],score[3]) gt(score[5],score[3]) gt(score[6],score[3]) gt(score[7],score[3]) gt(score[8],score[3]) gt(score[9],score[3]) gt(score[10],score[3]) gt(score[11],score[3]) gt(score[12],score[3]) gt(score[13],score[3]) gt(score[14],score[3]) gt(score[15],score[3]) gt(score[16],score[3]) gt(score[17],score[3]) gt(score[18],score[3]) gt(score[19],score[3]) </args>
+        <args> 15 gt(score[0],score[4]) gt(score[1],score[4]) gt(score[2],score[4]) gt(score[3],score[4]) gt(score[5],score[4]) gt(score[6],score[4]) gt(score[7],score[4]) gt(score[8],score[4]) gt(score[9],score[4]) gt(score[10],score[4]) gt(score[11],score[4]) gt(score[12],score[4]) gt(score[13],score[4]) gt(score[14],score[4]) gt(score[15],score[4]) gt(score[16],score[4]) gt(score[17],score[4]) gt(score[18],score[4]) gt(score[19],score[4]) </args>
+        <args> 3 gt(score[0],score[5]) gt(score[1],score[5]) gt(score[2],score[5]) gt(score[3],score[5]) gt(score[4],score[5]) gt(score[6],score[5]) gt(score[7],score[5]) gt(score[8],score[5]) gt(score[9],score[5]) gt(score[10],score[5]) gt(score[11],score[5]) gt(score[12],score[5]) gt(score[13],score[5]) gt(score[14],score[5]) gt(score[15],score[5]) gt(score[16],score[5]) gt(score[17],score[5]) gt(score[18],score[5]) gt(score[19],score[5]) </args>
+        <args> 5 gt(score[0],score[6]) gt(score[1],score[6]) gt(score[2],score[6]) gt(score[3],score[6]) gt(score[4],score[6]) gt(score[5],score[6]) gt(score[7],score[6]) gt(score[8],score[6]) gt(score[9],score[6]) gt(score[10],score[6]) gt(score[11],score[6]) gt(score[12],score[6]) gt(score[13],score[6]) gt(score[14],score[6]) gt(score[15],score[6]) gt(score[16],score[6]) gt(score[17],score[6]) gt(score[18],score[6]) gt(score[19],score[6]) </args>
+        <args> 18 gt(score[0],score[7]) gt(score[1],score[7]) gt(score[2],score[7]) gt(score[3],score[7]) gt(score[4],score[7]) gt(score[5],score[7]) gt(score[6],score[7]) gt(score[8],score[7]) gt(score[9],score[7]) gt(score[10],score[7]) gt(score[11],score[7]) gt(score[12],score[7]) gt(score[13],score[7]) gt(score[14],score[7]) gt(score[15],score[7]) gt(score[16],score[7]) gt(score[17],score[7]) gt(score[18],score[7]) gt(score[19],score[7]) </args>
+        <args> 11 gt(score[0],score[8]) gt(score[1],score[8]) gt(score[2],score[8]) gt(score[3],score[8]) gt(score[4],score[8]) gt(score[5],score[8]) gt(score[6],score[8]) gt(score[7],score[8]) gt(score[9],score[8]) gt(score[10],score[8]) gt(score[11],score[8]) gt(score[12],score[8]) gt(score[13],score[8]) gt(score[14],score[8]) gt(score[15],score[8]) gt(score[16],score[8]) gt(score[17],score[8]) gt(score[18],score[8]) gt(score[19],score[8]) </args>
+        <args> 13 gt(score[0],score[9]) gt(score[1],score[9]) gt(score[2],score[9]) gt(score[3],score[9]) gt(score[4],score[9]) gt(score[5],score[9]) gt(score[6],score[9]) gt(score[7],score[9]) gt(score[8],score[9]) gt(score[10],score[9]) gt(score[11],score[9]) gt(score[12],score[9]) gt(score[13],score[9]) gt(score[14],score[9]) gt(score[15],score[9]) gt(score[16],score[9]) gt(score[17],score[9]) gt(score[18],score[9]) gt(score[19],score[9]) </args>
+        <args> 12 gt(score[0],score[10]) gt(score[1],score[10]) gt(score[2],score[10]) gt(score[3],score[10]) gt(score[4],score[10]) gt(score[5],score[10]) gt(score[6],score[10]) gt(score[7],score[10]) gt(score[8],score[10]) gt(score[9],score[10]) gt(score[11],score[10]) gt(score[12],score[10]) gt(score[13],score[10]) gt(score[14],score[10]) gt(score[15],score[10]) gt(score[16],score[10]) gt(score[17],score[10]) gt(score[18],score[10]) gt(score[19],score[10]) </args>
+        <args> 1 gt(score[0],score[11]) gt(score[1],score[11]) gt(score[2],score[11]) gt(score[3],score[11]) gt(score[4],score[11]) gt(score[5],score[11]) gt(score[6],score[11]) gt(score[7],score[11]) gt(score[8],score[11]) gt(score[9],score[11]) gt(score[10],score[11]) gt(score[12],score[11]) gt(score[13],score[11]) gt(score[14],score[11]) gt(score[15],score[11]) gt(score[16],score[11]) gt(score[17],score[11]) gt(score[18],score[11]) gt(score[19],score[11]) </args>
+        <args> 20 gt(score[0],score[12]) gt(score[1],score[12]) gt(score[2],score[12]) gt(score[3],score[12]) gt(score[4],score[12]) gt(score[5],score[12]) gt(score[6],score[12]) gt(score[7],score[12]) gt(score[8],score[12]) gt(score[9],score[12]) gt(score[10],score[12]) gt(score[11],score[12]) gt(score[13],score[12]) gt(score[14],score[12]) gt(score[15],score[12]) gt(score[16],score[12]) gt(score[17],score[12]) gt(score[18],score[12]) gt(score[19],score[12]) </args>
+        <args> 10 gt(score[0],score[13]) gt(score[1],score[13]) gt(score[2],score[13]) gt(score[3],score[13]) gt(score[4],score[13]) gt(score[5],score[13]) gt(score[6],score[13]) gt(score[7],score[13]) gt(score[8],score[13]) gt(score[9],score[13]) gt(score[10],score[13]) gt(score[11],score[13]) gt(score[12],score[13]) gt(score[14],score[13]) gt(score[15],score[13]) gt(score[16],score[13]) gt(score[17],score[13]) gt(score[18],score[13]) gt(score[19],score[13]) </args>
+        <args> 14 gt(score[0],score[14]) gt(score[1],score[14]) gt(score[2],score[14]) gt(score[3],score[14]) gt(score[4],score[14]) gt(score[5],score[14]) gt(score[6],score[14]) gt(score[7],score[14]) gt(score[8],score[14]) gt(score[9],score[14]) gt(score[10],score[14]) gt(score[11],score[14]) gt(score[12],score[14]) gt(score[13],score[14]) gt(score[15],score[14]) gt(score[16],score[14]) gt(score[17],score[14]) gt(score[18],score[14]) gt(score[19],score[14]) </args>
+        <args> 8 gt(score[0],score[15]) gt(score[1],score[15]) gt(score[2],score[15]) gt(score[3],score[15]) gt(score[4],score[15]) gt(score[5],score[15]) gt(score[6],score[15]) gt(score[7],score[15]) gt(score[8],score[15]) gt(score[9],score[15]) gt(score[10],score[15]) gt(score[11],score[15]) gt(score[12],score[15]) gt(score[13],score[15]) gt(score[14],score[15]) gt(score[16],score[15]) gt(score[17],score[15]) gt(score[18],score[15]) gt(score[19],score[15]) </args>
+        <args> 19 gt(score[0],score[16]) gt(score[1],score[16]) gt(score[2],score[16]) gt(score[3],score[16]) gt(score[4],score[16]) gt(score[5],score[16]) gt(score[6],score[16]) gt(score[7],score[16]) gt(score[8],score[16]) gt(score[9],score[16]) gt(score[10],score[16]) gt(score[11],score[16]) gt(score[12],score[16]) gt(score[13],score[16]) gt(score[14],score[16]) gt(score[15],score[16]) gt(score[17],score[16]) gt(score[18],score[16]) gt(score[19],score[16]) </args>
+        <args> 7 gt(score[0],score[17]) gt(score[1],score[17]) gt(score[2],score[17]) gt(score[3],score[17]) gt(score[4],score[17]) gt(score[5],score[17]) gt(score[6],score[17]) gt(score[7],score[17]) gt(score[8],score[17]) gt(score[9],score[17]) gt(score[10],score[17]) gt(score[11],score[17]) gt(score[12],score[17]) gt(score[13],score[17]) gt(score[14],score[17]) gt(score[15],score[17]) gt(score[16],score[17]) gt(score[18],score[17]) gt(score[19],score[17]) </args>
+        <args> 9 gt(score[0],score[18]) gt(score[1],score[18]) gt(score[2],score[18]) gt(score[3],score[18]) gt(score[4],score[18]) gt(score[5],score[18]) gt(score[6],score[18]) gt(score[7],score[18]) gt(score[8],score[18]) gt(score[9],score[18]) gt(score[10],score[18]) gt(score[11],score[18]) gt(score[12],score[18]) gt(score[13],score[18]) gt(score[14],score[18]) gt(score[15],score[18]) gt(score[16],score[18]) gt(score[17],score[18]) gt(score[19],score[18]) </args>
+        <args> 6 gt(score[0],score[19]) gt(score[1],score[19]) gt(score[2],score[19]) gt(score[3],score[19]) gt(score[4],score[19]) gt(score[5],score[19]) gt(score[6],score[19]) gt(score[7],score[19]) gt(score[8],score[19]) gt(score[9],score[19]) gt(score[10],score[19]) gt(score[11],score[19]) gt(score[12],score[19]) gt(score[13],score[19]) gt(score[14],score[19]) gt(score[15],score[19]) gt(score[16],score[19]) gt(score[17],score[19]) gt(score[18],score[19]) </args>
+      </group>
+      <group>
+        <sum>
+          <list> %... </list>
+          <condition> (le,%0) </condition>
+        </sum>
+        <args> 19 lt(score[1],score[0]) lt(score[2],score[0]) lt(score[3],score[0]) lt(score[4],score[0]) lt(score[5],score[0]) lt(score[6],score[0]) lt(score[7],score[0]) lt(score[8],score[0]) lt(score[9],score[0]) lt(score[10],score[0]) lt(score[11],score[0]) lt(score[12],score[0]) lt(score[13],score[0]) lt(score[14],score[0]) lt(score[15],score[0]) lt(score[16],score[0]) lt(score[17],score[0]) lt(score[18],score[0]) lt(score[19],score[0]) </args>
+        <args> 5 lt(score[0],score[1]) lt(score[2],score[1]) lt(score[3],score[1]) lt(score[4],score[1]) lt(score[5],score[1]) lt(score[6],score[1]) lt(score[7],score[1]) lt(score[8],score[1]) lt(score[9],score[1]) lt(score[10],score[1]) lt(score[11],score[1]) lt(score[12],score[1]) lt(score[13],score[1]) lt(score[14],score[1]) lt(score[15],score[1]) lt(score[16],score[1]) lt(score[17],score[1]) lt(score[18],score[1]) lt(score[19],score[1]) </args>
+        <args> 4 lt(score[0],score[2]) lt(score[1],score[2]) lt(score[3],score[2]) lt(score[4],score[2]) lt(score[5],score[2]) lt(score[6],score[2]) lt(score[7],score[2]) lt(score[8],score[2]) lt(score[9],score[2]) lt(score[10],score[2]) lt(score[11],score[2]) lt(score[12],score[2]) lt(score[13],score[2]) lt(score[14],score[2]) lt(score[15],score[2]) lt(score[16],score[2]) lt(score[17],score[2]) lt(score[18],score[2]) lt(score[19],score[2]) </args>
+        <args> 17 lt(score[0],score[3]) lt(score[1],score[3]) lt(score[2],score[3]) lt(score[4],score[3]) lt(score[5],score[3]) lt(score[6],score[3]) lt(score[7],score[3]) lt(score[8],score[3]) lt(score[9],score[3]) lt(score[10],score[3]) lt(score[11],score[3]) lt(score[12],score[3]) lt(score[13],score[3]) lt(score[14],score[3]) lt(score[15],score[3]) lt(score[16],score[3]) lt(score[17],score[3]) lt(score[18],score[3]) lt(score[19],score[3]) </args>
+        <args> 6 lt(score[0],score[4]) lt(score[1],score[4]) lt(score[2],score[4]) lt(score[3],score[4]) lt(score[5],score[4]) lt(score[6],score[4]) lt(score[7],score[4]) lt(score[8],score[4]) lt(score[9],score[4]) lt(score[10],score[4]) lt(score[11],score[4]) lt(score[12],score[4]) lt(score[13],score[4]) lt(score[14],score[4]) lt(score[15],score[4]) lt(score[16],score[4]) lt(score[17],score[4]) lt(score[18],score[4]) lt(score[19],score[4]) </args>
+        <args> 18 lt(score[0],score[5]) lt(score[1],score[5]) lt(score[2],score[5]) lt(score[3],score[5]) lt(score[4],score[5]) lt(score[6],score[5]) lt(score[7],score[5]) lt(score[8],score[5]) lt(score[9],score[5]) lt(score[10],score[5]) lt(score[11],score[5]) lt(score[12],score[5]) lt(score[13],score[5]) lt(score[14],score[5]) lt(score[15],score[5]) lt(score[16],score[5]) lt(score[17],score[5]) lt(score[18],score[5]) lt(score[19],score[5]) </args>
+        <args> 16 lt(score[0],score[6]) lt(score[1],score[6]) lt(score[2],score[6]) lt(score[3],score[6]) lt(score[4],score[6]) lt(score[5],score[6]) lt(score[7],score[6]) lt(score[8],score[6]) lt(score[9],score[6]) lt(score[10],score[6]) lt(score[11],score[6]) lt(score[12],score[6]) lt(score[13],score[6]) lt(score[14],score[6]) lt(score[15],score[6]) lt(score[16],score[6]) lt(score[17],score[6]) lt(score[18],score[6]) lt(score[19],score[6]) </args>
+        <args> 3 lt(score[0],score[7]) lt(score[1],score[7]) lt(score[2],score[7]) lt(score[3],score[7]) lt(score[4],score[7]) lt(score[5],score[7]) lt(score[6],score[7]) lt(score[8],score[7]) lt(score[9],score[7]) lt(score[10],score[7]) lt(score[11],score[7]) lt(score[12],score[7]) lt(score[13],score[7]) lt(score[14],score[7]) lt(score[15],score[7]) lt(score[16],score[7]) lt(score[17],score[7]) lt(score[18],score[7]) lt(score[19],score[7]) </args>
+        <args> 10 lt(score[0],score[8]) lt(score[1],score[8]) lt(score[2],score[8]) lt(score[3],score[8]) lt(score[4],score[8]) lt(score[5],score[8]) lt(score[6],score[8]) lt(score[7],score[8]) lt(score[9],score[8]) lt(score[10],score[8]) lt(score[11],score[8]) lt(score[12],score[8]) lt(score[13],score[8]) lt(score[14],score[8]) lt(score[15],score[8]) lt(score[16],score[8]) lt(score[17],score[8]) lt(score[18],score[8]) lt(score[19],score[8]) </args>
+        <args> 8 lt(score[0],score[9]) lt(score[1],score[9]) lt(score[2],score[9]) lt(score[3],score[9]) lt(score[4],score[9]) lt(score[5],score[9]) lt(score[6],score[9]) lt(score[7],score[9]) lt(score[8],score[9]) lt(score[10],score[9]) lt(score[11],score[9]) lt(score[12],score[9]) lt(score[13],score[9]) lt(score[14],score[9]) lt(score[15],score[9]) lt(score[16],score[9]) lt(score[17],score[9]) lt(score[18],score[9]) lt(score[19],score[9]) </args>
+        <args> 9 lt(score[0],score[10]) lt(score[1],score[10]) lt(score[2],score[10]) lt(score[3],score[10]) lt(score[4],score[10]) lt(score[5],score[10]) lt(score[6],score[10]) lt(score[7],score[10]) lt(score[8],score[10]) lt(score[9],score[10]) lt(score[11],score[10]) lt(score[12],score[10]) lt(score[13],score[10]) lt(score[14],score[10]) lt(score[15],score[10]) lt(score[16],score[10]) lt(score[17],score[10]) lt(score[18],score[10]) lt(score[19],score[10]) </args>
+        <args> 20 lt(score[0],score[11]) lt(score[1],score[11]) lt(score[2],score[11]) lt(score[3],score[11]) lt(score[4],score[11]) lt(score[5],score[11]) lt(score[6],score[11]) lt(score[7],score[11]) lt(score[8],score[11]) lt(score[9],score[11]) lt(score[10],score[11]) lt(score[12],score[11]) lt(score[13],score[11]) lt(score[14],score[11]) lt(score[15],score[11]) lt(score[16],score[11]) lt(score[17],score[11]) lt(score[18],score[11]) lt(score[19],score[11]) </args>
+        <args> 1 lt(score[0],score[12]) lt(score[1],score[12]) lt(score[2],score[12]) lt(score[3],score[12]) lt(score[4],score[12]) lt(score[5],score[12]) lt(score[6],score[12]) lt(score[7],score[12]) lt(score[8],score[12]) lt(score[9],score[12]) lt(score[10],score[12]) lt(score[11],score[12]) lt(score[13],score[12]) lt(score[14],score[12]) lt(score[15],score[12]) lt(score[16],score[12]) lt(score[17],score[12]) lt(score[18],score[12]) lt(score[19],score[12]) </args>
+        <args> 11 lt(score[0],score[13]) lt(score[1],score[13]) lt(score[2],score[13]) lt(score[3],score[13]) lt(score[4],score[13]) lt(score[5],score[13]) lt(score[6],score[13]) lt(score[7],score[13]) lt(score[8],score[13]) lt(score[9],score[13]) lt(score[10],score[13]) lt(score[11],score[13]) lt(score[12],score[13]) lt(score[14],score[13]) lt(score[15],score[13]) lt(score[16],score[13]) lt(score[17],score[13]) lt(score[18],score[13]) lt(score[19],score[13]) </args>
+        <args> 7 lt(score[0],score[14]) lt(score[1],score[14]) lt(score[2],score[14]) lt(score[3],score[14]) lt(score[4],score[14]) lt(score[5],score[14]) lt(score[6],score[14]) lt(score[7],score[14]) lt(score[8],score[14]) lt(score[9],score[14]) lt(score[10],score[14]) lt(score[11],score[14]) lt(score[12],score[14]) lt(score[13],score[14]) lt(score[15],score[14]) lt(score[16],score[14]) lt(score[17],score[14]) lt(score[18],score[14]) lt(score[19],score[14]) </args>
+        <args> 13 lt(score[0],score[15]) lt(score[1],score[15]) lt(score[2],score[15]) lt(score[3],score[15]) lt(score[4],score[15]) lt(score[5],score[15]) lt(score[6],score[15]) lt(score[7],score[15]) lt(score[8],score[15]) lt(score[9],score[15]) lt(score[10],score[15]) lt(score[11],score[15]) lt(score[12],score[15]) lt(score[13],score[15]) lt(score[14],score[15]) lt(score[16],score[15]) lt(score[17],score[15]) lt(score[18],score[15]) lt(score[19],score[15]) </args>
+        <args> 2 lt(score[0],score[16]) lt(score[1],score[16]) lt(score[2],score[16]) lt(score[3],score[16]) lt(score[4],score[16]) lt(score[5],score[16]) lt(score[6],score[16]) lt(score[7],score[16]) lt(score[8],score[16]) lt(score[9],score[16]) lt(score[10],score[16]) lt(score[11],score[16]) lt(score[12],score[16]) lt(score[13],score[16]) lt(score[14],score[16]) lt(score[15],score[16]) lt(score[17],score[16]) lt(score[18],score[16]) lt(score[19],score[16]) </args>
+        <args> 14 lt(score[0],score[17]) lt(score[1],score[17]) lt(score[2],score[17]) lt(score[3],score[17]) lt(score[4],score[17]) lt(score[5],score[17]) lt(score[6],score[17]) lt(score[7],score[17]) lt(score[8],score[17]) lt(score[9],score[17]) lt(score[10],score[17]) lt(score[11],score[17]) lt(score[12],score[17]) lt(score[13],score[17]) lt(score[14],score[17]) lt(score[15],score[17]) lt(score[16],score[17]) lt(score[18],score[17]) lt(score[19],score[17]) </args>
+        <args> 12 lt(score[0],score[18]) lt(score[1],score[18]) lt(score[2],score[18]) lt(score[3],score[18]) lt(score[4],score[18]) lt(score[5],score[18]) lt(score[6],score[18]) lt(score[7],score[18]) lt(score[8],score[18]) lt(score[9],score[18]) lt(score[10],score[18]) lt(score[11],score[18]) lt(score[12],score[18]) lt(score[13],score[18]) lt(score[14],score[18]) lt(score[15],score[18]) lt(score[16],score[18]) lt(score[17],score[18]) lt(score[19],score[18]) </args>
+        <args> 15 lt(score[0],score[19]) lt(score[1],score[19]) lt(score[2],score[19]) lt(score[3],score[19]) lt(score[4],score[19]) lt(score[5],score[19]) lt(score[6],score[19]) lt(score[7],score[19]) lt(score[8],score[19]) lt(score[9],score[19]) lt(score[10],score[19]) lt(score[11],score[19]) lt(score[12],score[19]) lt(score[13],score[19]) lt(score[14],score[19]) lt(score[15],score[19]) lt(score[16],score[19]) lt(score[17],score[19]) lt(score[18],score[19]) </args>
+      </group>
+    </block>
+  </constraints>
+</instance>

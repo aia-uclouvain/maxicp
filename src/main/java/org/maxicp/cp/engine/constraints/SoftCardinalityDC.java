@@ -14,12 +14,13 @@ import org.maxicp.cp.engine.core.CPIntVar;
 
 
 /**
- * Soft Global Cardinality Constraint
- * @author Pierre Schaus pschaus@gmail.com
- *
+ * Soft Global Cardinality Constraint.
+ * <p>
  * Algorithm based on the paper:
- * Schaus, P., Van Hentenryck, P., & Zanarini, A.
+ * Schaus, P., Van Hentenryck, P., &amp; Zanarini, A.
  * Revisiting the soft global cardinality constraint. In CPAIOR 2010
+ *
+ * @author Pierre Schaus pschaus@gmail.com
  */
 public class SoftCardinalityDC extends AbstractCPConstraint{
 
@@ -86,14 +87,16 @@ public class SoftCardinalityDC extends AbstractCPConstraint{
 
 
     /**
-     * Constraint the values minval+i to appear between low[i] and up[i] times in x but accept some violations to this rule.
-     * For the value vi = minval+i, let ci be the number of occurences in x and viol(vi) = max(0,low[i]-ci,ci-up[i]) i.e. viol(vi)
+     * Constraint the values {@code minval+i} to appear between {@code low[i]} and {@code up[i]} times in {@code x}
+     * but accept some violations to this rule.
+     * For the value {@code vi = minval+i}, let {@code ci} be the number of occurrences in {@code x} and
+     * {@code viol(vi) = max(0, low[i]-ci, ci-up[i])}, i.e., {@code viol(vi)}
      * is the shortage or excess wrt the prescribed cardinalities. <br>
-     * @param x
-     * @param minval
-     * @param low
-     * @param up
-     * @param viol = sum(i) viol(i)
+     * @param x the array of variables
+     * @param minval the minimum value of the cardinality range
+     * @param low the lower cardinality bounds
+     * @param up the upper cardinality bounds
+     * @param viol the total violation variable {@code sum(i) viol(i)}
      */
     public SoftCardinalityDC(CPIntVar[] x, int minval, int[] low, int[] up, CPIntVar viol) {
         super(x[0].getSolver());
@@ -108,13 +111,15 @@ public class SoftCardinalityDC extends AbstractCPConstraint{
     }
 
     /**
-     * Constraint the values i to appear between low[i] and up[i] times in x but accept some violations to this rule.
-     * For the value let ci be the number of occurences of i in x and viol(i) = max(0,low[i]-ci,ci-up[i]) i.e. viol(vi)
+     * Constraint the values {@code i} to appear between {@code low[i]} and {@code up[i]} times in {@code x}
+     * but accept some violations to this rule.
+     * For the value let {@code ci} be the number of occurrences of {@code i} in {@code x} and
+     * {@code viol(i) = max(0, low[i]-ci, ci-up[i])}, i.e., {@code viol(vi)}
      * is the shortage or excess wrt the prescribed cardinalities. <br>
-     * @param x
-     * @param low
-     * @param up
-     * @param viol = sum(i) viol(i)
+     * @param x the array of variables
+     * @param low the lower cardinality bounds
+     * @param up the upper cardinality bounds
+     * @param viol the total violation variable {@code sum(i) viol(i)}
      */
     public SoftCardinalityDC(CPIntVar[] x,  int[] low, int[] up, CPIntVar viol) {
         this(x, 0, low, up, viol);

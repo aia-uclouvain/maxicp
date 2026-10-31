@@ -12,15 +12,13 @@ import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.algebra.scheduling.CumulFunction;
 import org.maxicp.modeling.symbolic.Objective;
-import org.maxicp.search.DFSearch;
+import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.util.io.InputReader;
 
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import static org.maxicp.modeling.Factory.*;
-import static org.maxicp.search.Searches.*;
 
 /**
  * Resource Constrained Project Scheduling Problem.
@@ -90,10 +88,7 @@ public class RCPSP {
         Objective obj = minimize(makespan);
 
         model.runCP((cp) -> {
-
-            Supplier<Runnable[]> branching = and(fds(tasks));
-
-            DFSearch search = cp.dfSearch(branching);
+            SearchMethod search = cp.blackBoxSearch();
             // print each solution found
             search.onSolution(() -> {
                 System.out.println("makespan: " + makespan);

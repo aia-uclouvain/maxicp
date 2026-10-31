@@ -5,11 +5,11 @@
 
 package org.maxicp.cp.engine.core;
 
+import org.maxicp.ModelDispatcher;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.Constants;
 import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.ModelProxy;
-import org.maxicp.modeling.concrete.BasicModelProxy;
 import org.maxicp.modeling.symbolic.SymbolicModel;
 import org.maxicp.search.IntObjective;
 import org.maxicp.state.StateManager;
@@ -29,9 +29,9 @@ public class MaxiCP implements CPSolver {
 
     public MaxiCP(StateManager sm) {
         this.sm = sm;
-        //use a very simple ModelProxy to allow usage of Expression-based searches
-        this.modelProxy = new BasicModelProxy();
-        this.modelProxy.setModel(new ConcreteCPModel(this.modelProxy, this, SymbolicModel.emptyModel(this.modelProxy)));
+        ModelDispatcher md = new ModelDispatcher(true);
+        this.modelProxy = md;
+        md.setModel(new ConcreteCPModel(md, this, SymbolicModel.emptyModel(md)));
     }
 
     public MaxiCP(StateManager sm, ModelProxy modelProxy) {

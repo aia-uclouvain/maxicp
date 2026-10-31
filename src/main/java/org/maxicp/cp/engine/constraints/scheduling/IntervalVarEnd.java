@@ -11,7 +11,7 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the end time of an interval variable {@code var} to an integer variable {@code end}.
  *
  * @author Pierre Schaus
  */
@@ -19,11 +19,14 @@ public class IntervalVarEnd extends AbstractCPConstraint {
     CPIntervalVar var;
     CPIntVar end;
 
+    /**
+     * Creates a constraint linking {@code end(var)} to {@code end}.
+     *
+     * @param var the interval variable
+     * @param end the integer variable representing the end of {@code var}
+     */
     public IntervalVarEnd(CPIntervalVar var, CPIntVar end) {
         super(var.getSolver());
-        if (!var.isPresent()) {
-            System.out.println("Interval var must be present:" + var);
-        }
         this.var = var;
         this.end = end;
     }

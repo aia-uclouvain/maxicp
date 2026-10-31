@@ -25,6 +25,13 @@ public class Alternative extends AbstractCPConstraint {
 
     private final int nAlts;
 
+    /**
+     * Creates an Alternative constraint with cardinality {@code c}.
+     *
+     * @param a    the main interval variable
+     * @param alts the array of alternative interval variables
+     * @param c    the cardinality variable specifying how many intervals in {@code alts} are present when {@code a} is present
+     */
     public Alternative(CPIntervalVar a, CPIntervalVar[] alts, CPIntVar c) {
         super(a.getSolver());
         this.a = a;

@@ -11,6 +11,11 @@ import org.maxicp.util.exception.InconsistencyException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/**
+ * Left-to-right global filtering algorithms for the {@link NoOverlap} constraint
+ * (Overload Checking, Detectable Precedences, Not-Last, and Edge-Finding),
+ * based on Petr Vilim's PhD thesis (2008).
+ */
 public class NoOverlapLeftToRight {
 
     public enum Outcome {
@@ -27,6 +32,11 @@ public class NoOverlapLeftToRight {
     private final ThetaTree thetaTree;
     private final ThetaLambdaTree thetaLambdaTree;
 
+    /**
+     * Creates a left-to-right NoOverlap filter for at most {@code nMax} activities.
+     *
+     * @param nMax the maximum number of activities
+     */
     public NoOverlapLeftToRight(int nMax) {
         startMin = new int[nMax];
         startMinNew = new int[nMax];

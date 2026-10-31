@@ -22,10 +22,11 @@ public class MulVar extends AbstractCPConstraint {
     private CPIntVar x, y, z;
 
     /**
-     * x * y == z
-     * @param x
-     * @param y
-     * @param z
+     * Creates a multiplication constraint {@code x * y == z}.
+     *
+     * @param x the first variable factor
+     * @param y the second variable factor
+     * @param z the product variable
      */
     public MulVar(CPIntVar x, CPIntVar y, CPIntVar z) {
         super(x.getSolver());
@@ -37,10 +38,10 @@ public class MulVar extends AbstractCPConstraint {
     @Override
     public void post() {
         if (x == y) {
-            getSolver().post(new Square(x,z));
+            getSolver().post(new Square(x,z), false);
         }
         else if (z.isFixed()) {
-            getSolver().post(new MulCteRes(x,y,z.min()));
+            getSolver().post(new MulCteRes(x,y,z.min()), false);
         } else {
             x.propagateOnBoundChange(this);
             y.propagateOnBoundChange(this);

@@ -8,17 +8,16 @@ package org.maxicp.cp.examples.raw;
 
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.constraints.scheduling.CPCumulFunction;
+import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.cp.engine.core.CPSolver;
 import org.maxicp.cp.examples.utils.SMICInstance;
-import org.maxicp.modeling.algebra.integer.IntExpression;
-import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
+import org.maxicp.search.Objective;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
 
 import static org.maxicp.cp.CPFactory.*;
-import static org.maxicp.modeling.Factory.*;
 
 /**
  * A Single Machine with Inventory Constraints (SMIC) problem consists
@@ -63,13 +62,14 @@ public class SMIC {
 
         // Variables of the model
         CPIntervalVar[] intervals = new CPIntervalVar[data.nbJob];
-        IntExpression[] starts = new IntExpression[data.nbJob];
-        IntExpression[] ends = new IntExpression[data.nbJob];
+        CPIntVar[] starts = new CPIntVar[data.nbJob];
+        CPIntVar[] ends = new CPIntVar[data.nbJob];
         CPCumulFunction cumul = step(cp, 0, data.initInventory);
 
         for (int i = 0; i < data.nbJob; i++) {
             CPIntervalVar interval = makeIntervalVar(cp);
             interval.setStartMin(data.release[i]);
+            interval.setEndMax(data.horizon);
             interval.setLength(data.processing[i]);
             interval.setPresent();
             starts[i] = start(interval);
@@ -87,8 +87,8 @@ public class SMIC {
         cp.post(noOverlap(intervals));
 
         // Objective
-        IntExpression makespan = max(ends);
-        Objective obj = minimize(makespan);
+        CPIntVar makespan = max(ends);
+        Objective obj = cp.minimize(makespan);
 
         // Solution storage
         solution = new int[data.nbJob];

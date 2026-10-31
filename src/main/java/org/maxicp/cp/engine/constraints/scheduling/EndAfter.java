@@ -4,6 +4,10 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Constraint enforcing that the end of an interval variable comes after or at a given integer variable:
+ * {@code end(interval) >= var} when {@code interval} is present.
+ */
 public class EndAfter extends AbstractCPConstraint {
 
     final CPIntervalVar interval;

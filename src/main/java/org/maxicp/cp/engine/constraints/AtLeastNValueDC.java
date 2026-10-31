@@ -56,6 +56,13 @@ public class AtLeastNValueDC extends AbstractCPConstraint {
     private int nUnBound;
 
 
+    /**
+     * Creates a domain-consistent constraint enforcing that at least {@code nVal} distinct values
+     * appear among the variables in {@code x}.
+     *
+     * @param x    the array of variables
+     * @param nVal the minimum number of distinct values in {@code x}
+     */
     public AtLeastNValueDC(CPIntVar[] x, CPIntVar nVal) {
         super(x[0].getSolver());
         this.x = x;
@@ -63,6 +70,14 @@ public class AtLeastNValueDC extends AbstractCPConstraint {
         this.nValueVar = nVal;
     }
 
+    /**
+     * Creates a domain-consistent constraint enforcing that at least {@code nval} distinct values
+     * appear among the variables in {@code x}.
+     *
+     * @param x           the array of variables
+     * @param nval        the minimum number of distinct values in {@code x}
+     * @param dontPostFWC unused flag for forward-checking posting
+     */
     public AtLeastNValueDC(CPIntVar[] x, CPIntVar nval, boolean dontPostFWC) {
         this(x, nval);
     }

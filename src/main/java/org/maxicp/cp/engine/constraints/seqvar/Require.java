@@ -19,6 +19,12 @@ public class Require extends AbstractCPConstraint {
     private final int node;
     private boolean scheduled = false;
 
+    /**
+     * Creates a constraint requiring {@code node} to be visited in {@code seqVar}.
+     *
+     * @param seqVar the sequence variable
+     * @param node   the node to require
+     */
     public Require(CPSeqVar seqVar, int node) {
         super(seqVar.getSolver());
         this.seqVar = seqVar;

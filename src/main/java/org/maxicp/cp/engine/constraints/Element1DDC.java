@@ -35,6 +35,13 @@ public class Element1DDC
     int offZ;
     private StateInt[] supportCounter;
 
+    /**
+     * Creates a domain-consistent element constraint {@code array[y] = z}.
+     *
+     * @param array the 1D array of values to index
+     * @param y     the index variable
+     * @param z     the result variable
+     */
     public Element1DDC(int[] array, CPIntVar y, CPIntVar z) {
         super(y.getSolver());
         this.t = array;

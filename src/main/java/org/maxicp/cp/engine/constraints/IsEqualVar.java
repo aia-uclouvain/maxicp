@@ -72,9 +72,17 @@ public class IsEqualVar extends AbstractCPConstraint { // b <=> x == y
         } else if (x.min() > y.max() || x.max() < y.min()) {
             setActive(false);
             b.fix(false);
-        } else if (x.isFixed() && y.isFixed()) {
+        } else if (x.isFixed()) {
+            if (y.isFixed()) {
+                setActive(false);
+                b.fix(true); //always true due to the condition above
+            } else if (!y.contains(x.min())) {
+                setActive(false);
+                b.fix(false);
+            }
+        } else if (y.isFixed() && !x.contains(y.min())) {
             setActive(false);
-            b.fix(true); //always true due to the condition above
+            b.fix(false);
         }
     }
 }

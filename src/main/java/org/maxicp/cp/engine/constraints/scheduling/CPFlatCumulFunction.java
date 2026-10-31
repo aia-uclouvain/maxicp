@@ -17,6 +17,9 @@ import java.util.List;
  * @author Pierre Schaus, Charles Thomas, Augustin Delecluse
  */
 public class CPFlatCumulFunction implements CPCumulFunction {
+    /**
+     * Creates a flat (zero) cumulative function.
+     */
     public CPFlatCumulFunction() {
     }
 

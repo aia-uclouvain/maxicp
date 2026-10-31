@@ -2,6 +2,11 @@ package org.maxicp.cp.engine.constraints;
 
 import java.util.Arrays;
 
+/**
+ * Tarjan's algorithm to find strongly connected components (SCCs) in a directed graph.
+ * <p>
+ * Uses depth-first search (DFS) to discover SCCs and assigns each node to its corresponding SCC.
+ */
 public class SCC {
 
     private final int[][] adjacencyList;

@@ -6,7 +6,6 @@ import org.maxicp.modeling.IntervalVar;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.symbolic.Objective;
 import org.maxicp.search.DFSearch;
-import org.maxicp.search.RankModeling;
 import org.maxicp.search.SearchStatistics;
 
 import java.util.ArrayList;
@@ -57,7 +56,6 @@ public class JobShop {
             }
         }
 
-        IntervalVar[][] toRank = new IntervalVar[nMachines][];
         for (int m = 0; m < nMachines; m++) {
             ArrayList<IntervalVar> machineActivities = new ArrayList<>();
             for (int j = 0; j < nJobs; j++) {
@@ -69,7 +67,6 @@ public class JobShop {
             }
             IntervalVar[] onMachine = machineActivities.toArray(new IntervalVar[0]);
             model.add(noOverlap(onMachine));
-            toRank[m] = onMachine;
         }
 
         IntervalVar[] lasts = Arrays.stream(activities)
@@ -80,10 +77,8 @@ public class JobShop {
         Objective minimizeMakespan = minimize(makespan);
 
         model.runCP((cp) -> {
-            DFSearch search = cp.dfSearch(and(
-                    new RankModeling(toRank),
-                    () -> makespan.isFixed() ? EMPTY
-                            : branch(() -> makespan.getModelProxy().add(eq(makespan, makespan.min())))));
+
+            DFSearch search = cp.dfSearch(fds(activities));
 
             long init = System.currentTimeMillis();
             search.onSolution(() -> {

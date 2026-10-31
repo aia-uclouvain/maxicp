@@ -16,8 +16,8 @@ The solver also includes integration with the XCSP3 format for benchmarking and 
 ## Repository map
 
 - `src/main/java/org/maxicp/`: core solver, modeling API, search, XCSP3 integration.
-- `src/main/java/org/maxicp/cp/modeling/`: contains the examples using the modeling API
-- `src/main/java/org/maxicp/cp/raw/`: contains the examples using the raw API
+- `src/main/java/org/maxicp/cp/examples/modeling/`: contains the examples using the modeling API.
+- `src/main/java/org/maxicp/cp/examples/raw/`: contains the examples using the raw API.
 - `src/test/`: JUnit test suite. It is important to test that all feasible solutions are well discovered by the search, that the constraint does not remove any feasible solution, that it achieves the expected level of consistency.
 - `data/`: benchmark and example instances (including XCSP3 MiniCSP/MiniCOP datasets).
 - `scripts/`: utility scripts, including competition packaging.
@@ -64,7 +64,11 @@ For XCSP3 mini bundle packaging:
 - Prefer small methods and explicit exceptions over broad catch blocks.
 - Keep comments short and only for non-obvious logic.
 - Update or add tests for behavior changes in solver/modeling code.
+- Keep unit tests fast (each test should take on the order of seconds at most) so that the full test suite runs quickly.
+- Do not produce console output (`System.out` / `System.err`) or logs from source code or tests when running the test suite.
 - Do not introduce new dependencies unless required by the task.
+- Avoid cyclic dependencies between packages; maintain a clear, acyclic package dependency order.
+- For the same problem, keep the raw (`src/main/java/org/maxicp/cp/examples/raw/`) and modeling (`src/main/java/org/maxicp/cp/examples/modeling/`) examples as similar as possible across the two paradigms (data loading, variables, constraints, search strategy, and output).
 - When adding, moving, or removing example models in `src/main/java/org/maxicp/cp/examples/`, always update the list in `userguide/source/learning_maxicp/allmodels.rst` and run `python3 userguide/check_source_links.py` to ensure no links are broken.
 
 ## Files and paths to treat as generated/artifacts
@@ -81,8 +85,9 @@ Avoid direct edits unless the task explicitly asks for it:
 Before finishing, ensure:
 
 - The project still compiles (`mvn compile`).
-- Tests relevant to the touched area pass (at least targeted tests; ideally `mvn test`).
-- Documentation/script updates are included when behavior or developer workflow changes
+- Always run the full test suite (`mvn test`) at the end of a task and make sure the entire test suite passes quickly and without console output/logs from source or test code.
+- Documentation/script updates are included when behavior or developer workflow changes. In particular, update `README.md`, `tech-report/maxicp.tex`, and `userguide/` when necessary to reflect new features, API changes, or updated examples.
+- If `agents.local.md` exists in the repository root, read and follow its local instructions.
 
 ## CI alignment
 

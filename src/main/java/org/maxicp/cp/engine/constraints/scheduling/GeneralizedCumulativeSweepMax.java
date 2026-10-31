@@ -9,6 +9,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Sweep-line filtering algorithm for the Generalized Cumulative constraint enforcing a maximum capacity bound.
+ * <p>
+ * Supports optional activities, variable durations, and positive or negative resource heights.
+ */
 public class GeneralizedCumulativeSweepMax extends AbstractCPConstraint {
     private final Activity[] activities;
     private final int maxCapacity;
@@ -28,10 +33,24 @@ public class GeneralizedCumulativeSweepMax extends AbstractCPConstraint {
 
     private final EventList[] eventList; // contains all the possible events of each task (used for speed-up)
 
+    /**
+     * Creates a generalized cumulative sweep constraint enforcing that the cumulative profile
+     * never exceeds {@code maxCapacity}.
+     *
+     * @param activities  the list of activities contributing to the profile
+     * @param maxCapacity the maximum allowed capacity (must be {@code >= 0})
+     */
     public GeneralizedCumulativeSweepMax(List<Activity> activities, int maxCapacity) {
         this(activities.toArray(new Activity[0]), maxCapacity);
     }
 
+    /**
+     * Creates a generalized cumulative sweep constraint enforcing that the cumulative profile
+     * never exceeds {@code maxCapacity}.
+     *
+     * @param activities  the array of activities contributing to the profile
+     * @param maxCapacity the maximum allowed capacity (must be {@code >= 0})
+     */
     public GeneralizedCumulativeSweepMax(Activity [] activities, int maxCapacity) {
         super(activities[0].interval().getSolver());
         if (maxCapacity < 0) throw new IllegalArgumentException("The maximum capacity provided is < 0");

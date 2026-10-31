@@ -33,6 +33,11 @@ public class Profile {
         return profileRectangles;
     }
 
+    /**
+     * Creates a cumulated profile from the given rectangles using a sweep-line algorithm.
+     *
+     * @param rectangles the input rectangles to aggregate into a profile
+     */
     public Profile(Rectangle... rectangles) {
         ArrayList<Rectangle> profile = new ArrayList<Rectangle>();
         Entry[] points = new Entry[2 * rectangles.length + 2];

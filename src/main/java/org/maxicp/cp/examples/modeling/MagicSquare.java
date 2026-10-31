@@ -39,8 +39,6 @@ public class MagicSquare {
 
         IntVar[][] x = new IntVar[n][n];
 
-        model.intVarArray(n, n);
-
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 x[i][j] = model.intVar(1,n*n);
@@ -80,14 +78,14 @@ public class MagicSquare {
         model.add(eq(sum(diagonalRight),sumResult));
 
         long time = TimeIt.run(() -> {
-            model.runCP(() -> {
-                SearchMethod search = model.dfSearch(Searches.conflictOrderingSearch(Searches.minDomVariableSelector(xFlat), var -> var.min()));
+            model.runCP((cp) -> {
+                SearchMethod search = cp.blackBoxSearch();
                 search.onSolution(() -> {
                     for (int i = 0; i < n; i++) {
                         System.out.println(Arrays.toString(x[i]));
                     }
                 });
-                SearchStatistics stats = search.solve(stat -> stat.numberOfSolutions() >= 1);
+                SearchStatistics stats = search.solve();
                 System.out.println(stats);
             });
         });

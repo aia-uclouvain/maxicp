@@ -4,6 +4,10 @@ import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
+/**
+ * Constraint enforcing that the start of an interval variable comes after or at a given integer variable:
+ * {@code start(interval) >= var} when {@code interval} is present.
+ */
 public class StartAfter extends AbstractCPConstraint {
 
     final CPIntervalVar interval;
@@ -12,7 +16,7 @@ public class StartAfter extends AbstractCPConstraint {
     /**
      * Enforces that the start of an interval comes after or at a given variable
      * @param interval interval to constrain
-     * @param var variable after which the interval must end
+     * @param var variable after which the interval must start
      */
     public StartAfter(CPIntervalVar interval, CPIntVar var) {
         super(interval.getSolver());

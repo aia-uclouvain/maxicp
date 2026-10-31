@@ -10,8 +10,10 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * Represents a scheduling activity i.e. an interval variable that consumes an ammount of resource over time.
+ * Represents a scheduling activity, i.e., an interval variable that consumes an amount of resource over time.
  *
+ * @param interval the interval variable of the activity
+ * @param height   the resource consumption (or production) height variable of the activity
  * @author Pierre Schaus, Charles Thomas
  */
 public record Activity(CPIntervalVar interval, CPIntVar height) {

@@ -16,6 +16,10 @@ import java.util.List;
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
 
+/**
+ * Precedence constraint on a sequence variable ({@link CPSeqVar}), ensuring that a given list of nodes
+ * appears in the specified relative order within the sequence.
+ */
 public class Precedence extends AbstractCPConstraint {
 
     private final CPSeqVar seqVar;
@@ -32,12 +36,12 @@ public class Precedence extends AbstractCPConstraint {
     /**
      * Ensures that a list of nodes appears in a given relative order within the sequence, if they appear
      * Example of a solution:
-     * order = [1, 3, 5, 9]
-     * seqVar = 1 -> 2 -> 3 -> 4 -> 5 -> 8
-     * Note that nodes can be put in between and some nodes in `order` may be excluded
+     * {@code order = [1, 3, 5, 9]}
+     * {@code seqVar = 1 -> 2 -> 3 -> 4 -> 5 -> 8}
+     * Note that nodes can be put in between and some nodes in {@code order} may be excluded
      * Example of a non solution (since 1 cannot appear before 5):
-     * order = [1, 3, 5, 9]
-     * seqVar = 5 -> 2 -> 4 -> 1 -> 8
+     * {@code order = [1, 3, 5, 9]}
+     * {@code seqVar = 5 -> 2 -> 4 -> 1 -> 8}
      *
      * @param seqVar sequence variable
      * @param order  nodes that must respect the given ordering if they are included in the sequence
@@ -49,12 +53,12 @@ public class Precedence extends AbstractCPConstraint {
     /**
      * Ensures that a list of nodes appears in a given relative order within the sequence, if they appear.
      * Example of a solution:
-     * order = [1, 3, 5, 9].
-     * seqVar = 1 -> 2 -> 3 -> 4 -> 5 -> 8.
-     * Note that nodes can be put in between and some nodes in `order` may be excluded, provided that {@code appearTogether} is set to false.
+     * {@code order = [1, 3, 5, 9]}.
+     * {@code seqVar = 1 -> 2 -> 3 -> 4 -> 5 -> 8}.
+     * Note that nodes can be put in between and some nodes in {@code order} may be excluded, provided that {@code appearTogether} is set to false.
      * Example of a non solution (since 1 cannot appear before 5):
-     * order = [1, 3, 5, 9].
-     * seqVar = 5 -> 2 -> 4 -> 1 -> 8.
+     * {@code order = [1, 3, 5, 9]}.
+     * {@code seqVar = 5 -> 2 -> 4 -> 1 -> 8}.
      *
      * @param seqVar         sequence variable
      * @param appearTogether if set to true, all nodes in order must appear together.

@@ -2,6 +2,14 @@ package org.maxicp.modeling.constraints.helpers;
 
 import org.maxicp.modeling.Constraint;
 import org.maxicp.modeling.algebra.Expression;
+import org.maxicp.modeling.algebra.scheduling.CumulFunction;
+import org.maxicp.modeling.algebra.scheduling.FlatCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.MinusCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.PlusCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.PulseCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.StepAtEndCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.StepAtStartCumulFunction;
+import org.maxicp.modeling.algebra.scheduling.SumCumulFunction;
 import org.maxicp.util.ImmutableSet;
 
 import java.lang.annotation.ElementType;
@@ -52,10 +60,10 @@ class ConstraintFromRecordHelper {
     }
 
     static ImmutableSet<Type> ignored = ImmutableSet.<Type>builder().add(
-            int.class, long.class, float.class, double.class, char.class, short.class,
-            Integer.class, Long.class, Float.class, Double.class, Character.class, Short.class, String.class,
-            int[].class, long[].class, float[].class, double[].class, char[].class, short[].class, String[].class,
-            int[][].class, long[][].class, float[][].class, double[][].class, char[][].class, short[][].class, String[][].class
+            boolean.class, int.class, long.class, float.class, double.class, char.class, short.class,
+            Boolean.class, Integer.class, Long.class, Float.class, Double.class, Character.class, Short.class, String.class,
+            boolean[].class, int[].class, long[].class, float[].class, double[].class, char[].class, short[].class, String[].class,
+            boolean[][].class, int[][].class, long[][].class, float[][].class, double[][].class, char[][].class, short[][].class, String[][].class
     ).build();
 
     static void findTypeAndExtract(ImmutableSet.Builder<Expression> fset, ConstraintFromRecord record, RecordComponent rc) {
@@ -79,19 +87,39 @@ class ConstraintFromRecordHelper {
                 }
                 case Class<?> cls -> {
                     if (Expression.class.isAssignableFrom(cls)) {
-                        fset.add((Expression) rc.getAccessor().invoke(record));
+                        Expression e = (Expression) rc.getAccessor().invoke(record);
+                        if (e != null) fset.add(e);
                         return;
                     }
 
                     if (Expression[].class.isAssignableFrom(cls)) {
-                        fset.add((Expression[]) rc.getAccessor().invoke(record));
+                        Expression[] arr = (Expression[]) rc.getAccessor().invoke(record);
+                        if (arr != null) fset.add(arr);
                         return;
                     }
 
                     if (Expression[][].class.isAssignableFrom(cls)) {
                         Expression[][] t = (Expression[][]) rc.getAccessor().invoke(record);
-                        for (Expression[] tt : t)
-                            fset.add(tt);
+                        if (t != null) {
+                            for (Expression[] tt : t)
+                                if (tt != null) fset.add(tt);
+                        }
+                        return;
+                    }
+
+                    if (CumulFunction.class.isAssignableFrom(cls)) {
+                        CumulFunction cf = (CumulFunction) rc.getAccessor().invoke(record);
+                        if (cf != null) extractCumulFunction(fset, cf);
+                        return;
+                    }
+
+                    if (CumulFunction[].class.isAssignableFrom(cls)) {
+                        CumulFunction[] arr = (CumulFunction[]) rc.getAccessor().invoke(record);
+                        if (arr != null) {
+                            for (CumulFunction cf : arr) {
+                                if (cf != null) extractCumulFunction(fset, cf);
+                            }
+                        }
                         return;
                     }
 
@@ -140,6 +168,40 @@ class ConstraintFromRecordHelper {
             }
             default -> {
                 throw new IllegalArgumentException("Unknown argument type " + rc);
+            }
+        }
+    }
+
+    static void extractCumulFunction(ImmutableSet.Builder<Expression> fset, CumulFunction cf) {
+        switch (cf) {
+            case PulseCumulFunction p -> {
+                if (p.interval != null) fset.add(p.interval);
+                if (p.height != null && p.hMin != p.hMax) fset.add(p.height);
+            }
+            case StepAtStartCumulFunction s -> {
+                if (s.interval != null) fset.add(s.interval);
+            }
+            case StepAtEndCumulFunction s -> {
+                if (s.interval != null) fset.add(s.interval);
+            }
+            case PlusCumulFunction p -> {
+                if (p.left() != null) extractCumulFunction(fset, p.left());
+                if (p.right() != null) extractCumulFunction(fset, p.right());
+            }
+            case MinusCumulFunction m -> {
+                if (m.left() != null) extractCumulFunction(fset, m.left());
+                if (m.right() != null) extractCumulFunction(fset, m.right());
+            }
+            case SumCumulFunction s -> {
+                if (s.functions != null) {
+                    for (CumulFunction sub : s.functions) {
+                        if (sub != null) extractCumulFunction(fset, sub);
+                    }
+                }
+            }
+            case FlatCumulFunction ignored -> {
+            }
+            default -> {
             }
         }
     }

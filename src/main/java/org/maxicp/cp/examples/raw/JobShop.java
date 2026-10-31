@@ -16,6 +16,7 @@ import org.maxicp.cp.engine.core.CPSolver;
 
 import org.maxicp.cp.engine.core.CPIntervalVar;
 import org.maxicp.search.*;
+import org.maxicp.search.blackbox.BlackBoxSearch;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -60,8 +61,6 @@ public class JobShop {
             }
         }
 
-        CPIntervalVar[][] toRank = new CPIntervalVar[nMachines][];
-
         // no overlap between the activities on the same machine
         for (int m = 0; m < nMachines; m++) {
             ArrayList<CPIntervalVar> machineActivities = new ArrayList<>();
@@ -71,11 +70,9 @@ public class JobShop {
                         machineActivities.add(activities[j][i]);
                     }
                 }
-                ;
             }
             CPIntervalVar[] onMachine = machineActivities.toArray(new CPIntervalVar[0]);
             cp.post(noOverlap(onMachine));
-            toRank[m] = onMachine;
         }
 
         CPIntervalVar[] lasts = Arrays.stream(activities)
@@ -85,11 +82,9 @@ public class JobShop {
 
         Objective obj = cp.minimize(makespan);
 
-        CPIntervalVar[] allActivities = flatten(activities);
 
-        DFSearch dfs = CPFactory.makeDfs(cp,
-                and(new Rank(toRank),
-                        () -> makespan.isFixed() ? EMPTY : branch(() -> cp.post(le(makespan, makespan.min())))));
+        BlackBoxSearch dfs = CPFactory.makeBlackBox(cp);
+
 
         dfs.onSolution(s -> {
             System.out.println("=========================>makespan:" + makespan);

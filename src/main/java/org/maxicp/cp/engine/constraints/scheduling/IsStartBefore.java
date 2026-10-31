@@ -3,6 +3,9 @@ package org.maxicp.cp.engine.constraints.scheduling;
 import org.maxicp.cp.CPFactory;
 import org.maxicp.cp.engine.core.*;
 
+/**
+ * Reified constraint enforcing {@code boolVar <=> start(intervalVar) <= var} when {@code intervalVar} is present.
+ */
 public class IsStartBefore extends AbstractCPConstraint {
 
     private final CPIntervalVar intervalVar;
@@ -12,6 +15,13 @@ public class IsStartBefore extends AbstractCPConstraint {
     private final CPConstraint startBefore;
     private final CPConstraint startAfter;
 
+    /**
+     * Creates a reified constraint linking {@code boolVar} to {@code start(intervalVar) <= var}.
+     *
+     * @param boolVar     the boolean variable that is true iff {@code start(intervalVar) <= var}
+     * @param intervalVar the interval variable
+     * @param var         the integer variable compared against the start of {@code intervalVar}
+     */
     public IsStartBefore(CPBoolVar boolVar, CPIntervalVar intervalVar, CPIntVar var) {
         super(intervalVar.getSolver());
         this.boolVar = boolVar;

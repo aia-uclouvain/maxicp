@@ -11,7 +11,8 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * TODO
+ * Constraint linking the start time of an interval variable {@code var} to an integer variable {@code start}
+ * when {@code var} is present, or fixing {@code start} to a default {@code value} when {@code var} is absent.
  *
  * @author Charles Thomas
  */
@@ -20,6 +21,14 @@ public class IntervalVarStartOrValue extends AbstractCPConstraint {
     CPIntVar start;
     int value;
 
+    /**
+     * Creates a constraint enforcing {@code start == start(var)} if {@code var} is present,
+     * and {@code start == value} if {@code var} is absent.
+     *
+     * @param var   the interval variable
+     * @param start the integer variable representing the start of {@code var} or {@code value}
+     * @param value the fallback value assigned to {@code start} when {@code var} is absent
+     */
     public IntervalVarStartOrValue(CPIntervalVar var, CPIntVar start, int value) {
         super(var.getSolver());
         this.var = var;
