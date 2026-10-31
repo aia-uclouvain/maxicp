@@ -151,16 +151,16 @@ public class SchedulingLNSRunnableSearch extends RunnableSearch {
             }
 <span class="fc" id="L152">            blackBoxSearch.accumulateSubSearchStats(stats);</span>
 
-<span class="pc bpc" id="L154" title="2 of 4 branches missed.">            boolean iterImproved = stats != null &amp;&amp; stats.numberOfSolutions() &gt; 0;</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">            boolean iterImproved = stats != null &amp;&amp; stats.numberOfSolutions() &gt; 0;</span>
 <span class="pc bpc" id="L155" title="2 of 6 branches missed.">            boolean iterExhausted = stats != null &amp;&amp; stats.isCompleted() &amp;&amp; !iterImproved</span>
 <span class="pc bnc" id="L156" title="All 2 branches missed.">                    &amp;&amp; stats.numberOfFailures() &lt; failLimit;</span>
-<span class="pc bpc" id="L157" title="4 of 6 branches missed.">            boolean hitFailLimit = stats != null &amp;&amp; !iterImproved &amp;&amp; stats.numberOfFailures() &gt;= failLimit;</span>
+<span class="pc bpc" id="L157" title="2 of 6 branches missed.">            boolean hitFailLimit = stats != null &amp;&amp; !iterImproved &amp;&amp; stats.numberOfFailures() &gt;= failLimit;</span>
 
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">            if (iterImproved) {</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">            if (iterImproved) {</span>
 <span class="fc" id="L160">                freezeRate = Math.min(85, freezeRate + 3);</span>
-<span class="nc bnc" id="L161" title="All 2 branches missed.">            } else if (iterExhausted) {</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">            } else if (iterExhausted) {</span>
 <span class="nc" id="L162">                freezeRate = Math.max(25, freezeRate - 8);</span>
-<span class="nc bnc" id="L163" title="All 2 branches missed.">            } else if (hitFailLimit) {</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">            } else if (hitFailLimit) {</span>
 <span class="nc" id="L164">                freezeRate = Math.min(88, freezeRate + 5);</span>
             }
 <span class="fc" id="L166">        }</span>

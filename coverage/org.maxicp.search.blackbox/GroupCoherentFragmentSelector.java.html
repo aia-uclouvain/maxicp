@@ -58,9 +58,9 @@ public class GroupCoherentFragmentSelector implements FragmentSelector {
 <span class="fc" id="L58">                frozen.add(idx);</span>
             }
 <span class="fc" id="L60">        }</span>
-<span class="pc bpc" id="L61" title="1 of 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
+<span class="pc bpc" id="L61" title="2 of 4 branches missed.">        if (context.decisionVarIndices().size() &gt; 1 &amp;&amp; frozen.size() == context.decisionVarIndices().size()) {</span>
             // Avoid degenerate neighborhoods: keep at least one decision variable relaxed.
-<span class="fc" id="L63">            frozen.remove(random.nextInt(frozen.size()));</span>
+<span class="nc" id="L63">            frozen.remove(random.nextInt(frozen.size()));</span>
         }
 <span class="fc" id="L65">        return frozen;</span>
     }

@@ -107,7 +107,7 @@ org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph,18,154,0,2,3,28,3,11,3,10
 org.maxicp:maxicp,org.maxicp.util.algo,Tree,160,0,4,0,33,0,7,0,5,0
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.Extent,301,0,22,0,57,0,21,0,10,0
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix.Position,0,32,0,0,0,3,0,3,0,3
-org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,6,44,2,57,7,24,1,5
+org.maxicp:maxicp,org.maxicp.util.algo,BinPacking,10,297,5,45,2,57,6,25,1,5
 org.maxicp:maxicp,org.maxicp.util.algo,DistanceMatrix,109,405,4,44,13,67,7,25,3,5
 org.maxicp:maxicp,org.maxicp.util.algo,Tree.PositionedNode,300,0,10,0,44,0,14,0,8,0
 org.maxicp:maxicp,org.maxicp.util.algo,LayeredGraph.new Iterator() {...},0,31,0,2,0,4,0,4,0,3
@@ -266,15 +266,15 @@ org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox,34,196,3,9,7,29,5,
 org.maxicp:maxicp,org.maxicp.search.blackbox,LNSRunnableSearch,154,1721,44,190,28,328,41,109,2,29
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.SolveConfig,20,39,0,0,8,14,4,4,4,4
 org.maxicp:maxicp,org.maxicp.search.blackbox,SearchStatus,0,39,0,0,0,7,0,1,0,1
-org.maxicp:maxicp,org.maxicp.search.blackbox,GroupCoherentFragmentSelector,44,230,10,22,9,42,8,14,0,6
+org.maxicp:maxicp,org.maxicp.search.blackbox,GroupCoherentFragmentSelector,52,222,11,21,10,41,9,13,0,6
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.FragmentSelectionStrategy,0,21,0,0,0,4,0,1,0,1
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.ExhaustivePhaseOptions,5,23,2,2,1,4,2,2,0,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,RandomFragmentSelector,8,51,2,6,1,11,2,5,0,3
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch,684,2396,124,224,146,480,117,154,18,76
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.LnsPhaseOptions,28,44,6,6,6,7,7,2,1,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.OptimizeConfig,46,27,0,0,18,9,8,1,8,1
-org.maxicp:maxicp,org.maxicp.search.blackbox,SchedulingLNSRunnableSearch,176,640,54,76,31,123,43,33,2,9
-org.maxicp:maxicp,org.maxicp.search.blackbox,ConflictDrivenBranching,197,1029,46,149,29,212,41,88,2,27
+org.maxicp:maxicp,org.maxicp.search.blackbox,SchedulingLNSRunnableSearch,167,649,48,82,29,125,40,36,2,9
+org.maxicp:maxicp,org.maxicp.search.blackbox,ConflictDrivenBranching,172,1054,43,152,27,214,37,92,1,28
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.RestartPhaseOptions,10,29,3,3,2,5,3,2,0,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,ModelingBlackBox.Result,52,63,15,5,12,10,11,3,2,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,BlackBoxSearch.IntervalSnapshot,0,15,0,0,0,1,0,1,0,1
@@ -284,7 +284,7 @@ org.maxicp:maxicp,org.maxicp.search.blackbox,SchedulingRunnableSearch,111,379,38
 org.maxicp:maxicp,org.maxicp.search.blackbox,RandomizedBranching,0,44,0,4,0,11,0,4,0,2
 org.maxicp:maxicp,org.maxicp.search.blackbox,RestartRunnableSearch,34,296,10,31,6,55,8,18,0,5
 org.maxicp:maxicp,org.maxicp.search.blackbox,ConflictDrivenBranching.ValueStrategy,0,39,0,0,0,7,0,1,0,1
-org.maxicp:maxicp,org.maxicp.search.blackbox,DFSRunnableSearch,158,563,40,53,20,103,33,28,2,12
+org.maxicp:maxicp,org.maxicp.search.blackbox,DFSRunnableSearch,168,553,42,51,23,100,35,26,3,11
 org.maxicp:maxicp,org.maxicp.state,StateManager,13,11,0,0,4,5,1,1,1,1
 org.maxicp:maxicp,org.maxicp.state,StateInt,0,24,0,0,0,2,0,2,0,2
 org.maxicp:maxicp,org.maxicp.state,StateLong,24,0,0,0,2,0,2,0,2,0
