@@ -755,6 +755,41 @@ public final class Searches {
         return new FDSModeling(intervals, intExpressions);
     }
 
+    /**
+     * Failure-Directed Search (FDS) for sequence variables.
+     *
+     * @param seqVars the sequence variables to decide
+     * @return an FDS branching strategy for sequence variables
+     * @see FDSSeqVar
+     */
+    public static Supplier<Runnable[]> fds(SeqVar... seqVars) {
+        return new FDSSeqVar(seqVars);
+    }
+
+    /**
+     * Failure-Directed Search (FDS) for sequence variables guided by a distance matrix.
+     *
+     * @param seqVars    the sequence variables to decide
+     * @param distMatrix the distance matrix between nodes
+     * @return an FDS branching strategy for sequence variables
+     * @see FDSSeqVar
+     */
+    public static Supplier<Runnable[]> fds(SeqVar[] seqVars, int[][] distMatrix) {
+        return new FDSSeqVar(seqVars, distMatrix);
+    }
+
+    /**
+     * Failure-Directed Search (FDS) for sequence variables guided by a detour cost function.
+     *
+     * @param seqVars    the sequence variables to decide
+     * @param detourCost function computing the detour cost for {@code (pred, node, succ)}
+     * @return an FDS branching strategy for sequence variables
+     * @see FDSSeqVar
+     */
+    public static Supplier<Runnable[]> fds(SeqVar[] seqVars, TriFunction<Integer, Integer, Integer, Integer> detourCost) {
+        return new FDSSeqVar(seqVars, detourCost);
+    }
+
     public static Runnable[] branchOnStartMin(IntervalVar var) {
         if (!var.isPresent() || var.startMin() == var.startMax()) return EMPTY;
         int min = var.startMin();

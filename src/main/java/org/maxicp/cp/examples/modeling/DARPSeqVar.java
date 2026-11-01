@@ -207,6 +207,8 @@ public class DARPSeqVar {
 
         // ===================== solve the problem =====================
 
+        // Note: one can also use Failure-Directed Search for sequence variables:
+        // Supplier<Runnable[]> branching = Searches.fds(routes, instance.distMatrix);
         ConcreteCPModel cp = model.cpInstantiate();
         DFSearch search = cp.dfSearch(branching);
         search.onSolution(() -> {
@@ -233,7 +235,7 @@ public class DARPSeqVar {
      */
     private static int detourCost(SeqVar seq, int[][] d, int pred, int node) {
         int succ = seq.memberAfter(pred);
-        return d[pred][node] + d[node][succ] - d[node][succ]; // detour for visiting first node
+        return d[pred][node] + d[node][succ] - d[pred][succ]; // detour for visiting first node
     }
 
 }

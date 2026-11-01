@@ -8,6 +8,9 @@ package org.maxicp.cp.engine.constraints.seqvar;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSeqVar;
 
+import static org.maxicp.modeling.algebra.sequence.SeqStatus.MEMBER;
+import static org.maxicp.util.exception.InconsistencyException.INCONSISTENCY;
+
 /**
  * Inserts a node into a sequence
  */
@@ -34,6 +37,12 @@ public class Insert extends AbstractCPConstraint {
 
     @Override
     public void post() {
+        if (!seqVar.hasInsert(prev, node)) {
+            if (seqVar.isNode(prev, MEMBER) && seqVar.isNode(node, MEMBER) && seqVar.memberAfter(prev) == node) {
+                return;
+            }
+            throw INCONSISTENCY;
+        }
         seqVar.insert(prev, node);
     }
 
