@@ -12,9 +12,12 @@ import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
 
 /**
- * Alternative Constraint with cardinality:
- * Enforces that if the interval a is present, then c intervals from the array alt must be present and synchronized
- * with a. If a is not present, then all the intervals of alt must be absent.
+ * Links a main interval {@code a} to a set of alternative intervals {@code alts}.
+ * If {@code a} is present, the value of {@code c} must equal the number of present
+ * intervals in {@code alts}; each present alternative is synchronized with {@code a},
+ * meaning it has the same start, end, and length. The cardinality variable {@code c}
+ * counts selected alternatives; it does not specify which alternatives are selected.
+ * If {@code a} is absent, all intervals in {@code alts} must be absent.
  *
  * @author Charles Thomas
  */
@@ -26,11 +29,11 @@ public class Alternative extends AbstractCPConstraint {
     private final int nAlts;
 
     /**
-     * Creates an Alternative constraint with cardinality {@code c}.
+     * Creates an alternative constraint whose cardinality is specified by {@code c}.
      *
      * @param a    the main interval variable
      * @param alts the array of alternative interval variables
-     * @param c    the cardinality variable specifying how many intervals in {@code alts} are present when {@code a} is present
+     * @param c    the variable whose value is the number of present intervals in {@code alts} when {@code a} is present
      */
     public Alternative(CPIntervalVar a, CPIntervalVar[] alts, CPIntVar c) {
         super(a.getSolver());
@@ -44,15 +47,15 @@ public class Alternative extends AbstractCPConstraint {
     public void post() {
         a.propagateOnChange(this);
         c.propagateOnBoundChange(this);
-        for(CPIntervalVar alt : alts) alt.propagateOnChange(this);
+        for (CPIntervalVar alt : alts) alt.propagateOnChange(this);
         propagate();
     }
 
     @Override
     public void propagate() {
-        if(a.isAbsent()){
+        if (a.isAbsent()) {
             //If a is absent: setting alts absent and deactivating constraint
-            for(CPIntervalVar alt : alts) {
+            for (CPIntervalVar alt : alts) {
                 alt.setAbsent();
             }
             setActive(false);
@@ -66,16 +69,16 @@ public class Alternative extends AbstractCPConstraint {
             int nPresent = 0;
             int nAbsent = 0;
 
-            for(CPIntervalVar alt : alts) {
-                if(alt.isAbsent()){
-                    nAbsent ++;
+            for (CPIntervalVar alt : alts) {
+                if (alt.isAbsent()) {
+                    nAbsent++;
                     //If there are not enough alternative intervals present for the min cardinality: setting a as absent
-                    if(nAlts - nAbsent < c.min()){
+                    if (nAlts - nAbsent < c.min()) {
                         a.setAbsent();
                         break;
                     } else c.removeAbove(nAlts - nAbsent);
                 } else {
-                    if(alt.isPresent()){
+                    if (alt.isPresent()) {
                         nPresent++;
                         c.removeBelow(nPresent);
 
@@ -110,7 +113,7 @@ public class Alternative extends AbstractCPConstraint {
             }
 
             //If no alternative is present: updating starts and ends based on max and min values:
-            if(nPresent == 0){
+            if (nPresent == 0) {
                 a.setStartMin(minStartMinAlts);
                 a.setStartMax(maxStartMaxAlts);
                 a.setEndMin(minEndMinAlts);
@@ -120,19 +123,19 @@ public class Alternative extends AbstractCPConstraint {
             }
 
             //If at least one alternative activity is present, setting a present:
-            if(nPresent > 0) a.setPresent();
+            if (nPresent > 0) a.setPresent();
 
-            if(a.isPresent()){
+            if (a.isPresent()) {
                 //If the number of undecided and present alternative activity is equal to the min cardinality:
                 //Setting undecided acts as present:
-                if(nAlts - nAbsent == c.min()){
-                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setPresent();
+                if (nAlts - nAbsent == c.min()) {
+                    for (CPIntervalVar alt : alts) if (alt.isOptional()) alt.setPresent();
                 }
 
                 //If the number of present alternative activities is equal to the max cardinality:
                 //Setting undecided acts as absent:
-                if(nPresent == c.max()){
-                    for(CPIntervalVar alt : alts) if(alt.isOptional()) alt.setAbsent();
+                if (nPresent == c.max()) {
+                    for (CPIntervalVar alt : alts) if (alt.isOptional()) alt.setAbsent();
                 }
             }
         }
