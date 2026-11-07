@@ -842,7 +842,12 @@ For interval variables:
     \item \texttt{rank(tasks)} imposes a total order on the tasks. It also assumes that all tasks are mandatory.
 \end{itemize}
 
-For sequence variables: \texttt{firstFailBinary(seqVars)} selects the insertable node with the fewest insertion points and creates one branch per possible predecessor (plus an exclusion branch for optional nodes); \texttt{branchesInsertingNode} sorts insertion branches by a user-supplied detour cost.
+For sequence variables:
+\begin{itemize}
+    \item \texttt{fds(seqVars)} (\texttt{FDSSeqVar}) extends Failure-Directed Search to sequence variables for proving optimality and unsatisfiability. It decomposes multi-way insertion into binary choices (\texttt{insert(p, u)} vs.\ \texttt{notBetween(p, u, succ(p))}), estimates search-space contraction via a polynomial-time $O(M \cdot K)$ Lukacs sequential slot-splitting reduction ratio, tracks predecessor conflict blame, and manages a lazy pool of short-detour choices when a transition distance matrix is registered on the sequence variable.
+    \item \texttt{primalSeqVar(seqVars)} (\texttt{PrimalSeqVar}) is a fast constructive primal heuristic designed to discover high-quality feasible tours within milliseconds and repair partial tours inside Large Neighborhood Search. It prioritizes mandatory (\texttt{REQUIRED}) nodes, scores candidates using conflict-weighted first-fail combined with 2-regret detour scoring, and branches binarily on minimum-detour insertion vs.\ refutation.
+    \item \texttt{firstFailBinary(seqVars)} selects the insertable node with the fewest insertion points and creates one branch per possible predecessor (plus an exclusion branch for optional nodes); \texttt{branchesInsertingNode} sorts insertion branches by a user-supplied detour cost.
+\end{itemize}
 
 \paragraph{Combinators.}
 \texttt{and(b1, b2, ...)} composes branching strategies sequentially: a branching in the list is activated only when all preceding ones return \texttt{EMPTY}.
@@ -1046,10 +1051,11 @@ model.runCP(cp -> {
 });
 \end{codebox}
 
-When decision variables are not explicitly supplied, \texttt{BlackBoxSearch} automatically inspects the model to discover the primary decision variables (\texttt{IntVar} for combinatorial problems and \texttt{IntervalVar} for scheduling problems) while filtering out auxiliary variables introduced by expressions or objectives:
+When decision variables are not explicitly supplied, \texttt{BlackBoxSearch} automatically inspects the model to discover the primary decision variables (\texttt{IntVar} for combinatorial problems, \texttt{IntervalVar} for scheduling problems, and \texttt{SeqVar} for routing and sequencing problems) while filtering out auxiliary variables introduced by expressions, transition-time propagators, or objectives:
 \begin{itemize}
     \item \textbf{Combinatorial integer models (\texttt{IntVar}):} Combines initial domain/objective probing, Luby-scheduled restarts with conflict-driven and activity-based branching (\texttt{dom/wdeg}, Last Conflict, Conflict Ordering Search, Bound-Impact, and phase saving), and an adaptive multi-neighborhood LNS portfolio (random, constraint-graph, objective-guided, conflict-guided, and structural variable-group neighborhoods) interleaved with exact DFS/FDS phases for optimality proofs.
     \item \textbf{Scheduling models (\texttt{IntervalVar}):} Combines \texttt{SetTimes} and Failure-Directed Search (\texttt{FDS}) with restarts and a dedicated Scheduling LNS (precedence-graph, time-window, and machine-based neighborhoods) to rapidly improve makespan bounds while retaining completeness to prove optimality.
+    \item \textbf{Routing and sequencing models (\texttt{SeqVar}):} Decouples primal bound improvement from optimality proving by coordinating three specialized components: (1) an initial constructive dive with \texttt{PrimalSeqVar} to obtain a low-detour feasible tour in milliseconds, (2) a Coupled-Request Sequence LNS (\texttt{SequenceLNSRunnableSearch}) that relaxes coupled pickup--delivery pairs (automatically extracted from \texttt{Cumulative} constraints) using random, contiguous-segment, worst-detour, and cross-vehicle exchange neighborhoods repaired by \texttt{PrimalSeqVar}, and (3) geometric-restart dives with \texttt{FDSSeqVar} to close and prove optimality on tighter instances.
 \end{itemize}
 This same format-agnostic \texttt{BlackBoxSearch} engine also powers the \maxicp\ XCSP3 solver (\texttt{org.maxicp.modeling.xcsp3}).
 
@@ -1699,6 +1705,27 @@ for (int iter = 0; iter < 100; iter++) {
 
 At each iteration, \texttt{optimizeSubjectTo} saves the solver state, posts the \texttt{RelaxedSequence} constraint that fixes all non-relaxed nodes in their best-known order, searches for improving solutions, and then restores the state. 
 This follows the same pattern as the QAP LNS loop (Section~\ref{sec:lns}), but the \texttt{RelaxedSequence} constraint is specifically designed for sequence variables.
+
+\subsection{Failure-Directed Search, Primal Search, and Black-Box Optimization for Sequence Variables}
+\label{sec:fds-blackbox-seqvar}
+
+While LNS is the method of choice for rapidly improving primal solutions on large routing instances, proving optimality (or unsatisfiability) requires a complete tree search that avoids thrashing and systematically drives the search toward domain wipeouts. In \maxicp, sequence variable search is organized around two complementary branching strategies and an integrated black-box coordinator:
+\begin{itemize}
+    \item \textbf{Failure-Directed Search for Sequence Variables (\texttt{FDSSeqVar}, \texttt{Searches.fds(seqVars)}):}
+    Traditional $n$-ary insertion branching commits to a node $u$ and tries all its compatible predecessors $p_1, \dots, p_k$ in sequence, preventing the search from switching to a more constrained node after a single failed insertion. \texttt{FDSSeqVar} decomposes sequencing into binary choices of the form
+    \[
+        \underbrace{\texttt{insert}(s, p, u)}_{\text{positive branch } (+)}
+        \quad \lor \quad
+        \underbrace{\texttt{notBetween}(s, p, u, \text{succ}_s(p))}_{\text{negative branch } (-)},
+    \]
+    together with binary inclusion/exclusion choices (\texttt{require(s, u)} vs.\ \texttt{exclude(s, u)}) for optional nodes.
+    To measure search-space contraction after propagation without enumerating all compatible permutations (which is $\#\text{P}$-complete), \texttt{FDSSeqVar} computes a polynomial-time $O(M \cdot K)$ \emph{Lukacs sequential slot-splitting reduction ratio} that captures how inserting one node creates new slots for subsequent unsequenced nodes.
+    Furthermore, when a \texttt{Distance} or \texttt{TransitionTimes} constraint is posted on a sequence variable, it automatically registers its transition matrix $D$ on the variable (\texttt{CPSeqVar.registerDistanceMatrix(D)}); \texttt{FDSSeqVar} uses $D$ to maintain a \emph{lazy short-detour choice pool} that initially activates only the $K_0 = 4$ shortest-detour predecessors per node and dynamically expands the pool as insertions are refuted.
+    \item \textbf{Constructive Primal Search (\texttt{PrimalSeqVar}, \texttt{Searches.primalSeqVar(seqVars)}):}
+    Because \texttt{FDSSeqVar} is designed for optimality proofs and orders choices by failure rating, it is not intended as a standalone primal heuristic on large instances. \texttt{PrimalSeqVar} provides a fast binary constructive search tailored for finding initial feasible routes in milliseconds and repairing partial tours inside LNS. It prioritizes mandatory (\texttt{REQUIRED}) nodes over optional ones, selects the next node to insert by combining domain size and conflict weights with 2-regret detour cost ($\Delta_2(u) - \Delta_1(u)$), and branches binarily on $\texttt{insert}(s, p^*, u^*)$ vs.\ $\texttt{notBetween}(s, p^*, u^*, \text{succ}_s(p^*))$ for the minimum-detour predecessor $p^*$.
+    \item \textbf{Unified Black-Box Search (\texttt{BlackBoxSearch}):}
+    When \texttt{cp.blackBoxSearch()} (modeling API) or \texttt{CPFactory.makeBlackBox(cp)} (raw API) is invoked on a model containing sequence variables, \texttt{BlackBoxSearch} automatically extracts the sequence variables along with any structural metadata registered by global constraints (transition matrices from \texttt{Distance}/\texttt{TransitionTimes} and coupled pickup--delivery node pairs from \texttt{Cumulative}). It then alternates between (1) an initial constructive dive using \texttt{PrimalSeqVar}, (2) a Coupled-Request Sequence LNS (\texttt{SequenceLNSRunnableSearch}) that relaxes coupled pickup--delivery requests together across multiple destroy neighborhoods (random, contiguous segment, worst-detour, and cross-vehicle route exchange) and repairs them with \texttt{PrimalSeqVar}, and (3) geometric-restart dives with \texttt{FDSSeqVar} to prove optimality when the search space is small enough to be closed.
+\end{itemize}
 
 
 % ==================================================================================

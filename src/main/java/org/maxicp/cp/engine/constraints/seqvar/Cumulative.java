@@ -8,6 +8,7 @@ package org.maxicp.cp.engine.constraints.seqvar;
 import org.maxicp.Constants;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSeqVarImpl;
 import org.maxicp.state.StateInt;
 import org.maxicp.util.exception.InconsistencyException;
 
@@ -161,6 +162,9 @@ public class Cumulative extends AbstractCPConstraint {
         }
         activities = IntStream.range(0, starts.length).toArray();
         nValidActivities = getSolver().getStateManager().makeStateInt(activities.length);
+        if (seqVar instanceof CPSeqVarImpl impl) {
+            impl.registerCoupledNodes(starts, ends);
+        }
     }
 
     @Override

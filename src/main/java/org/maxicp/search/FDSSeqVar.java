@@ -50,17 +50,21 @@ import static org.maxicp.search.Searches.branch;
  *       dynamically as {@code pred} becomes a member of a sequence ({@code seq.hasInsert(pred, node)}). Indexing
  *       ratings by transition {@code (pred, node)} shares learned conflict ratings across symmetrical vehicles
  *       while keeping vehicle-specific depot transitions distinct.</li>
- *   <li><b>Slot-Normalized Search Space Reduction ({@code R}):</b> Because inserting a member splits one interval
- *       {@code (pred, succ)} into two intervals {@code (pred, node)} and {@code (node, succ)}, raw insertion counts
- *       {@code nInsert(u)} naturally grow by 1 for unfiltered nodes. {@code FDSSeqVar} normalizes each node's
- *       insertion count by the total number of member intervals across all sequences so that {@code R} accurately
- *       measures constraint filtering in {@code [0, 1]}.</li>
+ *   <li><b>Combinatorial Space Contraction via Sequential Slot-Splitting ({@code R}):</b> The exact number of valid
+ *       sequence completions of a sequence domain with {@code K} open member intervals (slots) and {@code M}
+ *       uninserted nodes is {@code sum_{sigma} prod_{j=1}^K (r_j(sigma))!}, whose exact evaluation is #P-hard in
+ *       general. {@code FDSSeqVar} approximates the effective ordered domain size {@code choices(u)} and slot density
+ *       {@code rho_seq(u)} of each uninserted node in {@code O(M * K)} polynomial time via a Lukacs Gamma-Dirichlet
+ *       sequential slot-splitting pass (which is exact on homogeneous, block-disjoint, and laminar/nested slot domains
+ *       and eliminates the interval splitting paradox).</li>
  *   <li><b>Predecessor Conflict Blame:</b> When {@code insert(seq, pred, node)} fails, conflict blame is also
- *       propagated to {@code nodeRating[pred]}, accelerating failure detection on coupled pairs (such as
+ *       propagated to {@code predRating[pred]}, accelerating failure detection on coupled pairs (such as
  *       pickup-and-delivery requests in DARP).</li>
- *   <li><b>Optional Detour Cost Guidance:</b> For routing optimization problems (DARP, VRPTW, TSPTW), an optional
- *       distance matrix or detour cost function {@code (pred, node, succ) -> cost} can be supplied to guide choice
- *       selection and branch ordering towards low-detour insertions while retaining FDS conflict learning.</li>
+ *   <li><b>Short-Detour Lazy Choice Pool:</b> When a distance matrix or detour cost function
+ *       {@code (pred, node, succ) -> cost} is supplied, {@code FDSSeqVar} initially only admits choice points
+ *       {@code (pred, node)} with a short detour ({@code <= tau0 * avgEdgeCost}) into the active choice pool
+ *       {@code inPool[pred][node]}, lazily expanding the pool for a node only when all of its initial short-detour
+ *       insertions have been refuted or pruned.</li>
  * </ol>
  *
  * @see FDS
@@ -70,13 +74,18 @@ import static org.maxicp.search.Searches.branch;
 public class FDSSeqVar implements Supplier<Runnable[]> {
 
     private static final double DEFAULT_ALPHA = 0.95;
-    private static final double DEFAULT_DETOUR_WEIGHT = 0.20;
+    private static final double DEFAULT_DETOUR_WEIGHT = 0.10;
+    private static final double DEFAULT_INITIAL_POOL_TAU = 0.55;
+    private static final double DEFAULT_FALLBACK_BAND = 0.15;
 
     private final SeqVar[] seqVars;
     private final ModelProxy model;
     private final double alpha;
-    private final double detourWeight;
-    private final int[][] distMatrix;
+    private double detourWeight;
+    private final double initialPoolTau;
+    private final double fallbackBand;
+    private final boolean autoDiscoverDistMatrix;
+    private int[][] distMatrix;
     private final TriFunction<Integer, Integer, Integer, Integer> detourCost;
     private final int nTotalNodes;
 
@@ -86,12 +95,25 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
     private final double[][] ratingNeg;
     /** Predecessor conflict rating indexed by [pred], tracking downstream failures after pred is inserted. */
     private final double[] predRating;
+    /** Lazy choice pool indicator indexed by [pred][node] when detour guidance is active. */
+    private final boolean[][] inPool;
     /** Running average of local ratings per search depth: [0] = mean, [1] = count. */
     private final Map<Integer, double[]> avgRatingByDepth;
 
-    /** Reusable buffers for domain snapshots and insertion queries. */
+    /** Zero-allocation reusable buffers for sequential slot-splitting snapshots and candidate pool selection. */
     private final int[] insertions;
-    private final long[] domBeforeBuffer;
+    private final int[] activeSlots;
+    private final double[] rhoBefore;
+    private final double[] choicesBefore;
+    private final double[] rhoAfter;
+    private final double[] choicesAfter;
+    private final double[] slotWeights;
+    private final int[] nodeInsertCounts;
+    private final int[] bucketHeads;
+    private final int[] bucketNext;
+    private final int[] candSeq;
+    private final int[] candPred;
+    private final int[] candDetour;
     private double avgEdgeCost = 1.0;
 
     /** Cached concrete model and raw CP variables for direct zero-overhead access. */
@@ -107,7 +129,7 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
      * @param seqVars the sequence variables to decide
      */
     public FDSSeqVar(SeqVar... seqVars) {
-        this(DEFAULT_ALPHA, 0.0, seqVars, null, null);
+        this(DEFAULT_ALPHA, 0.0, seqVars, null, null, true);
     }
 
     /**
@@ -117,7 +139,7 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
      * @param seqVars the sequence variables to decide
      */
     public FDSSeqVar(double alpha, SeqVar... seqVars) {
-        this(alpha, 0.0, seqVars, null, null);
+        this(alpha, 0.0, seqVars, null, null, true);
     }
 
     /**
@@ -129,7 +151,7 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
      * @param distMatrix the distance matrix between nodes
      */
     public FDSSeqVar(SeqVar[] seqVars, int[][] distMatrix) {
-        this(DEFAULT_ALPHA, DEFAULT_DETOUR_WEIGHT, seqVars, distMatrix, null);
+        this(DEFAULT_ALPHA, DEFAULT_DETOUR_WEIGHT, seqVars, distMatrix, null, false);
     }
 
     /**
@@ -139,36 +161,37 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
      * @param detourCost function computing the detour cost for {@code (pred, node, succ)}
      */
     public FDSSeqVar(SeqVar[] seqVars, TriFunction<Integer, Integer, Integer, Integer> detourCost) {
-        this(DEFAULT_ALPHA, DEFAULT_DETOUR_WEIGHT, seqVars, null, detourCost);
+        this(DEFAULT_ALPHA, DEFAULT_DETOUR_WEIGHT, seqVars, null, detourCost, false);
     }
 
     /**
      * Creates a Failure-Directed Search for the given sequence variables with custom parameters and distance matrix.
      *
      * @param alpha        exponential decay factor for FDS rating updates (typical: 0.9 to 0.99)
-     * @param detourWeight weight of the normalized detour cost relative to the FDS rating (typical: 0.1 to 0.3)
+     * @param detourWeight weight of the normalized detour cost relative to the FDS rating (typical: 0.05 to 0.25)
      * @param seqVars      the sequence variables to decide
      * @param distMatrix   the distance matrix between nodes (may be null)
      */
     public FDSSeqVar(double alpha, double detourWeight, SeqVar[] seqVars, int[][] distMatrix) {
-        this(alpha, detourWeight, seqVars, distMatrix, null);
+        this(alpha, detourWeight, seqVars, distMatrix, null, false);
     }
 
     /**
      * Creates a Failure-Directed Search for the given sequence variables with custom parameters and detour function.
      *
      * @param alpha        exponential decay factor for FDS rating updates (typical: 0.9 to 0.99)
-     * @param detourWeight weight of the normalized detour cost relative to the FDS rating (typical: 0.1 to 0.3)
+     * @param detourWeight weight of the normalized detour cost relative to the FDS rating (typical: 0.05 to 0.25)
      * @param seqVars      the sequence variables to decide
      * @param detourCost   function computing the detour cost for {@code (pred, node, succ)} (may be null)
      */
     public FDSSeqVar(double alpha, double detourWeight, SeqVar[] seqVars,
                      TriFunction<Integer, Integer, Integer, Integer> detourCost) {
-        this(alpha, detourWeight, seqVars, null, detourCost);
+        this(alpha, detourWeight, seqVars, null, detourCost, false);
     }
 
     private FDSSeqVar(double alpha, double detourWeight, SeqVar[] seqVars,
-                      int[][] distMatrix, TriFunction<Integer, Integer, Integer, Integer> detourCost) {
+                      int[][] distMatrix, TriFunction<Integer, Integer, Integer, Integer> detourCost,
+                      boolean autoDiscoverDistMatrix) {
         if (seqVars == null || seqVars.length == 0) {
             throw new IllegalArgumentException("FDSSeqVar requires at least one sequence variable");
         }
@@ -181,6 +204,9 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
         this.seqVars = seqVars;
         this.alpha = alpha;
         this.detourWeight = Math.max(0.0, detourWeight);
+        this.initialPoolTau = DEFAULT_INITIAL_POOL_TAU;
+        this.fallbackBand = DEFAULT_FALLBACK_BAND;
+        this.autoDiscoverDistMatrix = autoDiscoverDistMatrix;
         this.distMatrix = distMatrix;
         this.detourCost = detourCost;
         this.model = resolveModelProxy(seqVars);
@@ -199,25 +225,26 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
         }
         this.predRating = new double[nTotalNodes];
         Arrays.fill(predRating, 1.0);
+        this.inPool = new boolean[nTotalNodes][nTotalNodes];
         this.avgRatingByDepth = new HashMap<>();
 
+        int maxPossibleIns = seqVars.length * nTotalNodes + 2;
         this.insertions = new int[nTotalNodes];
-        this.domBeforeBuffer = new long[nTotalNodes + 1];
+        this.activeSlots = new int[maxPossibleIns];
+        this.rhoBefore = new double[nTotalNodes];
+        this.choicesBefore = new double[nTotalNodes];
+        this.rhoAfter = new double[nTotalNodes];
+        this.choicesAfter = new double[nTotalNodes];
+        this.slotWeights = new double[seqVars.length * nTotalNodes];
+        this.nodeInsertCounts = new int[nTotalNodes];
+        this.bucketHeads = new int[maxPossibleIns];
+        this.bucketNext = new int[nTotalNodes];
+        this.candSeq = new int[maxPossibleIns];
+        this.candPred = new int[maxPossibleIns];
+        this.candDetour = new int[maxPossibleIns];
 
         if (distMatrix != null) {
-            long sum = 0;
-            int cnt = 0;
-            for (int i = 0; i < distMatrix.length; i++) {
-                for (int j = 0; j < distMatrix[i].length; j++) {
-                    if (i != j && distMatrix[i][j] > 0) {
-                        sum += distMatrix[i][j];
-                        cnt++;
-                    }
-                }
-            }
-            if (cnt > 0) {
-                this.avgEdgeCost = (double) sum / cnt;
-            }
+            updateAvgEdgeCostFromMatrix(distMatrix);
         } else if (detourCost != null) {
             long sum = 0;
             int cnt = 0;
@@ -239,6 +266,22 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
 
         if (this.model == null || this.model.isConcrete()) {
             ensureConcreteCache();
+        }
+    }
+
+    private void updateAvgEdgeCostFromMatrix(int[][] matrix) {
+        long sum = 0;
+        int cnt = 0;
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[i].length; j++) {
+                if (i != j && matrix[i][j] > 0) {
+                    sum += matrix[i][j];
+                    cnt++;
+                }
+            }
+        }
+        if (cnt > 0) {
+            this.avgEdgeCost = (double) sum / cnt;
         }
     }
 
@@ -280,6 +323,7 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
                 cpSolver = cpSeqVars[0].getSolver();
                 sm = cpSolver.getStateManager();
                 baseLevel = sm.getLevel();
+                tryDiscoverDistMatrix();
             }
             return;
         }
@@ -294,9 +338,24 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
                 for (int i = 0; i < seqVars.length; i++) {
                     cpSeqVars[i] = cpm.getCPVar(seqVars[i]);
                 }
+                tryDiscoverDistMatrix();
             } else {
                 cpSolver = null;
                 cpSeqVars = null;
+            }
+        }
+    }
+
+    private void tryDiscoverDistMatrix() {
+        if (!autoDiscoverDistMatrix || distMatrix != null || detourCost != null || cpSeqVars == null) {
+            return;
+        }
+        for (CPSeqVar cpSeq : cpSeqVars) {
+            if (cpSeq != null && cpSeq.distanceMatrix() != null) {
+                this.distMatrix = cpSeq.distanceMatrix();
+                this.detourWeight = DEFAULT_DETOUR_WEIGHT;
+                updateAvgEdgeCostFromMatrix(this.distMatrix);
+                return;
             }
         }
     }
@@ -323,57 +382,98 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
         return cpSeqVars != null ? cpSeqVars[idx] : seqVars[idx];
     }
 
-    private long[] snapshotDomains() {
-        long totalSlots = 0;
+    /**
+     * Computes the effective ordered insertion count {@code choices(u)} and sequential slot density
+     * {@code rho_seq(u) = choices(u) / totalWeight(u)} for each uninserted node {@code u} using the
+     * Lukacs Gamma-Dirichlet Sequential Slot-Splitting Estimator in {@code O(M * K)} time.
+     * <p>
+     * Unlike naive insertion counts {@code nInsert(u)}, which ignore the {@code r_j!} intra-slot permutations
+     * of nodes sharing a member interval {@code j} and therefore increase when an interval splits, sequential
+     * slot-splitting propagates the expected Gamma shape weight {@code w_j <- w_j * (1 + 1 / choices(u))}
+     * across compatible slots in non-decreasing order of {@code D(u)}.
+     */
+    private void snapshotSequentialSlotSplitting(double[] destRho, double[] destChoices) {
         int nSeq = seqVars.length;
+        int totalSlots = 0;
         for (int s = 0; s < nSeq; s++) {
             totalSlots += Math.max(1, seqAt(s).nNode(MEMBER) - 1);
         }
-        domBeforeBuffer[nTotalNodes] = Math.max(1L, totalSlots);
+        totalSlots = Math.max(1, totalSlots);
 
+        int maxIns = 0;
         for (int u = 0; u < nTotalNodes; u++) {
-            long ins = 0;
+            int ins = 0;
             for (int s = 0; s < nSeq; s++) {
                 SeqVar r = seqAt(s);
                 if (u < r.nNode() && r.isNode(u, INSERTABLE)) {
                     ins += r.nInsert(u);
                 }
             }
-            domBeforeBuffer[u] = ins;
+            nodeInsertCounts[u] = ins;
+            destRho[u] = 0.0;
+            destChoices[u] = 0.0;
+            if (ins > maxIns) {
+                maxIns = ins;
+            }
         }
-        return domBeforeBuffer;
+        if (maxIns == 0) {
+            return;
+        }
+
+        Arrays.fill(bucketHeads, 0, maxIns + 1, -1);
+        for (int u = nTotalNodes - 1; u >= 0; u--) {
+            int ins = nodeInsertCounts[u];
+            if (ins > 0) {
+                bucketNext[u] = bucketHeads[ins];
+                bucketHeads[ins] = u;
+            }
+        }
+
+        Arrays.fill(slotWeights, 1.0);
+        double totalWeight = totalSlots;
+
+        for (int d = 1; d <= maxIns; d++) {
+            for (int u = bucketHeads[d]; u != -1; u = bucketNext[u]) {
+                double choices = 0.0;
+                int nSlotsU = 0;
+                for (int s = 0; s < nSeq; s++) {
+                    SeqVar r = seqAt(s);
+                    if (u >= r.nNode() || !r.isNode(u, INSERTABLE)) continue;
+                    int nIns = r.fillInsert(u, insertions);
+                    int base = s * nTotalNodes;
+                    for (int j = 0; j < nIns; j++) {
+                        int flatSlot = base + insertions[j];
+                        activeSlots[nSlotsU++] = flatSlot;
+                        choices += slotWeights[flatSlot];
+                    }
+                }
+                if (choices <= 0.0) continue;
+                destChoices[u] = choices;
+                destRho[u] = choices / totalWeight;
+                double factor = 1.0 + 1.0 / choices;
+                for (int k = 0; k < nSlotsU; k++) {
+                    slotWeights[activeSlots[k]] *= factor;
+                }
+                totalWeight += 1.0;
+            }
+        }
     }
 
     /**
-     * Computes the slot-normalized search space reduction ratio {@code R} in {@code [0, 1]}.
-     * Normalizes each unfixed node's insertion count by the total number of member intervals
-     * across all sequences so that splitting an interval upon insertion does not artificially inflate {@code R}.
+     * Computes the search space reduction ratio {@code R} in {@code [0, 1]} after a branch and fixpoint
+     * using the Sequential Slot-Splitting Estimator.
      */
-    private double computeSlotNormalizedReduction(long[] before) {
-        long sBefore = before[nTotalNodes];
-        long sAfter = 0;
-        int nSeq = seqVars.length;
-        for (int s = 0; s < nSeq; s++) {
-            sAfter += Math.max(1, seqAt(s).nNode(MEMBER) - 1);
-        }
-        sAfter = Math.max(1L, sAfter);
-
+    private double computeSequentialSlotReduction() {
+        snapshotSequentialSlotSplitting(rhoAfter, choicesAfter);
         double ratio = 1.0;
         for (int u = 0; u < nTotalNodes; u++) {
-            long iBefore = before[u];
-            if (iBefore > 1L) {
-                long iAfter = 0;
-                for (int s = 0; s < nSeq; s++) {
-                    SeqVar r = seqAt(s);
-                    if (u < r.nNode() && r.isNode(u, INSERTABLE)) {
-                        iAfter += r.nInsert(u);
-                    }
-                }
-                if (iAfter == 0L) {
-                    ratio *= 1.0 / (double) iBefore;
+            double cBefore = choicesBefore[u];
+            if (cBefore > 1.0 + 1e-9) {
+                double cAfter = choicesAfter[u];
+                if (cAfter <= 0.0) {
+                    ratio *= 1.0 / cBefore;
                 } else {
-                    double nodeRatio = ((double) iAfter * (double) sBefore)
-                            / ((double) iBefore * (double) sAfter);
+                    double nodeRatio = rhoAfter[u] / rhoBefore[u];
                     if (nodeRatio < 1.0) {
                         ratio *= nodeRatio;
                     }
@@ -453,6 +553,8 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
         int bestTie = Integer.MAX_VALUE;
         boolean useDetour = hasDetourGuidance();
         double fdsWeight = 1.0 - detourWeight;
+        double shortThreshold = initialPoolTau * avgEdgeCost;
+        double bandMargin = fallbackBand * avgEdgeCost;
 
         for (int u = 0; u < nTotalNodes; u++) {
             int totalIns = 0;
@@ -475,6 +577,10 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
             if (!isIns) continue;
             if (anyRequiredUninserted && !isReq) continue;
 
+            int nCand = 0;
+            int minDetourU = Integer.MAX_VALUE;
+            boolean hasActiveInPool = false;
+
             for (int s = 0; s < nSeq; s++) {
                 SeqVar r = seqAt(s);
                 if (u >= r.nNode() || !r.isNode(u, INSERTABLE)) continue;
@@ -483,22 +589,54 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
                 for (int j = 0; j < nIns; j++) {
                     int pred = insertions[j];
                     int succ = r.memberAfter(pred);
-                    int tie = evaluateDetour(r, pred, u, succ);
-                    double rawFds = (ratingPos[pred][u] + ratingNeg[pred][u]) * (0.9 + 0.1 * predRating[u]);
-                    double cRating;
+                    int detour = evaluateDetour(r, pred, u, succ);
+                    candSeq[nCand] = s;
+                    candPred[nCand] = pred;
+                    candDetour[nCand] = detour;
+                    nCand++;
+                    if (detour < minDetourU) {
+                        minDetourU = detour;
+                    }
                     if (useDetour) {
-                        double detourNorm = tie / avgEdgeCost;
-                        cRating = totalIns * (fdsWeight * rawFds + detourWeight * detourNorm);
-                    } else {
-                        cRating = totalIns * rawFds;
+                        if (detour <= shortThreshold) {
+                            inPool[pred][u] = true;
+                        }
+                        if (inPool[pred][u]) {
+                            hasActiveInPool = true;
+                        }
                     }
-                    if (cRating < bestScore - 1e-9 || (Math.abs(cRating - bestScore) <= 1e-9 && tie < bestTie)) {
-                        bestScore = cRating;
-                        bestTie = tie;
-                        bestSeqIdx = s;
-                        bestPred = pred;
-                        bestNode = u;
+                }
+            }
+
+            if (useDetour && !hasActiveInPool) {
+                int cutoff = (int) Math.round(minDetourU + bandMargin);
+                for (int c = 0; c < nCand; c++) {
+                    if (candDetour[c] <= cutoff) {
+                        inPool[candPred[c]][u] = true;
                     }
+                }
+            }
+
+            for (int c = 0; c < nCand; c++) {
+                int pred = candPred[c];
+                if (useDetour && !inPool[pred][u]) continue;
+
+                int s = candSeq[c];
+                int tie = candDetour[c];
+                double rawFds = (ratingPos[pred][u] + ratingNeg[pred][u]) * (0.9 + 0.1 * predRating[u]);
+                double cRating;
+                if (useDetour) {
+                    double detourNorm = tie / avgEdgeCost;
+                    cRating = totalIns * (fdsWeight * rawFds + detourWeight * detourNorm);
+                } else {
+                    cRating = totalIns * rawFds;
+                }
+                if (cRating < bestScore - 1e-9 || (Math.abs(cRating - bestScore) <= 1e-9 && tie < bestTie)) {
+                    bestScore = cRating;
+                    bestTie = tie;
+                    bestSeqIdx = s;
+                    bestPred = pred;
+                    bestNode = u;
                 }
             }
         }
@@ -521,7 +659,7 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
 
     private Runnable makeBranch(int seqIdx, int pred, int node, int succ, boolean isPositive) {
         return () -> {
-            long[] before = snapshotDomains();
+            snapshotSequentialSlotSplitting(rhoBefore, choicesBefore);
             try {
                 if (cpSeqVars != null) {
                     CPSeqVar route = cpSeqVars[seqIdx];
@@ -555,9 +693,8 @@ public class FDSSeqVar implements Supplier<Runnable[]> {
                 updateRating(pred, node, isPositive, true, 0.0);
                 throw e;
             }
-            double R = computeSlotNormalizedReduction(before);
+            double R = computeSequentialSlotReduction();
             updateRating(pred, node, isPositive, false, R);
         };
     }
 }
-

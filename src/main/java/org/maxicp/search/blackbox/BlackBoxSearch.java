@@ -3,14 +3,17 @@ package org.maxicp.search.blackbox;
 import org.maxicp.ModelDispatcher;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPIntervalVar;
+import org.maxicp.cp.engine.core.CPSeqVar;
 import org.maxicp.cp.engine.core.Maximize;
 import org.maxicp.cp.engine.core.Minimize;
 import org.maxicp.cp.modeling.ConcreteCPModel;
 import org.maxicp.modeling.DecisionVarCollector;
 import org.maxicp.modeling.Factory;
 import org.maxicp.modeling.IntervalVar;
+import org.maxicp.modeling.SeqVar;
 import org.maxicp.modeling.algebra.VariableNotFixedException;
 import org.maxicp.modeling.algebra.integer.IntExpression;
+import org.maxicp.modeling.algebra.sequence.SeqStatus;
 import org.maxicp.modeling.concrete.ConcreteModel;
 import org.maxicp.modeling.symbolic.Maximization;
 import org.maxicp.modeling.symbolic.Minimization;
@@ -19,6 +22,8 @@ import org.maxicp.modeling.symbolic.SharedMaximization;
 import org.maxicp.modeling.symbolic.SharedMinimization;
 import org.maxicp.search.DFSearch;
 import org.maxicp.search.FDSModeling;
+import org.maxicp.search.FDSSeqVar;
+import org.maxicp.search.PrimalSeqVar;
 import org.maxicp.search.SearchMethod;
 import org.maxicp.search.SearchStatistics;
 import org.maxicp.search.Searches;
@@ -54,6 +59,10 @@ public class BlackBoxSearch implements SearchMethod {
 
     /** Snapshot of an {@link IntervalVar} in an incumbent solution. */
     public record IntervalSnapshot(boolean present, int start, int length, int end) {
+    }
+
+    /** Snapshot of a {@link SeqVar} in an incumbent solution. */
+    public record SeqSnapshot(int start, int end, List<Integer> members) {
     }
 
     /**
@@ -146,6 +155,7 @@ public class BlackBoxSearch implements SearchMethod {
     private final boolean autoDiscoveredVars;
     private List<IntExpression> vars;
     private final List<IntervalVar> intervals;
+    private final List<SeqVar> sequences;
     private Objective objective;
     private final List<Phase> phases = new ArrayList<>();
     private boolean userConfiguredPhases = false;
@@ -154,6 +164,7 @@ public class BlackBoxSearch implements SearchMethod {
 
     private Optional<List<Integer>> bestSolution = Optional.empty();
     private Optional<List<IntervalSnapshot>> bestIntervalSolution = Optional.empty();
+    private Optional<List<SeqSnapshot>> bestSeqSolution = Optional.empty();
     private final IdentityHashMap<IntExpression, Integer> bestVarValues = new IdentityHashMap<>();
     private Optional<Integer> bestObjectiveValue = Optional.empty();
     private SearchStatus lastStatus = SearchStatus.UNKNOWN;
@@ -174,39 +185,51 @@ public class BlackBoxSearch implements SearchMethod {
     private ConflictDrivenBranching sharedConflictBranching;
     private FDSModeling sharedPrimaryFds;
     private FDSModeling sharedSchedulingFds;
+    private FDSSeqVar sharedSequenceFds;
+    private PrimalSeqVar sharedSequencePrimal;
     private ConcreteModel cachedConcreteModel;
     private CPIntVar[] cachedCpVars;
     private CPIntervalVar[] cachedCpIntervals;
+    private CPSeqVar[] cachedCpSequences;
     private CPIntVar cachedObjCpVar;
 
     /**
      * Creates a black-box search on explicit integer decision variables with an objective.
      */
     public BlackBoxSearch(ModelDispatcher model, List<IntExpression> vars, Objective objective) {
-        this(model, vars, DecisionVarCollector.collectIntervals(model), objective, false);
+        this(
+                model,
+                vars,
+                DecisionVarCollector.collectIntervals(model),
+                DecisionVarCollector.collectSequences(model),
+                objective,
+                false);
     }
 
     private BlackBoxSearch(
             ModelDispatcher model,
             List<IntExpression> vars,
             List<IntervalVar> intervals,
+            List<SeqVar> sequences,
             Objective objective,
             boolean autoDiscoveredVars) {
         this.model = model;
         this.vars = List.copyOf(vars);
         this.intervals = List.copyOf(intervals);
+        this.sequences = List.copyOf(sequences);
         this.objective = objective;
         this.autoDiscoveredVars = autoDiscoveredVars;
     }
 
     /**
-     * Creates a black-box search with automatic decision-variable and interval-variable inference.
+     * Creates a black-box search with automatic decision-variable, interval-variable, and sequence-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model, Objective objective) {
         this(
                 model,
                 DecisionVarCollector.collectAllIntVars(model, objective),
                 DecisionVarCollector.collectIntervals(model),
+                DecisionVarCollector.collectSequences(model),
                 objective,
                 true);
     }
@@ -215,21 +238,21 @@ public class BlackBoxSearch implements SearchMethod {
      * Creates a black-box search on an array of integer decision variables with an objective.
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars, Objective objective) {
-        this(model, Arrays.asList(vars), List.of(), objective, false);
+        this(model, Arrays.asList(vars), List.of(), List.of(), objective, false);
     }
 
     /**
      * Creates a black-box search on an array of integer decision variables without objective (feasibility).
      */
     public BlackBoxSearch(ModelDispatcher model, IntExpression[] vars) {
-        this(model, Arrays.asList(vars), List.of(), null, false);
+        this(model, Arrays.asList(vars), List.of(), List.of(), null, false);
     }
 
     /**
      * Creates a black-box search on an array of scheduling interval variables.
      */
     public BlackBoxSearch(ModelDispatcher model, IntervalVar... intervals) {
-        this(model, DecisionVarCollector.collectAllIntVars(model, null), Arrays.asList(intervals), null, true);
+        this(model, DecisionVarCollector.collectAllIntVars(model, null), Arrays.asList(intervals), List.of(), null, true);
     }
 
     /**
@@ -240,12 +263,26 @@ public class BlackBoxSearch implements SearchMethod {
                 model,
                 DecisionVarCollector.collectAllIntVars(model, null),
                 Arrays.stream(intervals).flatMap(Arrays::stream).toList(),
+                List.of(),
                 null,
                 true);
     }
 
     /**
-     * Creates a black-box search with automatic decision-variable and interval-variable inference.
+     * Creates a black-box search on an array of sequence variables.
+     */
+    public BlackBoxSearch(ModelDispatcher model, SeqVar... sequences) {
+        this(
+                model,
+                DecisionVarCollector.collectAllIntVars(model, null),
+                List.of(),
+                Arrays.asList(sequences),
+                null,
+                true);
+    }
+
+    /**
+     * Creates a black-box search with automatic decision-variable, interval-variable, and sequence-variable inference.
      */
     public BlackBoxSearch(ModelDispatcher model) {
         this(model, (Objective) null);
@@ -281,6 +318,15 @@ public class BlackBoxSearch implements SearchMethod {
 
     List<IntervalVar> intervals() {
         return intervals;
+    }
+
+    List<SeqVar> sequences() {
+        return sequences;
+    }
+
+    CPSeqVar[] cpSequences() {
+        ensureCpCache();
+        return cachedCpSequences;
     }
 
     List<IntExpression> vars() {
@@ -329,6 +375,9 @@ public class BlackBoxSearch implements SearchMethod {
     }
 
     Supplier<Runnable[]> tieredFdsBranching(Random fallbackRandom) {
+        if (!sequences.isEmpty()) {
+            return sequenceFdsBranching(fallbackRandom);
+        }
         if (!intervals.isEmpty()) {
             return schedulingFdsBranching(fallbackRandom);
         }
@@ -342,6 +391,75 @@ public class BlackBoxSearch implements SearchMethod {
         }
         ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);
         return Searches.and(fds, cd);
+    }
+
+    Supplier<Runnable[]> sequencePrimalBranching(Random fallbackRandom, double noise) {
+        if (sequences.isEmpty()) {
+            return tieredFdsBranching(fallbackRandom);
+        }
+        if (sharedSequencePrimal == null) {
+            SeqVar[] seqArr = sequences.toArray(SeqVar[]::new);
+            sharedSequencePrimal = new PrimalSeqVar(seqArr);
+        }
+        sharedSequencePrimal.withRandomNoise(fallbackRandom != null ? fallbackRandom : new Random(42L), noise);
+        if (vars.isEmpty()) {
+            return sharedSequencePrimal;
+        }
+        return Searches.and(sharedSequencePrimal, nonAuxSequenceIntBranching(fallbackRandom));
+    }
+
+    Supplier<Runnable[]> sequenceFdsBranching(Random fallbackRandom) {
+        if (sequences.isEmpty()) {
+            return tieredFdsBranching(fallbackRandom);
+        }
+        if (sharedSequenceFds == null) {
+            SeqVar[] seqArr = sequences.toArray(SeqVar[]::new);
+            sharedSequenceFds = new FDSSeqVar(seqArr);
+        } else {
+            sharedSequenceFds.resetLevel();
+        }
+        if (vars.isEmpty()) {
+            return sharedSequenceFds;
+        }
+        return Searches.and(sharedSequenceFds, nonAuxSequenceIntBranching(fallbackRandom));
+    }
+
+    private Supplier<Runnable[]> nonAuxSequenceIntBranching(Random fallbackRandom) {
+        ConflictDrivenBranching cd = conflictDrivenBranching(fallbackRandom);
+        return () -> {
+            ensureCpCache();
+            if (cachedCpVars != null && cachedCpSequences != null) {
+                boolean hasUnfixedNonTimeVar = false;
+                for (CPIntVar v : cachedCpVars) {
+                    if (v != null && !v.isFixed()) {
+                        boolean isTimeVar = false;
+                        for (CPSeqVar seq : cachedCpSequences) {
+                            if (seq != null && seq.isTransitionTimeVar(v)) {
+                                isTimeVar = true;
+                                break;
+                            }
+                        }
+                        if (!isTimeVar) {
+                            hasUnfixedNonTimeVar = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasUnfixedNonTimeVar) {
+                    if (cachedObjCpVar != null && !cachedObjCpVar.isFixed()) {
+                        int target = isMinimization(objective) ? cachedObjCpVar.min() : cachedObjCpVar.max();
+                        return new Runnable[]{
+                                () -> {
+                                    cachedObjCpVar.fix(target);
+                                    cachedObjCpVar.getSolver().fixPoint();
+                                }
+                        };
+                    }
+                    return Searches.EMPTY;
+                }
+            }
+            return cd.get();
+        };
     }
 
     Supplier<Runnable[]> schedulingFdsBranching(Random fallbackRandom) {
@@ -458,6 +576,10 @@ public class BlackBoxSearch implements SearchMethod {
                 for (int i = 0; i < intervals.size(); i++) {
                     cachedCpIntervals[i] = cpm.getCPVar(intervals.get(i));
                 }
+                cachedCpSequences = new CPSeqVar[sequences.size()];
+                for (int i = 0; i < sequences.size(); i++) {
+                    cachedCpSequences[i] = cpm.getCPVar(sequences.get(i));
+                }
                 IntExpression objExpr = extractObjectiveExpr(objective);
                 if (objExpr != null) {
                     cachedObjCpVar = cpm.getCPVar(objExpr);
@@ -468,6 +590,7 @@ public class BlackBoxSearch implements SearchMethod {
             } else {
                 cachedCpVars = null;
                 cachedCpIntervals = null;
+                cachedCpSequences = null;
                 cachedObjCpVar = null;
             }
         }
@@ -530,6 +653,32 @@ public class BlackBoxSearch implements SearchMethod {
             bestIntervalSolution = Optional.of(Collections.unmodifiableList(ivSnaps));
         }
 
+        if (!sequences.isEmpty()) {
+            List<SeqSnapshot> seqSnaps = new ArrayList<>(sequences.size());
+            if (cachedCpSequences != null) {
+                for (CPSeqVar cpSeq : cachedCpSequences) {
+                    int[] buf = new int[cpSeq.nNode()];
+                    int m = cpSeq.fillNode(buf, SeqStatus.MEMBER_ORDERED);
+                    List<Integer> members = new ArrayList<>(m);
+                    for (int i = 0; i < m; i++) {
+                        members.add(buf[i]);
+                    }
+                    seqSnaps.add(new SeqSnapshot(cpSeq.start(), cpSeq.end(), Collections.unmodifiableList(members)));
+                }
+            } else {
+                for (SeqVar seq : sequences) {
+                    int[] buf = new int[seq.nNode()];
+                    int m = seq.fillNode(buf, SeqStatus.MEMBER_ORDERED);
+                    List<Integer> members = new ArrayList<>(m);
+                    for (int i = 0; i < m; i++) {
+                        members.add(buf[i]);
+                    }
+                    seqSnaps.add(new SeqSnapshot(seq.start(), seq.end(), Collections.unmodifiableList(members)));
+                }
+            }
+            bestSeqSolution = Optional.of(Collections.unmodifiableList(seqSnaps));
+        }
+
         updateObjective(objVal);
         updateSolution(solution);
 
@@ -560,6 +709,24 @@ public class BlackBoxSearch implements SearchMethod {
      */
     public BlackBoxSearch withDefaultPhasePlan() {
         phases.clear();
+
+        if (!sequences.isEmpty()) {
+            RunnableSearch initialSeq = new SequenceRunnableSearch(this, model, sequences, vars, objective, 42L);
+            addPhase("initial-exhaustive", initialSeq, objective == null ? 0.25 : 0.20, false);
+
+            if (objective == null) {
+                RunnableSearch restSeq = new SequenceRunnableSearch(this, model, sequences, vars, null, 43L);
+                addPhase("feasibility-restarts", restSeq, 0.75, false);
+                return this;
+            }
+
+            RunnableSearch seqLns = new SequenceLNSRunnableSearch(this, model, sequences, vars, objective, 80, 75, 43L);
+            addPhase("lns-improvement", seqLns, 0.60, true);
+
+            RunnableSearch finalSeq = new SequenceRunnableSearch(this, model, sequences, vars, objective, 44L);
+            addPhase("exhaustive-fds", finalSeq, 0.20, false);
+            return this;
+        }
 
         if (!intervals.isEmpty()) {
             RunnableSearch initialSched = new SchedulingRunnableSearch(this, model, intervals, vars, objective, 42L);
@@ -694,6 +861,7 @@ public class BlackBoxSearch implements SearchMethod {
         limitReached = false;
         bestSolution = Optional.empty();
         bestIntervalSolution = Optional.empty();
+        bestSeqSolution = Optional.empty();
         bestVarValues.clear();
         bestObjectiveValue = Optional.empty();
         solutionCount = 0;
@@ -707,6 +875,8 @@ public class BlackBoxSearch implements SearchMethod {
             this.sharedConflictBranching = null;
             this.sharedPrimaryFds = null;
             this.sharedSchedulingFds = null;
+            this.sharedSequenceFds = null;
+            this.sharedSequencePrimal = null;
             this.cachedConcreteModel = null;
             if (autoDiscoveredVars) {
                 this.vars = DecisionVarCollector.collectAllIntVars(model, newObjective);
@@ -745,8 +915,8 @@ public class BlackBoxSearch implements SearchMethod {
             searchStartMillis = System.currentTimeMillis();
         }
 
-        // Check trivial root satisfaction when there are no variables and no intervals
-        if (vars.isEmpty() && intervals.isEmpty()) {
+        // Check trivial root satisfaction when there are no variables, intervals, or sequences
+        if (vars.isEmpty() && intervals.isEmpty() && sequences.isEmpty()) {
             recordSolutionFromCurrentState();
             liveStats.setCompleted();
             lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;
@@ -825,7 +995,7 @@ public class BlackBoxSearch implements SearchMethod {
     }
 
     private boolean hasAnyIncumbent() {
-        return bestSolution.isPresent() || bestIntervalSolution.isPresent();
+        return bestSolution.isPresent() || bestIntervalSolution.isPresent() || bestSeqSolution.isPresent();
     }
 
     // -------------------------------------------------------------------------
@@ -989,7 +1159,7 @@ public class BlackBoxSearch implements SearchMethod {
                     subjectTo.run();
                 }
                 ensureCpCache();
-                if (vars.isEmpty() && intervals.isEmpty()) {
+                if (vars.isEmpty() && intervals.isEmpty() && sequences.isEmpty()) {
                     recordSolutionFromCurrentState();
                     liveStats.setCompleted();
                     lastStatus = objective == null ? SearchStatus.SAT : SearchStatus.PROVEN_OPTIMAL;
@@ -1051,6 +1221,11 @@ public class BlackBoxSearch implements SearchMethod {
         return bestIntervalSolution;
     }
 
+    /** Returns the best incumbent sequence snapshots found so far, if any. */
+    public Optional<List<SeqSnapshot>> bestSeqSolution() {
+        return bestSeqSolution;
+    }
+
     /**
      * Returns the value of {@code var} in the best incumbent solution found so far, if available.
      */
@@ -1069,7 +1244,7 @@ public class BlackBoxSearch implements SearchMethod {
      * Returns the values of the given expressions in the best incumbent solution found so far.
      */
     public Optional<List<Integer>> bestValues(IntExpression... targetVars) {
-        if (bestSolution.isEmpty() && bestIntervalSolution.isEmpty()) {
+        if (bestSolution.isEmpty() && bestIntervalSolution.isEmpty() && bestSeqSolution.isEmpty()) {
             return Optional.empty();
         }
         List<Integer> out = new ArrayList<>(targetVars.length);

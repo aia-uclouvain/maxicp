@@ -134,4 +134,14 @@ public interface CPSolver extends StateManaged {
         }
         throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
     }
+
+    /**
+     * Creates a black-box search over the specified sequence variables.
+     */
+    default BlackBoxSearch blackBoxSearch(CPSeqVar... sequences) {
+        if (getModelProxy() instanceof ModelDispatcher md) {
+            return md.blackBoxSearch(sequences);
+        }
+        throw new UnsupportedOperationException("BlackBoxSearch requires a ModelDispatcher proxy");
+    }
 }

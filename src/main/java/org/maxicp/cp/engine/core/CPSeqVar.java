@@ -434,6 +434,32 @@ public interface CPSeqVar extends CPVar, ConcreteSeqVar {
         graphViz.add("}");
         return graphViz.toString();
     }
+
+    /**
+     * Returns the transition distance matrix associated with this sequence variable
+     * by a {@link org.maxicp.cp.engine.constraints.seqvar.Distance} or
+     * {@link org.maxicp.cp.engine.constraints.seqvar.TransitionTimes} constraint, or {@code null} if none.
+     */
+    default int[][] distanceMatrix() {
+        return null;
+    }
+
+    /**
+     * Returns an array mapping each node {@code u} to its coupled partner node (e.g., pickup/drop pair
+     * in a {@link org.maxicp.cp.engine.constraints.seqvar.Cumulative} constraint), or {@code -1} if uncoupled.
+     * Returns {@code null} if no coupled nodes are registered.
+     */
+    default int[] coupledPartners() {
+        return null;
+    }
+
+    /**
+     * Returns {@code true} if {@code var} is a visit-time window variable associated with this sequence
+     * by a {@link org.maxicp.cp.engine.constraints.seqvar.TransitionTimes} constraint.
+     */
+    default boolean isTransitionTimeVar(CPIntVar var) {
+        return false;
+    }
 }
 
 

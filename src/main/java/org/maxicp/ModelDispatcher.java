@@ -39,6 +39,7 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     private final boolean rawSolver;
     private final List<IntVar> registeredIntVars = new ArrayList<>();
     private final List<IntervalVar> registeredIntervalVars = new ArrayList<>();
+    private final List<SeqVar> registeredSeqVars = new ArrayList<>();
 
     public ModelDispatcher() {
         this(false);
@@ -117,6 +118,15 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     }
 
     /**
+     * Infers the sequence variables from the constraint graph and variable registrations of the current model.
+     *
+     * @return unmodifiable list of sequence variables
+     */
+    public List<SeqVar> getSeqVariables() {
+        return DecisionVarCollector.collectSequences(this);
+    }
+
+    /**
      * Returns all non-constant {@link IntVar} instances created on this model dispatcher.
      */
     public List<IntVar> getRegisteredIntVars() {
@@ -130,6 +140,13 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
         return Collections.unmodifiableList(registeredIntervalVars);
     }
 
+    /**
+     * Returns all {@link SeqVar} instances created on this model dispatcher.
+     */
+    public List<SeqVar> getRegisteredSeqVars() {
+        return Collections.unmodifiableList(registeredSeqVars);
+    }
+
     private <T extends IntVar> T registerIntVar(T v) {
         registeredIntVars.add(v);
         return v;
@@ -137,6 +154,11 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
 
     private <T extends IntervalVar> T registerIntervalVar(T v) {
         registeredIntervalVars.add(v);
+        return v;
+    }
+
+    private <T extends SeqVar> T registerSeqVar(T v) {
+        registeredSeqVars.add(v);
         return v;
     }
 
@@ -150,6 +172,13 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     public <T extends IntervalVar> T registerRawIntervalVar(T v) {
         if (rawSolver) {
             registeredIntervalVars.add(v);
+        }
+        return v;
+    }
+
+    public <T extends SeqVar> T registerRawSeqVar(T v) {
+        if (rawSolver) {
+            registeredSeqVars.add(v);
         }
         return v;
     }
@@ -252,7 +281,15 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
     }
 
     public SeqVar seqVar(int nNode, int begin, int end) {
-        return new SeqVarImpl(this, nNode, begin, end);
+        return registerSeqVar(new SeqVarImpl(this, nNode, begin, end));
+    }
+
+    public SeqVar[] seqVarArray(int n, Function<Integer, SeqVar> body) {
+        SeqVar[] out = new SeqVar[n];
+        for (int i = 0; i < n; i++) {
+            out[i] = body.apply(i);
+        }
+        return out;
     }
 
     @Override
@@ -317,6 +354,13 @@ public class ModelDispatcher implements ModelProxyInstantiator, AutoCloseable, M
      */
     public BlackBoxSearch blackBoxSearch(IntervalVar[][] intervals) {
         return new BlackBoxSearch(this, intervals);
+    }
+
+    /**
+     * Creates a black-box search over the specified sequence variables.
+     */
+    public BlackBoxSearch blackBoxSearch(SeqVar... sequences) {
+        return new BlackBoxSearch(this, sequences);
     }
 
     /**

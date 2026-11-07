@@ -8,6 +8,10 @@ import org.maxicp.state.datastructures.StateSparseSet;
 import org.maxicp.state.datastructures.StateStack;
 import org.maxicp.state.datastructures.StateTriPartition;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -35,6 +39,9 @@ public class CPSeqVarImpl implements CPSeqVar {
     private final StateStack<CPConstraint> onInsertRemoved; // an insertion has been removed from the sequence
 
     private final int[] values;
+    private int[][] registeredDistMatrix;
+    private int[] coupledPartner;
+    private Set<CPIntVar> transitionTimeVars;
 
     public CPSeqVarImpl(CPSolver cp, int nNodes, int start, int end) {
         if (nNodes < 2) {
@@ -929,5 +936,68 @@ public class CPSeqVarImpl implements CPSeqVar {
     @Override
     public ModelProxy getModelProxy() {
         return getSolver().getModelProxy();
+    }
+
+    /**
+     * Associates a transition distance matrix with this sequence variable.
+     */
+    public void registerDistanceMatrix(int[][] dist) {
+        if (dist != null && this.registeredDistMatrix == null) {
+            this.registeredDistMatrix = dist;
+        }
+    }
+
+    /**
+     * Registers coupled activity node pairs (e.g., pickup and drop nodes) on this sequence variable.
+     */
+    public void registerCoupledNodes(int[] starts, int[] ends) {
+        if (starts == null || ends == null) {
+            return;
+        }
+        if (this.coupledPartner == null) {
+            this.coupledPartner = new int[nNodes];
+            Arrays.fill(this.coupledPartner, -1);
+        }
+        int len = Math.min(starts.length, ends.length);
+        for (int i = 0; i < len; i++) {
+            int s = starts[i];
+            int e = ends[i];
+            if (s >= 0 && s < nNodes && e >= 0 && e < nNodes) {
+                this.coupledPartner[s] = e;
+                this.coupledPartner[e] = s;
+            }
+        }
+    }
+
+    /**
+     * Registers visit-time window variables associated with this sequence variable by {@code TransitionTimes}.
+     */
+    public void registerTransitionTimeVars(CPIntVar[] timeVars) {
+        if (timeVars == null) {
+            return;
+        }
+        if (this.transitionTimeVars == null) {
+            this.transitionTimeVars = Collections.newSetFromMap(new IdentityHashMap<>());
+        }
+        for (CPIntVar tv : timeVars) {
+            if (tv != null) {
+                this.transitionTimeVars.add(tv);
+            }
+        }
+    }
+
+    @Override
+    public int[][] distanceMatrix() {
+        return registeredDistMatrix;
+    }
+
+    @Override
+    public int[] coupledPartners() {
+        return coupledPartner;
+    }
+
+    @Override
+    public boolean isTransitionTimeVar(CPIntVar var) {
+        return transitionTimeVars != null && var != null && transitionTimeVars.contains(var);
     }
 }

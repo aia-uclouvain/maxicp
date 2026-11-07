@@ -790,6 +790,43 @@ public final class Searches {
         return new FDSSeqVar(seqVars, detourCost);
     }
 
+    /**
+     * Constructive Primal Heuristic Search for sequence variables.
+     * Automatically discovers any transition distance matrix associated with the sequence variables
+     * via {@code Distance} or {@code TransitionTimes} constraints.
+     *
+     * @param seqVars the sequence variables to decide
+     * @return a constructive primal branching strategy for sequence variables
+     * @see PrimalSeqVar
+     */
+    public static Supplier<Runnable[]> primalSeqVar(SeqVar... seqVars) {
+        return new PrimalSeqVar(seqVars);
+    }
+
+    /**
+     * Constructive Primal Heuristic Search for sequence variables guided by a distance matrix.
+     *
+     * @param seqVars    the sequence variables to decide
+     * @param distMatrix the transition distance matrix between nodes
+     * @return a constructive primal branching strategy for sequence variables
+     * @see PrimalSeqVar
+     */
+    public static Supplier<Runnable[]> primalSeqVar(SeqVar[] seqVars, int[][] distMatrix) {
+        return new PrimalSeqVar(seqVars, distMatrix);
+    }
+
+    /**
+     * Constructive Primal Heuristic Search for sequence variables guided by a detour cost function.
+     *
+     * @param seqVars    the sequence variables to decide
+     * @param detourCost function computing the detour cost for {@code (pred, node, succ)}
+     * @return a constructive primal branching strategy for sequence variables
+     * @see PrimalSeqVar
+     */
+    public static Supplier<Runnable[]> primalSeqVar(SeqVar[] seqVars, TriFunction<Integer, Integer, Integer, Integer> detourCost) {
+        return new PrimalSeqVar(seqVars, detourCost);
+    }
+
     public static Runnable[] branchOnStartMin(IntervalVar var) {
         if (!var.isPresent() || var.startMin() == var.startMax()) return EMPTY;
         int min = var.startMin();

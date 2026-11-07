@@ -10,7 +10,9 @@ import org.maxicp.modeling.algebra.integer.Constant;
 import org.maxicp.modeling.algebra.integer.IntExpression;
 import org.maxicp.modeling.constraints.BinPacking;
 import org.maxicp.modeling.constraints.scheduling.Alternative;
+import org.maxicp.modeling.constraints.seqvar.Distance;
 import org.maxicp.modeling.symbolic.IntervalStatus;
+import org.maxicp.modeling.symbolic.IsNodeRequired;
 import org.maxicp.modeling.symbolic.Maximization;
 import org.maxicp.modeling.symbolic.Minimization;
 import org.maxicp.modeling.symbolic.Objective;
@@ -62,9 +64,9 @@ public class DecisionVarCollector {
             }
         }
 
-        // Pass 3: If no constraints provided decision variables and the model has no interval variables,
+        // Pass 3: If no constraints provided decision variables and the model has no interval or sequence variables,
         // fallback to registered model IntVars
-        if (result.isEmpty() && model.getRegisteredIntervalVars().isEmpty()) {
+        if (result.isEmpty() && model.getRegisteredIntervalVars().isEmpty() && model.getRegisteredSeqVars().isEmpty()) {
             for (IntVar v : model.getRegisteredIntVars()) {
                 if (isCandidateDecisionVar(v, derived) && v.min() < v.max() && seen.putIfAbsent(v, Boolean.TRUE) == null) {
                     result.add(v);
@@ -97,7 +99,8 @@ public class DecisionVarCollector {
         }
 
         boolean hasIntervals = !collectIntervals(model).isEmpty();
-        if (!hasIntervals && !model.isRawSolver()) {
+        boolean hasSequences = !collectSequences(model).isEmpty();
+        if (!hasIntervals && !hasSequences && !model.isRawSolver()) {
             IntExpression objExpr = extractObjectiveExpr(objective);
             if (objExpr != null) {
                 walkLeafIntVars(List.of(objExpr), derived, seen, result);
@@ -105,8 +108,56 @@ public class DecisionVarCollector {
         }
 
         for (IntVar v : model.getRegisteredIntVars()) {
-            if (!(v instanceof IntervalStatus) && seen.putIfAbsent(v, Boolean.TRUE) == null) {
+            if (!(v instanceof IntervalStatus) && !(v instanceof IsNodeRequired) && seen.putIfAbsent(v, Boolean.TRUE) == null) {
                 result.add(v);
+            }
+        }
+
+        return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Collects all {@link SeqVar} instances from the model's constraint graph
+     * and registered sequence variables.
+     *
+     * @param model the model to inspect
+     * @return ordered, identity-deduplicated, unmodifiable list of sequence variables
+     */
+    public static List<SeqVar> collectSequences(ModelDispatcher model) {
+        IdentityHashMap<SeqVar, Boolean> seen = new IdentityHashMap<>();
+        List<SeqVar> result = new ArrayList<>();
+
+        for (SeqVar sv : model.getRegisteredSeqVars()) {
+            if (sv != null && seen.putIfAbsent(sv, Boolean.TRUE) == null) {
+                result.add(sv);
+            }
+        }
+
+        IdentityHashMap<Expression, Boolean> visited = new IdentityHashMap<>();
+        for (Constraint c : model.getConstraints()) {
+            Deque<Expression> stack = new ArrayDeque<>(c.scope());
+            while (!stack.isEmpty()) {
+                Expression node = stack.pop();
+                if (node == null || visited.putIfAbsent(node, Boolean.TRUE) != null) {
+                    continue;
+                }
+                if (node instanceof SeqVar sv) {
+                    if (seen.putIfAbsent(sv, Boolean.TRUE) == null) {
+                        result.add(sv);
+                    }
+                } else if (node instanceof IsNodeRequired inr && inr.seqVar != null) {
+                    if (seen.putIfAbsent(inr.seqVar, Boolean.TRUE) == null) {
+                        result.add(inr.seqVar);
+                    }
+                }
+                Collection<? extends Expression> children = node.subexpressions();
+                if (children != null) {
+                    for (Expression child : children) {
+                        if (child != null) {
+                            stack.push(child);
+                        }
+                    }
+                }
             }
         }
 
@@ -182,13 +233,15 @@ public class DecisionVarCollector {
                 if (!registered.containsKey(nv)) {
                     derived.put(nv, Boolean.TRUE);
                 }
+            } else if (c instanceof Distance distCtr && distCtr.distance != null) {
+                derived.put(distCtr.distance, Boolean.TRUE);
             }
         }
         return derived;
     }
 
     private static boolean isCandidateDecisionVar(IntExpression v, IdentityHashMap<IntExpression, Boolean> derived) {
-        if (v == null || v instanceof Constant || v instanceof IntervalStatus) {
+        if (v == null || v instanceof Constant || v instanceof IntervalStatus || v instanceof IsNodeRequired) {
             return false;
         }
         return !derived.containsKey(v);

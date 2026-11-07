@@ -15,7 +15,9 @@ public abstract class RunnableSearch {
     abstract SearchStatus run(long timeLimitInMillis);
 
     protected boolean hasFeasibleSolution() {
-        return blackBoxSearch.bestSolution().isPresent();
+        return blackBoxSearch.bestSolution().isPresent()
+                || blackBoxSearch.bestIntervalSolution().isPresent()
+                || blackBoxSearch.bestSeqSolution().isPresent();
     }
 
 }

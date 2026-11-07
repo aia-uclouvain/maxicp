@@ -37,6 +37,11 @@ public class DFSRunnableSearch extends RunnableSearch {
 
     @Override
     public SearchStatus run(long timeLimitInMillis) {
+        if (!blackBoxSearch.sequences().isEmpty()) {
+            return new SequenceRunnableSearch(
+                    blackBoxSearch, model, blackBoxSearch.sequences(), vars, objective, random.nextLong())
+                    .run(timeLimitInMillis);
+        }
         if (!blackBoxSearch.intervals().isEmpty()) {
             return new SchedulingRunnableSearch(
                     blackBoxSearch, model, blackBoxSearch.intervals(), vars, objective, random.nextLong())

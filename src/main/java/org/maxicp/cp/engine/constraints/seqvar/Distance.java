@@ -8,6 +8,7 @@ package org.maxicp.cp.engine.constraints.seqvar;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSeqVarImpl;
 
 import static org.maxicp.modeling.algebra.sequence.SeqStatus.*;
 
@@ -39,6 +40,9 @@ public class Distance extends AbstractCPConstraint {
         this.totalDist = totalDist;
         this.nodes = new int[seqVar.nNode()];
         this.inserts = new int[seqVar.nNode()];
+        if (seqVar instanceof CPSeqVarImpl impl) {
+            impl.registerDistanceMatrix(dist);
+        }
     }
 
     private static void checkTriangularInequality(int[][] dist) {

@@ -126,6 +126,13 @@ public final class CPFactory {
         return v;
     }
 
+    private static <T extends CPSeqVar> T registerRawSeqVar(CPSolver cp, T v) {
+        if (cp != null && cp.getModelProxy() instanceof ModelDispatcher md) {
+            md.registerRawSeqVar(v);
+        }
+        return v;
+    }
+
     private static void registerRawVariableGroup(CPIntVar[] vars) {
         if (vars != null && vars.length > 1) {
             List<IntExpression> group = Arrays.stream(vars).filter(Objects::nonNull).map(v -> (IntExpression) v).toList();
@@ -302,7 +309,7 @@ public final class CPFactory {
      * @return an uninstantiated boolean variable
      */
     public static CPSeqVar makeSeqVar(CPSolver cp, int nNodes, int start, int end) {
-        return new CPSeqVarImpl(cp, nNodes, start, end);
+        return registerRawSeqVar(cp, new CPSeqVarImpl(cp, nNodes, start, end));
     }
 
     // ********************
@@ -420,6 +427,13 @@ public final class CPFactory {
      */
     public static BlackBoxSearch makeBlackBox(CPSolver cp, CPIntervalVar[][] intervals) {
         return cp.blackBoxSearch(intervals);
+    }
+
+    /**
+     * Creates a black-box search over the specified sequence variables.
+     */
+    public static BlackBoxSearch makeBlackBox(CPSolver cp, CPSeqVar... sequences) {
+        return cp.blackBoxSearch(sequences);
     }
 
     /**

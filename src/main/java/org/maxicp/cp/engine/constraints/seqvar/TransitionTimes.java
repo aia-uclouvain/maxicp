@@ -8,6 +8,7 @@ package org.maxicp.cp.engine.constraints.seqvar;
 import org.maxicp.cp.engine.core.AbstractCPConstraint;
 import org.maxicp.cp.engine.core.CPIntVar;
 import org.maxicp.cp.engine.core.CPSeqVar;
+import org.maxicp.cp.engine.core.CPSeqVarImpl;
 import org.maxicp.state.State;
 
 import java.util.Optional;
@@ -84,6 +85,10 @@ public class TransitionTimes extends AbstractCPConstraint {
         this.preds = new int[seqVar.nNode()];
         masterConstraintPropagating = getSolver().getStateManager().makeStateRef(false);
         checkTriangularInequality(dist);
+        if (seqVar instanceof CPSeqVarImpl impl) {
+            impl.registerDistanceMatrix(dist);
+            impl.registerTransitionTimeVars(time);
+        }
     }
 
     private void checkTriangularInequality(int[][] dist) {
