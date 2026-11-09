@@ -58,7 +58,7 @@ public class DARPSeqVar {
             nVehicle = reader.getInt();
             reader.getInt(); // ignore, some instances do not use the same format for encoding nodes
             maxRouteDuration = reader.getInt() * scaling;
-            capacity = reader.getInt() * scaling;
+            capacity = reader.getInt();
             maxRideTime = reader.getInt() * scaling;
             reader.getInt(); //id of the node, ignored
             depot = new DARPNode(reader.getDouble(), reader.getDouble(), reader.getInt() * scaling, reader.getInt(),
