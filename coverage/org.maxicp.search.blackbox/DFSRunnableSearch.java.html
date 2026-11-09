@@ -153,9 +153,9 @@ public class DFSRunnableSearch extends RunnableSearch {
                 }
 <span class="fc" id="L154">                DFSearch finalDfs = blackBoxSearch.createSubSearch(finalBranching);</span>
 <span class="fc" id="L155">                finalDfs.onSolution(() -&gt; {</span>
-<span class="nc" id="L156">                    improvedInPhase.set(true);</span>
-<span class="nc" id="L157">                    blackBoxSearch.recordSolutionFromCurrentState();</span>
-<span class="nc" id="L158">                });</span>
+<span class="fc" id="L156">                    improvedInPhase.set(true);</span>
+<span class="fc" id="L157">                    blackBoxSearch.recordSolutionFromCurrentState();</span>
+<span class="fc" id="L158">                });</span>
 
                 SearchStatistics finalStats;
 <span class="pc bpc" id="L161" title="1 of 2 branches missed.">                if (objective == null) {</span>
@@ -192,7 +192,7 @@ public class DFSRunnableSearch extends RunnableSearch {
 <span class="pc bpc" id="L192" title="1 of 2 branches missed.">        if (objective == null) {</span>
 <span class="nc bnc" id="L193" title="All 4 branches missed.">            return (foundInPhase || hasFeasibleSolution()) ? SearchStatus.SAT : SearchStatus.UNSAT;</span>
         }
-<span class="pc bpc" id="L195" title="3 of 4 branches missed.">        return (foundInPhase || hasFeasibleSolution()) ? SearchStatus.PROVEN_OPTIMAL : SearchStatus.UNSAT;</span>
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">        return (foundInPhase || hasFeasibleSolution()) ? SearchStatus.PROVEN_OPTIMAL : SearchStatus.UNSAT;</span>
     }
 
     private static int luby(int i) {

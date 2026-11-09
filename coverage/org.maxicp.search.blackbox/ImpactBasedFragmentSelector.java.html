@@ -83,11 +83,11 @@ public class ImpactBasedFragmentSelector implements FragmentSelector {
     public void onRestartCompleted(FragmentSelectionFeedback feedback) {
 <span class="fc" id="L84">        decayScores(feedback.decisionVarIndices());</span>
 
-<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (feedback.restartImproved()) {</span>
-<span class="fc bfc" id="L87" title="All 2 branches covered.">            for (int idx : feedback.changedDecisionVarIndices()) {</span>
-<span class="fc" id="L88">                impacts.merge(idx, IMPROVEMENT_BONUS, Double::sum);</span>
-<span class="fc" id="L89">            }</span>
-<span class="fc" id="L90">            return;</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (feedback.restartImproved()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">            for (int idx : feedback.changedDecisionVarIndices()) {</span>
+<span class="nc" id="L88">                impacts.merge(idx, IMPROVEMENT_BONUS, Double::sum);</span>
+<span class="nc" id="L89">            }</span>
+<span class="nc" id="L90">            return;</span>
         }
 
 <span class="fc bfc" id="L93" title="All 2 branches covered.">        if (feedback.reachedFailureLimit()) {</span>
